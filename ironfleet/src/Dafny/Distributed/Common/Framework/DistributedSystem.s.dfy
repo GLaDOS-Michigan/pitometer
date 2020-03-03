@@ -36,7 +36,7 @@ abstract module DistributedSystem_s {
         && (io.LIoOpSend? ==> ValidPhysicalPacket(io.s))
     }
 
-    predicate ValidPhysicalEnvironmentStep(step:LEnvStep<EndPoint, seq<byte>>)
+    predicate ValidPhysicalEnvironmentStep(step:LEnvStep<EndPoint, seq<byte>, HostStep>)
     {
         step.LEnvStepHostIos? ==> forall io{:trigger io in step.ios}{:trigger ValidPhysicalIo(io)} :: io in step.ios ==> ValidPhysicalIo(io)
     }
@@ -47,7 +47,7 @@ abstract module DistributedSystem_s {
     
     datatype DS_State = DS_State(
         config:ConcreteConfiguration,
-        environment:LEnvironment<EndPoint,seq<byte>>,
+        environment:LEnvironment<EndPoint,seq<byte>,HostStep>,
         servers:map<EndPoint,HostState>,
         clients:set<EndPoint>
         )
