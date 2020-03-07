@@ -11,6 +11,7 @@ module Host_i refines Host_s {
     datatype CScheduler = CScheduler(ghost node:Node, node_impl:NodeImpl)
 
     type HostState = CScheduler
+    type HostStep = LockStep
     type ConcreteConfiguration = Config
 
     predicate ConcreteConfigurationInvariants(config:ConcreteConfiguration) 

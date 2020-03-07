@@ -36,6 +36,17 @@ function FindIndexInSeq<T>(s:seq<T>, v:T):int
         -1
 }
 
+function {:opaque} MapSeqToSeq<T, U>(s:seq<T>, f:T->U) : (s':seq<U>)
+  ensures |s'| == |s|
+  ensures forall i :: 0 <= i < |s| ==> s'[i] == f(s[i])
+{
+  if |s| == 0 then
+    []
+  else
+    [f(s[0])] + MapSeqToSeq(s[1..], f)
+}
+
+
 lemma Lemma_IdenticalSingletonSequencesHaveIdenticalElement<T>(x:T, y:T)
     requires [x] == [y];
     ensures  x == y;

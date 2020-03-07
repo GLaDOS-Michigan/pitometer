@@ -43,28 +43,28 @@ module Main_i refines Main_s {
         LPacket(p.dst, p.src, AbstractifyCMessage(DemarshallData(p.msg)))
     }
 
-    predicate LEnvStepIsAbstractable(step:LEnvStep<EndPoint,seq<byte>>)
+    predicate LEnvStepIsAbstractable(step:LEnvStep<EndPoint,seq<byte>, LockStep>)
     {
         match step {
-            case LEnvStepHostIos(actor, ios) => true
+            case LEnvStepHostIos(actor, ios, lockStep) => true
             case LEnvStepDeliverPacket(p) => true
             case LEnvStepAdvanceTime => true
             case LEnvStepStutter => true 
         }
     }
 
-    function AbstractifyConcreteEnvStep(step:LEnvStep<EndPoint,seq<byte>>) : LEnvStep<NodeIdentity, LockMessage>
+    function AbstractifyConcreteEnvStep(step:LEnvStep<EndPoint,seq<byte>, LockStep>) : LEnvStep<NodeIdentity, LockMessage, LockStep>
         requires LEnvStepIsAbstractable(step);
     {
         match step {
-            case LEnvStepHostIos(actor, ios) => LEnvStepHostIos(actor, AbstractifyRawLogToIos(ios))
+            case LEnvStepHostIos(actor, ios, lockStep) => LEnvStepHostIos(actor, AbstractifyRawLogToIos(ios), lockStep)
             case LEnvStepDeliverPacket(p) => LEnvStepDeliverPacket(AbstractifyConcretePacket(p))
             case LEnvStepAdvanceTime => LEnvStepAdvanceTime()
             case LEnvStepStutter => LEnvStepStutter() 
         }
     }
 
-    predicate ConcreteEnvironmentIsAbstractable(ds_env:LEnvironment<EndPoint,seq<byte>>)
+    predicate ConcreteEnvironmentIsAbstractable(ds_env:LEnvironment<EndPoint,seq<byte>, LockStep>)
     {
         LEnvStepIsAbstractable(ds_env.nextStep)
     }
@@ -74,7 +74,7 @@ module Main_i refines Main_s {
         set p | p in sent :: AbstractifyConcretePacket(p)
     }
 
-    function AbstractifyConcreteEnvironment(ds_env:LEnvironment<EndPoint,seq<byte>>) : LEnvironment<NodeIdentity, LockMessage>
+    function AbstractifyConcreteEnvironment(ds_env:LEnvironment<EndPoint,seq<byte>, LockStep>) : LEnvironment<NodeIdentity, LockMessage, LockStep>
         requires ConcreteEnvironmentIsAbstractable(ds_env);
     {
         LEnvironment(ds_env.time,
@@ -174,7 +174,7 @@ module Main_i refines Main_s {
         }
     }
 
-    lemma lemma_IsValidEnvStep(de:LEnvironment<EndPoint, seq<byte>>, le:LEnvironment<NodeIdentity, LockMessage>)
+    lemma lemma_IsValidEnvStep(de:LEnvironment<EndPoint, seq<byte>, LockStep>, le:LEnvironment<NodeIdentity, LockMessage, LockStep>)
         requires IsValidLEnvStep(de, de.nextStep);
         requires de.nextStep.LEnvStepHostIos?;
         requires ConcreteEnvironmentIsAbstractable(de);
@@ -226,8 +226,8 @@ module Main_i refines Main_s {
         }
     }
 
-    lemma lemma_LEnvironmentNextHost(de :LEnvironment<EndPoint, seq<byte>>, le :LEnvironment<NodeIdentity, LockMessage>,
-                                      de':LEnvironment<EndPoint, seq<byte>>, le':LEnvironment<NodeIdentity, LockMessage>)
+    lemma lemma_LEnvironmentNextHost(de :LEnvironment<EndPoint, seq<byte>, LockStep>, le :LEnvironment<NodeIdentity, LockMessage, LockStep>,
+                                      de':LEnvironment<EndPoint, seq<byte>, LockStep>, le':LEnvironment<NodeIdentity, LockMessage, LockStep>)
         requires ConcreteEnvironmentIsAbstractable(de);
         requires ConcreteEnvironmentIsAbstractable(de');
         requires AbstractifyConcreteEnvironment(de)  == le;
