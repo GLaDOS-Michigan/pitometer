@@ -6,3 +6,4 @@
 # show up as "Untracked Files" in the "Team Explorer - Changes" panel.
 #
 .vscode
+*~
