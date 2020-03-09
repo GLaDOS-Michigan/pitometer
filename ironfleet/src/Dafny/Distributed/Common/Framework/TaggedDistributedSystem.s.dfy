@@ -3,9 +3,9 @@ include "Host.s.dfy"
 include "DistributedSystem.s.dfy"
 include "../Collections/Seqs.i.dfy"
 
-abstract module Performance_s {
+abstract module TaggedDistributedSystem_s {
   import opened Environment_s
-  import opened DistributedSystem_s
+  import opened DS_s : DistributedSystem_s
   import opened Collections__Seqs_i
 
   datatype PerformanceReport = None | PerformanceReport(instructions: int, pktsDelivered: int)
