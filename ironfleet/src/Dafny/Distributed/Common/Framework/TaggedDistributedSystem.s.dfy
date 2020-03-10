@@ -2,17 +2,15 @@ include "Environment.s.dfy"
 include "Host.s.dfy"
 include "DistributedSystem.s.dfy"
 include "../Collections/Seqs.i.dfy"
+include "Performance.s.dfy"
 
 abstract module TaggedDistributedSystem_s {
   import opened Environment_s
   import opened DS_s : DistributedSystem_s
+  import opened Performance_s
   import opened Collections__Seqs_i
 
-  datatype PerformanceReport = None | PerformanceReport(instructions: int, pktsDelivered: int)
-
-  type PerfReport = PerformanceReport
-  function PerfMax(prs: seq<PerfReport>) : PerfReport
-  function PerfAdd(pr1:PerfReport, pr2:PerfReport) : PerfReport
+  function GetStepRuntime(hstep:HostStep) : PerformanceReport
 
   datatype TaggedType<Type> = TaggedType(v:Type, pr:PerformanceReport)
 
@@ -128,12 +126,15 @@ abstract module TaggedDistributedSystem_s {
       && forall id :: id in tds.t_servers ==> tds.t_servers[id].pr == PerformanceReport(0, 0)
   }
 
-  predicate TDS_NextOneServer(tds: TaggedDS_State, tds': TaggedDS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint,seq<byte>>>)
+  predicate TDS_NextOneServer(tds: TaggedDS_State, tds': TaggedDS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint,seq<byte>>>, hstep:HostStep)
     requires id in tds.t_servers;
     reads *
   {
     DS_NextOneServer(UntagDS_State(tds), UntagDS_State(tds'), id, UntagLIoOpSeq(ios))
-      && PerfMax(GetReceivePRs(ios)) == tds'.t_servers[id].pr
+      && (var recvTime := PerfMax(GetReceivePRs(ios));
+      var totalTime := PerfAdd(recvTime, GetStepRuntime(hstep));
+      tds'.t_servers[id].pr == totalTime
+      )
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tds'.t_servers[id].pr)
   }
 
@@ -143,7 +144,7 @@ abstract module TaggedDistributedSystem_s {
     DS_Next(UntagDS_State(tds), UntagDS_State(tds'))
       && LEnvironment_Next(tds.t_environment, tds'.t_environment)
       && if tds.t_environment.nextStep.LEnvStepHostIos? && tds.t_environment.nextStep.actor in tds.t_servers then
-      TDS_NextOneServer(tds, tds', tds.t_environment.nextStep.actor, tds.t_environment.nextStep.ios)
+      TDS_NextOneServer(tds, tds', tds.t_environment.nextStep.actor, tds.t_environment.nextStep.ios, tds.t_environment.nextStep.nodeStep)
     else
       tds'.t_servers == tds.t_servers
   }

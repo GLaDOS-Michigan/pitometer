@@ -28,7 +28,7 @@ module DistributedSystem_i {
         && (forall index :: 0 <= index < |config| ==> NodeInit(s.servers[config[index]], index, config))
     }
     
-    predicate LS_NextOneServer(s:LS_State, s':LS_State, id:EndPoint, ios:seq<LockIo>)
+    predicate LS_NextOneServer(s:LS_State, s':LS_State, id:EndPoint, ios:seq<LockIo>, lstep:LockStep)
         requires id in s.servers;
     {
            id in s'.servers
@@ -45,7 +45,7 @@ module DistributedSystem_i {
     {
            LEnvironment_Next(s.environment, s'.environment)
         && if s.environment.nextStep.LEnvStepHostIos? && s.environment.nextStep.actor in s.servers then
-               LS_NextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios)
+               LS_NextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios, s.environment.nextStep.nodeStep)
            else
                s'.servers == s.servers
     }

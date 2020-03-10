@@ -41,12 +41,15 @@ datatype TaggedGLS_State = TaggedGLS_State(
       && forall id :: id in tls.t_servers ==> tls.t_servers[id].pr == PerformanceReport(0, 0)
   }
 
-  predicate TLS_NextOneServer(tls: TaggedLS_State, tls': TaggedLS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint, LockMessage>>)
+  predicate TLS_NextOneServer(tls: TaggedLS_State, tls': TaggedLS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint, LockMessage>>, hstep:HostStep)
     requires id in tls.t_servers;
     reads *
   {
-    LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios))
-      && tls'.t_servers[id].pr == PerfMax(GetReceivePRs(ios) + [tls.t_servers[id].pr])
+    LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
+      && (var recvTime := PerfMax(GetReceivePRs(ios));
+      var totalTime := PerfAdd(recvTime, GetStepRuntime(hstep));
+      tls'.t_servers[id].pr == totalTime
+      )
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tls'.t_servers[id].pr)
       && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
   }
@@ -58,7 +61,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
     && LS_Next(UntagLS_State(tls), UntagLS_State(tls'))
     && LEnvironment_Next(tls.t_environment, tls'.t_environment)
     && if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers then
-           TLS_NextOneServer(tls, tls', tls.t_environment.nextStep.actor, tls.t_environment.nextStep.ios)
+           TLS_NextOneServer(tls, tls', tls.t_environment.nextStep.actor, tls.t_environment.nextStep.ios, tls.t_environment.nextStep.nodeStep)
        else
         tls'.t_servers == tls.t_servers
 
@@ -94,6 +97,4 @@ datatype TaggedGLS_State = TaggedGLS_State(
       && TGLS_Init(tglb[0], config)
       && (forall i :: i >= 0 ==> TGLS_Next(tglb[i], tglb[i+1]))
   }
-
-
 }
