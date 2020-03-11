@@ -116,8 +116,6 @@ lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':Ta
   requires PerfInvariantLockHeld(s, j);
   ensures PerfInvariantLockHeld(s', j);
 {
-  var id := s.tls.t_environment.nextStep.actor;
-  assert s.tls.t_servers[id].pr == PerfNone();
 }
 
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
