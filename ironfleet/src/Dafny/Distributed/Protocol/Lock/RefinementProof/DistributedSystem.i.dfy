@@ -33,6 +33,12 @@ module DistributedSystem_i {
     {
            id in s'.servers
         && NodeNext(s.servers[id], s'.servers[id], ios)
+        && var ns := s.servers[id]; var ns' := s'.servers[id];
+        match lstep
+        {
+            case GrantStep => NodeGrant(ns, ns', ios)
+            case AcceptStep => NodeAccept(ns, ns', ios)
+        }
         && s'.servers == s.servers[id := s'.servers[id]]
     }
 

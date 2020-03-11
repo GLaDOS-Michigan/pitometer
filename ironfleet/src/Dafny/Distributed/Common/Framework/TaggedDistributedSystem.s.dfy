@@ -110,6 +110,7 @@ abstract module TaggedDistributedSystem_s {
 
   function GetReceivePRs(ios:seq<TaggedLIoOp>) : seq<PerfReport>
     decreases |ios|
+    ensures (forall io :: io in ios ==> !io.LIoOpReceive?) ==> GetReceivePRs(ios) == []
   {
     if |ios| == 0 then
       []
@@ -131,8 +132,8 @@ abstract module TaggedDistributedSystem_s {
     reads *
   {
     DS_NextOneServer(UntagDS_State(tds), UntagDS_State(tds'), id, UntagLIoOpSeq(ios))
-      && (var recvTime := PerfMax(GetReceivePRs(ios));
-      var totalTime := PerfAdd(recvTime, GetStepRuntime(hstep));
+      && (var recvTime := PerfMax(GetReceivePRs(ios) + [tds.t_servers[id].pr]);
+      var totalTime := PerfAdd2(recvTime, GetStepRuntime(hstep));
       tds'.t_servers[id].pr == totalTime
       )
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tds'.t_servers[id].pr)
