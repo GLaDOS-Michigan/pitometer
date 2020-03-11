@@ -1,15 +1,22 @@
 include "../../../Services/Lock/LockTaggedDistributedSystem.i.dfy"
 include "TaggedGLS.i.dfy"
 include "Definitions.i.dfy"
+include "../../../../Libraries/Math/mod_auto.i.dfy"
 
 module PerformanceProof_i {
+
 import opened LockTaggedDistributedSystem_i
   import opened TaggedGLS_i
   import opened PerformanceProof__Definitions_i
+  import opened Math__mod_auto_i
 
 predicate SingleGLSPerformanceAssumption(tgls:TaggedGLS_State)
 {
-  tgls.tls.t_environment.nextStep.LEnvStepHostIos? ==> tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers
+  // The only nodes that take steps are in the ring
+  && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? ==> tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers)
+
+  // There are fewer nodes than the uint64 upper bound
+  && (|tgls.tls.config| < 0xFFFF_FFFF_FFFF_FFFF)
 }
 
 predicate GLSPerformanceAssumption(tglb:seq<TaggedGLS_State>)
@@ -73,6 +80,26 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
     )
 }
 
+predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
+    requires 0 < j < |tgls.tls.config|
+  {
+    && |tgls.history| == j + 1
+    && (forall id :: id in tgls.tls.t_servers ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
+
+    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+    ==> pkt.msg.v.transfer_epoch <= |tgls.history|)
+
+    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+    && pkt.dst != tgls.tls.config[j]
+    ==> pkt.msg.v.transfer_epoch < |tgls.history| )
+
+    /*
+    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+        && pkt.msg.v.transfer_epoch == |tgls.history|
+        ==> pkt.dst == tgls.tls.config[j] /*&& pkt.msg.pr ==  PerfBound(j - 1)*/)
+       */
+  }
+
 lemma NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
@@ -118,12 +145,35 @@ lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':Ta
 {
 }
 
+lemma Grant_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+  requires TGLS_Next(s, s')
+  requires 0 <= j < |s.tls.config| - 1
+  requires TGLS_Consistency(s) && TGLS_Consistency(s')
+  requires SingleGLSPerformanceAssumption(s)
+  requires SingleGLSPerformanceAssumption(s')
+
+  // A node other than node j taking a grant step
+  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
+  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
+  requires s.tls.t_environment.nextStep.nodeStep == GrantStep
+
+  requires PerfInvariantLockHeld(s, j);
+  ensures PerfInvariantLockInNetwork(s', j + 1);
+{
+  lemma_mod_auto(|s.tls.config|);
+}
+
+// TODO: If the node holds the lock, then it cannot perform node accept. This will be
+// part of the state machine definition
+lemma Accept_j_InvLockHeldImpliesInvLockGranted(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+{
+}
+
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
   requires ValidTaggedGLSBehavior(tglb, config)
   requires GLSPerformanceAssumption(tglb)
   ensures GLSPerformanceGuarantee(tglb)
 {
-  
 }
 
 }
