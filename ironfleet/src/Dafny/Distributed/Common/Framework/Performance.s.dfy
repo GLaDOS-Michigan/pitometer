@@ -42,8 +42,15 @@ module Performance_s {
   }
 
   predicate {:axiom} PerfEq(p1:PerfExpr, p2:PerfExpr)
+    ensures PerfEq(p1, p2) == PerfEq(p2, p1)
     ensures p1 == p2 ==> PerfEq(p1, p2)
     ensures p1.PerfMax? && p1.prs == multiset{p2} ==> PerfEq(p1, p2)
     ensures p1.PerfMax? && p1.prs == multiset{} && p2 == PerfZero() ==> PerfEq(p1, p2)
-    ensures p1.PerfAdd? && PerfVoid in p1.prs && p2 == PerfZero
+
+    ensures p1.PerfAdd? && PerfVoid in p1.prs && p2 == PerfZero ==> PerfEq(p1, p2)
+    ensures p1.PerfAdd? && p2 == PerfAdd(p1.prs[PerfZero() := 0]) ==> PerfEq(p1, p2)
+
+    // Want to establish associativity
+    // PerfAdd(multiset{PerfAdd(p1), prs'}) == PerfAdd(p1 + prs')
+    ensures forall prs :: p1.PerfAdd? && PerfAdd(prs) in p1.prs && p2 == PerfAdd(p1.prs - multiset{PerfAdd(prs)} + prs) ==> PerfEq(p1, p2)
 }

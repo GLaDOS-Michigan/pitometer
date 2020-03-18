@@ -17,8 +17,9 @@ function PerfBoundLockInNetwork(epoch: int) : PerfReport
   requires 0 < epoch
 {
   var s : multiset<PerformanceReport> := multiset{};
-  var s2 := s[GetStepRuntime(GrantStep) := epoch - 1];
-  PerfAdd2(PerfAdd(s2), GetStepRuntime(GrantStep))
+  var s2 := s[GetStepRuntime(GrantStep) := epoch];
+  // PerfAdd2(PerfAdd(s2), GetStepRuntime(GrantStep))
+  PerfAdd(s2)
 }
-  
+
 }

@@ -18,13 +18,14 @@ predicate SingleGLSPerformanceAssumption(tgls:TaggedGLS_State)
   // There are fewer nodes than the uint64 upper bound
   && (|tgls.tls.config| < 0xFFFF_FFFF_FFFF_FFFF)
 
+  // No timeouts
+  && (var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? ==>
+  (forall io :: io in nextStep.ios ==> !io.LIoOpTimeoutReceive?))
+
   // TODO: This should be part of the state machine definition, and not an assumption
   // The only nodes that can do NodeGrant() currently hold the lock
-  && var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? && nextStep.nodeStep == GrantStep ==> tgls.tls.t_servers[nextStep.actor].v.held == true
+  && (var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? && nextStep.nodeStep == GrantStep ==> tgls.tls.t_servers[nextStep.actor].v.held == true)
 
-  // No timeouts
-  && var nextStep := tgls.tls.t_environment.nextStep;
-  (forall io :: io in nextStep.ios ==> !io.LIoOpTimeoutReceive?)
 }
 
 predicate GLSPerformanceAssumption(tglb:seq<TaggedGLS_State>)
@@ -73,7 +74,7 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
     ==> false)
 
     // The node with the lock has correct PerfReport
-    && tgls.tls.t_servers[tgls.tls.config[j]].pr == PerfBoundLockHeld(j)
+    && PerfEq(tgls.tls.t_servers[tgls.tls.config[j]].pr, PerfBoundLockHeld(j))
 
     // TODO: This is unneeded
     // If there's a packet that grants lock to node j, it's PerfReport must be correct
@@ -81,7 +82,7 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
     ==> pkt.msg.pr == PerfBoundLockHeld(j) )
 
     // All nodes beyond j have void PerfReport
-    && (forall k :: j < k < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[k]].pr == PerfVoid())
+    && (forall k :: j < k < |tgls.tls.config| ==> PerfEq(tgls.tls.t_servers[tgls.tls.config[k]].pr, PerfVoid()))
 
     // No packets sent to nodes that have my_index higher than j
     && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[k]
@@ -104,7 +105,7 @@ predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
 
     && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
         && pkt.msg.v.transfer_epoch == |tgls.history|
-        ==> pkt.dst == tgls.tls.config[j] && pkt.msg.pr == PerfBoundLockInNetwork(j))
+        ==> pkt.dst == tgls.tls.config[j] && PerfEq(pkt.msg.pr, PerfBoundLockInNetwork(j)))
   }
 
 lemma NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -150,7 +151,7 @@ lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':Ta
 {
 }
 
-lemma Grant_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config| - 1
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
