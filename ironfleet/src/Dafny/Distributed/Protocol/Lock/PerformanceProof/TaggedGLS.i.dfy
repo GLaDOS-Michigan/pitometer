@@ -38,7 +38,8 @@ datatype TaggedGLS_State = TaggedGLS_State(
   {
     LS_Init(UntagLS_State(tls), config)
       && LEnvironment_Init(tls.t_environment)
-      && forall id :: id in tls.t_servers ==> tls.t_servers[id].pr == PerformanceReport(0, 0)
+      && tls.t_servers[config[0]].pr == PerfZero
+      && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].pr == PerfVoid
   }
 
   predicate TLS_NextOneServer(tls: TaggedLS_State, tls': TaggedLS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint, LockMessage>>, hstep:HostStep)

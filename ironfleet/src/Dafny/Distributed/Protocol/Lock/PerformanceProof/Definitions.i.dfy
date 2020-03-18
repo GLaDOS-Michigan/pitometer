@@ -5,14 +5,20 @@ module PerformanceProof__Definitions_i {
 import opened LockTaggedDistributedSystem_i
   // import opened TaggedGLS_i
 
-function PerfBound(epoch: int) : PerfReport
+function PerfBoundLockHeld(epoch: int) : PerfReport
   requires 0 <= epoch
 {
-  if epoch == 0 then
-    PerfNone()
-  else
-    PerfAdd2(GetStepRuntime(GrantStep), PerfBound(epoch - 1))
+  var s : multiset<PerformanceReport> := multiset{};
+  var s2 := s[GetStepRuntime(GrantStep) := epoch];
+  PerfAdd(s2)
 }
 
+function PerfBoundLockInNetwork(epoch: int) : PerfReport
+  requires 0 < epoch
+{
+  var s : multiset<PerformanceReport> := multiset{};
+  var s2 := s[GetStepRuntime(GrantStep) := epoch - 1];
+  PerfAdd2(PerfAdd(s2), GetStepRuntime(GrantStep))
+}
   
 }
