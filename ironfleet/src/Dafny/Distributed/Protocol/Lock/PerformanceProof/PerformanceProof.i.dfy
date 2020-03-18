@@ -35,7 +35,7 @@ predicate GLSPerformanceAssumption(tglb:seq<TaggedGLS_State>)
 predicate SingleGLSPerformanceGuarantee(gls:TaggedGLS_State)
 {
   forall pkt :: pkt in gls.tls.t_environment.sentPackets &&
-    pkt.msg.v == Locked(|gls.tls.config|) ==> pkt.msg.pr == PerformanceReport(0, 0)
+    pkt.msg.v == Locked(|gls.tls.config|) ==> pkt.msg.pr == PerfZero()
 }
 
 predicate GLSPerformanceGuarantee(tglb:seq<TaggedGLS_State>)

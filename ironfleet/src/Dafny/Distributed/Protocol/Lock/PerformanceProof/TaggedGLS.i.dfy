@@ -47,7 +47,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
     reads *
   {
     LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
-      && (var recvTime := PerfMax(GetReceivePRs(ios) + [tls.t_servers[id].pr]);
+      && (var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{tls.t_servers[id].pr});
       var totalTime := PerfAdd2(recvTime, GetStepRuntime(hstep));
       tls'.t_servers[id].pr == totalTime
       )
@@ -67,7 +67,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
         tls'.t_servers == tls.t_servers
 
         && (if tls.t_environment.nextStep.LEnvStepHostIos? then
-            && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == PerformanceReport(0, 0))
+            && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == PerfZero)
             else
             true)
   }

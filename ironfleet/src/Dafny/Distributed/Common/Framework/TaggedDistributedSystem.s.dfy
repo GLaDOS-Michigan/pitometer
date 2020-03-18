@@ -124,7 +124,7 @@ abstract module TaggedDistributedSystem_s {
     reads *
   {
     DS_Init(UntagDS_State(tds), config)
-      && forall id :: id in tds.t_servers ==> tds.t_servers[id].pr == PerformanceReport(0, 0)
+      && forall id :: id in tds.t_servers ==> tds.t_servers[id].pr == PerfZero()
   }
 
   predicate TDS_NextOneServer(tds: TaggedDS_State, tds': TaggedDS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint,seq<byte>>>, hstep:HostStep)
@@ -132,7 +132,7 @@ abstract module TaggedDistributedSystem_s {
     reads *
   {
     DS_NextOneServer(UntagDS_State(tds), UntagDS_State(tds'), id, UntagLIoOpSeq(ios))
-      && (var recvTime := PerfMax(GetReceivePRs(ios) + [tds.t_servers[id].pr]);
+      && (var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{tds.t_servers[id].pr});
       var totalTime := PerfAdd2(recvTime, GetStepRuntime(hstep));
       tds'.t_servers[id].pr == totalTime
       )
