@@ -9,7 +9,7 @@ function PerfBoundLockHeld(epoch: int) : PerfReport
   requires 0 <= epoch
 {
   var s : multiset<PerformanceReport> := multiset{};
-  var s2 := s[GetStepRuntime(GrantStep) := epoch];
+  var s2 := s[GetStepRuntime(GrantStep) := epoch][GetStepRuntime(AcceptStep) := epoch];
   PerfAdd(s2)
 }
 
@@ -17,9 +17,22 @@ function PerfBoundLockInNetwork(epoch: int) : PerfReport
   requires 0 < epoch
 {
   var s : multiset<PerformanceReport> := multiset{};
-  var s2 := s[GetStepRuntime(GrantStep) := epoch];
-  // PerfAdd2(PerfAdd(s2), GetStepRuntime(GrantStep))
+  var s2 := s[GetStepRuntime(GrantStep) := epoch][GetStepRuntime(AcceptStep) := epoch - 1];
   PerfAdd(s2)
 }
 
+lemma {:verify false} specific_axiom(a:multiset<PerfExpr>, b:multiset<PerfExpr>)
+  ensures PerfEq(PerfAdd(b + multiset{PerfAdd(a)}), PerfAdd(b + a))
+{
+}
+
+lemma Test(j:int)
+  requires 0 <= j
+{
+  var p := PerfBoundLockHeld(j);
+  var p' := PerfBoundLockInNetwork(j + 1);
+
+  assert p' == PerfAdd2(p, GetStepRuntime(GrantStep));
+}
+  
 }

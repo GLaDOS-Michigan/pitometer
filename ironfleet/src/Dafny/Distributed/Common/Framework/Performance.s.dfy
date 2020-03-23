@@ -36,7 +36,8 @@ module Performance_s {
   type PerformanceReport = PerfExpr
   type PerfReport = PerfExpr
 
-  function PerfAdd2(p1:PerfExpr, p2:PerfExpr) : PerfExpr
+  function {:axiom} PerfAdd2(p1:PerfExpr, p2:PerfExpr) : PerfExpr
+    ensures p1.PerfAdd? ==> PerfAdd2(p1, p2) == PerfAdd(multiset{p2} + p1.prs)
   {
     PerfAdd(multiset{p1, p2})
   }
@@ -52,5 +53,12 @@ module Performance_s {
 
     // Want to establish associativity
     // PerfAdd(multiset{PerfAdd(p1), prs'}) == PerfAdd(p1 + prs')
-    ensures forall prs :: p1.PerfAdd? && PerfAdd(prs) in p1.prs && p2 == PerfAdd(p1.prs - multiset{PerfAdd(prs)} + prs) ==> PerfEq(p1, p2)
+    ensures forall prs :: p1.PerfAdd? && PerfAdd(prs) in p1.prs && p2 == PerfAdd(p1.prs + prs - multiset{PerfAdd(prs)}) ==> PerfEq(p1, p2)
+    ensures p1.PerfAdd? ==> (forall pr :: pr in p1.prs && pr.PerfAdd? && p2 == PerfAdd(p1.prs + pr.prs - multiset{PerfAdd(pr.prs)}) ==> PerfEq(p1, p2))
+
+  lemma PerfProperties()
+    // ensures forall p1, p2 :: p1.PerfAdd? ==> 
+  {
+
+  }
 }
