@@ -67,7 +67,7 @@ predicate PerfInvariantAlways(tgls:TaggedGLS_State)
   ==> pkt.msg.v.transfer_epoch <= |tgls.history|)
 }
 
-predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
+predicate {:opaque} PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
   requires 0 <= j < |tgls.tls.config|
   requires TGLS_Consistency(tgls)
 {
@@ -100,8 +100,9 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
     )
 }
 
-predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
+predicate {:opaque} PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
     requires 0 < j < |tgls.tls.config|
+    requires TGLS_Consistency(tgls)
   {
     && PerfInvariantAlways(tgls)
     && |tgls.history| == j + 1
@@ -139,7 +140,9 @@ lemma NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':Tagg
   requires PerfInvariantLockHeld(s, j);
   ensures PerfInvariantLockHeld(s', j);
 {
+  reveal_PerfInvariantLockHeld();
 }
+
 lemma Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
@@ -154,7 +157,9 @@ lemma Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':Tag
   requires PerfInvariantLockHeld(s, j);
   ensures PerfInvariantLockHeld(s', j);
 {
+  reveal_PerfInvariantLockHeld();
 }
+
 lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
@@ -169,6 +174,7 @@ lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':Ta
   requires PerfInvariantLockHeld(s, j);
   ensures PerfInvariantLockHeld(s', j);
 {
+  reveal_PerfInvariantLockHeld();
 }
 
 lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -186,6 +192,9 @@ lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':Ta
   requires PerfInvariantLockHeld(s, j);
   ensures PerfInvariantLockInNetwork(s', j + 1);
 {
+  reveal_PerfInvariantLockHeld();
+  reveal_PerfInvariantLockInNetwork();
+
   lemma_mod_auto(|s.tls.config|);
   var p := PerfBoundLockHeld(j);
   var p' := PerfBoundLockInNetwork(j + 1);
@@ -213,6 +222,8 @@ lemma Accept_not_j_InvLockInNetworkImpliesInvLockHeld(j:int, s:TaggedGLS_State, 
   requires PerfInvariantLockInNetwork(s, j);
   ensures PerfInvariantLockInNetwork(s', j);
 {
+  reveal_PerfInvariantLockInNetwork();
+
   lemma_mod_auto(|s.tls.config|);
 }
 
@@ -231,6 +242,9 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':T
   requires PerfInvariantLockInNetwork(s, j);
   ensures PerfInvariantLockHeld(s', j);
 {
+  reveal_PerfInvariantLockInNetwork();
+  reveal_PerfInvariantLockHeld();
+
   lemma_mod_auto(|s.tls.config|);
   var p2 := PerfBoundLockHeld(j);
   var p2' := PerfBoundLockInNetwork(j + 1);
