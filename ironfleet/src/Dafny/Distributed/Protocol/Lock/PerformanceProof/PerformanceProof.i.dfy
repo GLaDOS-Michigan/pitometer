@@ -51,27 +51,37 @@ predicate TGLS_Consistency(tgls: TaggedGLS_State)
     && (forall i :: 0 <= i < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[i]].v.my_index == i)
 }
 
-predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
-    requires 0 <= j < |tgls.tls.config|
-    requires TGLS_Consistency(tgls)
+predicate PerfInvariantAlways(tgls:TaggedGLS_State)
+  requires TGLS_Consistency(tgls)
 {
-  tgls.tls.t_servers[tgls.tls.config[j]].v.held == true
+  // No one giving node 0 the lock
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  && pkt.msg.v.Transfer? ==> !(pkt.dst == tgls.tls.config[0]) )
+
+  // No irrelevant packets in sentPackets
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && !(pkt.src in tgls.tls.t_servers)
+  ==> false)
+
+  // No packets with epoch higher than history size
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> pkt.msg.v.transfer_epoch <= |tgls.history|)
+}
+
+predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
+  requires 0 <= j < |tgls.tls.config|
+  requires TGLS_Consistency(tgls)
+{
+    && PerfInvariantAlways(tgls)
+    && tgls.tls.t_servers[tgls.tls.config[j]].v.held == true
     && |tgls.history| == j + 1
     && tgls.tls.t_servers[tgls.tls.config[j]].v.epoch == |tgls.history|
 
     &&  (forall id :: id in tgls.tls.t_servers && id != tgls.tls.config[j]
     ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
-    
-    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-    && pkt.msg.v.Transfer? ==> !(pkt.dst == tgls.tls.config[0]) )
 
     // All packets have epoch too small, so that no packets can be accepted in the next step
     && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
     ==> pkt.msg.v.transfer_epoch <= tgls.tls.t_servers[pkt.dst].v.epoch)
-
-    // No irrelevant packets in sentPackets
-    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && !(pkt.src in tgls.tls.t_servers)
-    ==> false)
 
     // The node with the lock has correct PerfReport
     && PerfEq(tgls.tls.t_servers[tgls.tls.config[j]].pr, PerfBoundLockHeld(j))
@@ -93,15 +103,11 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
 predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
     requires 0 < j < |tgls.tls.config|
   {
-    // No irrelevant packets in sentPackets
-    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && !(pkt.src in tgls.tls.t_servers)
-    ==> false)
-
+    && PerfInvariantAlways(tgls)
     && |tgls.history| == j + 1
-    && (forall id :: id in tgls.tls.t_servers ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
 
-    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-    ==> pkt.msg.v.transfer_epoch <= |tgls.history|)
+    // No one holds the lock; everyone's epoch is below the epoch of the newest packet.
+    && (forall id :: id in tgls.tls.t_servers ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
 
     && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
     && pkt.dst != tgls.tls.config[j]
@@ -113,9 +119,9 @@ predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
 
     // The only packet sent to node j is an acceptable Transfer message
     && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[j]
-    ==> pkt.msg.v.Transfer? && pkt.msg.v.transfer_epoch > tgls.tls.t_servers[pkt.dst].v.epoch
+    ==> pkt.msg.v.Transfer? && pkt.msg.v.transfer_epoch == |tgls.history|
+    )
     
-
     // No packets sent to nodes that have my_index higher than j
     && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[k]
     ==> false
@@ -226,6 +232,10 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':T
   ensures PerfInvariantLockHeld(s', j);
 {
   lemma_mod_auto(|s.tls.config|);
+  var p2 := PerfBoundLockHeld(j);
+  var p2' := PerfBoundLockInNetwork(j + 1);
+
+  assert p2' == PerfAdd2(p2, GetStepRuntime(AcceptStep));
 }
 
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)

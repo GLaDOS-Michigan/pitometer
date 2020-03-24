@@ -33,6 +33,12 @@ lemma Test(j:int)
   var p' := PerfBoundLockInNetwork(j + 1);
 
   assert p' == PerfAdd2(p, GetStepRuntime(GrantStep));
+
+  var p2 := PerfBoundLockHeld(j);
+  var p2' := PerfBoundLockInNetwork(j + 1);
+
+  assert p2' == PerfAdd2(p2, GetStepRuntime(AcceptStep));
 }
+
   
 }
