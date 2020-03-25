@@ -31,6 +31,8 @@ abstract module Performance_s {
 
   lemma PerfProperties()
     // ensures forall p1, p2 :: p1.PerfAdd? ==> 
+    ensures forall p1, p2, p1', p2' :: PerfEq(p1, p1') && PerfEq(p2, p2') ==> PerfEq(PerfAdd2(p1, p2), PerfAdd2(p1', p2'));
+    ensures forall p1, p2, p3 :: PerfEq(p1, p2) && PerfEq(p2, p3) ==> PerfEq(p1, p3);
   {
 
   }

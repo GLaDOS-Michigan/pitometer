@@ -10,7 +10,7 @@ import opened LockTaggedDistributedSystem_i
   import opened PerformanceProof__Definitions_i
   import opened Math__mod_auto_i
 
-predicate {:verify false} SingleGLSPerformanceAssumption(tgls:TaggedGLS_State)
+predicate SingleGLSPerformanceAssumption(tgls:TaggedGLS_State)
 {
   // The only nodes that take steps are in the ring
   && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? ==> tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers)
@@ -28,30 +28,30 @@ predicate {:verify false} SingleGLSPerformanceAssumption(tgls:TaggedGLS_State)
 
 }
 
-predicate {:verify false} GLSPerformanceAssumption(tglb:seq<TaggedGLS_State>)
+predicate GLSPerformanceAssumption(tglb:seq<TaggedGLS_State>)
 {
   forall tgls :: tgls in tglb ==> SingleGLSPerformanceAssumption(tgls)
 }
 
-predicate {:verify false} SingleGLSPerformanceGuarantee(gls:TaggedGLS_State)
+predicate SingleGLSPerformanceGuarantee(gls:TaggedGLS_State)
 {
   forall pkt :: pkt in gls.tls.t_environment.sentPackets &&
     pkt.msg.v == Locked(|gls.tls.config|) ==> pkt.msg.pr == PerfZero()
 }
 
-predicate {:verify false} GLSPerformanceGuarantee(tglb:seq<TaggedGLS_State>)
+predicate GLSPerformanceGuarantee(tglb:seq<TaggedGLS_State>)
 {
   forall tgls :: tgls in tglb ==> SingleGLSPerformanceGuarantee(tgls)
 }
 
-predicate {:verify false} TGLS_Consistency(tgls: TaggedGLS_State)
+predicate TGLS_Consistency(tgls: TaggedGLS_State)
 {
   && (forall id :: id in tgls.tls.config <==> id in tgls.tls.t_servers)
     && (forall id :: id in tgls.tls.t_servers ==> (tgls.tls.t_servers[id].v.config == tgls.tls.config))
     && (forall i :: 0 <= i < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[i]].v.my_index == i)
 }
 
-predicate {:verify false} PerfInvariantAlways(tgls:TaggedGLS_State)
+predicate PerfInvariantAlways(tgls:TaggedGLS_State)
   requires TGLS_Consistency(tgls)
 {
   // No one giving node 0 the lock
@@ -67,7 +67,7 @@ predicate {:verify false} PerfInvariantAlways(tgls:TaggedGLS_State)
   ==> pkt.msg.v.transfer_epoch <= |tgls.history|)
 }
 
-predicate {:verify false} {:opaque} PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
+predicate {:opaque} PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int)
   requires 0 <= j < |tgls.tls.config|
   requires TGLS_Consistency(tgls)
 {
@@ -100,7 +100,7 @@ predicate {:verify false} {:opaque} PerfInvariantLockHeld(tgls: TaggedGLS_State,
     )
 }
 
-predicate {:verify false} {:opaque} PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
+predicate {:opaque} PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int)
     requires 0 < j < |tgls.tls.config|
     requires TGLS_Consistency(tgls)
   {
@@ -129,7 +129,7 @@ predicate {:verify false} {:opaque} PerfInvariantLockInNetwork(tgls: TaggedGLS_S
     )
   }
 
-lemma {:verify false} NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
@@ -143,7 +143,7 @@ lemma {:verify false} NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGL
   reveal_PerfInvariantLockHeld();
 }
 
-lemma {:verify false} Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
@@ -160,7 +160,7 @@ lemma {:verify false} Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedG
   reveal_PerfInvariantLockHeld();
 }
 
-lemma {:verify false} Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
@@ -177,7 +177,7 @@ lemma {:verify false} Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, s:Tagged
   reveal_PerfInvariantLockHeld();
 }
 
-lemma {:verify false} Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config| - 1
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
@@ -196,14 +196,15 @@ lemma {:verify false} Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:Tagged
   reveal_PerfInvariantLockInNetwork();
 
   lemma_mod_auto(|s.tls.config|);
+  PerfProperties();
   var p := PerfBoundLockHeld(j);
   var p' := PerfBoundLockInNetwork(j + 1);
-  assert p' == PerfAdd2(p, PerfStep(GrantStep));
+  assert PerfEq(p', PerfAdd2(p, PerfStep(GrantStep)));
 }
 
-lemma {:verify false} NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
+  requires 0 < j < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
 
   // Not a HostIos step
@@ -215,7 +216,7 @@ lemma {:verify false} NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, 
   reveal_PerfInvariantLockInNetwork();
 }
 
-lemma {:verify false} Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 < j < |s.tls.config| - 1
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
@@ -339,7 +340,7 @@ lemma PerfInvariantMaintained(s:TaggedGLS_State, s':TaggedGLS_State)
   
 }
 
-lemma {:verify false} PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
+lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
   requires ValidTaggedGLSBehavior(tglb, config)
   requires GLSPerformanceAssumption(tglb)
   ensures GLSPerformanceGuarantee(tglb)
