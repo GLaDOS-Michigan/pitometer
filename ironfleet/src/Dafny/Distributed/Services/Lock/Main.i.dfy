@@ -351,9 +351,10 @@ module Main_i refines Main_s {
             if ls.environment.nextStep.LEnvStepHostIos? && ls.environment.nextStep.actor in ls.servers {
                 var id := ls.environment.nextStep.actor;
                 var ios := ls.environment.nextStep.ios;
+                var hstep := ls.environment.nextStep.nodeStep;
                 lemma_DeduceTransitionFromLsBehavior(config, db, |db|-2);
                 assert LS_Next(ls, ls');
-                assert LS_NextOneServer(ls, ls', id, ios);
+                assert LS_NextOneServer(ls, ls', id, ios, hstep);
                 var node := ls.servers[id];
                 var node' := ls'.servers[id];
                 assert NodeNext(node, node', ios);
@@ -434,7 +435,7 @@ module Main_i refines Main_s {
             var s' := lb[i];
             assert LS_Next(lb[i-1], lb[i]);
             if s.environment.nextStep.LEnvStepHostIos? && s.environment.nextStep.actor in s.servers {
-                assert LS_NextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios);
+                assert LS_NextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios, s.environment.nextStep.nodeStep);
                 var id := s.environment.nextStep.actor;
                 var node := s.servers[id];
                 var node' := s'.servers[id];

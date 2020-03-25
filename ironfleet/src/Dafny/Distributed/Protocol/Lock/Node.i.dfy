@@ -50,6 +50,7 @@ predicate NodeAccept(s:Node, s':Node, ios:seq<LockIo>)
                 && |ios| == 2
                 && ios[1].LIoOpSend?
                 && ios[1].s.msg.Locked?
+                && ios[1].s.dst == ios[0].r.src
                 && s'.epoch == ios[0].r.msg.transfer_epoch == ios[1].s.msg.locked_epoch
                 && s'.config == s.config
         else 
