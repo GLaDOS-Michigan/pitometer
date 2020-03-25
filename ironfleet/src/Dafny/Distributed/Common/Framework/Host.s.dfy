@@ -7,7 +7,7 @@ abstract module Host_s {
     import opened Native__NativeTypes_s
     
     type HostState
-    type HostStep
+    type HostStep(!new)
     type ConcreteConfiguration
 
     predicate HostInit(host_state:HostState, config:ConcreteConfiguration, id:EndPoint)

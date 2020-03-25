@@ -6,11 +6,11 @@ include "Performance.s.dfy"
 
 abstract module TaggedDistributedSystem_s {
   import opened Environment_s
-  import opened DS_s : DistributedSystem_s
-  import opened Performance_s
+  import opened P_s : Performance_s
   import opened Collections__Seqs_i
 
-  function GetStepRuntime(hstep:HostStep) : PerformanceReport
+  type PerformanceReport = PerfExpr
+  type PerfReport = PerfExpr
 
   datatype TaggedType<Type> = TaggedType(v:Type, pr:PerformanceReport)
 
@@ -133,7 +133,7 @@ abstract module TaggedDistributedSystem_s {
   {
     DS_NextOneServer(UntagDS_State(tds), UntagDS_State(tds'), id, UntagLIoOpSeq(ios))
       && (var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{tds.t_servers[id].pr});
-      var totalTime := PerfAdd2(recvTime, GetStepRuntime(hstep));
+      var totalTime := PerfAdd2(recvTime, PerfStep(hstep));
       tds'.t_servers[id].pr == totalTime
       )
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tds'.t_servers[id].pr)

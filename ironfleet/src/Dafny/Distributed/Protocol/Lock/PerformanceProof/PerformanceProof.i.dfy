@@ -198,7 +198,7 @@ lemma {:verify false} Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, s:Tagged
   lemma_mod_auto(|s.tls.config|);
   var p := PerfBoundLockHeld(j);
   var p' := PerfBoundLockInNetwork(j + 1);
-  assert p' == PerfAdd2(p, GetStepRuntime(GrantStep));
+  assert p' == PerfAdd2(p, PerfStep(GrantStep));
 }
 
 lemma {:verify false} NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -254,10 +254,10 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, s:TaggedGLS_State, s':T
   reveal_PerfInvariantLockHeld();
 
   lemma_mod_auto(|s.tls.config|);
-  var p2 := PerfBoundLockHeld(j);
-  var p2' := PerfBoundLockInNetwork(j + 1);
+  var p2 := PerfBoundLockInNetwork(j);
+  var p2' := PerfBoundLockHeld(j);
 
-  assert p2' == PerfAdd2(p2, GetStepRuntime(AcceptStep));
+  assert PerfEq(p2', PerfAdd2(p2, PerfStep(AcceptStep)));
 }
 
 predicate PerfInvariant(tgls:TaggedGLS_State)
