@@ -83,7 +83,7 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int, epoch:int)
     && tgls.tls.t_servers[tgls.tls.config[j]].v.held == true
     && |tgls.history| == epoch
     && tgls.tls.t_servers[tgls.tls.config[j]].v.epoch == |tgls.history|
-    && j == (epoch % |tgls.tls.config|)
+    // && j == (epoch % |tgls.tls.config|)
 
     &&  (forall id :: id in tgls.tls.t_servers && id != tgls.tls.config[j]
     ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
@@ -117,7 +117,7 @@ predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int, epoch:int)
   && PerfInvariantAlways(tgls)
   && SingleGLSPerformanceGuarantee(tgls)
   && |tgls.history| == epoch
-  && j == (epoch) % |tgls.tls.config|
+  // && j == (epoch) % |tgls.tls.config|
 
   // No one holds the lock; everyone's epoch is below the epoch of the newest packet.
   && (forall id :: id in tgls.tls.t_servers ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
@@ -241,7 +241,7 @@ lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_S
 lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config| - 1
-  requires 0 <= epoch < |s.tls.config| - 1
+  requires 0 <= epoch < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
   requires SingleGLSPerformanceAssumption(s')
@@ -267,7 +267,7 @@ lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_S
 lemma Grant_LastNode_InvLockHeldImpliesInvEpochHigher(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j == |s.tls.config| - 1
-  requires 0 <= epoch == |s.tls.config| - 1
+  requires 0 <= epoch == |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
   requires SingleGLSPerformanceAssumption(s')
@@ -377,7 +377,7 @@ lemma PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch:int, s:TaggedGL
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
   requires TGLS_Next(s, s')
   requires 0 < j < |s.tls.config|
-  requires j == epoch
+  requires j + 1 == epoch
   requires 0 < epoch < |s.tls.config|
   requires PerfInvariantLockInNetwork(s, j, epoch)
   requires SingleGLSPerformanceGuarantee(s)
@@ -411,8 +411,8 @@ predicate PerfInvariant(tgls:TaggedGLS_State)
 {
   && TGLS_Consistency(tgls)
   && ( 
-    || (exists epoch, j :: 0 <= epoch < |tgls.tls.config| && epoch == j && 0 <= j < |tgls.tls.config| && PerfInvariantLockHeld(tgls, j, epoch))
-    || (exists epoch, j :: 0 < epoch < |tgls.tls.config| && epoch == j && 0 < j < |tgls.tls.config| && PerfInvariantLockInNetwork(tgls, j, epoch))
+    || (exists epoch, j :: 0 <= epoch <= |tgls.tls.config| && epoch == j + 1 && 0 <= j < |tgls.tls.config| && PerfInvariantLockHeld(tgls, j, epoch))
+    || (exists epoch, j :: 0 < epoch <= |tgls.tls.config| && epoch == j + 1 && 0 < j < |tgls.tls.config| && PerfInvariantLockInNetwork(tgls, j, epoch))
     || (PerfInvariantEpochHigherThanNumServers(tgls))
   )
 }
@@ -490,7 +490,7 @@ lemma PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_Sta
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
   requires 0 <= epoch < |s.tls.config|
-  requires j == epoch
+  requires j + 1 == epoch
   requires PerfInvariantLockHeld(s, j, epoch)
   requires SingleGLSPerformanceGuarantee(s)
 
@@ -531,14 +531,31 @@ lemma PerfInvariantMaintained(s:TaggedGLS_State, s':TaggedGLS_State)
   if (PerfInvariantEpochHigherThanNumServers(s)) {
     PerfInvariantEpochHigherGoesToPerfInvariant(s, s');
   }
-  else if (exists j, epoch :: 0 <= epoch && epoch == j && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch)) {
-    var epoch, j :| 0 <= epoch < |s.tls.config| && epoch == j && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch);
+  else if (exists j, epoch :: 0 <= epoch <= |s.tls.config| && epoch == j + 1 && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch)) {
+    var epoch, j :| 0 <= epoch <= |s.tls.config| && epoch == j + 1 && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch);
     PerfInvariantLockHeldGoesToPerfInvariant(j, epoch, s, s');
   }
   else {
-    var epoch, j :| 0 < epoch && epoch == j && 0 < j < |s.tls.config| && PerfInvariantLockInNetwork(s, j, epoch);
+    var epoch, j :| 0 < epoch <= |s.tls.config| && epoch == j + 1 && 0 < j < |s.tls.config| && PerfInvariantLockInNetwork(s, j, epoch);
     PerfInvariantLockInNetworkGoesToPerfInvariant(j, epoch, s, s');
   }
+}
+
+lemma Establish_TGLS_Consistency(tglb:seq<TaggedGLS_State>, i:int)
+  requires 0 <= i < |tglb|
+  ensures TGLS_Consistency(tglb[i])
+
+  decreases i
+{
+  
+}
+
+lemma InitImpliesPerfInvariant(config:Config, s:TaggedGLS_State)
+  requires TGLS_Init(s, config)
+  requires TGLS_Consistency(s);
+  ensures PerfInvariant(s)
+{
+  assert PerfInvariantLockHeld(s, 0, 1);
 }
 
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
@@ -546,6 +563,20 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
   requires GLSPerformanceAssumption(tglb)
   ensures GLSPerformanceGuarantee(tglb)
 {
+  var i := 0;
+  Establish_TGLS_Consistency(tglb, 0);
+  InitImpliesPerfInvariant(config, tglb[0]);
+
+  while i < |tglb| - 1
+    invariant 0 <= i < |tglb|
+    invariant GLSPerformanceGuarantee(tglb[..i])
+    invariant PerfInvariant(tglb[i])
+  {
+    Establish_TGLS_Consistency(tglb, i);
+    Establish_TGLS_Consistency(tglb, i + 1);
+    PerfInvariantMaintained(tglb[i], tglb[i + 1]);
+    i := i + 1;
+  }
 }
 
 }

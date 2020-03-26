@@ -95,7 +95,8 @@ datatype TaggedGLS_State = TaggedGLS_State(
   predicate ValidTaggedGLSBehavior(tglb:seq<TaggedGLS_State>, config:Config)
     reads *
   {
+    && |tglb| > 0
       && TGLS_Init(tglb[0], config)
-      && (forall i :: i >= 0 ==> TGLS_Next(tglb[i], tglb[i+1]))
+      && (forall i :: 0 < i < |tglb| ==> TGLS_Next(tglb[i - 1], tglb[i]))
   }
 }
