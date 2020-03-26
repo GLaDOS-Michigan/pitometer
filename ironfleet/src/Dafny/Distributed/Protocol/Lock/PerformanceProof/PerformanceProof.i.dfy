@@ -394,7 +394,7 @@ lemma PerfInvariantEpochHigherGoesToPerfInvariant(s:TaggedGLS_State, s':TaggedGL
   requires SingleGLSPerformanceAssumption(s) && TGLS_Consistency(s)
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
   requires TGLS_Next(s, s')
-  requires PerfInvariantEpochHigherThanNumServers(s')
+  requires PerfInvariantEpochHigherThanNumServers(s)
 
   ensures PerfInvariantEpochHigherThanNumServers(s')
   ensures PerfInvariant(s')
@@ -407,7 +407,7 @@ lemma PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_Sta
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
-  requires 0 <= epoch < |s.tls.config| - 1
+  requires 0 <= epoch < |s.tls.config|
   requires j == epoch
   requires PerfInvariantLockHeld(s, j, epoch)
   requires SingleGLSPerformanceGuarantee(s)
@@ -449,12 +449,12 @@ lemma PerfInvariantMaintained(s:TaggedGLS_State, s':TaggedGLS_State)
   if (PerfInvariantEpochHigherThanNumServers(s)) {
     PerfInvariantEpochHigherGoesToPerfInvariant(s, s');
   }
-  if (exists j, epoch :: 0 <= epoch && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch)) {
+  else if (exists j, epoch :: 0 <= epoch && epoch == j && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch)) {
     var epoch, j :| 0 <= epoch < |s.tls.config| && epoch == j && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch);
     PerfInvariantLockHeldGoesToPerfInvariant(j, epoch, s, s');
   }
   else {
-    var epoch, j :| 0 <= epoch && 0 <= j < |s.tls.config| && PerfInvariantLockInNetwork(s, j, epoch);
+    var epoch, j :| 0 < epoch && epoch == j && 0 < j < |s.tls.config| && PerfInvariantLockInNetwork(s, j, epoch);
     PerfInvariantLockInNetworkGoesToPerfInvariant(j, epoch, s, s');
   }
 }
