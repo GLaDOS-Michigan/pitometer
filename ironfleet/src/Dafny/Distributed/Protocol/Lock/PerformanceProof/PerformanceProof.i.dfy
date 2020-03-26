@@ -96,7 +96,7 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int, epoch:int)
     && PerfEq(tgls.tls.t_servers[tgls.tls.config[j]].pr, PerfBoundLockHeld(epoch))
 
     // All nodes beyond j have void PerfReport
-    && (forall k :: j < k < |tgls.tls.config| ==> PerfEq(tgls.tls.t_servers[tgls.tls.config[k]].pr, PerfVoid()))
+    && (forall k :: j < k < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[k]].pr == PerfVoid())
 
   // No packets sent to nodes that have my_index higher than j, including node zero
   && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[k]
@@ -131,7 +131,7 @@ predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int, epoch:int)
       ==> pkt.dst == tgls.tls.config[j] && pkt.src == tgls.tls.config[j - 1] && PerfEq(pkt.msg.pr, PerfBoundLockInNetwork(epoch)))
 
   // All nodes beyond j have void PerfReport
-  && (forall k :: j < k < |tgls.tls.config| ==> PerfEq(tgls.tls.t_servers[tgls.tls.config[k]].pr, PerfVoid()))
+  && (forall k :: j <= k < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[k]].pr == PerfVoid())
 
   // The only packet sent to node j is an acceptable Transfer message
   && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[j % |tgls.tls.config|]
@@ -352,11 +352,23 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_
 
   assert PerfEq(p2', PerfAdd2(p2, PerfStep(AcceptStep)));
 
+  var id := s.tls.t_environment.nextStep.actor;
   var tgls := s;
   var tgls' := s';
   var ios := s.tls.t_environment.nextStep.ios;
   assert ios[1].s.dst == s.tls.config[j - 1];
   assert ios[1].s.msg.v.locked_epoch == epoch;
+
+  assert s.tls.t_servers[id].pr == PerfVoid;
+  assert GetReceivePRs(ios) == [ios[0].r.msg.pr];
+  assert multiset(GetReceivePRs(ios)) + multiset{s.tls.t_servers[id].pr} == multiset{ios[0].r.msg.pr, PerfVoid};
+  var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{s.tls.t_servers[id].pr});
+  assert multiset{ios[0].r.msg.pr, PerfVoid} - multiset{PerfVoid} == multiset{ios[0].r.msg.pr};
+  assert PerfEq(PerfMax(multiset{ios[0].r.msg.pr, PerfVoid}), PerfMax(multiset{ios[0].r.msg.pr}));
+  assert PerfEq(recvTime, p2);
+
+  // var totalTime := PerfAdd2(recvTime, PerfStep(hstep));
+  // tls'.t_servers[id].pr == totalTime
   // assert PerfInvariantLockHeldNonOpaque(s', j);
 }
 

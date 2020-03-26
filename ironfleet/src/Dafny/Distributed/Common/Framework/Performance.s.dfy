@@ -21,8 +21,11 @@ abstract module Performance_s {
     ensures p1.PerfMax? && p1.prs == multiset{p2} ==> PerfEq(p1, p2)
     ensures p1.PerfMax? && p1.prs == multiset{} && p2 == PerfZero() ==> PerfEq(p1, p2)
 
+    ensures p1.PerfMax? && p2.PerfMax? && p2.prs == p1.prs - multiset{PerfVoid} ==> PerfEq(p1, p2)
+
     ensures p1.PerfAdd? && PerfVoid in p1.prs && p2 == PerfZero ==> PerfEq(p1, p2)
     ensures p1.PerfAdd? && p2 == PerfAdd(p1.prs[PerfZero() := 0]) ==> PerfEq(p1, p2)
+
 
     // Want to establish associativity
     // PerfAdd(multiset{PerfAdd(p1), prs'}) == PerfAdd(p1 + prs')
