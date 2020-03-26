@@ -36,8 +36,9 @@ predicate GLSPerformanceAssumption(tglb:seq<TaggedGLS_State>)
 
 predicate SingleGLSPerformanceGuarantee(gls:TaggedGLS_State)
 {
-  forall pkt :: pkt in gls.tls.t_environment.sentPackets &&
-    pkt.msg.v == Locked(|gls.tls.config| - 1) ==> pkt.msg.pr == PerfZero()
+  |gls.tls.config| > 0 ==> 
+  (forall pkt :: pkt in gls.tls.t_environment.sentPackets &&
+    pkt.msg.v == Transfer(|gls.tls.config|) ==> PerfEq(pkt.msg.pr, PerfBoundLockInNetwork(|gls.tls.config|)))
 }
 
 predicate GLSPerformanceGuarantee(tglb:seq<TaggedGLS_State>)
@@ -80,7 +81,7 @@ predicate PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int, epoch:int)
     && PerfInvariantAlways(tgls)
     && SingleGLSPerformanceGuarantee(tgls)
     && tgls.tls.t_servers[tgls.tls.config[j]].v.held == true
-    && |tgls.history| == epoch + 1
+    && |tgls.history| == epoch
     && tgls.tls.t_servers[tgls.tls.config[j]].v.epoch == |tgls.history|
     && j == (epoch % |tgls.tls.config|)
 
@@ -115,7 +116,7 @@ predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int, epoch:int)
 {
   && PerfInvariantAlways(tgls)
   && SingleGLSPerformanceGuarantee(tgls)
-  && |tgls.history| == epoch + 1
+  && |tgls.history| == epoch
   && j == (epoch) % |tgls.tls.config|
 
   // No one holds the lock; everyone's epoch is below the epoch of the newest packet.
@@ -153,7 +154,14 @@ predicate PerfInvariantEpochHigherThanNumServers(tgls:TaggedGLS_State)
 {
   && PerfInvariantAlways(tgls)
   && SingleGLSPerformanceGuarantee(tgls)
-  && |tgls.history| > |tgls.tls.config|
+  && |tgls.history| > |tgls.tls.config| - 1
+
+  // If a node has epoch that's too low, it does not hold the lock
+  &&  (forall id :: id in tgls.tls.t_servers && tgls.tls.t_servers[id].v.epoch < |tgls.tls.config| ==> tgls.tls.t_servers[id].v.held == false)
+
+  // All packets with epoch too low are unacceptable
+  && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+      && pkt.msg.v.transfer_epoch <= |tgls.tls.config| - 1 ==> pkt.msg.v.transfer_epoch <= tgls.tls.t_servers[pkt.dst].v.epoch)
 }
 
 // TODO: Change this invariant
@@ -277,6 +285,9 @@ lemma Grant_LastNode_InvLockHeldImpliesInvEpochHigher(j:int, epoch:int, s:Tagged
 
   lemma_mod_auto(|s.tls.config|);
   PerfProperties();
+  var p := PerfBoundLockHeld(epoch);
+  var p' := PerfBoundLockInNetwork(epoch + 1);
+  assert PerfEq(p', PerfAdd2(p, PerfStep(GrantStep)));
 }
 
 lemma NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
