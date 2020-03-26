@@ -37,6 +37,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
     reads *
   {
     LS_Init(UntagLS_State(tls), config)
+      && tls.config == config
       && LEnvironment_Init(tls.t_environment)
       && tls.t_servers[config[0]].pr == PerfZero
       && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].pr == PerfVoid
