@@ -197,13 +197,13 @@ lemma NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_Sta
   requires PerfInvariantLockHeld(s, j, epoch);
   ensures PerfInvariantLockHeld(s', j, epoch);
 {
-  //revealPerfInvariantLockHeld();
+  //reveal_PerfInvariantLockHeld();
 }
 
 lemma Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
-  requires 0 < epoch < |s.tls.config|
+  requires 0 < epoch <= |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
 
@@ -216,7 +216,7 @@ lemma Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_St
   ensures PerfInvariantLockHeld(s', j, epoch);
 {
   lemma_mod_auto(|s.tls.config|);
-  //revealPerfInvariantLockHeld();
+  //reveal_PerfInvariantLockHeld();
 }
 
 lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -235,7 +235,7 @@ lemma Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_S
   ensures PerfInvariantLockHeld(s', j, epoch);
 {
   lemma_mod_auto(|s.tls.config|);
-  //revealPerfInvariantLockHeld();
+  //reveal_PerfInvariantLockHeld();
 }
 
 lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -254,14 +254,14 @@ lemma Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_S
   requires PerfInvariantLockHeld(s, j, epoch);
   ensures PerfInvariantLockInNetwork(s', j + 1, epoch + 1);
 {
-  //revealPerfInvariantLockHeld();
-  //revealPerfInvariantLockInNetwork();
+  //reveal_PerfInvariantLockHeld();
+  //reveal_PerfInvariantLockInNetwork();
 
   lemma_mod_auto(|s.tls.config|);
   PerfProperties();
-  var p := PerfBoundLockHeld(epoch);
-  var p' := PerfBoundLockInNetwork(epoch + 1);
-  assert PerfEq(p', PerfAdd2(p, PerfStep(GrantStep)));
+  //var p := PerfBoundLockHeld(epoch);
+  //var p' := PerfBoundLockInNetwork(epoch + 1);
+  //assert PerfEq(p', PerfAdd2(p, PerfStep(GrantStep)));
 }
 
 lemma Grant_LastNode_InvLockHeldImpliesInvEpochHigher(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -280,8 +280,8 @@ lemma Grant_LastNode_InvLockHeldImpliesInvEpochHigher(j:int, epoch:int, s:Tagged
   requires PerfInvariantLockHeld(s, j, epoch);
   ensures PerfInvariantEpochHigherThanNumServers(s')
 {
-  //revealPerfInvariantLockHeld();
-  //revealPerfInvariantLockInNetwork();
+  //reveal_PerfInvariantLockHeld();
+  //reveal_PerfInvariantLockInNetwork();
 
   lemma_mod_auto(|s.tls.config|);
   PerfProperties();
@@ -302,7 +302,7 @@ lemma NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, epoch:int, s:Tag
   requires PerfInvariantLockInNetwork(s, j, epoch);
   ensures PerfInvariantLockInNetwork(s', j, epoch);
 {
-  //revealPerfInvariantLockInNetwork();
+  //reveal_PerfInvariantLockInNetwork();
 }
 
 lemma Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -321,7 +321,7 @@ lemma Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j:int, epoch:int, s:T
   requires PerfInvariantLockInNetwork(s, j, epoch);
   ensures PerfInvariantLockInNetwork(s', j, epoch);
 {
-  //revealPerfInvariantLockInNetwork();
+  //reveal_PerfInvariantLockInNetwork();
 
   lemma_mod_auto(|s.tls.config|);
 }
@@ -342,34 +342,11 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_
   requires PerfInvariantLockInNetwork(s, j, epoch);
   ensures PerfInvariantLockHeld(s', j, epoch);
 {
-  //revealPerfInvariantLockInNetwork();
-  //revealPerfInvariantLockHeld();
+  //reveal_PerfInvariantLockInNetwork();
+  //reveal_PerfInvariantLockHeld();
   PerfProperties();
 
   lemma_mod_auto(|s.tls.config|);
-  var p2 := PerfBoundLockInNetwork(epoch);
-  var p2' := PerfBoundLockHeld(epoch);
-
-  assert PerfEq(p2', PerfAdd2(p2, PerfStep(AcceptStep)));
-
-  var id := s.tls.t_environment.nextStep.actor;
-  var tgls := s;
-  var tgls' := s';
-  var ios := s.tls.t_environment.nextStep.ios;
-  assert ios[1].s.dst == s.tls.config[j - 1];
-  assert ios[1].s.msg.v.locked_epoch == epoch;
-
-  assert s.tls.t_servers[id].pr == PerfVoid;
-  assert GetReceivePRs(ios) == [ios[0].r.msg.pr];
-  assert multiset(GetReceivePRs(ios)) + multiset{s.tls.t_servers[id].pr} == multiset{ios[0].r.msg.pr, PerfVoid};
-  var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{s.tls.t_servers[id].pr});
-  assert multiset{ios[0].r.msg.pr, PerfVoid} - multiset{PerfVoid} == multiset{ios[0].r.msg.pr};
-  assert PerfEq(PerfMax(multiset{ios[0].r.msg.pr, PerfVoid}), PerfMax(multiset{ios[0].r.msg.pr}));
-  assert PerfEq(recvTime, p2);
-
-  // var totalTime := PerfAdd2(recvTime, PerfStep(hstep));
-  // tls'.t_servers[id].pr == totalTime
-  // assert PerfInvariantLockHeldNonOpaque(s', j);
 }
 
 lemma PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -380,7 +357,6 @@ lemma PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch:int, s:TaggedGL
   requires j + 1 == epoch
   requires 1 < epoch <= |s.tls.config|
   requires PerfInvariantLockInNetwork(s, j, epoch)
-  requires SingleGLSPerformanceGuarantee(s)
 
   ensures PerfInvariant(s')
 {
@@ -389,14 +365,14 @@ lemma PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch:int, s:TaggedGL
   } else {
     if s.tls.t_environment.nextStep.actor == s.tls.config[j] {
       if s.tls.t_environment.nextStep.nodeStep == GrantStep {
-        //revealPerfInvariantLockInNetwork();
+        //reveal_PerfInvariantLockInNetwork();
         assert false;
       } else {
         Accept_j_InvLockInNetworkImpliesInvLockHeld(j, epoch, s, s');
       }
     } else {
       if s.tls.t_environment.nextStep.nodeStep == GrantStep {
-        //revealPerfInvariantLockInNetwork();
+        //reveal_PerfInvariantLockInNetwork();
         assert false;
       } else {
         Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j, epoch, s, s');
@@ -464,12 +440,6 @@ lemma Accept_j_InvEpochHigherGoesToInvEpochHigher(j:int, s:TaggedGLS_State, s':T
   ensures PerfInvariantEpochHigherThanNumServers(s')
 {
   lemma_mod_auto(|s.tls.config|);
-  var ios := s.tls.t_environment.nextStep.ios;
-  if |ios| == 1 {
-    assert PerfInvariantEpochHigherThanNumServers(s');
-  } else {
-    assert PerfInvariantEpochHigherThanNumServers(s');
-  }
 }
 
 lemma PerfInvariantEpochHigherGoesToPerfInvariant(s:TaggedGLS_State, s':TaggedGLS_State)
@@ -489,10 +459,9 @@ lemma PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_Sta
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
-  requires 0 <= epoch < |s.tls.config|
+  requires 0 <= epoch <= |s.tls.config|
   requires j + 1 == epoch
   requires PerfInvariantLockHeld(s, j, epoch)
-  requires SingleGLSPerformanceGuarantee(s)
 
   ensures PerfInvariant(s')
 {
@@ -507,7 +476,7 @@ lemma PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_Sta
             Grant_j_InvLockHeldImpliesInvLockInNetwork(j, epoch, s, s');
         }
       } else {
-        //revealPerfInvariantLockHeld();
+        //reveal_PerfInvariantLockHeld();
         assert false;
       }
     } else {
@@ -558,7 +527,16 @@ lemma InitImpliesPerfInvariant(config:Config, s:TaggedGLS_State)
   requires TGLS_Consistency(s);
   ensures PerfInvariant(s)
 {
+  //reveal_PerfInvariantLockHeld();
   assert PerfInvariantLockHeld(s, 0, 1);
+}
+
+lemma PerfInvariantImpliesPerfGuarantee(s:TaggedGLS_State)
+  requires PerfInvariant(s)
+  ensures SingleGLSPerformanceGuarantee(s)
+{
+  //reveal_PerfInvariantLockHeld();
+  //reveal_PerfInvariantLockInNetwork();
 }
 
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
@@ -572,12 +550,13 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TaggedGLS_State>)
 
   while i < |tglb| - 1
     invariant 0 <= i < |tglb|
-    invariant GLSPerformanceGuarantee(tglb[..i])
+    invariant GLSPerformanceGuarantee(tglb[..i+1])
     invariant PerfInvariant(tglb[i])
   {
     Establish_TGLS_Consistency(config, tglb, i);
     Establish_TGLS_Consistency(config, tglb, i + 1);
     PerfInvariantMaintained(tglb[i], tglb[i + 1]);
+    PerfInvariantImpliesPerfGuarantee(tglb[i+1]);
     i := i + 1;
   }
 }
