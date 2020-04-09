@@ -132,10 +132,10 @@ abstract module TaggedDistributedSystem_s {
     reads *
   {
     DS_NextOneServer(UntagDS_State(tds), UntagDS_State(tds'), id, UntagLIoOpSeq(ios))
-      && (var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{tds.t_servers[id].pr});
-      var totalTime := PerfAdd2(recvTime, PerfStep(hstep));
-      tds'.t_servers[id].pr == totalTime
-      )
+      // && (var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{tds.t_servers[id].pr});
+      // var totalTime := PerfAdd2(recvTime, PerfStep(hstep));
+      // tds'.t_servers[id].pr == totalTime
+      // )
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tds'.t_servers[id].pr)
   }
 

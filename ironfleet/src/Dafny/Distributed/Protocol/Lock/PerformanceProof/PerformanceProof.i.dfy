@@ -62,7 +62,7 @@ predicate PerfInvariantAlways(tgls:TaggedGLS_State)
 
   // No nodes with epoch higher
   // All transfer packets have correct performance object, determined by its transfer_epoch
-  &&  (forall id :: id in tgls.tls.t_servers ==> 0 <= tgls.tls.t_servers[id].v.epoch <= |tgls.history|)
+  && (forall id :: id in tgls.tls.t_servers ==> 0 <= tgls.tls.t_servers[id].v.epoch <= |tgls.history|)
 
   // No transfer packets with epoch higher than history size
   // All transfer packets have correct performance object, determined by its transfer_epoch
@@ -134,7 +134,7 @@ predicate PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int, epoch:int)
   && (forall k :: j <= k < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[k]].pr == PerfVoid())
 
   // The only packet sent to node j is an acceptable Transfer message
-  && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[j % |tgls.tls.config|]
+  && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[j]
   ==> pkt.msg.v.Transfer? && pkt.msg.v.transfer_epoch == |tgls.history|
   )
   
@@ -347,6 +347,7 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_
   PerfProperties();
 
   lemma_mod_auto(|s.tls.config|);
+  assert s.tls.t_environment.nextStep.ios[0] in s.tls.t_environment.nextStep.ios;
 }
 
 lemma PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -425,23 +426,6 @@ lemma Grant_j_InvEpochHigherGoesToInvEpochHigher(j:int, s:TaggedGLS_State, s':Ta
   lemma_mod_auto(|s.tls.config|);
 }
 
-lemma Accept_j_InvEpochHigherGoesToInvEpochHigher(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
-  requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
-  requires TGLS_Consistency(s) && TGLS_Consistency(s')
-  requires SingleGLSPerformanceAssumption(s)
-
-  // A node other than node j taking an accept step
-  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
-  requires s.tls.t_environment.nextStep.nodeStep == AcceptStep
-  requires PerfInvariantEpochHigherThanNumServers(s)
-
-  ensures PerfInvariantEpochHigherThanNumServers(s')
-{
-  lemma_mod_auto(|s.tls.config|);
-}
-
 lemma PerfInvariantEpochHigherGoesToPerfInvariant(s:TaggedGLS_State, s':TaggedGLS_State)
   requires SingleGLSPerformanceAssumption(s) && TGLS_Consistency(s)
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
@@ -451,7 +435,16 @@ lemma PerfInvariantEpochHigherGoesToPerfInvariant(s:TaggedGLS_State, s':TaggedGL
   ensures PerfInvariantEpochHigherThanNumServers(s')
   ensures PerfInvariant(s')
 {
-  
+
+
+  if s.tls.t_environment.nextStep.LEnvStepHostIos? &&
+    s.tls.t_environment.nextStep.nodeStep == AcceptStep
+  {
+    lemma_mod_auto(|s.tls.config|);
+    var id := s.tls.t_environment.nextStep.actor;
+    var ios := s.tls.t_environment.nextStep.ios;
+    assert IsValidLIoOp(ios[0], id, s.tls.t_environment);
+  }
 }
 
 lemma PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -528,6 +521,7 @@ lemma InitImpliesPerfInvariant(config:Config, s:TaggedGLS_State)
   ensures PerfInvariant(s)
 {
   //reveal_PerfInvariantLockHeld();
+  PerfProperties();
   assert PerfInvariantLockHeld(s, 0, 1);
 }
 
