@@ -389,6 +389,11 @@ func SeqOfString(str string) Seq {
 	return Seq{arr, true}
 }
 
+//TODO TONY
+func (seq Seq) Elements() Iterator {
+	return nil
+}
+
 // Index finds the sequence element at the given index.
 func (seq Seq) Index(i Int) interface{} {
 	return seq.IndexInt(i.Int())

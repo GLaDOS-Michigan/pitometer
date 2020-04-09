@@ -2,7 +2,6 @@
 package Main_i
 
 import (
-	_0_Native____NativeTypes__s_Compile "0_Native____NativeTypes__s_Compile_"
 	_101_Common____Util__i_Compile "101_Common____Util__i_Compile_"
 	_105_Common____MarshallInt__i_Compile "105_Common____MarshallInt__i_Compile_"
 	_107_Common____GenericMarshalling__i_Compile "107_Common____GenericMarshalling__i_Compile_"
@@ -56,6 +55,8 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+
+	_0_Native____NativeTypes__s_Compile "0_Native____NativeTypes__s_Compile_"
 )
 
 var _ _dafny.Dummy__

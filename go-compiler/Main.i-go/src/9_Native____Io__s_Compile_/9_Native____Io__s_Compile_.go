@@ -83,6 +83,16 @@ type CompanionStruct_HostConstants_ struct {
 
 var Companion_HostConstants_ = CompanionStruct_HostConstants_{}
 
+//TODO TONY
+func (comp_hc *CompanionStruct_HostConstants_) NumCommandLineArgs() uint32 {
+	return 0
+}
+
+//TODO TONY
+func (comp_hc *CompanionStruct_HostConstants_) GetCommandLineArg(i uint64) *_dafny.Array {
+	return nil
+}
+
 func (_this *HostConstants) Equals(other *HostConstants) bool {
 	return _this == other
 }
@@ -399,10 +409,25 @@ func New_IPEndPoint_() *IPEndPoint {
 	return &_this
 }
 
+// TODO TONY
+func (ep *IPEndPoint) GetAddress() *_dafny.Array {
+	return nil
+}
+
+// TODO TONY
+func (ep *IPEndPoint) GetPort() uint16 {
+	return 0
+}
+
 type CompanionStruct_IPEndPoint_ struct {
 }
 
 var Companion_IPEndPoint_ = CompanionStruct_IPEndPoint_{}
+
+// TODO TONY
+func (comp_ep *CompanionStruct_IPEndPoint_) Construct(ip_addr *_dafny.Array, port uint16) (bool, *IPEndPoint) {
+	return false, nil
+}
 
 func (_this *IPEndPoint) Equals(other *IPEndPoint) bool {
 	return _this == other
@@ -439,6 +464,20 @@ type UdpClient struct {
 	dummy byte
 }
 
+// TODO TONY
+func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
+	return false
+}
+
+// TODO TONY
+func (client *UdpClient) Receive(timeout int32) (
+	bool,
+	bool,
+	*IPEndPoint,
+	*_dafny.Array) {
+	return false, false, nil, nil
+}
+
 func New_UdpClient_() *UdpClient {
 	_this := UdpClient{}
 
@@ -446,6 +485,11 @@ func New_UdpClient_() *UdpClient {
 }
 
 type CompanionStruct_UdpClient_ struct {
+}
+
+// TODO TONY
+func (comp_udpclient *CompanionStruct_UdpClient_) Construct(dst_addr *IPEndPoint) (bool, *UdpClient) {
+	return false, nil
 }
 
 var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
