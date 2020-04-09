@@ -1,5 +1,5 @@
 // Dafny program Main.i.dfy compiled into Go
-package Main_i
+package main
 
 import (
 	_101_Common____Util__i_Compile "101_Common____Util__i_Compile_"
@@ -113,3 +113,8 @@ var _ _155_Refinement__i_Compile.Dummy__
 var _ _161_RefinementProof__i_Compile.Dummy__
 var _ _166_MarshallProof__i_Compile.Dummy__
 var _ _168_Main__i_Compile.Dummy__
+
+func main() {
+	var main_dummy = _168_Main__i_Compile.Companion_Default___
+	main_dummy.Default_Main_()
+}
