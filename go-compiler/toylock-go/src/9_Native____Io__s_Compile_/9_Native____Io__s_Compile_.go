@@ -8,8 +8,10 @@ import (
 	_2_Collections____Maps2__s_Compile "2_Collections____Maps2__s_Compile_"
 	_5_Temporal____Temporal__s_Compile "5_Temporal____Temporal__s_Compile_"
 	_7_Environment__s_Compile "7_Environment__s_Compile_"
-	_System "System_"
 	_dafny "dafny"
+	"os"
+
+	_System "System_"
 )
 
 var _ _dafny.Dummy__
@@ -83,14 +85,24 @@ type CompanionStruct_HostConstants_ struct {
 
 var Companion_HostConstants_ = CompanionStruct_HostConstants_{}
 
-//TODO TONY
+// TONY
 func (comp_hc *CompanionStruct_HostConstants_) NumCommandLineArgs() uint32 {
-	return 0
+	// This count includes the first item which is the name of the program
+	var res = uint32(len(os.Args))
+	// fmt.Printf("Number of command line args is %d\n", res)
+	return res
 }
 
-//TODO TONY
+// TONY
 func (comp_hc *CompanionStruct_HostConstants_) GetCommandLineArg(i uint64) *_dafny.Array {
-	return nil
+	var byteArray = []byte(os.Args[i])
+	var uint16Array []interface{}
+	for _, value := range byteArray {
+		uint16Array = append(uint16Array, interface{}(uint16(value)))
+	}
+	var res = _dafny.NewArrayWithValues(uint16Array...)
+	// fmt.Printf("Command line arg[%d] is %s\n", i, res)
+	return res
 }
 
 func (_this *HostConstants) Equals(other *HostConstants) bool {
