@@ -115,9 +115,11 @@ It consists of N processes passing around a lock. To run it, you need to supply 
 with the IP-port pairs of all processes, as well as its own IP-pair. For example, this is a 
 configuration with three processes:
 
-  `./nuobj/Dafny//Distributed/Services/Lock/Main_i.exe 127.0.0.1 4001 127.0.0.1 4002 127.0.0.1 4003 127.0.0.1 4002'
-  `./nuobj/Dafny//Distributed/Services/Lock/Main_i.exe 127.0.0.1 4001 127.0.0.1 4002 127.0.0.1 4003 127.0.0.1 4003'
-  `./nuobj/Dafny//Distributed/Services/Lock/Main_i.exe 127.0.0.1 4001 127.0.0.1 4002 127.0.0.1 4003 127.0.0.1 4001'
+```
+Main_i.exe 127.0.0.1 4001 127.0.0.1 4002 127.0.0.1 4003 127.0.0.1 4002
+Main_i.exe 127.0.0.1 4001 127.0.0.1 4002 127.0.0.1 4003 127.0.0.1 4003
+Main_i.exe 127.0.0.1 4001 127.0.0.1 4002 127.0.0.1 4003 127.0.0.1 4001
+```
 
 It is important that you start the "first" process last, as it initially holds the lock and will
 immediately start passing it around. As this is a toy example, message retransmission is not implemented.
