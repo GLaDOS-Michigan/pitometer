@@ -10,12 +10,16 @@ import (
 	_7_Environment__s_Compile "7_Environment__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"encoding/json"
 	"fmt"
 	"goconcurrentqueue"
+	"log"
 	"net"
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
+	"strings"
 )
 
 var _ _dafny.Dummy__
@@ -31,6 +35,7 @@ func traceAndExit() {
 	n := runtime.Callers(2, pc)
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
+	fmt.Printf("Error: unimplemented\n")
 	fmt.Printf("%s:%d %s\n\n", frame.File, frame.Line, frame.Function)
 
 	debug.PrintStack()
@@ -432,6 +437,28 @@ type IPEndPoint struct {
 	port    uint16
 }
 
+// GetUDPAddr returns the address of this endpoint as a net.UDPAddr data structure
+// TONY : DONE
+func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
+	// First get the string of ip:port
+	var ipArrStr = ep.ip_addr.String()
+	var intArr []int
+	err := json.Unmarshal([]byte(ipArrStr), &intArr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
+	var ipAndPortStr = ip + ":" + strconv.FormatUint(uint64(ep.port), 10)
+
+	// Next convert to net.UDPAddr
+	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+		os.Exit(1)
+	}
+	return udpAddr
+}
+
 // TODO TONY
 func (ep *IPEndPoint) GetAddress() *_dafny.Array {
 	traceAndExit()
@@ -488,7 +515,7 @@ func (_this type_IPEndPoint_) String() string {
 // Definition of class UdpClient
 // TONY : DONE
 type UdpClient struct {
-	dst           *IPEndPoint
+	localEndpoint *IPEndPoint
 	connection    net.Conn
 	send_queue    goconcurrentqueue.Queue
 	receive_queue goconcurrentqueue.Queue
@@ -515,11 +542,11 @@ type CompanionStruct_UdpClient_ struct {
 
 var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
 
-// TODO TONY
-func New_UdpClient_(dst_addr *IPEndPoint) *UdpClient {
+// TONY : DONE
+func new_UdpClient_(my_ep *IPEndPoint) *UdpClient {
 	// Initialize record and start send and receive loops
 	_this := UdpClient{
-		dst:           dst_addr,
+		localEndpoint: my_ep,
 		send_queue:    goconcurrentqueue.NewFIFO(),
 		receive_queue: goconcurrentqueue.NewFIFO(),
 	}
@@ -528,12 +555,19 @@ func New_UdpClient_(dst_addr *IPEndPoint) *UdpClient {
 	return &_this
 }
 
-// TODO TONY
-func (comp_udpclient *CompanionStruct_UdpClient_) Construct(dst_addr *IPEndPoint) (bool, *UdpClient) {
-	// TONY CURRENT
-	// Initialize record and start connection
-	traceAndExit()
-	return false, nil
+// TODO CURRENT
+func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint) (bool, *UdpClient) {
+	// Initialize record
+	var udp = new_UdpClient_(localEndpoint)
+
+	// Start connection
+	conn, err := net.ListenUDP("udp", localEndpoint.GetUDPAddr())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+		return false, nil
+	}
+	udp.connection = conn
+	return true, udp
 }
 
 // TODO TONY
