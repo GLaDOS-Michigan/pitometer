@@ -11,6 +11,8 @@ import (
 	_System "System_"
 	_dafny "dafny"
 	"fmt"
+	"goconcurrentqueue"
+	"net"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -426,13 +428,8 @@ func (_this type_UdpState_) String() string {
 
 // Definition of class IPEndPoint
 type IPEndPoint struct {
-	dummy byte
-}
-
-func New_IPEndPoint_() *IPEndPoint {
-	_this := IPEndPoint{}
-
-	return &_this
+	ip_addr *_dafny.Array
+	port    uint16
 }
 
 // TODO TONY
@@ -452,10 +449,10 @@ type CompanionStruct_IPEndPoint_ struct {
 
 var Companion_IPEndPoint_ = CompanionStruct_IPEndPoint_{}
 
-// TODO TONY
+// TONY : DONE
 func (comp_ep *CompanionStruct_IPEndPoint_) Construct(ip_addr *_dafny.Array, port uint16) (bool, *IPEndPoint) {
-	traceAndExit()
-	return false, nil
+	res := &IPEndPoint{ip_addr, port}
+	return true, res
 }
 
 func (_this *IPEndPoint) Equals(other *IPEndPoint) bool {
@@ -489,8 +486,12 @@ func (_this type_IPEndPoint_) String() string {
 // End of class IPEndPoint
 
 // Definition of class UdpClient
+// TONY : DONE
 type UdpClient struct {
-	dummy byte
+	dst           *IPEndPoint
+	connection    net.Conn
+	send_queue    goconcurrentqueue.Queue
+	receive_queue goconcurrentqueue.Queue
 }
 
 // TODO TONY
@@ -509,22 +510,46 @@ func (client *UdpClient) Receive(timeout int32) (
 	return false, false, nil, nil
 }
 
-func New_UdpClient_() *UdpClient {
-	_this := UdpClient{}
-
-	return &_this
+type CompanionStruct_UdpClient_ struct {
 }
 
-type CompanionStruct_UdpClient_ struct {
+var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
+
+// TODO TONY
+func New_UdpClient_(dst_addr *IPEndPoint) *UdpClient {
+	// Initialize record and start send and receive loops
+	_this := UdpClient{
+		dst:           dst_addr,
+		send_queue:    goconcurrentqueue.NewFIFO(),
+		receive_queue: goconcurrentqueue.NewFIFO(),
+	}
+	go _this.sendLoop()
+	go _this.receiveLoop()
+	return &_this
 }
 
 // TODO TONY
 func (comp_udpclient *CompanionStruct_UdpClient_) Construct(dst_addr *IPEndPoint) (bool, *UdpClient) {
+	// TONY CURRENT
+	// Initialize record and start connection
 	traceAndExit()
 	return false, nil
 }
 
-var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
+// TODO TONY
+func (client *UdpClient) sendLoop() {
+	traceAndExit()
+}
+
+// TODO TONY
+func (client *UdpClient) receiveLoop() {
+	traceAndExit()
+}
+
+// TODO TONY
+func (client *UdpClient) receive() {
+	traceAndExit()
+}
 
 func (_this *UdpClient) Equals(other *UdpClient) bool {
 	return _this == other
