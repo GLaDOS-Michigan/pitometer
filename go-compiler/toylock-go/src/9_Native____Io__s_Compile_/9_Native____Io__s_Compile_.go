@@ -512,29 +512,19 @@ func (_this type_IPEndPoint_) String() string {
 
 // End of class IPEndPoint
 
+// Definition of class Packet
+type Packet struct {
+	ep     *IPEndPoint
+	buffer []byte
+}
+
 // Definition of class UdpClient
 // TONY : DONE
 type UdpClient struct {
 	localEndpoint *IPEndPoint
-	connection    net.Conn
+	connection    *net.UDPConn
 	send_queue    goconcurrentqueue.Queue
 	receive_queue goconcurrentqueue.Queue
-}
-
-// TODO TONY
-func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
-	traceAndExit()
-	return false
-}
-
-// TODO TONY
-func (client *UdpClient) Receive(timeout int32) (
-	bool,
-	bool,
-	*IPEndPoint,
-	*_dafny.Array) {
-	traceAndExit()
-	return false, false, nil, nil
 }
 
 type CompanionStruct_UdpClient_ struct {
@@ -555,7 +545,7 @@ func new_UdpClient_(my_ep *IPEndPoint) *UdpClient {
 	return &_this
 }
 
-// TODO CURRENT
+// TONY : DONE
 func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint) (bool, *UdpClient) {
 	// Initialize record
 	var udp = new_UdpClient_(localEndpoint)
@@ -570,8 +560,20 @@ func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEnd
 	return true, udp
 }
 
-// TODO TONY
+// TONY : DONE
 func (client *UdpClient) sendLoop() {
+	for true {
+		var packInterface, _ = client.send_queue.DequeueOrWaitForNextElement()
+		var pack, ok = packInterface.(Packet)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			os.Exit(1)
+		}
+		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
+		if err2 != nil {
+			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
+		}
+	}
 	traceAndExit()
 }
 
@@ -581,8 +583,27 @@ func (client *UdpClient) receiveLoop() {
 }
 
 // TODO TONY
-func (client *UdpClient) receive() {
+func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
+	// Create Packet struct and enqueue to send_queue
+	var bufferStr = buffer.String()
+	var bufferByte []byte
+	err := json.Unmarshal([]byte(bufferStr), &bufferByte)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var packet = Packet{remote, bufferByte}
+	client.send_queue.Enqueue(packet)
+	return true
+}
+
+// TODO TONY
+func (client *UdpClient) Receive(timeout int32) (
+	bool,
+	bool,
+	*IPEndPoint,
+	*_dafny.Array) {
 	traceAndExit()
+	return false, false, nil, nil
 }
 
 func (_this *UdpClient) Equals(other *UdpClient) bool {
