@@ -8,10 +8,12 @@ import (
 	_2_Collections____Maps2__s_Compile "2_Collections____Maps2__s_Compile_"
 	_5_Temporal____Temporal__s_Compile "5_Temporal____Temporal__s_Compile_"
 	_7_Environment__s_Compile "7_Environment__s_Compile_"
-	_dafny "dafny"
-	"os"
-
 	_System "System_"
+	_dafny "dafny"
+	"fmt"
+	"os"
+	"runtime"
+	"runtime/debug"
 )
 
 var _ _dafny.Dummy__
@@ -20,6 +22,18 @@ var _ _0_Native____NativeTypes__s_Compile.Dummy__
 var _ _2_Collections____Maps2__s_Compile.Dummy__
 var _ _5_Temporal____Temporal__s_Compile.Dummy__
 var _ _7_Environment__s_Compile.Dummy__
+
+//TONY: traceAndExit utility
+func traceAndExit() {
+	pc := make([]uintptr, 15)
+	n := runtime.Callers(2, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+	fmt.Printf("%s:%d %s\n\n", frame.File, frame.Line, frame.Function)
+
+	debug.PrintStack()
+	os.Exit(1)
+}
 
 type Dummy__ struct{}
 
@@ -423,11 +437,13 @@ func New_IPEndPoint_() *IPEndPoint {
 
 // TODO TONY
 func (ep *IPEndPoint) GetAddress() *_dafny.Array {
+	traceAndExit()
 	return nil
 }
 
 // TODO TONY
 func (ep *IPEndPoint) GetPort() uint16 {
+	traceAndExit()
 	return 0
 }
 
@@ -438,6 +454,7 @@ var Companion_IPEndPoint_ = CompanionStruct_IPEndPoint_{}
 
 // TODO TONY
 func (comp_ep *CompanionStruct_IPEndPoint_) Construct(ip_addr *_dafny.Array, port uint16) (bool, *IPEndPoint) {
+	traceAndExit()
 	return false, nil
 }
 
@@ -478,6 +495,7 @@ type UdpClient struct {
 
 // TODO TONY
 func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
+	traceAndExit()
 	return false
 }
 
@@ -487,6 +505,7 @@ func (client *UdpClient) Receive(timeout int32) (
 	bool,
 	*IPEndPoint,
 	*_dafny.Array) {
+	traceAndExit()
 	return false, false, nil, nil
 }
 
@@ -501,6 +520,7 @@ type CompanionStruct_UdpClient_ struct {
 
 // TODO TONY
 func (comp_udpclient *CompanionStruct_UdpClient_) Construct(dst_addr *IPEndPoint) (bool, *UdpClient) {
+	traceAndExit()
 	return false, nil
 }
 
