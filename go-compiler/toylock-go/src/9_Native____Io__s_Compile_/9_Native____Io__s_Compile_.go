@@ -589,15 +589,17 @@ func (client *UdpClient) receiveLoop() {
 	// Read from UDP connection, initialize packet and enqueue to receive_queue
 	for true {
 		var buffer []byte
-		var _, addr, err = client.connection.ReadFromUDP(buffer)
+		// TONY: There is a Golang bug on OSX where ReadFromUDP does not block, but should work fine on Linux
+		var n, addr, err = client.connection.ReadFromUDP(buffer)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
 			os.Exit(1)
 		}
-
-		var packetEp = UDPAddrToIPEndPoint(addr)
-		var packet = Packet{packetEp, buffer}
-		client.receive_queue.Enqueue(packet)
+		if n > 0 {
+			var packetEp = UDPAddrToIPEndPoint(addr)
+			var packet = Packet{packetEp, buffer}
+			client.receive_queue.Enqueue(packet)
+		}
 	}
 }
 
