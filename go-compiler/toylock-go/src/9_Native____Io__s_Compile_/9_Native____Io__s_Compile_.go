@@ -577,13 +577,13 @@ func (client *UdpClient) sendLoop() {
 	for true {
 		var packInterface, _ = client.send_queue.DequeueOrWaitForNextElement()
 		var pack, ok = packInterface.(Packet)
-		fmt.Printf("TONY DEBUG: sendLoop() found a packet with dest %v and contents %v\n", pack.ep.GetUDPAddr(), pack.buffer)
+		// fmt.Printf("TONY DEBUG: sendLoop() found a packet with dest %v and contents %v\n", pack.ep.GetUDPAddr(), pack.buffer)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
 			os.Exit(1)
 		}
-		var n, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
-		fmt.Printf("TONY DEBUG: sendLoop() sent %v bytes over UDP to %v\n", n, pack.ep.GetUDPAddr())
+		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
+		// fmt.Printf("TONY DEBUG: sendLoop() sent %v bytes over UDP to %v\n", n, pack.ep.GetUDPAddr())
 		if err2 != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
 			os.Exit(1)
@@ -594,7 +594,7 @@ func (client *UdpClient) sendLoop() {
 // TONY : DONE
 func (client *UdpClient) receiveLoop() {
 	// Read from UDP connection, initialize packet and enqueue to receive_queue
-	fmt.Printf("TONY DEBUG: starting receiveLoop()\n")
+	// fmt.Printf("TONY DEBUG: starting receiveLoop()\n")
 	for true {
 		var buffer [16]byte
 		// TONY: There is a Golang bug on OSX where ReadFromUDP does not block, but should work fine on Linux
@@ -606,7 +606,7 @@ func (client *UdpClient) receiveLoop() {
 		if addr != nil {
 			var packetEp = UDPAddrToIPEndPoint(addr)
 			var packet = Packet{packetEp, buffer[0:]}
-			fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v \n", addr, packet.buffer)
+			// fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v \n", addr, packet.buffer)
 			client.receive_queue.Enqueue(packet)
 		}
 	}
@@ -632,7 +632,7 @@ func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_da
 	var packet, err = client.receive_queue.DequeueOrWaitForNextElement()
 	if err != nil {
 		// receive queue is empty
-		fmt.Printf("TONY DEBUG: receive_queue empty\n")
+		// fmt.Printf("TONY DEBUG: receive_queue empty\n")
 		if timeLimit == 0 {
 			return true, true, nil, nil
 		} else {
@@ -646,11 +646,11 @@ func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_da
 			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
 			os.Exit(1)
 		}
-		var buf = pack.buffer
-		var addr = pack.ep.GetUDPAddr()
-		fmt.Printf("TONY DEBUG: received a packet with source %v and contents %v: \n", addr, buf)
+		// var buf = pack.buffer
+		// var addr = pack.ep.GetUDPAddr()
+		// fmt.Printf("TONY DEBUG: received a packet with source %v and contents %v: \n", addr, buf)
 		var interfaceBuf []interface{}
-		for _, value := range buf {
+		for _, value := range pack.buffer {
 			interfaceBuf = append(interfaceBuf, interface{}(value))
 		}
 		return true, false, pack.ep, _dafny.NewArrayWithValues(interfaceBuf...)
