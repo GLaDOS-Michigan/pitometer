@@ -606,7 +606,7 @@ func (client *UdpClient) receiveLoop() {
 		if addr != nil {
 			var packetEp = UDPAddrToIPEndPoint(addr)
 			var packet = Packet{packetEp, buffer[0:]}
-			fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v: \n", addr, packet.buffer)
+			fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v \n", addr, packet.buffer)
 			client.receive_queue.Enqueue(packet)
 		}
 	}
@@ -649,7 +649,11 @@ func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_da
 		var buf = pack.buffer
 		var addr = pack.ep.GetUDPAddr()
 		fmt.Printf("TONY DEBUG: received a packet with source %v and contents %v: \n", addr, buf)
-		return true, false, pack.ep, _dafny.NewArrayWithValues(pack.buffer)
+		var interfaceBuf []interface{}
+		for _, value := range buf {
+			interfaceBuf = append(interfaceBuf, interface{}(value))
+		}
+		return true, false, pack.ep, _dafny.NewArrayWithValues(interfaceBuf...)
 	}
 }
 

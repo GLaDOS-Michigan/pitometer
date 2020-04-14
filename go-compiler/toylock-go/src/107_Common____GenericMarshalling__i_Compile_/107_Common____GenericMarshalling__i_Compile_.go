@@ -40,6 +40,7 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -1171,6 +1172,7 @@ func (_this *CompanionStruct_Default___) ParseVal(data *_dafny.Array, index uint
 	return success, v, rest__index
 }
 func (_this *CompanionStruct_Default___) Demarshall(data *_dafny.Array, grammar G) (bool, V) {
+	fmt.Printf("TONY DEBUG: demarshalling %v\n", data.String())
 	var success bool = false
 	var _ = success
 	var v V = Type_V_().Default().(V)
