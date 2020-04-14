@@ -1,3 +1,6 @@
+# Project build file for mac
+#!/bin/bash
+
 LOCK_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/go-compiler/toylock-go'
 export GOPATH=$LOCK_DIR
 
