@@ -20,6 +20,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -437,6 +438,14 @@ type IPEndPoint struct {
 	port    uint16
 }
 
+// TONY : DONE
+func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
+	var port = uint16(udpAddr.Port)
+	var ip = _dafny.NewArrayWithValues(udpAddr.IP)
+	var res = IPEndPoint{ip, port}
+	return &res
+}
+
 // GetUDPAddr returns the address of this endpoint as a net.UDPAddr data structure
 // TONY : DONE
 func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
@@ -572,17 +581,29 @@ func (client *UdpClient) sendLoop() {
 		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
 		if err2 != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
+			os.Exit(1)
 		}
 	}
-	traceAndExit()
 }
 
-// TODO TONY
+// TONY : DONE
 func (client *UdpClient) receiveLoop() {
-	traceAndExit()
+	// Read from UDP connection, initialize packet and enqueue to receive_queue
+	for true {
+		var buffer []byte
+		var _, addr, err = client.connection.ReadFromUDP(buffer)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+			os.Exit(1)
+		}
+
+		var packetEp = UDPAddrToIPEndPoint(addr)
+		var packet = Packet{packetEp, buffer}
+		client.receive_queue.Enqueue(packet)
+	}
 }
 
-// TODO TONY
+// TONY : DONE
 func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 	// Create Packet struct and enqueue to send_queue
 	var bufferStr = buffer.String()
@@ -596,14 +617,27 @@ func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 	return true
 }
 
-// TODO TONY
-func (client *UdpClient) Receive(timeout int32) (
-	bool,
-	bool,
-	*IPEndPoint,
-	*_dafny.Array) {
-	traceAndExit()
-	return false, false, nil, nil
+// TONY : DONE
+func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_dafny.Array) {
+	// Note that in Toylock, this is only ever called with timeout 0
+	var packet, err = client.receive_queue.Dequeue()
+	if err != nil {
+		// receive queue is empty
+		if timeLimit == 0 {
+			return true, true, nil, nil
+		} else {
+			fmt.Printf("Going to sleep unexpectedly!")
+			time.Sleep(time.Duration(timeLimit) * time.Millisecond)
+			return client.Receive(0)
+		}
+	} else {
+		var pack, ok = packet.(Packet)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			os.Exit(1)
+		}
+		return true, false, pack.ep, _dafny.NewArrayWithValues(pack.buffer)
+	}
 }
 
 func (_this *UdpClient) Equals(other *UdpClient) bool {
