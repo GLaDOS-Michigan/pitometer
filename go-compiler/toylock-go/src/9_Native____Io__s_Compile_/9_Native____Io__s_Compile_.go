@@ -542,10 +542,11 @@ type CompanionStruct_UdpClient_ struct {
 var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
 
 // TONY : DONE
-func new_UdpClient_(my_ep *IPEndPoint) *UdpClient {
+func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
 	// Initialize record and start send and receive loops
 	_this := UdpClient{
 		localEndpoint: my_ep,
+		connection:    conn,
 		send_queue:    goconcurrentqueue.NewFIFO(),
 		receive_queue: goconcurrentqueue.NewFIFO(),
 	}
@@ -556,16 +557,13 @@ func new_UdpClient_(my_ep *IPEndPoint) *UdpClient {
 
 // TONY : DONE
 func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint) (bool, *UdpClient) {
-	// Initialize record
-	var udp = new_UdpClient_(localEndpoint)
-
-	// Start connection
-	conn, err := net.ListenUDP("udp", localEndpoint.GetUDPAddr())
+	var localEp = localEndpoint.GetUDPAddr()
+	conn, err := net.ListenUDP("udp", localEp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
 		return false, nil
 	}
-	udp.connection = conn
+	var udp = new_UdpClient_(localEndpoint, conn)
 	return true, udp
 }
 
