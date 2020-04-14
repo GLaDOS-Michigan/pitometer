@@ -44,7 +44,6 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
-	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -381,7 +380,6 @@ func (_this *CompanionStruct_Default___) SendPacket(udpClient *_9_Native____Io__
 		_1686_buffer = _out75
 		var _out76 bool
 		var _ = _out76
-		fmt.Printf("TONY DEBUG: buffer = %s\n", _1686_buffer.String())
 		_out76 = (udpClient).Send(_1685_remote, _1686_buffer)
 		ok = _out76
 		if !(ok) {

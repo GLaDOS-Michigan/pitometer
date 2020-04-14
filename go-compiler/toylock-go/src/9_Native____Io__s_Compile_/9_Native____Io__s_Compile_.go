@@ -441,7 +441,12 @@ type IPEndPoint struct {
 // TONY : DONE
 func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
 	var port = uint16(udpAddr.Port)
-	var ip = _dafny.NewArrayWithValues(udpAddr.IP)
+	var byteIPArr = []byte(udpAddr.IP)
+	var interfaceIPArray []interface{}
+	for _, value := range byteIPArr {
+		interfaceIPArray = append(interfaceIPArray, interface{}(value))
+	}
+	var ip = _dafny.NewArrayWithValues(interfaceIPArray...)
 	var res = IPEndPoint{ip, port}
 	return &res
 }
@@ -454,6 +459,7 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	var intArr []int
 	err := json.Unmarshal([]byte(ipArrStr), &intArr)
 	if err != nil {
+		fmt.Printf("Cannot unmarshal %v\n", ipArrStr)
 		log.Fatal(err)
 	}
 	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
@@ -640,6 +646,9 @@ func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_da
 			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
 			os.Exit(1)
 		}
+		var buf = pack.buffer
+		var addr = pack.ep.GetUDPAddr()
+		fmt.Printf("TONY DEBUG: received a packet with source %v and contents %v: \n", addr, buf)
 		return true, false, pack.ep, _dafny.NewArrayWithValues(pack.buffer)
 	}
 }
