@@ -548,6 +548,7 @@ func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
 		send_queue:    goconcurrentqueue.NewFIFO(),
 		receive_queue: goconcurrentqueue.NewFIFO(),
 	}
+	fmt.Printf("TONY DEBUG: Initializing new UDPClient %v\n", conn.LocalAddr())
 	go _this.sendLoop()
 	go _this.receiveLoop()
 	return &_this
@@ -570,11 +571,13 @@ func (client *UdpClient) sendLoop() {
 	for true {
 		var packInterface, _ = client.send_queue.DequeueOrWaitForNextElement()
 		var pack, ok = packInterface.(Packet)
+		fmt.Printf("TONY DEBUG: sendLoop() found a packet with dest %v and contents %v\n", pack.ep.GetUDPAddr(), pack.buffer)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
 			os.Exit(1)
 		}
-		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
+		var n, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
+		fmt.Printf("TONY DEBUG: sendLoop() sent %v bytes over UDP to %v\n", n, pack.ep.GetUDPAddr())
 		if err2 != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
 			os.Exit(1)
@@ -585,17 +588,19 @@ func (client *UdpClient) sendLoop() {
 // TONY : DONE
 func (client *UdpClient) receiveLoop() {
 	// Read from UDP connection, initialize packet and enqueue to receive_queue
+	fmt.Printf("TONY DEBUG: starting receiveLoop()\n")
 	for true {
-		var buffer []byte
+		var buffer [16]byte
 		// TONY: There is a Golang bug on OSX where ReadFromUDP does not block, but should work fine on Linux
-		var n, addr, err = client.connection.ReadFromUDP(buffer)
+		var _, addr, err = client.connection.ReadFromUDP(buffer[0:])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
 			os.Exit(1)
 		}
-		if n > 0 {
+		if addr != nil {
 			var packetEp = UDPAddrToIPEndPoint(addr)
-			var packet = Packet{packetEp, buffer}
+			var packet = Packet{packetEp, buffer[0:]}
+			fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v: \n", addr, packet.buffer)
 			client.receive_queue.Enqueue(packet)
 		}
 	}
@@ -618,9 +623,10 @@ func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 // TONY : DONE
 func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_dafny.Array) {
 	// Note that in Toylock, this is only ever called with timeout 0
-	var packet, err = client.receive_queue.Dequeue()
+	var packet, err = client.receive_queue.DequeueOrWaitForNextElement()
 	if err != nil {
 		// receive queue is empty
+		fmt.Printf("TONY DEBUG: receive_queue empty\n")
 		if timeLimit == 0 {
 			return true, true, nil, nil
 		} else {
