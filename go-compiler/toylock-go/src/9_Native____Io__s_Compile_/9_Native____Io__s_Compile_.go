@@ -468,16 +468,14 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	return udpAddr
 }
 
-// TODO TONY
+// TONY : DONE
 func (ep *IPEndPoint) GetAddress() *_dafny.Array {
-	traceAndExit()
-	return nil
+	return ep.ip_addr
 }
 
-// TODO TONY
+// TONY : DONE
 func (ep *IPEndPoint) GetPort() uint16 {
-	traceAndExit()
-	return 0
+	return ep.port
 }
 
 type CompanionStruct_IPEndPoint_ struct {
