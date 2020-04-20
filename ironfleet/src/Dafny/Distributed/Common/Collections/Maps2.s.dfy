@@ -16,4 +16,9 @@ predicate imaptotal<KT(!new),VT>(m:imap<KT,VT>)
 {
     forall k {:trigger m[k]}{:trigger k in m} :: k in m
 }
+
+predicate maptotal<KT(!new),VT>(m:map<KT,VT>)
+{
+    forall k {:trigger m[k]}{:trigger k in m} :: k in m
+}
 } 

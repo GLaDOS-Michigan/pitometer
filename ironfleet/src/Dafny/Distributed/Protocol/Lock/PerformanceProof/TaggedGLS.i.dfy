@@ -24,7 +24,6 @@ datatype TaggedGLS_State = TaggedGLS_State(
   {
     map id | id in t_servers :: t_servers[id].v
   }
-  
 
   function UntagLS_State(tds:TaggedLS_State) : LS_State
   {
@@ -39,8 +38,8 @@ datatype TaggedGLS_State = TaggedGLS_State(
     LS_Init(UntagLS_State(tls), config)
       && tls.config == config
       && LEnvironment_Init(tls.t_environment)
-      && tls.t_servers[config[0]].pr == PerfZero
-      && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].pr == PerfVoid
+      && tls.t_servers[config[0]].pr == PerfZero()
+      && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].pr == PerfVoid()
   }
 
   predicate TLS_NextOneServer(tls: TaggedLS_State, tls': TaggedLS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint, LockMessage>>, hstep:HostStep)
@@ -50,13 +49,9 @@ datatype TaggedGLS_State = TaggedGLS_State(
     LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
       && (
       if |ios| > 0 && ios[0].LIoOpReceive? then
-        var deliveryTime := PerfAdd2(ios[0].r.msg.pr, PerfDelivery);
-        var handlerStartTime := PerfMax(multiset{deliveryTime, tls.t_servers[id].pr});
-        var totalTime := PerfAdd2(handlerStartTime, PerfStep(hstep));
-        totalTime == tls'.t_servers[id].pr
+        tls'.t_servers[id].pr == RecvPerfUpdate(tls.t_servers[id].pr, ios[0].r.msg.pr, hstep)
       else
-        var totalTime := PerfAdd2(tls.t_servers[id].pr, PerfStep(hstep));
-        totalTime == tls'.t_servers[id].pr
+        tls'.t_servers[id].pr == NoRecvPerfUpdate(tls.t_servers[id].pr, hstep)
       )
 
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tls'.t_servers[id].pr)
@@ -75,7 +70,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
         tls'.t_servers == tls.t_servers
 
         && (if tls.t_environment.nextStep.LEnvStepHostIos? then
-            && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == PerfZero)
+            && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == PerfZero())
             else
             true)
   }

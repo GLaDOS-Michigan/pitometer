@@ -5,23 +5,67 @@ module PerformanceProof__Definitions_i {
  import opened LockTaggedDistributedSystem_i
   // import opened TaggedGLS_i
 
-function PerfBoundLockHeld(epoch: int) : PerfExpr
+function {:verify false} PerfBoundLockHeld(epoch: int) : PerfExpr
   requires 0 < epoch
 {
-    var s : multiset<PerfExpr> := multiset{};
-    var s2 := s[PerfStep(GrantStep) := epoch - 1][PerfStep(AcceptStep) := epoch - 1][PerfDelivery := epoch - 1];
-    PerfAdd(s2)
+  var s : multiset<PerfExpr> := multiset{};
+  var s2 := s[PerfStep(GrantStep) := epoch - 1];
+  var s3 := s[PerfStep(AcceptStep) := epoch - 1];
+  var s4 := s[PerfDelivery() := epoch - 1];
+  PerfAdd(s2 + s3 + s4)
 }
 
-function PerfBoundLockInNetwork(epoch: int) : PerfExpr
+function {:verify false} PerfBoundLockInNetwork(epoch: int) : PerfExpr
   requires 1 < epoch
 {
   var s : multiset<PerfExpr> := multiset{};
-  var s2 := s[PerfStep(GrantStep) := epoch - 1][PerfStep(AcceptStep) := epoch - 2][PerfDelivery := epoch - 2];
-  PerfAdd(s2)
+  var s2 := s[PerfStep(GrantStep) := epoch - 1];
+  var s3 := s[PerfStep(AcceptStep) := epoch - 2];
+  var s4 := s[PerfDelivery() := epoch - 2];
+  PerfAdd(s2 + s3 + s4)
 }
 
-lemma Test(j:int)
+lemma {:verify false} lemma_UpdateInvariantUnderPerfEq()
+{
+  // PerfEq(RecvPerfUpdate(node_pr, pkt_pr, hstep), RecvPerfUpdate(node_pr, pkt_pr, hstep));
+}
+
+lemma Test(epoch:int)
+  requires epoch > 1
+{
+  var s : multiset<PerfExpr> := multiset{};
+  var sDelivery := s[PerfStep(AcceptStep) := epoch - 2];
+  var sHeld := s[PerfStep(AcceptStep) := epoch - 1];
+  assert sDelivery + multiset{PerfStep(AcceptStep)} == sHeld;
+  assert multiset{PerfStep(AcceptStep)} + sDelivery == sHeld;
+}
+
+lemma lemma_Accept_j_PR(pkt_pr:PerfReport, node_pr:PerfReport, node_pr':PerfReport, epoch:int)
+  requires 1 < epoch
+  requires node_pr' == RecvPerfUpdate(node_pr, pkt_pr, AcceptStep);
+  requires pkt_pr == PerfBoundLockInNetwork(epoch)
+  requires node_pr == PerfVoid()
+  ensures PerfEq(node_pr', PerfBoundLockHeld(epoch))
+{
+  PerfProperties(); 
+
+  var s : multiset<PerfExpr> := multiset{};
+  var s2 := s[PerfStep(GrantStep) := epoch - 1];
+  var s3 := s[PerfStep(AcceptStep) := epoch - 2];
+  var s3' := s[PerfStep(AcceptStep) := epoch - 1];
+  var s4 := s[PerfDelivery() := epoch - 2];
+  var s4' := s[PerfDelivery() := epoch - 1];
+  var sNetwork := s2 + s3 + s4;
+  var sDelivery := s2 + s3 + s4';
+  var sHeld := s2 + s3' + s4';
+
+  assert sDelivery == sNetwork + multiset{PerfDelivery()};
+  assert sHeld == sDelivery + multiset{PerfStep(AcceptStep)};
+}
+
+/*
+
+lemma {:verify false} Test(j:int)
   requires 1 < j
 {
   PerfProperties();
@@ -37,13 +81,12 @@ lemma Test(j:int)
   assert totalTime == p';
 }
 
-/*
-lemma {:verify false} specific_axiom(a:multiset<PerfExpr>, b:multiset<PerfExpr>)
+lemma {:verify false} {:verify false} specific_axiom(a:multiset<PerfExpr>, b:multiset<PerfExpr>)
   ensures PerfEq(PerfAdd(b + multiset{PerfAdd(a)}), PerfAdd(b + a))
 {
 }
 
-lemma Other(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
+lemma {:verify false} Other(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
   requires 1 < j;
   requires PerfEq(pkt_pr, PerfBoundLockInNetwork(j));
   // requires PerfEq(nd_pr, PerfVoid);
@@ -54,7 +97,7 @@ lemma Other(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
 }
 
 
-lemma Test(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
+lemma {:verify false} Test(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
   requires 1 < j;
   // requires PerfEq(pkt_pr, PerfBoundLockInNetwork(j));
   requires pkt_pr == PerfBoundLockInNetwork(j);

@@ -16,20 +16,8 @@ abstract module Performance_s {
 
   predicate {:axiom} PerfEq(p1:PerfExpr, p2:PerfExpr)
     ensures p1 == p2 ==> PerfEq(p1, p2)
-    // ensures p1.PerfMax? && p1.prs == multiset{p2} ==> PerfEq(p1, p2)
-    // ensures p1.PerfMax? && p1.prs == multiset{} && p2 == PerfZero() ==> PerfEq(p1, p2)
 
-    // ensures p1.PerfMax? && p2.PerfMax? && p2.prs == p1.prs - multiset{PerfVoid} ==> PerfEq(p1, p2)
-
-    // ensures p1.PerfAdd? && PerfVoid in p1.prs && p2 == PerfZero ==> PerfEq(p1, p2)
-    // ensures p1.PerfAdd? && p2 == PerfAdd(p1.prs[PerfZero() := 0]) ==> PerfEq(p1, p2)
-    // ensures p1.PerfAdd? && p1.prs == multiset{} && p2 == PerfZero ==> PerfEq(p1, p2)
-    // ensures p2.PerfAdd? && p2.prs == multiset{} && p1 == PerfZero ==> PerfEq(p1, p2)
-
-    // Want to establish associativity
-    // PerfAdd(multiset{PerfAdd(p1), prs'}) == PerfAdd(p1 + prs')
-    // ensures forall prs :: p1.PerfAdd? && PerfAdd(prs) in p1.prs && p2 == PerfAdd(p1.prs + prs - multiset{PerfAdd(prs)}) ==> PerfEq(p1, p2)
-    // ensures p1.PerfAdd? ==> (forall pr :: pr in p1.prs && pr.PerfAdd? && p2 == PerfAdd(p1.prs + pr.prs - multiset{PerfAdd(pr.prs)}) ==> PerfEq(p1, p2))
+  predicate {:axiom} PerfLe(p1:PerfExpr, p2:PerfExpr)
 
   lemma {:axiom} PerfEq_IsEquivRelation()
     ensures forall p1, p2 :: PerfEq(p1, p2) == PerfEq(p2, p1);
@@ -67,4 +55,20 @@ abstract module Performance_s {
     ensures forall p1, p2 :: PerfEq(p2, PerfVoid) ==> PerfEq(PerfMax(multiset{p1, p2}), PerfMax(multiset{p1}));
     ensures forall prs {:trigger PerfMax(prs)} :: PerfEq(PerfMax(prs), PerfMax(prs[PerfVoid := 0]));
     ensures forall p1 {:trigger PerfMax(multiset{p1})} :: PerfEq(PerfMax(multiset{p1}), p1)
+
+
+  function NoRecvPerfUpdate(node_pr:PerfExpr, hstep:HostStep) : PerfExpr
+  {
+    var totalTime := PerfAdd2(node_pr, PerfStep(hstep));
+    totalTime
+  }
+
+  function RecvPerfUpdate(node_pr:PerfExpr, pkt_pr:PerfExpr, hstep:HostStep) : PerfExpr
+  {
+    var deliveryTime := PerfAdd2(pkt_pr, PerfDelivery);
+    var handlerStartTime := PerfMax(multiset{deliveryTime, node_pr});
+    var totalTime := PerfAdd2(handlerStartTime, PerfStep(hstep));
+    totalTime
+  }
+      
 }
