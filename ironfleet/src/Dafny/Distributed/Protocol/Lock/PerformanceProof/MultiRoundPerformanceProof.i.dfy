@@ -1,9 +1,9 @@
 include "../../../Services/Lock/LockTaggedDistributedSystem.i.dfy"
 include "TaggedGLS.i.dfy"
-include "Definitions.i.dfy"
+include "Definitions_arith.i.dfy"
 include "../../../../Libraries/Math/mod_auto.i.dfy"
 
-module PerformanceProof_i {
+module MultiRoundPerformanceProof_i {
 
 import opened LockTaggedDistributedSystem_i
   import opened TaggedGLS_i
@@ -15,13 +15,16 @@ predicate {:verify false} SingleGLSPerformanceAssumption(tgls:TaggedGLS_State)
   // The only nodes that take steps are in the ring
   && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? ==> tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers)
 
-
   // The size of the history/epochs never reaches UINT64_MAX
   && (|tgls.history| < 0xFFFF_FFFF_FFFF_FFFF)
 
   // No timeouts
   && (var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? ==>
   (forall io :: io in nextStep.ios ==> !io.LIoOpTimeoutReceive?))
+  
+  // No 'Locked' packets are ever received
+  && (var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? ==>
+  (forall io :: io in nextStep.ios && io.LIoOpReceive? ==> io.r.msg.v.Locked? == false))
 
   // TODO: This should be part of the state machine definition, and not an assumption
   // The only nodes that can do NodeGrant() currently hold the lock
@@ -38,7 +41,7 @@ predicate {:verify false} SingleGLSPerformanceGuarantee(gls:TaggedGLS_State)
 {
   |gls.tls.config| > 1 ==> 
   (forall pkt :: pkt in gls.tls.t_environment.sentPackets &&
-    pkt.msg.v == Transfer(|gls.tls.config|) ==> PerfEq(pkt.msg.pr, PerfBoundLockInNetwork(|gls.tls.config|)))
+    pkt.msg.v.Transfer? ==> pkt.msg.v.transfer_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch)))
 }
 
 predicate {:verify false} GLSPerformanceGuarantee(tglb:seq<TaggedGLS_State>)
@@ -53,6 +56,19 @@ predicate {:verify false} TGLS_Consistency(tgls: TaggedGLS_State)
     && (forall i :: 0 <= i < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[i]].v.my_index == i)
 }
 
+predicate PerfInvariantAlways_NodeNotHeld(tgls:TaggedGLS_State, t_hs:TaggedType<Node>)
+{
+  // || (forall pkt in env.sentPackets )
+    || (false)
+}
+
+predicate PerfInvariantAlways_Node(t_hs:TaggedType<Node>)
+{
+  && (t_hs.v.epoch >= 0)
+  && (t_hs.v.held == false ==> t_hs.v.epoch > 0 && PerfLe(t_hs.pr, PerfBoundLockInNetwork(t_hs.v.epoch + 1)))
+  && (t_hs.v.held == true  ==> t_hs.v.epoch > 0 && PerfLe(t_hs.pr, PerfBoundLockHeld(t_hs.v.epoch)))
+}
+
 predicate {:verify false} PerfInvariantAlways(tgls:TaggedGLS_State)
   requires TGLS_Consistency(tgls)
 {
@@ -61,16 +77,23 @@ predicate {:verify false} PerfInvariantAlways(tgls:TaggedGLS_State)
   ==> false)
 
   // No nodes with epoch higher
-  // All transfer packets have correct performance object, determined by its transfer_epoch
-  && (forall id :: id in tgls.tls.t_servers ==> 0 <= tgls.tls.t_servers[id].v.epoch <= |tgls.history|)
+  &&  (forall id :: id in tgls.tls.t_servers ==> 0 <= tgls.tls.t_servers[id].v.epoch <= |tgls.history|)
 
   // No transfer packets with epoch higher than history size
   // All transfer packets have correct performance object, determined by its transfer_epoch
   && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-  ==> 0 < pkt.msg.v.transfer_epoch <= |tgls.history|)
+  ==> 0 < pkt.msg.v.transfer_epoch ) // <= |tgls.history|)
 
   && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Locked? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-  ==> 0 < pkt.msg.v.locked_epoch <= |tgls.history|)
+  ==> 0 < pkt.msg.v.locked_epoch ) // <= |tgls.history|)
+
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> pkt.msg.v.transfer_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch)))
+
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Locked? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> pkt.msg.v.locked_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockHeld(pkt.msg.v.locked_epoch)))
+
+  && (forall id :: id in tgls.tls.t_servers ==> PerfInvariantAlways_Node(tgls.tls.t_servers[id]))
 }
 
 predicate {:verify false} PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int, epoch:int)
@@ -78,111 +101,111 @@ predicate {:verify false} PerfInvariantLockHeld(tgls: TaggedGLS_State, j:int, ep
   requires 0 <= j < |tgls.tls.config|
   requires TGLS_Consistency(tgls)
 {
-    && PerfInvariantAlways(tgls)
-    && SingleGLSPerformanceGuarantee(tgls)
-    && tgls.tls.t_servers[tgls.tls.config[j]].v.held == true
-    && |tgls.history| == epoch
-    && tgls.tls.t_servers[tgls.tls.config[j]].v.epoch == |tgls.history|
-    // && j == (epoch % |tgls.tls.config|)
+  && PerfInvariantAlways(tgls)
+  && SingleGLSPerformanceGuarantee(tgls)
+  && tgls.tls.t_servers[tgls.tls.config[j]].v.held == true
+  && |tgls.history| == epoch
+  && tgls.tls.t_servers[tgls.tls.config[j]].v.epoch == |tgls.history|
+  && j == (epoch - 1) % |tgls.tls.config|
 
-    &&  (forall id :: id in tgls.tls.t_servers && id != tgls.tls.config[j]
-    ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> && pkt.msg.v.transfer_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch)))
 
-    // All packets have epoch too small, so that no packets can be accepted in the next step
-    && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-    ==> pkt.msg.v.transfer_epoch <= tgls.tls.t_servers[pkt.dst].v.epoch)
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Locked? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> pkt.msg.v.locked_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockHeld(pkt.msg.v.locked_epoch)))
 
-    // The node with the lock has correct PerfReport
-    && PerfEq(tgls.tls.t_servers[tgls.tls.config[j]].pr, PerfBoundLockHeld(epoch))
+  && (forall id :: id in tgls.tls.t_servers && tgls.tls.t_servers[id].v.held == true ==> PerfLe(tgls.tls.t_servers[id].pr, PerfBoundLockHeld(tgls.tls.t_servers[id].v.epoch)) )
+  // && (forall id :: id in tgls.tls.t_servers && tgls.tls.t_servers[id].v.held == false ==> PerfLe(tgls.tls.t_servers[id].pr, tgls.tls.t_servers[id].v.epoch) )
 
-    // All nodes beyond j have void PerfReport
-    && (forall k :: j < k < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[k]].pr == PerfVoid())
 
-  // No packets sent to nodes that have my_index higher than j, including node zero
-  && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[k]
-  ==> false
-  )
+  &&  (forall id :: id in tgls.tls.t_servers && id != tgls.tls.config[j]
+  ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
 
-  // No packets sent by nodes that have my_index higher than j
-  && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.src in tgls.tls.t_servers && pkt.src == tgls.tls.config[k]
-  ==> false
-  )
+  // The node with the lock has correct PerfReport
+  && PerfEq(tgls.tls.t_servers[tgls.tls.config[j]].pr, PerfBoundLockHeld(epoch))
 }
 
 predicate {:verify false} PerfInvariantLockInNetwork(tgls: TaggedGLS_State, j:int, epoch:int)
   requires 1 < epoch
-  requires 0 < j < |tgls.tls.config|
+  requires 0 <= j < |tgls.tls.config|
   requires TGLS_Consistency(tgls)
 {
   && PerfInvariantAlways(tgls)
   && SingleGLSPerformanceGuarantee(tgls)
   && |tgls.history| == epoch
-  // && j == (epoch) % |tgls.tls.config|
+  && j == (epoch - 1) % |tgls.tls.config|
+
+
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> pkt.msg.v.transfer_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch)))
+
+  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Locked? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
+  ==> pkt.msg.v.locked_epoch > 1 && PerfLe(pkt.msg.pr, PerfBoundLockHeld(pkt.msg.v.locked_epoch)))
+
+  && (forall id :: id in tgls.tls.t_servers && tgls.tls.t_servers[id].v.held == true ==> PerfLe(tgls.tls.t_servers[id].pr, PerfBoundLockHeld(tgls.tls.t_servers[id].v.epoch)) )
+  // && (forall id :: id in tgls.tls.t_servers && tgls.tls.t_servers[id].v.held == false ==> PerfLe(tgls.tls.t_servers[id].pr, tgls.tls.t_servers[id].v.epoch) )
+
 
   // No one holds the lock; everyone's epoch is below the epoch of the newest packet.
   && (forall id :: id in tgls.tls.t_servers ==> tgls.tls.t_servers[id].v.held == false && tgls.tls.t_servers[id].v.epoch < |tgls.history|)
 
   && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-  && pkt.dst != tgls.tls.config[j % |tgls.tls.config|]
-  ==> pkt.msg.v.transfer_epoch < |tgls.history| && pkt.msg.v.transfer_epoch <= tgls.tls.t_servers[pkt.dst].v.epoch)
-
-  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
       && pkt.msg.v.transfer_epoch == |tgls.history|
-      ==> pkt.dst == tgls.tls.config[j] && pkt.src == tgls.tls.config[j - 1] && PerfEq(pkt.msg.pr, PerfBoundLockInNetwork(epoch)))
+      ==> pkt.dst == tgls.tls.config[j] && pkt.src == tgls.tls.config[(j - 1) % |tgls.tls.config|] && PerfEq(pkt.msg.pr, PerfBoundLockInNetwork(epoch)))
 
-  // All nodes with index j or higher have void PerfReport
-  && (forall k :: j <= k < |tgls.tls.config| ==> tgls.tls.t_servers[tgls.tls.config[k]].pr == PerfVoid())
-
-  // The only packet sent to node j is an acceptable Transfer message
-  && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[j]
-  ==> pkt.msg.v.Transfer? && pkt.msg.v.transfer_epoch == |tgls.history|
-  )
-  
-  // No packets sent to nodes that have my_index higher than j, including node zero
-  && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.dst in tgls.tls.t_servers && pkt.dst == tgls.tls.config[k]
-  ==> false
-  )
-
-  // No packets sent by nodes that have my_index higher than j
-  && (forall pkt, k :: j < k < |tgls.tls.config| && pkt in tgls.tls.t_environment.sentPackets && pkt.src in tgls.tls.t_servers && pkt.src == tgls.tls.config[k]
-  ==> false
-  )
 }
 
-predicate {:verify false} PerfInvariantEpochHigherThanNumServers(tgls:TaggedGLS_State)
-  requires TGLS_Consistency(tgls)
+lemma Grant_InvImpliesInv(s:TaggedGLS_State, s':TaggedGLS_State)
+  requires TGLS_Next(s, s')
+  requires TGLS_Consistency(s) && TGLS_Consistency(s')
+  requires SingleGLSPerformanceAssumption(s)
+  requires SingleGLSPerformanceAssumption(s')
+
+  // A node other than node j taking a grant step
+  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
+  requires s.tls.t_environment.nextStep.nodeStep == GrantStep
+  requires s.tls.t_servers[s.tls.t_environment.nextStep.actor].v.held == true
+
+  requires PerfInvariantAlways(s);
+  ensures PerfInvariantAlways(s');
 {
-  && PerfInvariantAlways(tgls)
-  && SingleGLSPerformanceGuarantee(tgls)
-  && |tgls.history| > |tgls.tls.config| - 1
-
-  // If a node has epoch that's too low, it does not hold the lock
-  &&  (forall id :: id in tgls.tls.t_servers && tgls.tls.t_servers[id].v.epoch < |tgls.tls.config| ==> tgls.tls.t_servers[id].v.held == false)
-
-  // All packets with epoch too low are unacceptable
-  && (forall pkt :: pkt in tgls.tls.t_environment.sentPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers && pkt.src in tgls.tls.t_servers
-      && pkt.msg.v.transfer_epoch <= |tgls.tls.config| - 1 ==> pkt.msg.v.transfer_epoch <= tgls.tls.t_servers[pkt.dst].v.epoch)
+  lemma_mod_auto(|s.tls.config|);
+  var step := s.tls.t_environment.nextStep;
+  var id := step.actor;
+  var pkt := step.ios[0].s;
+  var epoch := s.tls.t_servers[id].v.epoch;
+  var node_pr := s.tls.t_servers[id].pr;
+  // assert node_pr == PerfBoundLockHeld(epoch);
+  lemma_Grant(node_pr, epoch);
+  assert PerfInvariantAlways_Node(s'.tls.t_servers[id]);
 }
 
-// TODO: Change this invariant
-predicate {:verify false} PerfInvariantNodeZeroGrantedLock(tgls:TaggedGLS_State)
-  requires 0 < |tgls.tls.config|
-  requires TGLS_Consistency(tgls)
-{
-  && PerfInvariantAlways(tgls)
-    && tgls.tls.t_servers[tgls.tls.config[0]].v.held == true
-    && |tgls.history| == |tgls.tls.config|
-    && tgls.tls.t_servers[tgls.tls.config[0]].v.epoch == |tgls.history|
-}
+lemma Accept_InvImpliesInv(s:TaggedGLS_State, s':TaggedGLS_State)
+  requires TGLS_Next(s, s')
+  requires TGLS_Consistency(s) && TGLS_Consistency(s')
+  requires SingleGLSPerformanceAssumption(s)
+  requires SingleGLSPerformanceAssumption(s')
 
-predicate {:verify false} PerfInvariantNodeZeroReceivedLock(tgls:TaggedGLS_State)
-  requires TGLS_Consistency(tgls)
+  // A node other than node j taking a grant step
+  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
+  requires s.tls.t_environment.nextStep.nodeStep == AcceptStep
+  // requires s.tls.t_servers[s.tls.t_environment.nextStep.actor].v.held == true
+
+  requires PerfInvariantAlways(s);
+  ensures PerfInvariantAlways(s');
 {
-  && 0 < |tgls.tls.config|
-  && PerfInvariantAlways(tgls)
-    && tgls.tls.t_servers[tgls.tls.config[0]].v.held == true
-    && |tgls.history| == |tgls.tls.config|
-    && tgls.tls.t_servers[tgls.tls.config[0]].v.epoch == |tgls.history|
+  lemma_mod_auto(|s.tls.config|);
+  var step := s.tls.t_environment.nextStep;
+  var id := step.actor;
+  var ios := step.ios;
+  var pkt := ios[0].r;
+  var epoch := s.tls.t_servers[id].v.epoch;
+  var node_pr := s.tls.t_servers[id].pr;
+  assert pkt.msg.v.Transfer?;
+
+  if (pkt.msg.v.transfer_epoch > s.tls.t_servers[id].v.epoch) {
+    assert PerfInvariantAlways(s');
+  }
 }
 
 lemma {:verify false} NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -203,7 +226,8 @@ lemma {:verify false} NotHostIos_InvLockHeldImpliesInvLockHeld(j:int, epoch:int,
 lemma {:verify false} Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
-  requires 0 < epoch <= |s.tls.config|
+  requires j == (epoch - 1) % |s.tls.config|
+  requires 0 < epoch
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
 
@@ -222,7 +246,9 @@ lemma {:verify false} Grant_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int
 lemma {:verify false} Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
-  requires 0 < epoch <= |s.tls.config|
+  requires 0 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
+
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
 
@@ -235,65 +261,45 @@ lemma {:verify false} Accept_not_j_InvLockHeldImpliesInvLockHeld(j:int, epoch:in
   ensures PerfInvariantLockHeld(s', j, epoch);
 {
   lemma_mod_auto(|s.tls.config|);
+  // assert false;
   //reveal_PerfInvariantLockHeld();
 }
 
 lemma {:verify false} Grant_j_InvLockHeldImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config| - 1
-  requires 0 < epoch < |s.tls.config|
+  requires 0 <= j < |s.tls.config|
+  requires 0 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
+  
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
   requires SingleGLSPerformanceAssumption(s')
 
   // A node other than node j taking a grant step
   requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
+  // requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
   requires s.tls.t_environment.nextStep.nodeStep == GrantStep
 
   requires PerfInvariantLockHeld(s, j, epoch);
-  ensures PerfInvariantLockInNetwork(s', j + 1, epoch + 1);
+  ensures PerfInvariantLockInNetwork(s', (j + 1) % |s.tls.config|, epoch + 1);
 {
   //reveal_PerfInvariantLockHeld();
   //reveal_PerfInvariantLockInNetwork();
+  assert false;
 
   lemma_mod_auto(|s.tls.config|);
-  PerfProperties();
+  //PerfProperties();
   //var p := PerfBoundLockHeld(epoch);
   //var p' := PerfBoundLockInNetwork(epoch + 1);
   //assert PerfEq(p', PerfAdd2(p, PerfStep(GrantStep)));
 }
 
-lemma {:verify false} Grant_LastNode_InvLockHeldImpliesInvEpochHigher(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
-  requires TGLS_Next(s, s')
-  requires 0 <= j == |s.tls.config| - 1
-  requires 0 <= epoch == |s.tls.config|
-  requires TGLS_Consistency(s) && TGLS_Consistency(s')
-  requires SingleGLSPerformanceAssumption(s)
-  requires SingleGLSPerformanceAssumption(s')
-
-  // A node other than node j taking a grant step
-  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
-  requires s.tls.t_environment.nextStep.nodeStep == GrantStep
-
-  requires PerfInvariantLockHeld(s, j, epoch);
-  ensures PerfInvariantEpochHigherThanNumServers(s')
-{
-  //reveal_PerfInvariantLockHeld();
-  //reveal_PerfInvariantLockInNetwork();
-
-  lemma_mod_auto(|s.tls.config|);
-  PerfProperties();
-  var p := PerfBoundLockHeld(epoch);
-  var p' := PerfBoundLockInNetwork(epoch + 1);
-  assert PerfEq(p', PerfAdd2(p, PerfStep(GrantStep)));
-}
-
 lemma {:verify false} NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 < j < |s.tls.config|
-  requires 1 < epoch <= |s.tls.config|
+  requires 0 <= j < |s.tls.config|
+  requires 1 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
+
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
 
   // Not a HostIos step
@@ -307,8 +313,10 @@ lemma {:verify false} NotHostIos_InvLockInNetworkImpliesInvLockInNetwork(j:int, 
 
 lemma {:verify false} Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 < j < |s.tls.config|
-  requires 1 < epoch <= |s.tls.config|
+  requires 0 <= j < |s.tls.config|
+  requires 1 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
+
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
   requires SingleGLSPerformanceAssumption(s')
@@ -326,10 +334,12 @@ lemma {:verify false} Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j:int
   lemma_mod_auto(|s.tls.config|);
 }
 
-lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
+lemma {:verify false} Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 < j < |s.tls.config|
-  requires 1 < epoch <= |s.tls.config|
+  requires 0 <= j < |s.tls.config|
+  requires 1 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
+
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
   requires SingleGLSPerformanceAssumption(s')
@@ -344,18 +354,19 @@ lemma Accept_j_InvLockInNetworkImpliesInvLockHeld(j:int, epoch:int, s:TaggedGLS_
 {
   //reveal_PerfInvariantLockInNetwork();
   //reveal_PerfInvariantLockHeld();
-  // PerfProperties();
+  //PerfProperties();
+
   lemma_mod_auto(|s.tls.config|);
-  assert s.tls.t_environment.nextStep.ios[0] in s.tls.t_environment.nextStep.ios;
-  lemma_Accept_j_PR(s.tls.t_environment.nextStep.ios[0].r.msg.pr, s.tls.t_servers[s.tls.config[j]].pr, s'.tls.t_servers[s.tls.config[j]].pr, epoch);
 }
 
 lemma {:verify false} PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
   requires SingleGLSPerformanceAssumption(s) && TGLS_Consistency(s)
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
   requires TGLS_Next(s, s')
-  requires 0 < j < |s.tls.config|
-  requires j + 1 == epoch
+  requires 0 <= j < |s.tls.config|
+  requires 1 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
+
   requires 1 < epoch <= |s.tls.config|
   requires PerfInvariantLockInNetwork(s, j, epoch)
 
@@ -374,9 +385,9 @@ lemma {:verify false} PerfInvariantLockInNetworkGoesToPerfInvariant(j:int, epoch
     } else {
       if s.tls.t_environment.nextStep.nodeStep == GrantStep {
         //reveal_PerfInvariantLockInNetwork();
-        assert false;
+        // assert false;
       } else {
-        Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j, epoch, s, s');
+        // Accept_not_j_InvLockInNetworkImpliesInvLockInNetwork(j, epoch, s, s');
       }
     }
   }
@@ -388,63 +399,9 @@ predicate {:verify false} PerfInvariant(tgls:TaggedGLS_State)
 {
   && TGLS_Consistency(tgls)
   && ( 
-    || (exists epoch, j :: 0 < epoch <= |tgls.tls.config| && epoch == j + 1 && 0 <= j < |tgls.tls.config| && PerfInvariantLockHeld(tgls, j, epoch))
-    || (exists epoch, j :: 1 < epoch <= |tgls.tls.config| && epoch == j + 1 && 0 < j < |tgls.tls.config| && PerfInvariantLockInNetwork(tgls, j, epoch))
-    || (PerfInvariantEpochHigherThanNumServers(tgls))
+    || (exists epoch, j :: 0 < epoch && j == (epoch - 1) % |tgls.tls.config| && 0 <= j < |tgls.tls.config| && PerfInvariantLockHeld(tgls, j, epoch))
+    || (exists epoch, j :: 1 < epoch && j == (epoch - 1) % |tgls.tls.config| && 0 <= j < |tgls.tls.config| && PerfInvariantLockInNetwork(tgls, j, epoch))
   )
-}
-
-lemma {:verify false} NotHostIos_InvEpochHigherGoesToInvEpochHigher(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
-  requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
-  requires TGLS_Consistency(s) && TGLS_Consistency(s')
-  requires SingleGLSPerformanceAssumption(s)
-
-  // A node other than node j taking an accept step
-  requires !s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires PerfInvariantEpochHigherThanNumServers(s)
-
-  ensures PerfInvariantEpochHigherThanNumServers(s')
-{
-  lemma_mod_auto(|s.tls.config|);
-}
-
-lemma {:verify false} Grant_j_InvEpochHigherGoesToInvEpochHigher(j:int, s:TaggedGLS_State, s':TaggedGLS_State)
-  requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
-  requires TGLS_Consistency(s) && TGLS_Consistency(s')
-  requires SingleGLSPerformanceAssumption(s)
-
-  // A node other than node j taking an accept step
-  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
-  requires s.tls.t_environment.nextStep.nodeStep == GrantStep
-  requires PerfInvariantEpochHigherThanNumServers(s)
-
-  ensures PerfInvariantEpochHigherThanNumServers(s')
-{
-  lemma_mod_auto(|s.tls.config|);
-}
-
-lemma {:verify false} PerfInvariantEpochHigherGoesToPerfInvariant(s:TaggedGLS_State, s':TaggedGLS_State)
-  requires SingleGLSPerformanceAssumption(s) && TGLS_Consistency(s)
-  requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
-  requires TGLS_Next(s, s')
-  requires PerfInvariantEpochHigherThanNumServers(s)
-
-  ensures PerfInvariantEpochHigherThanNumServers(s')
-  ensures PerfInvariant(s')
-{
-
-
-  if s.tls.t_environment.nextStep.LEnvStepHostIos? &&
-    s.tls.t_environment.nextStep.nodeStep == AcceptStep
-  {
-    lemma_mod_auto(|s.tls.config|);
-    var id := s.tls.t_environment.nextStep.actor;
-    var ios := s.tls.t_environment.nextStep.ios;
-    assert IsValidLIoOp(ios[0], id, s.tls.t_environment);
-  }
 }
 
 lemma {:verify false} PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int, s:TaggedGLS_State, s':TaggedGLS_State)
@@ -452,24 +409,20 @@ lemma {:verify false} PerfInvariantLockHeldGoesToPerfInvariant(j:int, epoch:int,
   requires SingleGLSPerformanceAssumption(s') && TGLS_Consistency(s')
   requires TGLS_Next(s, s')
   requires 0 <= j < |s.tls.config|
-  requires 0 <= epoch <= |s.tls.config|
-  requires j + 1 == epoch
+  requires 0 < epoch
+  requires j == (epoch - 1) % |s.tls.config|
   requires PerfInvariantLockHeld(s, j, epoch)
 
   ensures PerfInvariant(s')
 {
+  lemma_mod_auto(|s.tls.config|);
   if !s.tls.t_environment.nextStep.LEnvStepHostIos? {
     NotHostIos_InvLockHeldImpliesInvLockHeld(j, epoch, s, s');
   } else {
     if s.tls.t_environment.nextStep.actor == s.tls.config[j] {
       if s.tls.t_environment.nextStep.nodeStep == GrantStep {
-        if j == |s.tls.config| - 1 {
-            Grant_LastNode_InvLockHeldImpliesInvEpochHigher(j, epoch, s, s');
-        } else {
-            Grant_j_InvLockHeldImpliesInvLockInNetwork(j, epoch, s, s');
-        }
+        Grant_j_InvLockHeldImpliesInvLockInNetwork(j, epoch, s, s');
       } else {
-        //reveal_PerfInvariantLockHeld();
         assert false;
       }
     } else {
@@ -490,15 +443,12 @@ lemma {:verify false} PerfInvariantMaintained(s:TaggedGLS_State, s':TaggedGLS_St
 
   ensures PerfInvariant(s')
 {
-  if (PerfInvariantEpochHigherThanNumServers(s)) {
-    PerfInvariantEpochHigherGoesToPerfInvariant(s, s');
-  }
-  else if (exists j, epoch :: 0 < epoch <= |s.tls.config| && epoch == j + 1 && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch)) {
+  if (exists j, epoch :: 0 < epoch <= |s.tls.config| && epoch == j + 1 && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch)) {
     var epoch, j :| 0 < epoch <= |s.tls.config| && epoch == j + 1 && 0 <= j < |s.tls.config| && PerfInvariantLockHeld(s, j, epoch);
     PerfInvariantLockHeldGoesToPerfInvariant(j, epoch, s, s');
   }
   else {
-    var epoch, j :| 1 < epoch <= |s.tls.config| && epoch == j + 1 && 0 < j < |s.tls.config| && PerfInvariantLockInNetwork(s, j, epoch);
+    var epoch, j :| 1 < epoch <= |s.tls.config| && epoch == j + 1 && 0 <= j < |s.tls.config| && PerfInvariantLockInNetwork(s, j, epoch);
     PerfInvariantLockInNetworkGoesToPerfInvariant(j, epoch, s, s');
   }
 }
@@ -521,7 +471,6 @@ lemma {:verify false} InitImpliesPerfInvariant(config:Config, s:TaggedGLS_State)
   ensures PerfInvariant(s)
 {
   //reveal_PerfInvariantLockHeld();
-  PerfProperties();
   assert PerfInvariantLockHeld(s, 0, 1);
 }
 

@@ -2,7 +2,7 @@ include "Environment.s.dfy"
 include "Host.s.dfy"
 include "DistributedSystem.s.dfy"
 include "../Collections/Seqs.i.dfy"
-include "Performance.s.dfy"
+include "Performance_arith.s.dfy"
 
 abstract module TaggedDistributedSystem_s {
   import opened Environment_s
@@ -30,7 +30,8 @@ abstract module TaggedDistributedSystem_s {
     config:ConcreteConfiguration,
     t_environment:TaggedLEnvironment<EndPoint, seq<byte>, HostStep>,
     t_servers:map<EndPoint,TaggedHostState>,
-    clients:set<EndPoint>
+    clients:set<EndPoint>,
+    num_steps:NumSteps
     )
       
   function UntagTaggedType<T>(t_t: TaggedType<T>) : T
@@ -123,26 +124,34 @@ abstract module TaggedDistributedSystem_s {
   predicate TDS_Init(tds: TaggedDS_State, config:ConcreteConfiguration)
     reads *
   {
-    DS_Init(UntagDS_State(tds), config)
+    && NumStepsValid(tds)
+    && DS_Init(UntagDS_State(tds), config)
       && forall id :: id in tds.t_servers ==> tds.t_servers[id].pr == PerfZero()
   }
 
+  predicate NumStepsValid(tds:TaggedDS_State)
+  {
+    ValidNumSteps(tds.num_steps)
+  }
+
   predicate TDS_NextOneServer(tds: TaggedDS_State, tds': TaggedDS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint,seq<byte>>>, hstep:HostStep)
+    requires NumStepsValid(tds)
     requires id in tds.t_servers;
     reads *
   {
     DS_NextOneServer(UntagDS_State(tds), UntagDS_State(tds'), id, UntagLIoOpSeq(ios))
-      // && (var recvTime := PerfMax(multiset(GetReceivePRs(ios)) + multiset{tds.t_servers[id].pr});
-      // var totalTime := PerfAdd2(recvTime, PerfStep(hstep));
-      // tds'.t_servers[id].pr == totalTime
-      // )
+      && if |ios| > 0 && ios[0].LIoOpReceive? then
+        (tds'.t_servers[id].pr, tds'.num_steps) == RecvPerfUpdate(tds.t_servers[id].pr, ios[0].r.msg.pr, hstep, tds.num_steps)
+      else
+        (tds'.t_servers[id].pr, tds'.num_steps) == NoRecvPerfUpdate(tds.t_servers[id].pr, hstep, tds.num_steps)
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tds'.t_servers[id].pr)
   }
 
   predicate TDS_Next(tds:TaggedDS_State, tds': TaggedDS_State)
     reads *
   {
-    DS_Next(UntagDS_State(tds), UntagDS_State(tds'))
+    NumStepsValid(tds)
+    && DS_Next(UntagDS_State(tds), UntagDS_State(tds'))
       && LEnvironment_Next(tds.t_environment, tds'.t_environment)
       && if tds.t_environment.nextStep.LEnvStepHostIos? && tds.t_environment.nextStep.actor in tds.t_servers then
       TDS_NextOneServer(tds, tds', tds.t_environment.nextStep.actor, tds.t_environment.nextStep.ios, tds.t_environment.nextStep.nodeStep)
