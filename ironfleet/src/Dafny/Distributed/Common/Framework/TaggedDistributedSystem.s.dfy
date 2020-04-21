@@ -121,21 +121,22 @@ abstract module TaggedDistributedSystem_s {
       GetReceivePRs(ios[1..])
   }
 
-  predicate TDS_Init(tds: TaggedDS_State, config:ConcreteConfiguration)
-    reads *
-  {
-    && NumStepsValid(tds)
-    && DS_Init(UntagDS_State(tds), config)
-      && forall id :: id in tds.t_servers ==> tds.t_servers[id].pr == PerfZero()
-  }
-
-  predicate NumStepsValid(tds:TaggedDS_State)
+  predicate TDS_NumStepsValid(tds:TaggedDS_State)
   {
     ValidNumSteps(tds.num_steps)
   }
 
+  predicate TDS_Init(tds: TaggedDS_State, config:ConcreteConfiguration)
+    reads *
+  {
+    tds.num_steps == NumStepsInit()
+    && TDS_NumStepsValid(tds)
+    && DS_Init(UntagDS_State(tds), config)
+      && forall id :: id in tds.t_servers ==> tds.t_servers[id].pr == PerfZero()
+  }
+
   predicate TDS_NextOneServer(tds: TaggedDS_State, tds': TaggedDS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint,seq<byte>>>, hstep:HostStep)
-    requires NumStepsValid(tds)
+    requires TDS_NumStepsValid(tds)
     requires id in tds.t_servers;
     reads *
   {
@@ -150,7 +151,7 @@ abstract module TaggedDistributedSystem_s {
   predicate TDS_Next(tds:TaggedDS_State, tds': TaggedDS_State)
     reads *
   {
-    NumStepsValid(tds)
+    TDS_NumStepsValid(tds)
     && DS_Next(UntagDS_State(tds), UntagDS_State(tds'))
       && LEnvironment_Next(tds.t_environment, tds'.t_environment)
       && if tds.t_environment.nextStep.LEnvStepHostIos? && tds.t_environment.nextStep.actor in tds.t_servers then

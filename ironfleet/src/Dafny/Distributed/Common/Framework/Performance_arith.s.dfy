@@ -52,6 +52,7 @@ abstract module Performance_s {
   }
 
   function NumStepsInit() : NumSteps
+    ensures ValidNumSteps(NumStepsInit())
   {
     NumSteps(imap h:HostStep | true :: 0 as nat , 0)
   }
