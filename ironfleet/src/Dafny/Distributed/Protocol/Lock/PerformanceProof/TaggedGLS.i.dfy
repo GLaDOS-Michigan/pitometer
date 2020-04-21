@@ -1,11 +1,13 @@
 include "../Node.i.dfy"
   include "../RefinementProof/DistributedSystem.i.dfy"
 include "../../../Services/Lock/LockTaggedDistributedSystem.i.dfy"
+include "Definitions.i.dfy"
 
 module TaggedGLS_i {
 import opened Protocol_Node_i
 import opened DistributedSystem_i
 import opened LockTaggedDistributedSystem_i
+import opened PerformanceProof__Definitions_i
 
 type TaggedNode = TaggedType<Node>
   
@@ -35,7 +37,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
   predicate TLS_Init(tls: TaggedLS_State, config:Config)
     reads *
   {
-    LS_Init(UntagLS_State(tls), config)
+    && LS_Init(UntagLS_State(tls), config)
       && tls.config == config
       && LEnvironment_Init(tls.t_environment)
       && tls.t_servers[config[0]].pr == PerfZero()
@@ -47,12 +49,11 @@ datatype TaggedGLS_State = TaggedGLS_State(
     reads *
   {
     LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
-      && (
-      if |ios| > 0 && ios[0].LIoOpReceive? then
-        tls'.t_servers[id].pr == RecvPerfUpdate(tls.t_servers[id].pr, ios[0].r.msg.pr, hstep)
+      && (if |ios| > 0 && ios[0].LIoOpReceive? then
+        tls'.t_servers[id].pr == TLS_RecvPerfUpdate(tls.t_servers[id].pr, ios[0].r.msg.pr, hstep)
       else
-        tls'.t_servers[id].pr == NoRecvPerfUpdate(tls.t_servers[id].pr, hstep)
-      )
+        tls'.t_servers[id].pr == TLS_NoRecvPerfUpdate(tls.t_servers[id].pr, hstep)
+        )
 
       && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tls'.t_servers[id].pr)
       && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
