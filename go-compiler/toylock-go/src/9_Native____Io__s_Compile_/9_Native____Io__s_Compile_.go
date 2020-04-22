@@ -554,7 +554,7 @@ func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
 		send_queue:    goconcurrentqueue.NewFIFO(),
 		receive_queue: goconcurrentqueue.NewFIFO(),
 	}
-	fmt.Printf("TONY DEBUG: Initializing new UDPClient %v\n", conn.LocalAddr())
+	fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
 	go _this.sendLoop()
 	go _this.receiveLoop()
 	return &_this
