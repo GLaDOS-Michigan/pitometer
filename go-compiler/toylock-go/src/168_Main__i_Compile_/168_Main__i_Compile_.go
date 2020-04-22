@@ -186,8 +186,8 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int) _dafny.Int
 	_1764_id = _out110
 	{
 	}
-	var counter = 0
 	var nodeGrantLog = clock.NewEventLog(uint(numRounds * 2))
+	var nodeGrantCounter = clock.NewCounter("NodeGrant counter")
 	for _1761_ok {
 		{
 		}
@@ -199,13 +199,12 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int) _dafny.Int
 		var _ = _out111
 		var _out112 _131_Host__i_Compile.CScheduler
 		var _ = _out112
-		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, nodeGrantLog)
-		counter++
+		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, nodeGrantCounter, nodeGrantLog)
 		_1761_ok = _out111
 		_1762_host__state = _out112
 		{
 		}
-		if counter == numRounds {
+		if nodeGrantCounter.GetCount() == numRounds {
 			// Dump the event log
 			fmt.Println(nodeGrantLog.String())
 			return exitCode

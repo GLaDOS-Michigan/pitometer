@@ -274,7 +274,7 @@ TAIL_CALL_START:
 	}
 	return ok, host__state, config, id
 }
-func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, nodeGrantLog *clock.EventLog) (bool, CScheduler) {
+func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.EventLog) (bool, CScheduler) {
 	var ok bool = false
 	var _ = ok
 	var host__state_k CScheduler = Type_CScheduler_().Default().(CScheduler)
@@ -283,7 +283,7 @@ func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, no
 	var _ = _1749_okay
 	var _out105 bool
 	var _ = _out105
-	_out105 = ((host__state).Dtor_node__impl()).HostNextMain(nodeGrantLog)
+	_out105 = ((host__state).Dtor_node__impl()).HostNextMain(nodeGrantCounter, nodeGrantLog)
 	_1749_okay = _out105
 	if _1749_okay {
 		{

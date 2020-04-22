@@ -211,7 +211,7 @@ TAIL_CALL_START:
 }
 
 // TONY: Measure this
-func (_this *NodeImpl) NodeNextGrant(nodeGrantLog *clock.EventLog) bool {
+func (_this *NodeImpl) NodeNextGrant(nodeGrantCounter *clock.Counter, nodeGrantLog *clock.EventLog) bool {
 	nodeGrantLog.LogStartEvent("NodeNextGrant")
 	var ok bool = false
 	var _ = ok
@@ -237,6 +237,7 @@ func (_this *NodeImpl) NodeNextGrant(nodeGrantLog *clock.EventLog) bool {
 	} else {
 	}
 	nodeGrantLog.LogEndEvent("NodeNextGrant")
+	nodeGrantCounter.Increment()
 	return ok
 }
 func (_this *NodeImpl) NodeNextAccept() bool {
@@ -286,7 +287,7 @@ TAIL_CALL_START:
 	}
 	return ok
 }
-func (_this *NodeImpl) HostNextMain(nodeGrantLog *clock.EventLog) bool {
+func (_this *NodeImpl) HostNextMain(nodeGrantCounter *clock.Counter, nodeGrantLog *clock.EventLog) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -294,7 +295,7 @@ TAIL_CALL_START:
 	if (_this.Node).Dtor_held() {
 		var _out91 bool
 		var _ = _out91
-		_out91 = (_this).NodeNextGrant(nodeGrantLog)
+		_out91 = (_this).NodeNextGrant(nodeGrantCounter, nodeGrantLog)
 		ok = _out91
 	} else {
 		var _out92 bool
