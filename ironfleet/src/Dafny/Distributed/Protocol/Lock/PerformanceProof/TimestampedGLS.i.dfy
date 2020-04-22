@@ -1,69 +1,65 @@
 include "../Node.i.dfy"
   include "../RefinementProof/DistributedSystem.i.dfy"
-include "../../../Services/Lock/LockTaggedDistributedSystem.i.dfy"
+include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
+include "Definitions.i.dfy"
 
-module TaggedGLS_i {
+module TimestampedGLS_i {
 import opened Protocol_Node_i
 import opened DistributedSystem_i
-import opened LockTaggedDistributedSystem_i
+import opened LockTimestampedDistributedSystem_i
+import opened PerformanceProof__Definitions_i
 
-type TaggedNode = TaggedType<Node>
+type TimestampedNode = TimestampedType<Node>
   
-datatype TaggedLS_State = TaggedLS_State(
+datatype TimestampedLS_State = TimestampedLS_State(
   config:ConcreteConfiguration,
-  t_environment:TaggedLEnvironment<EndPoint, LockMessage, HostStep>,
-  t_servers:map<EndPoint,TaggedNode>
+  t_environment:TimestampedLEnvironment<EndPoint, LockMessage, HostStep>,
+  t_servers:map<EndPoint,TimestampedNode>
   )
 
-datatype TaggedGLS_State = TaggedGLS_State(
-  tls:TaggedLS_State,
+datatype TimestampedGLS_State = TimestampedGLS_State(
+  tls:TimestampedLS_State,
   history:seq<EndPoint>
   )
 
-  function UntagLSServers(t_servers: map<EndPoint, TaggedNode>) : map<EndPoint, Node>
+  function UntagLSServers(t_servers: map<EndPoint, TimestampedNode>) : map<EndPoint, Node>
   {
     map id | id in t_servers :: t_servers[id].v
   }
-  
 
-  function UntagLS_State(tds:TaggedLS_State) : LS_State
+  function UntagLS_State(tds:TimestampedLS_State) : LS_State
   {
     LS_State(
       UntagLEnvironment(tds.t_environment),
       UntagLSServers(tds.t_servers))
   }
 
-  predicate TLS_Init(tls: TaggedLS_State, config:Config)
+  predicate TLS_Init(tls: TimestampedLS_State, config:Config)
     reads *
   {
-    LS_Init(UntagLS_State(tls), config)
+    && LS_Init(UntagLS_State(tls), config)
       && tls.config == config
       && LEnvironment_Init(tls.t_environment)
-      && tls.t_servers[config[0]].pr == PerfZero
-      && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].pr == PerfVoid
+      && tls.t_servers[config[0]].ts == TimeZero()
+      && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].ts == TimeZero()
   }
 
-  predicate TLS_NextOneServer(tls: TaggedLS_State, tls': TaggedLS_State, id:EndPoint, ios:seq<TaggedLIoOp<EndPoint, LockMessage>>, hstep:HostStep)
+  predicate TLS_NextOneServer(tls: TimestampedLS_State, tls': TimestampedLS_State, id:EndPoint, ios:seq<TimestampedLIoOp<EndPoint, LockMessage>>, hstep:HostStep)
     requires id in tls.t_servers;
     reads *
   {
     LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
-      && (
-      if |ios| > 0 && ios[0].LIoOpReceive? then
-        var deliveryTime := PerfAdd2(ios[0].r.msg.pr, PerfDelivery);
-        var handlerStartTime := PerfMax(multiset{deliveryTime, tls.t_servers[id].pr});
-        var totalTime := PerfAdd2(handlerStartTime, PerfStep(hstep));
-        totalTime == tls'.t_servers[id].pr
+      && (if |ios| > 0 && ios[0].LIoOpReceive? then
+        tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hstep)
       else
-        var totalTime := PerfAdd2(tls.t_servers[id].pr, PerfStep(hstep));
-        totalTime == tls'.t_servers[id].pr
-      )
+        tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hstep)
+        )
 
-      && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == tls'.t_servers[id].pr)
+      && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == tls'.t_servers[id].ts)
       && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
   }
 
-  predicate TLS_Next(tls:TaggedLS_State, tls': TaggedLS_State)
+  predicate TLS_Next(tls:TimestampedLS_State, tls': TimestampedLS_State)
     reads *
   {
     tls.config == tls'.config
@@ -75,19 +71,19 @@ datatype TaggedGLS_State = TaggedGLS_State(
         tls'.t_servers == tls.t_servers
 
         && (if tls.t_environment.nextStep.LEnvStepHostIos? then
-            && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.pr == PerfZero)
+            && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == TimeZero())
             else
             true)
   }
 
-  predicate TGLS_Init(tgls:TaggedGLS_State, config:Config)
+  predicate TGLS_Init(tgls:TimestampedGLS_State, config:Config)
     reads *
   {
     TLS_Init(tgls.tls, config)
       && tgls.history == [config[0]]
   }
 
-  predicate TGLS_Next(tgls:TaggedGLS_State, tgls':TaggedGLS_State)
+  predicate TGLS_Next(tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
     reads *
   {
     TLS_Next(tgls.tls, tgls'.tls)
@@ -100,7 +96,7 @@ datatype TaggedGLS_State = TaggedGLS_State(
         )
   }
 
-  predicate ValidTaggedGLSBehavior(tglb:seq<TaggedGLS_State>, config:Config)
+  predicate ValidTimestampedGLSBehavior(tglb:seq<TimestampedGLS_State>, config:Config)
     reads *
   {
     && |tglb| > 0

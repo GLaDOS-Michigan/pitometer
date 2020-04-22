@@ -1,89 +1,71 @@
-include "../../../Services/Lock/LockTaggedDistributedSystem.i.dfy"
-  //include "TaggedGLS.i.dfy"
+// Must be verified with /arith:2
+
+include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
 
 module PerformanceProof__Definitions_i {
- import opened LockTaggedDistributedSystem_i
-  // import opened TaggedGLS_i
+import opened LockTimestampedDistributedSystem_i
 
-function PerfBoundLockHeld(epoch: int) : PerfExpr
+ghost const Gs := StepTime(GrantStep);
+ghost const As := StepTime(AcceptStep);
+ghost const Ds := DeliveryTime();
+ghost const G:Timestamp
+ghost const A:Timestamp
+ghost const D:Timestamp
+
+function StepToTimeDelta(hstep:HostStep) : Timestamp
+{
+  if hstep == GrantStep then G else A
+}
+
+function TLS_NoRecvPerfUpdate(node_pr:Timestamp, hstep:HostStep) : Timestamp
+{
+  var total_time := TimeAdd2(node_pr, StepToTimeDelta(hstep));
+  total_time
+}
+
+function TLS_RecvPerfUpdate(node_pr:Timestamp, pkt_pr:Timestamp, hstep:HostStep) : Timestamp
+{
+  var deliveryTime := TimeAdd2(pkt_pr, D);
+  var handlerStartTime := TimeMax(deliveryTime, node_pr);
+  var total_time := TimeAdd2(handlerStartTime, StepToTimeDelta(hstep));
+  total_time
+}
+
+function PerfBoundLockHeld(epoch: int) : Timestamp
   requires 0 < epoch
 {
-    var s : multiset<PerfExpr> := multiset{};
-    var s2 := s[PerfStep(GrantStep) := epoch - 1][PerfStep(AcceptStep) := epoch - 1][PerfDelivery := epoch - 1];
-    PerfAdd(s2)
+  (epoch - 1) * G + (epoch - 1) * A + (epoch - 1) * D
 }
 
-function PerfBoundLockInNetwork(epoch: int) : PerfExpr
+function PerfBoundLockInNetwork(epoch: int) : Timestamp
   requires 1 < epoch
 {
-  var s : multiset<PerfExpr> := multiset{};
-  var s2 := s[PerfStep(GrantStep) := epoch - 1][PerfStep(AcceptStep) := epoch - 2][PerfDelivery := epoch - 2];
-  PerfAdd(s2)
+  (epoch - 1) * G + (epoch - 2) * A + (epoch - 2) * D
 }
 
-lemma Test(j:int)
-  requires 1 < j
+predicate TimeEq(p1:Timestamp, p2:Timestamp)
 {
-  PerfProperties();
-  quotient_axioms();
-  var p := quotient_map(PerfVoid);
-  var p' := quotient_map(PerfBoundLockHeld(j));
-  var pkt_pr := quotient_map(PerfBoundLockInNetwork(j));
-
-  var deliveryTime := PerfAdd(pkt_pr, quotient_map(PerfDelivery));
-  var handlerStartTime := PerfMax(deliveryTime, p);
-  var totalTime := PerfAdd(handlerStartTime, quotient_map(PerfStep(AcceptStep)));
-
-  assert totalTime == p';
+  p1 == p2
 }
 
-/*
-lemma {:verify false} specific_axiom(a:multiset<PerfExpr>, b:multiset<PerfExpr>)
-  ensures PerfEq(PerfAdd(b + multiset{PerfAdd(a)}), PerfAdd(b + a))
+predicate PerfLe(p1:Timestamp, p2:Timestamp)
+{
+  p1 <= p2
+}
+
+lemma Grant_j_helper_specific(epoch:int)
+  requires epoch > 0
+  ensures TimeEq(PerfBoundLockInNetwork(epoch + 1), TimeAdd2(PerfBoundLockHeld(epoch), G));
 {
 }
 
-lemma Other(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
-  requires 1 < j;
-  requires PerfEq(pkt_pr, PerfBoundLockInNetwork(j));
-  // requires PerfEq(nd_pr, PerfVoid);
-  requires nd_pr == PerfVoid;
-  ensures PerfEq(PerfAdd2(PerfMax(multiset{PerfAdd2(pkt_pr, PerfDelivery), nd_pr}), PerfStep(AcceptStep)), PerfBoundLockHeld(j));
+lemma Grant_j_helper()
+  ensures forall epoch :: epoch > 0 ==> TimeEq(PerfBoundLockInNetwork(epoch + 1), TimeAdd2(PerfBoundLockHeld(epoch), G));
 {
-  Test(j, pkt_pr, nd_pr, final_pr);
 }
 
-
-lemma Test(j:int, pkt_pr: PerfReport, nd_pr:PerfReport, final_pr:PerfReport)
-  requires 1 < j;
-  // requires PerfEq(pkt_pr, PerfBoundLockInNetwork(j));
-  requires pkt_pr == PerfBoundLockInNetwork(j);
-  // requires PerfEq(nd_pr, PerfVoid);
-  requires nd_pr == PerfVoid;
-  ensures PerfEq(PerfAdd2(PerfMax(multiset{PerfAdd2(pkt_pr, PerfDelivery), nd_pr}), PerfStep(AcceptStep)), PerfBoundLockHeld(j));
-
+lemma Accept_j_helper()
+  ensures forall epoch :: epoch > 1 ==> TimeEq(PerfBoundLockHeld(epoch), TLS_RecvPerfUpdate(TimeVoid(), PerfBoundLockInNetwork(epoch), AcceptStep))
 {
-  PerfProperties();
-// 
-  // var p := PerfVoid;
-  // var p' := PerfBoundLockHeld(j);
-  // // var pkt_pr := PerfBoundLockInNetwork(j);
-// 
-  // var deliveryTime := PerfAdd2(pkt_pr, PerfDelivery);
-  // var handlerStartTime := PerfMax(multiset{deliveryTime, p});
-  // var totalTime := PerfAdd2(handlerStartTime, PerfStep(AcceptStep));
-// 
-  // assert PerfEq(totalTime, p');
 }
-
-// if |ios| > 0 && ios[0].LIoOpReceive? then
-  // var deliveryTime := PerfAdd2(ios[0].pr, PerfDeliver);
-  // var handlerStartTime := PerfMax(multiset{deliveryTime, tagged_node_state.pr});
-  // var totalTime := PerfAdd2(handlerStartTime, PerfStep(GrantStep));
-  //
-// else
-  // var totalTime := PerfAdd2(ios[0].pr, PerfStep(GrantStep));
-
-*/
-  
 }
