@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+/*****************************************************************************************
+************************************* TimePoint ******************************************
+*****************************************************************************************/
+
 // EventType is Start or End
 type EventType int
 
@@ -28,6 +32,10 @@ func timePointNow(event EventType, name string) *TimePoint {
 		functionName: name,
 		instant:      time.Now()}
 }
+
+/*****************************************************************************************
+************************************** EventLog ******************************************
+*****************************************************************************************/
 
 // EventLog represents a sequence of TimePoints
 type EventLog struct {
@@ -70,4 +78,29 @@ func (el *EventLog) String() string {
 		res += eStr
 	}
 	return res
+}
+
+/*****************************************************************************************
+************************************** Counter *******************************************
+*****************************************************************************************/
+
+// Counter is used to count events in code
+type Counter struct {
+	count int
+	name  string
+}
+
+// NewCounter is the constructor for a Counter
+func NewCounter(name string) *Counter {
+	return &Counter{0, name}
+}
+
+// Increment increments the counter by 1
+func (c *Counter) Increment() {
+	c.count = c.count + 1
+}
+
+// GetCount returns the count of the counter
+func (c *Counter) GetCount() int {
+	return c.count
 }
