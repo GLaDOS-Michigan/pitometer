@@ -44,6 +44,7 @@ import (
 	_99_Math____power2__i_Compile "99_Math____power2__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -208,7 +209,10 @@ TAIL_CALL_START:
 	}
 	return ok
 }
-func (_this *NodeImpl) NodeNextGrant() bool {
+
+// TONY: Measure this
+func (_this *NodeImpl) NodeNextGrant(nodeGrantLog *clock.EventLog) bool {
+	nodeGrantLog.LogStartEvent("NodeNextGrant")
 	var ok bool = false
 	var _ = ok
 	var _1690_transfer__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
@@ -219,7 +223,7 @@ func (_this *NodeImpl) NodeNextGrant() bool {
 	var _ = _out85
 	_out84, _out85 = _115_Impl__Node__i_Compile.Companion_Default___.NodeGrantImpl(_this.Node)
 	(_this).Node = _out84
-	_1690_transfer__packet = _out85
+	_1690_transfer__packet = _out85 // This is the packet that is sent
 	ok = true
 	if (_1690_transfer__packet).Is_Some() {
 		{
@@ -232,6 +236,7 @@ func (_this *NodeImpl) NodeNextGrant() bool {
 		}
 	} else {
 	}
+	nodeGrantLog.LogEndEvent("NodeNextGrant")
 	return ok
 }
 func (_this *NodeImpl) NodeNextAccept() bool {
@@ -281,7 +286,7 @@ TAIL_CALL_START:
 	}
 	return ok
 }
-func (_this *NodeImpl) HostNextMain() bool {
+func (_this *NodeImpl) HostNextMain(nodeGrantLog *clock.EventLog) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -289,7 +294,7 @@ TAIL_CALL_START:
 	if (_this.Node).Dtor_held() {
 		var _out91 bool
 		var _ = _out91
-		_out91 = (_this).NodeNextGrant()
+		_out91 = (_this).NodeNextGrant(nodeGrantLog)
 		ok = _out91
 	} else {
 		var _out92 bool

@@ -56,7 +56,9 @@ import (
 	_99_Math____power2__i_Compile "99_Math____power2__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
+	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -185,6 +187,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int) _dafny.Int
 	{
 	}
 	var counter = 0
+	var nodeGrantLog = clock.NewEventLog(uint(numRounds * 2))
 	for _1761_ok {
 		{
 		}
@@ -196,13 +199,15 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int) _dafny.Int
 		var _ = _out111
 		var _out112 _131_Host__i_Compile.CScheduler
 		var _ = _out112
-		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state)
+		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, nodeGrantLog)
 		counter++
 		_1761_ok = _out111
 		_1762_host__state = _out112
 		{
 		}
 		if counter == numRounds {
+			// Dump the event log
+			fmt.Println(nodeGrantLog.String())
 			return exitCode
 		}
 	}

@@ -47,6 +47,7 @@ import (
 	_99_Math____power2__i_Compile "99_Math____power2__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -273,7 +274,7 @@ TAIL_CALL_START:
 	}
 	return ok, host__state, config, id
 }
-func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler) (bool, CScheduler) {
+func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, nodeGrantLog *clock.EventLog) (bool, CScheduler) {
 	var ok bool = false
 	var _ = ok
 	var host__state_k CScheduler = Type_CScheduler_().Default().(CScheduler)
@@ -282,7 +283,7 @@ func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler) (b
 	var _ = _1749_okay
 	var _out105 bool
 	var _ = _out105
-	_out105 = ((host__state).Dtor_node__impl()).HostNextMain()
+	_out105 = ((host__state).Dtor_node__impl()).HostNextMain(nodeGrantLog)
 	_1749_okay = _out105
 	if _1749_okay {
 		{
