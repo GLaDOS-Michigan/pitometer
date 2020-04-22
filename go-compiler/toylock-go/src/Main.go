@@ -55,6 +55,9 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"fmt"
+	"os"
+	"strconv"
 
 	_0_Native____NativeTypes__s_Compile "0_Native____NativeTypes__s_Compile_"
 )
@@ -116,5 +119,13 @@ var _ _168_Main__i_Compile.Dummy__
 
 func main() {
 	var main_dummy = _168_Main__i_Compile.Companion_Default___
-	main_dummy.Default_Main_()
+
+	// Grab the last argument from os.Args -- that is the number of rounds to run ToyLock
+	var numRounds, err = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
+	if int(numRounds) <= 0 || err != nil {
+		fmt.Printf("Error: Invalid round number %v\n", os.Args[len(os.Args)-1])
+		os.Exit(1)
+	}
+	os.Args = os.Args[:len(os.Args)-1]
+	main_dummy.Default_Main_(int(numRounds))
 }

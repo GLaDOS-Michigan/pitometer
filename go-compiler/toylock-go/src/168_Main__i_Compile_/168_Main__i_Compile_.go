@@ -158,7 +158,7 @@ func (_this type_Default___) Default() interface{} {
 func (_this type_Default___) String() string {
 	return "_168_Main__i_Compile.Default__"
 }
-func (_this *CompanionStruct_Default___) Default_Main_() _dafny.Int {
+func (_this *CompanionStruct_Default___) Default_Main_(numRounds int) _dafny.Int {
 	var exitCode _dafny.Int = _dafny.Zero
 	var _ = exitCode
 	var _1761_ok bool
@@ -184,6 +184,7 @@ func (_this *CompanionStruct_Default___) Default_Main_() _dafny.Int {
 	_1764_id = _out110
 	{
 	}
+	var counter = 0
 	for _1761_ok {
 		{
 		}
@@ -196,9 +197,13 @@ func (_this *CompanionStruct_Default___) Default_Main_() _dafny.Int {
 		var _out112 _131_Host__i_Compile.CScheduler
 		var _ = _out112
 		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state)
+		counter++
 		_1761_ok = _out111
 		_1762_host__state = _out112
 		{
+		}
+		if counter == numRounds {
+			return exitCode
 		}
 	}
 	return exitCode
