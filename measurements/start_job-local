@@ -1,16 +1,19 @@
 #!/bin/bash
 # This script starts a toylock job using the local EP. It takes the following 
 # positional arguments:
-# ./start_job-local <num_nodes> <num_rounds>
+# ./start_job-local <num_nodes> <num_rounds> <delay>
 
 NUM_NODES=$1
 NUM_ROUNDS=$2
+DELAY=$3   # milliseconds of artificial delay to inject
 
 DATA_DIR="analysis/data"
+
+./build-mac
 
 echo "Starting local job with $NUM_NODES nodes and $NUM_ROUNDS rounds"
 
 for ((i=$NUM_NODES;i>0;i--))
 do
-    ./run-local $NUM_NODES $i $NUM_ROUNDS | grep Node > $DATA_DIR/node$i.csv &
+    ./run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw &
 done
