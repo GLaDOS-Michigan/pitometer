@@ -186,7 +186,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int) _dafny.Int
 	_1764_id = _out110
 	{
 	}
-	var nodeGrantLog = clock.NewEventLog(uint(numRounds * 2))
+	var nodeGrantLog = clock.NewStopwatch(uint(numRounds*2), "NodeGrant Stopwatch")
 	var nodeGrantCounter = clock.NewCounter("NodeGrant counter")
 	for _1761_ok {
 		{
