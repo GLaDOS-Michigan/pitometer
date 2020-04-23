@@ -1,12 +1,12 @@
-# Project build file for mac
 #!/bin/bash
+# Project build file for mac
 
 LOCK_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/toylock-go'
 export GOPATH=$LOCK_DIR
 
 echo "Starting build"
 
-go build "$LOCK_DIR/src/Main.go"
+go build -o toylock-main "$LOCK_DIR/src/Main.go" 
 
 export GOPATH='/Users/zhang/go'
 export PATH=$PATH:$(go env GOPATH)/bin
