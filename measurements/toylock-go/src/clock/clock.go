@@ -2,6 +2,7 @@ package clock
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type TimePoint struct {
 	event        EventType
 	functionName string
 	instant      time.Time // Time of this TimePoint instance
+	duration     time.Duration
 }
 
 // timePointNow creates a new TimePoint object with the current time
@@ -30,7 +32,8 @@ func timePointNow(event EventType, name string) *TimePoint {
 	return &TimePoint{
 		event:        event,
 		functionName: name,
-		instant:      time.Now()}
+		instant:      time.Now(),
+		duration:     time.Duration(0)}
 }
 
 /*****************************************************************************************
@@ -58,6 +61,12 @@ func (el *EventLog) LogStartEvent(name string) {
 // LogEndEvent adds a new end event to the log
 func (el *EventLog) LogEndEvent(name string) {
 	var tp = timePointNow(End, name)
+	var previousEvent = (*el.log)[len((*el.log))-1]
+	if previousEvent.event != Start {
+		fmt.Printf("Error: End event without corresponding start event\n")
+		os.Exit(1)
+	}
+	tp.duration = tp.instant.Sub(previousEvent.instant)
 	var newlog = append(*el.log, tp)
 	el.log = &newlog
 }
@@ -69,9 +78,9 @@ func (el *EventLog) String() string {
 		var eStr string
 		switch e.event {
 		case Start:
-			eStr = fmt.Sprintf("Start, %s, %v\n", e.functionName, e.instant)
+			eStr = fmt.Sprintf("Start, %s, %v, %v\n", e.functionName, e.instant, e.duration.Nanoseconds())
 		case End:
-			eStr = fmt.Sprintf("End, %s, %v\n", e.functionName, e.instant)
+			eStr = fmt.Sprintf("End, %s, %v, %v\n", e.functionName, e.instant, e.duration.Nanoseconds())
 		default:
 			fmt.Printf("Error: Invalid case %v\n", e.event)
 		}
