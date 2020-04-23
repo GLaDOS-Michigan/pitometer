@@ -274,7 +274,7 @@ TAIL_CALL_START:
 	}
 	return ok, host__state, config, id
 }
-func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.EventLog) (bool, CScheduler) {
+func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) (bool, CScheduler) {
 	var ok bool = false
 	var _ = ok
 	var host__state_k CScheduler = Type_CScheduler_().Default().(CScheduler)

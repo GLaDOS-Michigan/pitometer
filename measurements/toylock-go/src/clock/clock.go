@@ -2,7 +2,6 @@ package clock
 
 import (
 	"fmt"
-	"os"
 	"time"
 )
 
@@ -24,67 +23,65 @@ type TimePoint struct {
 	id           int
 	event        EventType
 	functionName string
-	instant      time.Time // Time of this TimePoint instance
-	duration     time.Duration
+	instant      time.Duration // Time of this TimePoint instance
 }
 
-// timePointNow creates a new TimePoint object with the current time
-func timePointNow(id int, event EventType, name string) *TimePoint {
+// timePointNow creates a new TimePoint object
+func timePointNow(id int, event EventType, name string, instant time.Duration) *TimePoint {
 	return &TimePoint{
 		id:           id,
 		event:        event,
 		functionName: name,
-		instant:      time.Now(),
-		duration:     time.Duration(0)}
+		instant:      instant}
 }
 
 /*****************************************************************************************
-************************************** EventLog ******************************************
+************************************** Stopwatch *****************************************
 *****************************************************************************************/
 
-// EventLog represents a sequence of TimePoints
-type EventLog struct {
-	log    *[]*TimePoint
-	nextID int
+// Stopwatch represents a sequence of TimePoints
+type Stopwatch struct {
+	name      string
+	startTime time.Time
+	log       *[]*TimePoint
+	nextID    int
 }
 
-// NewEventLog generates a new log with the specified initial capacity
-func NewEventLog(n uint) *EventLog {
+// NewStopwatch generates a new log with the specified initial capacity
+func NewStopwatch(n uint, name string) *Stopwatch {
 	var res = make([]*TimePoint, 0, n)
-	return &EventLog{&res, 0}
+	return &Stopwatch{
+		name:      name,
+		startTime: time.Now(),
+		log:       &res,
+		nextID:    0}
 }
 
 // LogStartEvent adds a new start event to the log
-func (el *EventLog) LogStartEvent(name string) {
-	var tp = timePointNow(el.nextID, Start, name)
+func (el *Stopwatch) LogStartEvent(name string) {
+	var tp = timePointNow(el.nextID, Start, name, time.Since(el.startTime))
 	var newlog = append(*el.log, tp)
 	el.log = &newlog
 }
 
 // LogEndEvent adds a new end event to the log
-func (el *EventLog) LogEndEvent(name string) {
-	var tp = timePointNow(el.nextID, End, name)
+func (el *Stopwatch) LogEndEvent(name string) {
+	var tp = timePointNow(el.nextID, End, name, time.Since(el.startTime))
 	el.nextID++
-	var previousEvent = (*el.log)[len((*el.log))-1]
-	if previousEvent.event != Start {
-		fmt.Printf("Error: End event without corresponding start event\n")
-		os.Exit(1)
-	}
-	tp.duration = tp.instant.Sub(previousEvent.instant)
 	var newlog = append(*el.log, tp)
 	el.log = &newlog
 }
 
 // String formats the log into a string
-func (el *EventLog) String() string {
-	var res = ""
+func (el *Stopwatch) String() string {
+	var res = fmt.Sprintf("%s,%v\n", el.name, el.startTime)
 	for _, e := range *el.log {
 		var eStr string
 		switch e.event {
 		case Start:
-			eStr = fmt.Sprintf("%d,Start,%s,%v,%v\n", e.id, e.functionName, e.instant, e.duration.Nanoseconds())
+			eStr = fmt.Sprintf("%d,Start,%s,%v\n", e.id, e.functionName, e.instant.Nanoseconds())
 		case End:
-			eStr = fmt.Sprintf("%d,End,%s,%v,%v\n", e.id, e.functionName, e.instant, e.duration.Nanoseconds())
+			eStr = fmt.Sprintf("%d,End,%s,%v\n", e.id, e.functionName, e.instant.Nanoseconds())
 		default:
 			fmt.Printf("Error: Invalid case %v\n", e.event)
 		}
