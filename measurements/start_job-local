@@ -1,0 +1,16 @@
+#!/bin/bash
+# This script starts a toylock job using the local EP. It takes the following 
+# positional arguments:
+# ./start_job-local <num_nodes> <num_rounds>
+
+NUM_NODES=$1
+NUM_ROUNDS=$2
+
+DATA_DIR="analysis/data"
+
+echo "Starting local job with $NUM_NODES nodes and $NUM_ROUNDS rounds"
+
+for ((i=$NUM_NODES;i>0;i--))
+do
+    ./run-local $NUM_NODES $i $NUM_ROUNDS | grep Node > $DATA_DIR/node$i.csv &
+done
