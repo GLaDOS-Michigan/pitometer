@@ -82,9 +82,9 @@ func (el *EventLog) String() string {
 		var eStr string
 		switch e.event {
 		case Start:
-			eStr = fmt.Sprintf("%d, Start, %s, %v, %v\n", e.id, e.functionName, e.instant, e.duration.Nanoseconds())
+			eStr = fmt.Sprintf("%d,Start,%s,%v,%v\n", e.id, e.functionName, e.instant, e.duration.Nanoseconds())
 		case End:
-			eStr = fmt.Sprintf("%d, End, %s, %v, %v\n", e.id, e.functionName, e.instant, e.duration.Nanoseconds())
+			eStr = fmt.Sprintf("%d,End,%s,%v,%v\n", e.id, e.functionName, e.instant, e.duration.Nanoseconds())
 		default:
 			fmt.Printf("Error: Invalid case %v\n", e.event)
 		}
