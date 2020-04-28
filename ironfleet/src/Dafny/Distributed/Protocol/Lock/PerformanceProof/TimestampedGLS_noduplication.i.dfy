@@ -83,6 +83,7 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
            && UndeliveredPackets_Next(tls, tls')
        else
         tls'.t_servers == tls.t_servers
+        && tls'.undeliveredPackets == tls.undeliveredPackets
 
         && (if tls.t_environment.nextStep.LEnvStepHostIos? then
             && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == TimeZero())

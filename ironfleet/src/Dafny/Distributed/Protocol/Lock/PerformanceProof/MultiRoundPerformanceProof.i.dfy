@@ -141,6 +141,19 @@ predicate PerfInvariantAlways_Alt(tgls:TimestampedGLS_State)
     )
 }
 
+lemma NotHostIos_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State)
+  requires TGLS_Next(s, s')
+  requires TGLS_Consistency(s) && TGLS_Consistency(s')
+  requires SingleGLSPerformanceAssumption(s)
+
+  requires !s.tls.t_environment.nextStep.LEnvStepHostIos?
+
+  requires PerfInvariantAlways_Alt(s);
+  ensures PerfInvariantAlways_Alt(s');
+{
+  
+}
+
 lemma Grant_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State)
   requires TGLS_Next(s, s')
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
