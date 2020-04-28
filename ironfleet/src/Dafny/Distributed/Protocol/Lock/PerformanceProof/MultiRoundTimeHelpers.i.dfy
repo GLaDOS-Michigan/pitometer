@@ -33,7 +33,7 @@ lemma lemma_Accept_eq(node_pr:Timestamp, epoch:int)
 
 lemma lemma_Accept(node_ts:Timestamp, pkt_ts:Timestamp, nd_epoch:int, pkt_epoch:int)
   requires 0 < pkt_epoch
-  requires 0 < nd_epoch
+  requires 0 <= nd_epoch
   requires nd_epoch + 1 <= pkt_epoch
   requires TimeLe(node_ts, PerfBoundLockInNetwork(nd_epoch + 1))
   requires TimeLe(pkt_ts, PerfBoundLockInNetwork(pkt_epoch))

@@ -39,6 +39,7 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
     reads *
   {
     && LS_Init(UntagLS_State(tls), config)
+      && tls.undeliveredPackets == multiset{}
       && tls.config == config
       && LEnvironment_Init(tls.t_environment)
       && tls.t_servers[config[0]].ts == TimeZero()
