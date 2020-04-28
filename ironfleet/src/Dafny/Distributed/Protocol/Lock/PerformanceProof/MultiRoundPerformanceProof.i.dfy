@@ -134,6 +134,8 @@ predicate PerfInvariantAlways_Alt(tgls:TimestampedGLS_State)
   ==> 1 < pkt.msg.v.transfer_epoch && TimeLe(pkt.msg.ts, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch))
   )
 
+  && SingleGLSPerformanceGuarantee(tgls)
+
   && (if tgls.tls.t_servers[tgls.history[|tgls.history| - 1]].v.held then
     PerfInvariant_LockHeld(tgls)
   else
@@ -151,7 +153,6 @@ lemma NotHostIos_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_S
   requires PerfInvariantAlways_Alt(s);
   ensures PerfInvariantAlways_Alt(s');
 {
-  
 }
 
 lemma Grant_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State)
@@ -195,11 +196,74 @@ lemma Accept_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State
   lemma_Accept(s.tls.t_servers[id].ts, pkt.msg.ts, s.tls.t_servers[id].v.epoch, pkt.msg.v.transfer_epoch);
 }
 
-lemma Init_InvariantHolds(s:TimestampedGLS_State)
+lemma InitImpliesInvariant(s:TimestampedGLS_State)
   requires TGLS_Init(s, s.tls.config)
   requires TGLS_Consistency(s)
   ensures PerfInvariantAlways_Alt(s)
 {
+}
+
+lemma TGLS_Next_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State)
+  requires TGLS_Next(s, s')
+  requires TGLS_Consistency(s) && TGLS_Consistency(s')
+  requires SingleGLSPerformanceAssumption(s)
+  requires PerfInvariantAlways_Alt(s);
+
+  ensures PerfInvariantAlways_Alt(s');
+{
+  if s.tls.t_environment.nextStep.LEnvStepHostIos? {
+    if s.tls.t_environment.nextStep.nodeStep == GrantStep {
+      Grant_InvariantMaintained(s, s');
+    }
+    else {
+      Accept_InvariantMaintained(s, s');
+    }
+  }
+  else {
+   NotHostIos_InvariantMaintained(s, s'); 
+  }
+}
+
+lemma InvariantImpliesGuarantee(s:TimestampedGLS_State)
+  requires PerfInvariantAlways_Alt(s);
+  ensures SingleGLSPerformanceGuarantee(s)
+{
+  
+}
+
+lemma Establish_TGLS_Consistency(config:Config, tglb:seq<TimestampedGLS_State>, i:int)
+  requires ValidTimestampedGLSBehavior(tglb, config)
+  requires 0 <= i < |tglb|
+  ensures TGLS_Consistency(tglb[i])
+
+  decreases i
+{
+  if i > 0{
+    Establish_TGLS_Consistency(config, tglb, i - 1);
+  }
+}
+
+
+lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
+  requires ValidTimestampedGLSBehavior(tglb, config)
+  requires GLSPerformanceAssumption(tglb)
+  ensures GLSPerformanceGuarantee(tglb)
+{
+  var i := 0;
+  Establish_TGLS_Consistency(config, tglb, 0);
+  InitImpliesInvariant(tglb[0]);
+
+  while i < |tglb| - 1
+    invariant 0 <= i < |tglb|
+    invariant GLSPerformanceGuarantee(tglb[..i+1])
+    invariant PerfInvariantAlways_Alt(tglb[i])
+  {
+    Establish_TGLS_Consistency(config, tglb, i);
+    Establish_TGLS_Consistency(config, tglb, i + 1);
+    TGLS_Next_InvariantMaintained(tglb[i], tglb[i + 1]);
+    InvariantImpliesGuarantee(tglb[i+1]);
+    i := i + 1;
+  }
 }
 
 }
