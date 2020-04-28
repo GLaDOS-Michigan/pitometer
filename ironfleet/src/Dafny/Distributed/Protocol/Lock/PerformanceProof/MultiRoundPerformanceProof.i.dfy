@@ -126,7 +126,7 @@ predicate PerfInvariantAlways_Alt(tgls:TimestampedGLS_State)
   !pkt.msg.v.Invalid?)
 
   && (forall id :: id in tgls.tls.t_servers ==> var t_hs := tgls.tls.t_servers[id];
-      && (t_hs.v.held == false ==> 0 < t_hs.v.epoch < |tgls.history| && TimeLe(t_hs.ts, PerfBoundLockInNetwork(t_hs.v.epoch + 1)))
+      && (t_hs.v.held == false ==> 0 <= t_hs.v.epoch < |tgls.history| && TimeLe(t_hs.ts, PerfBoundLockInNetwork(t_hs.v.epoch + 1)))
       && (t_hs.v.held == true  ==> 0 < t_hs.v.epoch == |tgls.history| && TimeLe(t_hs.ts, PerfBoundLockHeld(t_hs.v.epoch)))
   )
 
@@ -141,193 +141,52 @@ predicate PerfInvariantAlways_Alt(tgls:TimestampedGLS_State)
     )
 }
 
-lemma Grant_j_NotHeldGoesToHeld(j:int, s:TimestampedGLS_State, s':TimestampedGLS_State)
+lemma Grant_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
 
-  // A node other than node j taking a grant step
   requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
   requires s.tls.t_environment.nextStep.nodeStep == GrantStep
 
   requires PerfInvariantAlways_Alt(s);
-  // requires PerfInvariant_LockNotHeld(s);
-  // ensures PerfInvariant_LockHeld(s');
   ensures PerfInvariantAlways_Alt(s');
 {
-  var t_hs := s.tls.t_servers[s.tls.config[j]];
+  var t_hs := s.tls.t_servers[s.tls.t_environment.nextStep.actor];
   lemma_Grant(t_hs.ts, t_hs.v.epoch);
 }
 
 
-lemma Accept_j_NotHeldGoesToHeld(j:int, s:TimestampedGLS_State, s':TimestampedGLS_State)
+lemma Accept_InvariantMaintained(s:TimestampedGLS_State, s':TimestampedGLS_State)
   requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
   requires TGLS_Consistency(s) && TGLS_Consistency(s')
   requires SingleGLSPerformanceAssumption(s)
 
-  // A node other than node j taking a grant step
   requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
   requires s.tls.t_environment.nextStep.nodeStep == AcceptStep
 
   requires PerfInvariantAlways_Alt(s);
-  // requires PerfInvariant_LockNotHeld(s);
-  // ensures PerfInvariant_LockHeld(s');
   ensures PerfInvariantAlways_Alt(s');
 {
-  var t_hs := s.tls.t_servers[s.tls.config[j]];
-  var ios := s.tls.t_environment.nextStep.ios;
   var id := s.tls.t_environment.nextStep.actor;
+  var t_hs := s.tls.t_servers[id];
+  var ios := s.tls.t_environment.nextStep.ios;
   assert IsValidLIoOp(ios[0], id, s.tls.t_environment);
   var pkt := ios[0].r;
-  // assert pkt in s.tls.undeliveredPackets;
   assert pkt.msg.v.Transfer?;
 
-  assert s'.tls.t_servers[s.tls.config[j]].v.held == true;
-  var undeliveredPackets' := s.tls.undeliveredPackets - multiset{pkt};
+  // These two lines are not necessary, but they seem to speed up verification of this lemma
   var s_pkt := ios[1].s;
   assert !s_pkt.msg.v.Transfer?;
-  assert NoTransferPacketsToId(s.tls.config, undeliveredPackets', id);
-  assert s'.tls.undeliveredPackets == undeliveredPackets' + multiset{s_pkt};
-  assert NoTransferPacketsToId(s.tls.config, s'.tls.undeliveredPackets, id);
+
   lemma_Accept(s.tls.t_servers[id].ts, pkt.msg.ts, s.tls.t_servers[id].v.epoch, pkt.msg.v.transfer_epoch);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-predicate NoTransferPacketsToId(config:ConcreteConfiguration, pkts:multiset<TimestampedLPacket<EndPoint, LockMessage>>, id:EndPoint)
-  // ensures forall pkt :: !pkt.Transfer? ==>
+lemma Init_InvariantHolds(s:TimestampedGLS_State)
+  requires TGLS_Init(s, s.tls.config)
+  requires TGLS_Consistency(s)
+  ensures PerfInvariantAlways_Alt(s)
 {
-  (forall pkt :: pkt in pkts && pkt.msg.v.Transfer? && pkt.dst == id && pkt.src in config ==> false)
 }
-
-predicate PerfInvariantAlways_Node(tgls:TimestampedGLS_State, id:EndPoint)
-  requires id in tgls.tls.t_servers
-{
-  var t_hs := tgls.tls.t_servers[id];
-  (
-  && (t_hs.v.epoch >= 0)
-  && (t_hs.v.held == false ==> 0 < t_hs.v.epoch < |tgls.history| && TimeLe(t_hs.ts, PerfBoundLockInNetwork(t_hs.v.epoch + 1)))
-  && (t_hs.v.held == true  ==> 0 < t_hs.v.epoch == |tgls.history| && TimeLe(t_hs.ts, PerfBoundLockHeld(t_hs.v.epoch)))
-  )
-
-  && (
-  if t_hs.v.held then
-    NoTransferPacketsToId(tgls.tls.config, tgls.tls.undeliveredPackets, id)
-  else
-     (forall pkt :: pkt in tgls.tls.undeliveredPackets && pkt.msg.v.Transfer? && pkt.dst == id && pkt.src in tgls.tls.t_servers ==>
-     (var undeliveredPackets' := tgls.tls.undeliveredPackets - multiset({pkt});
-        NoTransferPacketsToId(tgls.tls.config, undeliveredPackets', id)
-        )
-
-    )
-  )
-}
-
-
-predicate PerfInvariantAlways(tgls:TimestampedGLS_State)
-  requires TGLS_Consistency(tgls)
-{
-  // No irrelevant packets in sentPackets
-  && ( forall pkt :: pkt in tgls.tls.t_environment.sentPackets && !(pkt.src in tgls.tls.t_servers)
-  ==> false)
-
-  // No nodes with epoch higher
-  &&  (forall id :: id in tgls.tls.t_servers ==> 0 <= tgls.tls.t_servers[id].v.epoch <= |tgls.history|)
-
-  // No Invalid packets are ever sent
-  && (forall pkt :: pkt in tgls.tls.undeliveredPackets
-  ==>
-  !pkt.msg.v.Invalid?)
-
-  // No transfer packets with epoch higher than history size
-  // All transfer packets have correct performance object, determined by its transfer_epoch
-  // All undelivered transfer packets are acceptable
-  && (forall pkt :: pkt in tgls.tls.undeliveredPackets && pkt.msg.v.Transfer? && pkt.dst in tgls.tls.t_servers
-  ==> && pkt.src in tgls.tls.t_servers
-  && 1 < pkt.msg.v.transfer_epoch == |tgls.history| && TimeLe(pkt.msg.ts, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch))
-  && pkt.msg.v.transfer_epoch > tgls.tls.t_servers[pkt.dst].v.epoch
-  )
-
-  && (forall id :: id in tgls.tls.t_servers ==> PerfInvariantAlways_Node(tgls, id))
-}
-
-
-lemma Grant_j_InvLockHeldImpliesInvLockHeld(j:int, s:TimestampedGLS_State, s':TimestampedGLS_State)
-  requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
-  requires TGLS_Consistency(s) && TGLS_Consistency(s')
-  requires SingleGLSPerformanceAssumption(s)
-
-  // A node other than node j taking a grant step
-  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
-  requires s.tls.t_environment.nextStep.nodeStep == GrantStep
-
-  requires PerfInvariantAlways(s);
-  ensures PerfInvariantAlways(s');
-{
-  var t_hs := s.tls.t_servers[s.tls.config[j]];
-  lemma_Grant(t_hs.ts, t_hs.v.epoch);
-  assert PerfInvariantAlways_Node(s', s.tls.config[j]);
-
-  // assert forall id :: id in s.tls.t_servers ==> PerfInvariant
-}
-
-lemma Accept_j_InvLockHeldImpliesInvLockHeld(j:int, s:TimestampedGLS_State, s':TimestampedGLS_State)
-  requires TGLS_Next(s, s')
-  requires 0 <= j < |s.tls.config|
-  requires TGLS_Consistency(s) && TGLS_Consistency(s')
-  requires SingleGLSPerformanceAssumption(s)
-
-  // A node other than node j taking a grant step
-  requires s.tls.t_environment.nextStep.LEnvStepHostIos?
-  requires s.tls.t_environment.nextStep.actor == s.tls.config[j]
-  requires s.tls.t_environment.nextStep.nodeStep == AcceptStep
-
-  requires PerfInvariantAlways(s);
-  ensures PerfInvariantAlways(s');
-{
-  var t_hs := s.tls.t_servers[s.tls.config[j]];
-  var ios := s.tls.t_environment.nextStep.ios;
-  var id := s.tls.t_environment.nextStep.actor;
-  assert IsValidLIoOp(ios[0], id, s.tls.t_environment);
-  var pkt := ios[0].r;
-  assert pkt in s.tls.undeliveredPackets;
-  match pkt.msg.v {
-    case Locked(_) =>
-      assert false;
-    case Transfer(_) =>
-      assert pkt.msg.v.Transfer?;
-  }
-  assert !(pkt.msg.v.Locked?);
-  assert pkt.msg.v.Transfer?;
-  assert s'.tls.t_servers[s.tls.config[j]].v.held == true;
-  var undeliveredPackets' := s.tls.undeliveredPackets - multiset{pkt};
-  var s_pkt := ios[1].s;
-  assert !s_pkt.msg.v.Transfer?;
-  assert NoTransferPacketsToId(s.tls.config, undeliveredPackets', id);
-  assert s'.tls.undeliveredPackets == undeliveredPackets' + multiset{s_pkt};
-  assert NoTransferPacketsToId(s.tls.config, s'.tls.undeliveredPackets, id);
-  lemma_Accept(s.tls.t_servers[id].ts, pkt.msg.ts, s.tls.t_servers[id].v.epoch, pkt.msg.v.transfer_epoch);
-
-  assert PerfInvariantAlways_Node(s', s.tls.config[j]);
-}
-
 
 }
