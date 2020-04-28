@@ -23,6 +23,13 @@ lemma lemma_Grant(node_pr:Timestamp, epoch:int)
   // TLS_NoRecvPerfUpdateIsMonotonic(node_pr, GrantStep, PerfBoundLockHeld(epoch));
 }
 
+lemma lemma_Accept_eq(node_pr:Timestamp, epoch:int)
+  requires 0 < epoch
+  requires TimeEq(node_pr, PerfBoundLockHeld(epoch))
+  ensures TimeEq(TLS_NoRecvPerfUpdate(node_pr, GrantStep), PerfBoundLockInNetwork(epoch + 1))
+{
+  
+}
 
 lemma lemma_Accept(node_ts:Timestamp, pkt_ts:Timestamp, nd_epoch:int, pkt_epoch:int)
   requires 0 < pkt_epoch
