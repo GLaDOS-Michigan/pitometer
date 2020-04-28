@@ -48,7 +48,7 @@ predicate TimeEq(p1:Timestamp, p2:Timestamp)
   p1 == p2
 }
 
-predicate PerfLe(p1:Timestamp, p2:Timestamp)
+predicate TimeLe(p1:Timestamp, p2:Timestamp)
 {
   p1 <= p2
 }
