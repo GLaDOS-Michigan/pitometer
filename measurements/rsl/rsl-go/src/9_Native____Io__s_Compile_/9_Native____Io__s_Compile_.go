@@ -571,6 +571,44 @@ type CompanionStruct_MutableSet_ struct {
 
 var Companion_MutableSet_ = CompanionStruct_MutableSet_{}
 
+// TONY: TODO
+
+func (_this *CompanionStruct_MutableSet_) EmptySet() *MutableSet {
+	TraceAndExit()
+	return nil
+}
+
+// TONY: TODO
+func (_this *MutableSet) RemoveAll() {
+	TraceAndExit()
+}
+
+// TONY: TODO
+func (_this *MutableSet) Contains(other interface{}) bool {
+	TraceAndExit()
+	return false
+}
+
+// TONY: TODO
+func (_this *MutableSet) Add(other interface{}) {
+	TraceAndExit()
+}
+
+// TONY: TODO
+func (_this *MutableSet) AddSet(other interface{}) {
+	TraceAndExit()
+}
+
+// TONY: TODO
+func (_this *MutableSet) TransferSet(other interface{}) {
+	TraceAndExit()
+}
+
+// TONY: TODO
+func (_this *MutableSet) Remove(other interface{}) {
+	TraceAndExit()
+}
+
 func (_this *MutableSet) Equals(other *MutableSet) bool {
 	return _this == other
 }
