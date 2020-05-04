@@ -399,6 +399,12 @@ func (seq Seq) IndexInt(i int) interface{} {
 	return seq.contents[i]
 }
 
+// IndexUint finds the sequence element at the given index.
+func (seq Seq) IndexUint(i uint64) interface{} {
+	var n = int(i)
+	return seq.IndexInt(n)
+}
+
 // Update returns a new sequence with the given index set to the given value.
 func (seq Seq) Update(i Int, v interface{}) interface{} {
 	return seq.UpdateInt(i.Int(), v)
@@ -431,6 +437,11 @@ func (seq Seq) Cardinality() Int {
 // CardinalityInt finds the length of the sequence as an int.
 func (seq Seq) CardinalityInt() Int {
 	return seq.Len()
+}
+
+// TONY: CardinalityUint64 finds the length of the sequence as an uint64.
+func (seq Seq) CardinalityUint64() uint64 {
+	return seq.Len().Uint64()
 }
 
 // Contains finds whether the value is equal to any element in the sequence.
