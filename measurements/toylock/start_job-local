@@ -7,7 +7,7 @@ NUM_NODES=$1
 NUM_ROUNDS=$2
 DELAY=$3   # milliseconds of artificial delay to inject
 
-DATA_DIR="analysis/data"
+DATA_DIR="../analysis/toylock/data"
 
 ./build-mac
 
