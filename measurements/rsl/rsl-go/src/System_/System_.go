@@ -4,53 +4,46 @@
 package _System
 
 import (
-  _dafny "dafny"
+	_dafny "dafny"
 )
+
 var _ _dafny.Dummy__
 
 type Dummy__ struct{}
 
-
+type Tuple2 = _dafny.Tuple
 
 // Definition of class Nat
 type Nat struct {
 }
 
 func New_Nat_() *Nat {
-  _this := Nat{}
+	_this := Nat{}
 
-  return &_this
+	return &_this
 }
 
 type CompanionStruct_Nat_ struct {
 }
-var Companion_Nat_ = CompanionStruct_Nat_ {
-}
+
+var Companion_Nat_ = CompanionStruct_Nat_{}
 
 func (*Nat) String() string {
-  return "_System.Nat"
+	return "_System.Nat"
 }
+
 // End of class Nat
 func Type_Nat_() _dafny.Type {
-  return type_Nat_{}
+	return type_Nat_{}
 }
 
 type type_Nat_ struct {
 }
 
 func (_this type_Nat_) Default() interface{} {
-  return _dafny.Zero
+	return _dafny.Zero
 }
 
 func (_this type_Nat_) String() string {
-  return "_System.Nat"
+	return "_System.Nat"
 }
-
-
-
-
-
-
-
-
-

@@ -399,7 +399,7 @@ func (seq Seq) IndexInt(i int) interface{} {
 	return seq.contents[i]
 }
 
-// IndexUint finds the sequence element at the given index.
+// TONY: IndexUint finds the sequence element at the given index.
 func (seq Seq) IndexUint(i uint64) interface{} {
 	var n = int(i)
 	return seq.IndexInt(n)
@@ -655,6 +655,18 @@ func (array *Array) Index(ixs ...Int) *interface{} {
 	ints := make([]int, len(ixs))
 	for i, ix := range ixs {
 		ints[i] = ix.Int()
+	}
+	return array.IndexInts(ints...)
+}
+
+// IndexUints gets the element at the given indices into the array.
+func (array *Array) IndexUints(ixs ...uint64) *interface{} {
+	if len(ixs) != len(array.dims) {
+		panic(fmt.Sprintf("Expected %d indices but got %d", len(array.dims), len(ixs)))
+	}
+	ints := make([]int, len(ixs))
+	for i, ix := range ixs {
+		ints[i] = int(ix)
 	}
 	return array.IndexInts(ints...)
 }
