@@ -236,6 +236,12 @@ func New_Time_() *Time {
 type CompanionStruct_Time_ struct {
 }
 
+// TONY: TODO
+func (ct *CompanionStruct_Time_) GetDebugTimeTicks() uint64 {
+	TraceAndExit()
+	return 0
+}
+
 var Companion_Time_ = CompanionStruct_Time_{}
 
 func (_this *Time) Equals(other *Time) bool {
