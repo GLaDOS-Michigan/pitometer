@@ -660,6 +660,58 @@ type CompanionStruct_MutableMap_ struct {
 
 var Companion_MutableMap_ = CompanionStruct_MutableMap_{}
 
+//TONY: TODO
+func (_this *CompanionStruct_MutableMap_) FromMap(other _dafny.Map) *MutableMap {
+	TraceAndExit()
+	return nil
+}
+
+//TONY: TODO
+func (_this *CompanionStruct_MutableMap_) EmptyMap() *MutableMap {
+	TraceAndExit()
+	return nil
+}
+
+//TONY: TODO
+func (_this *CompanionStruct_MutableMap_) MapOf(other *MutableMap) _dafny.Map {
+	TraceAndExit()
+	return _dafny.EmptyMap
+}
+
+//TONY: TODO
+func (_this *MutableMap) SizeModest() uint64 {
+	TraceAndExit()
+	return 0
+}
+
+//TONY: TODO
+func (_this *MutableMap) Keys() *_dafny.Set {
+	TraceAndExit()
+	return nil
+}
+
+//TONY: TODO
+func (_this *MutableMap) Contains(key interface{}) bool {
+	TraceAndExit()
+	return false
+}
+
+//TONY: TODO
+func (_this *MutableMap) Remove(key interface{}) {
+	TraceAndExit()
+}
+
+//TONY: TODO
+func (_this *MutableMap) Set(key interface{}, value interface{}) {
+	TraceAndExit()
+}
+
+//TONY: TODO
+func (_this *MutableMap) TryGetValue(key interface{}) (bool, interface{}) {
+	TraceAndExit()
+	return false, nil
+}
+
 func (_this *MutableMap) Equals(other *MutableMap) bool {
 	return _this == other
 }
