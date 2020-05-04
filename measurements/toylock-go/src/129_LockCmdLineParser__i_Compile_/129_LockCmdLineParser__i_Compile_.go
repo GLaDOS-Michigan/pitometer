@@ -183,9 +183,9 @@ func (_this *CompanionStruct_Default___) ParseCmdLine() (bool, _dafny.Seq, uint6
 	_out96 = _9_Native____Io__s_Compile.Companion_HostConstants_.NumCommandLineArgs()
 	_1740_num__args = _out96
 	if ((_1740_num__args) < (uint32(4))) || (((_1740_num__args) % (uint32(2))) != (uint32(1)) /* dircomp */) {
-		_dafny.Print(_dafny.SeqOfString("Incorrect number of command line arguments.\n"))
-		_dafny.Print(_dafny.SeqOfString("Expected: ./Main.exe [IP port]+ [IP port]\n"))
-		_dafny.Print(_dafny.SeqOfString("  where the final argument is one of the two IP-port pairs provided earlier \n"))
+		_dafny.Print(_dafny.SeqOfString("Error: Incorrect number of command line arguments. " +
+			"Expected: ./Main.exe [IP port]+ [IP port]. " +
+			"where the final argument is one of the two IP-port pairs provided earlier"))
 		return ok, host__ids, my__index
 	}
 	var _1741_args _dafny.Seq
