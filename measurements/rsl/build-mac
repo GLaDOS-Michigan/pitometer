@@ -2,7 +2,7 @@
 # Project build file for mac
 
 RSL_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/rsl/rsl-go'
-export GOPATH=$LOCK_DIR
+export GOPATH=$RSL_DIR
 
 echo "Starting build"
 
