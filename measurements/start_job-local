@@ -14,6 +14,14 @@ DATA_DIR="analysis/data"
 echo "Starting local job with $NUM_NODES nodes and $NUM_ROUNDS rounds"
 
 for ((i=$NUM_NODES;i>0;i--))
-do
-    ./run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw &
+do  
+    if [ $i -gt 1 ]
+    then
+        ./run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw &
+    else
+        # Wait on the last node
+        ./run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw 
+    fi
 done
+
+echo "Job complete"
