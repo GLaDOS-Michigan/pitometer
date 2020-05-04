@@ -120,12 +120,18 @@ var _ _168_Main__i_Compile.Dummy__
 func main() {
 	var main_dummy = _168_Main__i_Compile.Companion_Default___
 
-	// Grab the last argument from os.Args -- that is the number of rounds to run ToyLock
-	var numRounds, err = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
-	if int(numRounds) <= 0 || err != nil {
-		fmt.Printf("Error: Invalid round number %v\n", os.Args[len(os.Args)-1])
+	// Grab the second-to-last argument from os.Args -- that is the number of rounds to run ToyLock
+	var numRounds, err1 = strconv.ParseInt(os.Args[len(os.Args)-2], 10, 64)
+	if int(numRounds) <= 0 || err1 != nil {
+		fmt.Printf("Error: Invalid round number %v\n", os.Args[len(os.Args)-2])
 		os.Exit(1)
 	}
-	os.Args = os.Args[:len(os.Args)-1]
-	main_dummy.Default_Main_(int(numRounds))
+	// Grab the last argument from os.Args -- that is the artificial delay
+	var delay, err2 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
+	if int(delay) < 0 || err2 != nil {
+		fmt.Printf("Error: Invalid delay %v\n", os.Args[len(os.Args)-1])
+		os.Exit(1)
+	}
+	os.Args = os.Args[:len(os.Args)-2]
+	main_dummy.Default_Main_(int(numRounds), int(delay))
 }

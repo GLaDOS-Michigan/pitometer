@@ -212,9 +212,9 @@ TAIL_CALL_START:
 }
 
 // TONY: Measure this
-func (_this *NodeImpl) NodeNextGrant(nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
 	nodeGrantLog.LogStartEvent("NodeNextGrant")
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 	var ok bool = false
 	var _ = ok
 	var _1690_transfer__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
@@ -289,7 +289,7 @@ TAIL_CALL_START:
 	}
 	return ok
 }
-func (_this *NodeImpl) HostNextMain(nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -297,7 +297,7 @@ TAIL_CALL_START:
 	if (_this.Node).Dtor_held() {
 		var _out91 bool
 		var _ = _out91
-		_out91 = (_this).NodeNextGrant(nodeGrantCounter, nodeGrantLog)
+		_out91 = (_this).NodeNextGrant(delay, nodeGrantCounter, nodeGrantLog)
 		ok = _out91
 	} else {
 		var _out92 bool
