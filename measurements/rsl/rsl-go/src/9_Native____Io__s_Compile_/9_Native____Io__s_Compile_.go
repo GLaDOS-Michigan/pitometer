@@ -265,14 +265,14 @@ type CompanionStruct_Time_ struct {
 
 // TONY: TODO
 func (ct *CompanionStruct_Time_) GetDebugTimeTicks() uint64 {
-	TraceAndExit()
+	// TraceAndExit()
+	// See if returning 0 breaks anything -- not sure how this is used
 	return 0
 }
 
-// TONY: TODO
+// TONY: DONE
 func (ct *CompanionStruct_Time_) GetTime() uint64 {
-	TraceAndExit()
-	return 0
+	return uint64(time.Now().UnixNano())
 }
 
 var Companion_Time_ = CompanionStruct_Time_{}
@@ -559,8 +559,8 @@ var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
 
 // TONY : TODO
 func New_UdpClient_() *UdpClient {
-	TraceAndExit()
-	return nil
+	// TraceAndExit()
+	return &UdpClient{}
 }
 
 // TONY : DONE
@@ -703,6 +703,7 @@ func (_this type_UdpClient_) String() string {
 	return "_9_Native____Io__s_Compile.UdpClient"
 }
 func (_this *UdpClient) Ctor__() {
+	// TONY: TODO
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 }
@@ -756,9 +757,10 @@ func (_this type_FileSystemState_) String() string {
 // End of class FileSystemState
 
 // Definition of class MutableSet
+// Important: Because Go does not have Generics, we have to make do with the top type interface{}
 type MutableSet struct {
 	Type_T_ _dafny.Type
-	dummy   byte
+	setImpl map[interface{}]bool
 }
 
 func New_MutableSet_(Type_T_ _dafny.Type) *MutableSet {
@@ -773,42 +775,45 @@ type CompanionStruct_MutableSet_ struct {
 
 var Companion_MutableSet_ = CompanionStruct_MutableSet_{}
 
-// TONY: TODO
-
+// TONY: DONE
 func (_this *CompanionStruct_MutableSet_) EmptySet() *MutableSet {
-	TraceAndExit()
-	return nil
+	var res = MutableSet{setImpl: make(map[interface{}]bool)}
+	return &res
 }
 
-// TONY: TODO
+// TONY: Done
 func (_this *MutableSet) RemoveAll() {
-	TraceAndExit()
+	_this.setImpl = make(map[interface{}]bool)
 }
 
-// TONY: TODO
-func (_this *MutableSet) Contains(other interface{}) bool {
-	TraceAndExit()
-	return false
+// TONY: Done
+func (_this *MutableSet) Contains(x interface{}) bool {
+	var _, ok = _this.setImpl[x]
+	return ok
 }
 
-// TONY: TODO
-func (_this *MutableSet) Add(other interface{}) {
-	TraceAndExit()
+// TONY: Done
+func (_this *MutableSet) Add(x interface{}) {
+	_this.setImpl[x] = true
 }
 
-// TONY: TODO
-func (_this *MutableSet) AddSet(other interface{}) {
-	TraceAndExit()
+// TONY: Done
+func (_this *MutableSet) AddSet(other *MutableSet) {
+	for key := range other.setImpl {
+		_this.setImpl[key] = true
+	}
 }
 
-// TONY: TODO
-func (_this *MutableSet) TransferSet(other interface{}) {
-	TraceAndExit()
+// TONY: Done
+func (_this *MutableSet) TransferSet(other *MutableSet) {
+	_this.setImpl = other.setImpl
+	other.setImpl = make(map[interface{}]bool)
 }
 
-// TONY: TODO
-func (_this *MutableSet) Remove(other interface{}) {
-	TraceAndExit()
+// TONY: Done
+func (_this *MutableSet) Remove(x interface{}) {
+	// Don't do anything if x not in set, according to C# implementation
+	delete(_this.setImpl, x)
 }
 
 func (_this *MutableSet) Equals(other *MutableSet) bool {
@@ -846,7 +851,7 @@ func (_this type_MutableSet_) String() string {
 type MutableMap struct {
 	Type_K_ _dafny.Type
 	Type_V_ _dafny.Type
-	dummy   byte
+	mapImpl map[_dafny.Type]_dafny.Type
 }
 
 func New_MutableMap_(Type_K_ _dafny.Type, Type_V_ _dafny.Type) *MutableMap {
@@ -870,8 +875,8 @@ func (_this *CompanionStruct_MutableMap_) FromMap(other _dafny.Map) *MutableMap 
 
 //TONY: TODO
 func (_this *CompanionStruct_MutableMap_) EmptyMap() *MutableMap {
-	TraceAndExit()
-	return nil
+	var res = MutableMap{mapImpl: make(map[_dafny.Type]_dafny.Type)}
+	return &res
 }
 
 //TONY: TODO
