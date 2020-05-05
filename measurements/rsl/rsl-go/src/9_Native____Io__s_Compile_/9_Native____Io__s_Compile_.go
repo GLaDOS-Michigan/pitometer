@@ -537,6 +537,12 @@ type CompanionStruct_UdpClient_ struct {
 
 var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
 
+// TONY : TODO
+func New_UdpClient_() *UdpClient {
+	TraceAndExit()
+	return nil
+}
+
 // TONY : DONE
 func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
 	// Initialize record and start send and receive loops
