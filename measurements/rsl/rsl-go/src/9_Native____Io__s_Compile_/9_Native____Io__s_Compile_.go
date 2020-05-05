@@ -10,10 +10,17 @@ import (
 	_7_Environment__s_Compile "7_Environment__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"encoding/json"
 	"fmt"
+	"goconcurrentqueue"
+	"log"
+	"net"
 	"os"
 	"runtime"
 	"runtime/debug"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -242,6 +249,12 @@ func (ct *CompanionStruct_Time_) GetDebugTimeTicks() uint64 {
 	return 0
 }
 
+// TONY: TODO
+func (ct *CompanionStruct_Time_) GetTime() uint64 {
+	TraceAndExit()
+	return 0
+}
+
 var Companion_Time_ = CompanionStruct_Time_{}
 
 func (_this *Time) Equals(other *Time) bool {
@@ -413,19 +426,66 @@ func (_this type_UdpState_) String() string {
 
 // Definition of class IPEndPoint
 type IPEndPoint struct {
-	dummy byte
+	ip_addr *_dafny.Array
+	port    uint16
 }
 
-func New_IPEndPoint_() *IPEndPoint {
-	_this := IPEndPoint{}
+// TONY : DONE
+func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
+	var port = uint16(udpAddr.Port)
+	var byteIPArr = []byte(udpAddr.IP)
+	var interfaceIPArray []interface{}
+	for _, value := range byteIPArr {
+		interfaceIPArray = append(interfaceIPArray, interface{}(value))
+	}
+	var ip = _dafny.NewArrayWithValues(interfaceIPArray...)
+	var res = IPEndPoint{ip, port}
+	return &res
+}
 
-	return &_this
+// GetUDPAddr returns the address of this endpoint as a net.UDPAddr data structure
+// TONY : DONE
+func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
+	// First get the string of ip:port
+	var ipArrStr = ep.ip_addr.String()
+	var intArr []int
+	err := json.Unmarshal([]byte(ipArrStr), &intArr)
+	if err != nil {
+		fmt.Printf("Cannot unmarshal %v\n", ipArrStr)
+		log.Fatal(err)
+	}
+	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
+	var ipAndPortStr = ip + ":" + strconv.FormatUint(uint64(ep.port), 10)
+
+	// Next convert to net.UDPAddr
+	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+		os.Exit(1)
+	}
+	return udpAddr
+}
+
+// TONY : DONE
+func (ep *IPEndPoint) GetAddress() *_dafny.Array {
+	return ep.ip_addr
+}
+
+// TONY : DONE
+func (ep *IPEndPoint) GetPort() uint16 {
+	return ep.port
 }
 
 type CompanionStruct_IPEndPoint_ struct {
 }
 
 var Companion_IPEndPoint_ = CompanionStruct_IPEndPoint_{}
+
+// TONY : DONE
+func (comp_ep *CompanionStruct_IPEndPoint_) Construct(ip_addr *_dafny.Array, port uint16) (bool, *IPEndPoint) {
+	res := &IPEndPoint{ip_addr, port}
+	return true, res
+}
 
 func (_this *IPEndPoint) Equals(other *IPEndPoint) bool {
 	return _this == other
@@ -457,21 +517,137 @@ func (_this type_IPEndPoint_) String() string {
 
 // End of class IPEndPoint
 
-// Definition of class UdpClient
-type UdpClient struct {
-	dummy byte
+// Definition of class Packet
+type Packet struct {
+	ep     *IPEndPoint
+	buffer []byte
 }
 
-func New_UdpClient_() *UdpClient {
-	_this := UdpClient{}
-
-	return &_this
+/// Definition of class UdpClient
+// TONY : DONE
+type UdpClient struct {
+	localEndpoint *IPEndPoint
+	connection    *net.UDPConn
+	send_queue    goconcurrentqueue.Queue
+	receive_queue goconcurrentqueue.Queue
 }
 
 type CompanionStruct_UdpClient_ struct {
 }
 
 var Companion_UdpClient_ = CompanionStruct_UdpClient_{}
+
+// TONY : DONE
+func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
+	// Initialize record and start send and receive loops
+	_this := UdpClient{
+		localEndpoint: my_ep,
+		connection:    conn,
+		send_queue:    goconcurrentqueue.NewFIFO(),
+		receive_queue: goconcurrentqueue.NewFIFO(),
+	}
+	fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
+	go _this.sendLoop()
+	go _this.receiveLoop()
+	return &_this
+}
+
+// TONY : DONE
+func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint) (bool, *UdpClient) {
+	var localEp = localEndpoint.GetUDPAddr()
+	conn, err := net.ListenUDP("udp", localEp)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+		return false, nil
+	}
+	var udp = new_UdpClient_(localEndpoint, conn)
+	return true, udp
+}
+
+// TONY : DONE
+func (client *UdpClient) sendLoop() {
+	for true {
+		var packInterface, _ = client.send_queue.DequeueOrWaitForNextElement()
+		var pack, ok = packInterface.(Packet)
+		// fmt.Printf("TONY DEBUG: sendLoop() found a packet with dest %v and contents %v\n", pack.ep.GetUDPAddr(), pack.buffer)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			os.Exit(1)
+		}
+		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
+		// fmt.Printf("TONY DEBUG: sendLoop() sent %v bytes over UDP to %v\n", n, pack.ep.GetUDPAddr())
+		if err2 != nil {
+			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
+			os.Exit(1)
+		}
+	}
+}
+
+// TONY : DONE
+func (client *UdpClient) receiveLoop() {
+	// Read from UDP connection, initialize packet and enqueue to receive_queue
+	// fmt.Printf("TONY DEBUG: starting receiveLoop()\n")
+	for true {
+		var buffer [16]byte
+		// TONY: There is a Golang bug on OSX where ReadFromUDP does not block, but should work fine on Linux
+		var _, addr, err = client.connection.ReadFromUDP(buffer[0:])
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+			os.Exit(1)
+		}
+		if addr != nil {
+			var packetEp = UDPAddrToIPEndPoint(addr)
+			var packet = Packet{packetEp, buffer[0:]}
+			// fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v \n", addr, packet.buffer)
+			client.receive_queue.Enqueue(packet)
+		}
+	}
+}
+
+// TONY : DONE
+func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
+	// Create Packet struct and enqueue to send_queue
+	var bufferStr = buffer.String()
+	var bufferByte []byte
+	err := json.Unmarshal([]byte(bufferStr), &bufferByte)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var packet = Packet{remote, bufferByte}
+	client.send_queue.Enqueue(packet)
+	return true
+}
+
+// TONY : DONE
+func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_dafny.Array) {
+	// Note that in Toylock, this is only ever called with timeout 0
+	var packet, err = client.receive_queue.DequeueOrWaitForNextElement()
+	if err != nil {
+		// receive queue is empty
+		// fmt.Printf("TONY DEBUG: receive_queue empty\n")
+		if timeLimit == 0 {
+			return true, true, nil, nil
+		} else {
+			fmt.Printf("Going to sleep unexpectedly!")
+			time.Sleep(time.Duration(timeLimit) * time.Millisecond)
+			return client.Receive(0)
+		}
+	} else {
+		var pack, ok = packet.(Packet)
+		if !ok {
+			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			os.Exit(1)
+		}
+		// var buf = pack.buffer
+		// var addr = pack.ep.GetUDPAddr()
+		// fmt.Printf("TONY DEBUG: received a packet with source %v and contents %v: \n", addr, buf)
+		var interfaceBuf []interface{}
+		for _, value := range pack.buffer {
+			interfaceBuf = append(interfaceBuf, interface{}(value))
+		}
+		return true, false, pack.ep, _dafny.NewArrayWithValues(interfaceBuf...)
+	}
+}
 
 func (_this *UdpClient) Equals(other *UdpClient) bool {
 	return _this == other
