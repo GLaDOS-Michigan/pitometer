@@ -277,5 +277,5 @@ var _ _622_Main__i_Compile.Dummy__
 
 func main() {
 
-	main_dummy.Default_Main_()
+	_622_Main__i_Compile.Companion_Default___.Default_Main_()
 }
