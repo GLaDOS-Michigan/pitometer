@@ -107,6 +107,26 @@ type CompanionStruct_HostConstants_ struct {
 
 var Companion_HostConstants_ = CompanionStruct_HostConstants_{}
 
+// TONY
+func (comp_hc *CompanionStruct_HostConstants_) NumCommandLineArgs() uint32 {
+	// This count includes the first item which is the name of the program
+	var res = uint32(len(os.Args))
+	// fmt.Printf("Number of command line args is %d\n", res)
+	return res
+}
+
+// TONY
+func (comp_hc *CompanionStruct_HostConstants_) GetCommandLineArg(i uint64) *_dafny.Array {
+	var byteArray = []byte(os.Args[i])
+	var uint16Array []interface{}
+	for _, value := range byteArray {
+		uint16Array = append(uint16Array, interface{}(uint16(value)))
+	}
+	var res = _dafny.NewArrayWithValues(uint16Array...)
+	// fmt.Printf("Command line arg[%d] is %s\n", i, res)
+	return res
+}
+
 func (_this *HostConstants) Equals(other *HostConstants) bool {
 	return _this == other
 }
