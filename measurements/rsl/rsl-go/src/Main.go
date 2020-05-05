@@ -1,5 +1,5 @@
 // Dafny program Main.i.dfy compiled into Go
-package Main
+package main
 
 import (
 	_0_Native____NativeTypes__s_Compile "0_Native____NativeTypes__s_Compile_"
