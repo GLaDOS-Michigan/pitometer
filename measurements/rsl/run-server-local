@@ -1,0 +1,15 @@
+#!/bin/bash
+# This script starts a single RSL node, and takes the following positional arguments
+# ./run <num_nodes> <my_id>
+
+NUM_NODES=$1
+MY_ID=$2
+
+ENDPOINTS=""
+for ((i=1;i<=$NUM_NODES;i++))
+do
+    ENDPOINTS="$ENDPOINTS 127.0.0.1 400$i"
+done
+
+echo "Starting node $MY_ID"
+./rsl-main $ENDPOINTS 127.0.0.1 400$MY_ID 
