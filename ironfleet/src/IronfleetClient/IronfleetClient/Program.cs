@@ -58,13 +58,17 @@
 
             // Create a directory for logging all of our output
             string guid = Guid.NewGuid().ToString();
-            string output_directory = String.Format("{0}\\IronfleetOutput\\Job-{1}",
-                System.Environment.GetEnvironmentVariable("TMP"),
+            // string output_directory = String.Format("{0}\\IronfleetOutput\\Job-{1}",
+            //     System.Environment.GetEnvironmentVariable("TMP"),
+            //     guid);
+            string output_directory = String.Format("IronfleetOutput/Job-{0}",
+                // System.Environment.GetEnvironmentVariable("TMP"),
                 guid);
             Directory.CreateDirectory(output_directory);
 
             // Create the log file itself
-            FileStream log = new FileStream(output_directory + "\\client.txt", FileMode.Create);
+            // FileStream log = new FileStream(output_directory + "\\client.txt", FileMode.Create);
+            FileStream log = new FileStream(output_directory + "/client.txt", FileMode.Create);
             StreamWriter log_stream = new StreamWriter(log);
 
             HiResTimer.Initialize();
