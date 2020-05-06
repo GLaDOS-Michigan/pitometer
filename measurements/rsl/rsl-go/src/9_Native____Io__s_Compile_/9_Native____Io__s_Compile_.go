@@ -38,7 +38,7 @@ func TraceAndExit() {
 	n := runtime.Callers(2, pc)
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
-	fmt.Printf("Error: unimplemented\n")
+	fmt.Printf("\nERROR: Unimplemented\n")
 	fmt.Printf("%s:%d %s\n\n", frame.File, frame.Line, frame.Function)
 
 	debug.PrintStack()
@@ -325,14 +325,17 @@ type CompanionStruct_EndPoint_ struct{}
 var Companion_EndPoint_ = CompanionStruct_EndPoint_{}
 
 type EndPoint_EndPoint struct {
-	Addr _dafny.Seq
+	// Addr _dafny.Seq
+	// TONY: Changing this to a pointer so it is hashable. Note that this eliminates
+	// syntactic equivalence.
+	Addr *_dafny.Seq
 	Port uint16
 }
 
 func (EndPoint_EndPoint) isEndPoint() {}
 
 func (CompanionStruct_EndPoint_) Create_EndPoint_(Addr _dafny.Seq, Port uint16) EndPoint {
-	return EndPoint{EndPoint_EndPoint{Addr, Port}}
+	return EndPoint{EndPoint_EndPoint{&Addr, Port}}
 }
 
 func (_this EndPoint) Is_EndPoint() bool {
@@ -341,7 +344,7 @@ func (_this EndPoint) Is_EndPoint() bool {
 }
 
 func (_this EndPoint) Dtor_addr() _dafny.Seq {
-	return _this.Get().(EndPoint_EndPoint).Addr
+	return *(_this.Get().(EndPoint_EndPoint).Addr)
 }
 
 func (_this EndPoint) Dtor_port() uint16 {
@@ -368,7 +371,7 @@ func (_this EndPoint) Equals(other EndPoint) bool {
 	case EndPoint_EndPoint:
 		{
 			data2, ok := other.Get().(EndPoint_EndPoint)
-			return ok && data1.Addr.Equals(data2.Addr) && data1.Port == data2.Port
+			return ok && data1.Addr.Equals(*data2.Addr) && data1.Port == data2.Port
 		}
 	default:
 		{
@@ -389,7 +392,7 @@ type type_EndPoint_ struct {
 }
 
 func (_this type_EndPoint_) Default() interface{} {
-	return EndPoint{EndPoint_EndPoint{_dafny.EmptySeq, 0}}
+	return EndPoint{EndPoint_EndPoint{&_dafny.EmptySeq, 0}}
 }
 
 func (_this type_EndPoint_) String() string {
@@ -614,16 +617,16 @@ func (client *UdpClient) receiveLoop() {
 	// Read from UDP connection, initialize packet and enqueue to receive_queue
 	// fmt.Printf("TONY DEBUG: starting receiveLoop()\n")
 	for true {
-		var buffer [16]byte
+		var buffer [1024]byte
 		// TONY: There is a Golang bug on OSX where ReadFromUDP does not block, but should work fine on Linux
-		var _, addr, err = client.connection.ReadFromUDP(buffer[0:])
+		var n, addr, err = client.connection.ReadFromUDP(buffer[0:])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
 			os.Exit(1)
 		}
 		if addr != nil {
 			var packetEp = UDPAddrToIPEndPoint(addr)
-			var packet = Packet{packetEp, buffer[0:]}
+			var packet = Packet{packetEp, buffer[0:n]}
 			// fmt.Printf("TONY DEBUG: receiveLoop() found a packet with source %v and contents %v \n", addr, packet.buffer)
 			client.receive_queue.Enqueue(packet)
 		}
@@ -758,7 +761,7 @@ func (_this type_FileSystemState_) String() string {
 // End of class FileSystemState
 
 // Definition of class MutableSet
-// Important: Because Go does not have Generics, we have to make do with the top type interface{}
+// Important: Because Go does not have polymorphism, we have to make do with the top type interface{}
 type MutableSet struct {
 	Type_T_ _dafny.Type
 	setImpl map[interface{}]bool
@@ -849,10 +852,11 @@ func (_this type_MutableSet_) String() string {
 // End of class MutableSet
 
 // Definition of class MutableMap
+// Important: Because Go does not have polymorphism, we have to make do with the top type interface{}
 type MutableMap struct {
 	Type_K_ _dafny.Type
 	Type_V_ _dafny.Type
-	mapImpl map[_dafny.Type]_dafny.Type
+	mapImpl map[interface{}]interface{}
 }
 
 func New_MutableMap_(Type_K_ _dafny.Type, Type_V_ _dafny.Type) *MutableMap {
@@ -874,22 +878,22 @@ func (_this *CompanionStruct_MutableMap_) FromMap(other _dafny.Map) *MutableMap 
 	return nil
 }
 
-//TONY: TODO
+//TONY: Done
 func (_this *CompanionStruct_MutableMap_) EmptyMap() *MutableMap {
-	var res = MutableMap{mapImpl: make(map[_dafny.Type]_dafny.Type)}
+	var res = MutableMap{mapImpl: make(map[interface{}]interface{})}
 	return &res
 }
 
-//TONY: TODO
+//TONY: Done
 func (_this *CompanionStruct_MutableMap_) MapOf(other *MutableMap) _dafny.Map {
 	TraceAndExit()
 	return _dafny.EmptyMap
 }
 
-//TONY: TODO
+//TONY: Done
+// SizeModest returns the number of key/value pairs contained in the map
 func (_this *MutableMap) SizeModest() uint64 {
-	TraceAndExit()
-	return 0
+	return uint64(len(_this.mapImpl))
 }
 
 //TONY: TODO
@@ -898,10 +902,10 @@ func (_this *MutableMap) Keys() *_dafny.Set {
 	return nil
 }
 
-//TONY: TODO
+//TONY: Done
 func (_this *MutableMap) Contains(key interface{}) bool {
-	TraceAndExit()
-	return false
+	_, ok := _this.mapImpl[key]
+	return ok
 }
 
 //TONY: TODO
@@ -909,14 +913,17 @@ func (_this *MutableMap) Remove(key interface{}) {
 	TraceAndExit()
 }
 
-//TONY: TODO
+//TONY: Done
+// Set maps key to value in the map
 func (_this *MutableMap) Set(key interface{}, value interface{}) {
-	TraceAndExit()
+	_this.mapImpl[key] = value
 }
 
-//TONY: TODO
+//TONY: Done
 func (_this *MutableMap) TryGetValue(key interface{}) (bool, interface{}) {
-	TraceAndExit()
+	if _this.Contains(key) {
+		return true, _this.mapImpl[key]
+	}
 	return false, nil
 }
 

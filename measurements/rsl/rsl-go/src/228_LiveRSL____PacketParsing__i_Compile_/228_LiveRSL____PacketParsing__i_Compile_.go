@@ -241,7 +241,8 @@ func (_this *CompanionStruct_Default___) Parse__EndPoint(val _176_Common____Gene
 	if ((val).Dtor_u()) <= (uint64(281474976710655)) {
 		return _194_Common____NodeIdentity__i_Compile.Companion_Default___.ConvertUint64ToEndPoint((val).Dtor_u())
 	} else {
-		return _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{_dafny.SeqOf(uint8(0), uint8(0), uint8(0), uint8(0)), uint16(0)}}
+		var addr = _dafny.SeqOf(uint8(0), uint8(0), uint8(0), uint8(0))
+		return _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{&addr, uint16(0)}}
 	}
 }
 func (_this *CompanionStruct_Default___) Parse__Request(val _176_Common____GenericMarshalling__i_Compile.V) _214_LiveRSL____CTypes__i_Compile.CRequest {

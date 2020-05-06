@@ -380,7 +380,8 @@ TAIL_CALL_START:
 	var _5200_port uint16
 	var _ = _5200_port
 	_5200_port = (ipe).GetPort()
-	ep = _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{(_5199_addr).RangeToSeq(_dafny.NilInt, _dafny.NilInt), _5200_port}}
+	var addr = (_5199_addr).RangeToSeq(_dafny.NilInt, _dafny.NilInt)
+	ep = _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{&addr, _5200_port}}
 	return ep
 }
 func (_this *CompanionStruct_Default___) Receive(udpClient *_9_Native____Io__s_Compile.UdpClient, localAddr _9_Native____Io__s_Compile.EndPoint, config _238_LiveRSL____CPaxosConfiguration__i_Compile.CPaxosConfiguration, msg__grammar _176_Common____GenericMarshalling__i_Compile.G) ReceiveResult {
