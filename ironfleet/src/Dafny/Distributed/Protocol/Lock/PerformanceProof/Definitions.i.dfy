@@ -33,14 +33,19 @@ function TLS_RecvPerfUpdate(node_pr:Timestamp, pkt_pr:Timestamp, hstep:HostStep)
 
 function PerfBoundLockHeld(epoch: int) : Timestamp
   requires 0 < epoch
+  ensures PerfBoundLockHeld(epoch) >= 0
 {
   (epoch - 1) * G + (epoch - 1) * A + (epoch - 1) * D
 }
 
 function PerfBoundLockInNetwork(epoch: int) : Timestamp
-  requires 1 < epoch
+  requires 0 < epoch
+  ensures PerfBoundLockInNetwork(epoch) >= 0
 {
-  (epoch - 1) * G + (epoch - 2) * A + (epoch - 2) * D
+  if epoch == 1 then
+    0
+  else
+    (epoch - 1) * G + (epoch - 2) * A + (epoch - 2) * D
 }
 
 predicate TimeEq(p1:Timestamp, p2:Timestamp)
@@ -48,7 +53,7 @@ predicate TimeEq(p1:Timestamp, p2:Timestamp)
   p1 == p2
 }
 
-predicate PerfLe(p1:Timestamp, p2:Timestamp)
+predicate TimeLe(p1:Timestamp, p2:Timestamp)
 {
   p1 <= p2
 }
