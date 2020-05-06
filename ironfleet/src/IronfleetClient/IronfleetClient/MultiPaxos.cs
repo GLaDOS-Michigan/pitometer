@@ -69,7 +69,7 @@
 
     public class Client : ClientBase
     {
-        public static bool DEBUG = false;
+        public static bool DEBUG = true;
 
         //private static long num_reqs = 0;
 
@@ -117,7 +117,8 @@
             ulong seq_num = 0;            
 
             this.udpClient = new System.Net.Sockets.UdpClient(6000+(int)id);
-            this.udpClient.Client.ReceiveTimeout = 1000;
+            // Timeout value for waiting to receive response from service
+            this.udpClient.Client.ReceiveTimeout = 1000; 
             ulong myaddr = MyAddress64();
 
             int serverIdx = 0;
