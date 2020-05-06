@@ -1,0 +1,11 @@
+#!/bin/bash
+# This script deletes the output files and executables
+
+echo "Starting cleaning project"
+
+rm -rf IronfleetOutput/*
+rm -f client-debug.exe
+rm -f rsl-main
+rm -f node*.log
+
+echo "Cleaning complete"
