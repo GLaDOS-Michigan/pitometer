@@ -384,6 +384,7 @@ TAIL_CALL_START:
 	return ep
 }
 func (_this *CompanionStruct_Default___) Receive(udpClient *_9_Native____Io__s_Compile.UdpClient, localAddr _9_Native____Io__s_Compile.EndPoint, config _238_LiveRSL____CPaxosConfiguration__i_Compile.CPaxosConfiguration, msg__grammar _176_Common____GenericMarshalling__i_Compile.G) ReceiveResult {
+	// TONY: Check to see why every message is parsed as Invalid
 	var rr ReceiveResult = Type_ReceiveResult_().Default().(ReceiveResult)
 	var _ = rr
 	var _5201_timeout int32

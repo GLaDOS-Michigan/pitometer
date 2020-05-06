@@ -483,6 +483,7 @@ TAIL_CALL_START:
 		{
 		}
 	} else {
+		// TONY: Note -- Execution is reaching this block, which is wrong
 		msg = _217_LiveRSL____CMessage__i_Compile.CMessage{_217_LiveRSL____CMessage__i_Compile.CMessage_CMessage__Invalid{}}
 	}
 	return msg
