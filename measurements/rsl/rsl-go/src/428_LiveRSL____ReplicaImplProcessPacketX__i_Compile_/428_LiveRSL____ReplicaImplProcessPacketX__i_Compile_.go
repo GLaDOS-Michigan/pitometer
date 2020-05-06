@@ -103,7 +103,6 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
-	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -330,7 +329,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_L
 	var _ = _out468
 	_out468 = _368_LiveRSL____UdpRSL__i_Compile.Companion_Default___.Receive(r.UdpClient, r.LocalAddr, (((r.Replica).Dtor_constants()).Dtor_all()).Dtor_config(), r.Msg__grammar)
 	_5263_rr = _out468
-	fmt.Printf("Received Packet: %v\n", _5263_rr)
+	// fmt.Printf("TONY DEBUG: Received Packet %v\n", _5263_rr)
 	{
 	}
 	if (_5263_rr).Is_RRFail() {

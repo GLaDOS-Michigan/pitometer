@@ -436,7 +436,8 @@ func (_this *CompanionStruct_Default___) Parse__end__point(ip__shorts _dafny.Seq
 	var _5315_ip__bytes _dafny.Seq = (*(_5313_tuple).IndexInt(1)).(_dafny.Seq)
 	var _ = _5315_ip__bytes
 	if !(_5314_okay) {
-		return _dafny.TupleOf(false, _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{_dafny.SeqOf(uint8(0), uint8(0), uint8(0), uint8(0)), uint16(0)}})
+		var addr = _dafny.SeqOf(uint8(0), uint8(0), uint8(0), uint8(0))
+		return _dafny.TupleOf(false, _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{&addr, uint16(0)}})
 	} else {
 		var _5316_tuple_k _System.Tuple2 = Companion_Default___.Shorts__to__uint16(port__shorts)
 		var _ = _5316_tuple_k
@@ -445,9 +446,10 @@ func (_this *CompanionStruct_Default___) Parse__end__point(ip__shorts _dafny.Seq
 		var _5318_port uint16 = (*(_5316_tuple_k).IndexInt(1)).(uint16)
 		var _ = _5318_port
 		if !(_5317_okay_k) {
-			return _dafny.TupleOf(false, _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{_dafny.SeqOf(uint8(0), uint8(0), uint8(0), uint8(0)), uint16(0)}})
+			var addr = _dafny.SeqOf(uint8(0), uint8(0), uint8(0), uint8(0))
+			return _dafny.TupleOf(false, _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{&addr, uint16(0)}})
 		} else {
-			return _dafny.TupleOf(true, _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{_5315_ip__bytes, _5318_port}})
+			return _dafny.TupleOf(true, _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{&_5315_ip__bytes, _5318_port}})
 		}
 	}
 }

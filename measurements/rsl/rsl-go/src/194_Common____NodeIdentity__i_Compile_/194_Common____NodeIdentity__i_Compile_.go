@@ -168,7 +168,8 @@ func (_this *CompanionStruct_Default___) ConvertEndPointToSeqByte(e _9_Native___
 	return ((_dafny.SeqOf(uint8(0), uint8(0))).Concat((e).Dtor_addr())).Concat(_170_Common____Util__i_Compile.Companion_Default___.Uint16ToSeqByte((e).Dtor_port()))
 }
 func (_this *CompanionStruct_Default___) ConvertSeqByteToEndPoint(s _dafny.Seq) _9_Native____Io__s_Compile.EndPoint {
-	return _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{(s).Subseq(_dafny.IntOfAny(2), _dafny.IntOfAny(6)), _170_Common____Util__i_Compile.Companion_Default___.SeqByteToUint16((s).Subseq(_dafny.IntOfAny(6), _dafny.NilInt))}}
+	var addr = (s).Subseq(_dafny.IntOfAny(2), _dafny.IntOfAny(6))
+	return _9_Native____Io__s_Compile.EndPoint{_9_Native____Io__s_Compile.EndPoint_EndPoint{&addr, _170_Common____Util__i_Compile.Companion_Default___.SeqByteToUint16((s).Subseq(_dafny.IntOfAny(6), _dafny.NilInt))}}
 }
 func (_this *CompanionStruct_Default___) ConvertEndPointToUint64(e _9_Native____Io__s_Compile.EndPoint) uint64 {
 	return _170_Common____Util__i_Compile.Companion_Default___.SeqByteToUint64(Companion_Default___.ConvertEndPointToSeqByte(e))
