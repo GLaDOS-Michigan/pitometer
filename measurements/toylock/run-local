@@ -1,0 +1,17 @@
+#!/bin/bash
+# This script starts a single ToyLock node, and takes the following positional arguments
+# ./run <num_nodes> <my_id> <num_rounds> <delay>
+
+NUM_NODES=$1
+MY_ID=$2
+NUM_ROUNDS=$3
+DELAY=$4   # milliseconds of artificial delay to inject
+
+ENDPOINTS=""
+for ((i=1;i<=$NUM_NODES;i++))
+do
+    ENDPOINTS="$ENDPOINTS 127.0.0.1 400$i"
+done
+
+echo "Starting node $MY_ID"
+./toylock-main $ENDPOINTS 127.0.0.1 400$MY_ID $NUM_ROUNDS $DELAY

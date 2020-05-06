@@ -1,0 +1,15 @@
+#!/bin/bash
+# Project build file for mac
+
+RSL_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/rsl/rsl-go'
+export GOPATH=$RSL_DIR
+
+echo "Starting build"
+
+go build -o rsl-main "$RSL_DIR/src/Main.go" 
+
+export GOPATH='/Users/zhang/go'
+export PATH=$PATH:$(go env GOPATH)/bin
+export GOPATH=$(go env GOPATH)
+
+echo "Build complete"
