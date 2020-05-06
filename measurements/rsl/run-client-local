@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script starts a single RSL client, and takes the following positional arguments
-# ./run <num_nodes> num_threads duration_secs [send_reqs_at_once]
+# ./run <num_nodes> <num_threads> <duration_secs> [send_reqs_at_once]
 
 NUM_NODES=$1
 NUM_THREADS=$2
@@ -13,4 +13,4 @@ do
 done
 
 echo "Starting client"
-mono client.exe 127.0.0.1 $ENDPOINTS $NUM_THREADS $DUR_SECONDS
+mono client-debug.exe 127.0.0.1 $ENDPOINTS $NUM_THREADS $DUR_SECONDS
