@@ -117,7 +117,7 @@
             ulong seq_num = 0;            
 
             this.udpClient = new System.Net.Sockets.UdpClient(6000+(int)id);
-            // Timeout value for waiting to receive response from service
+            // Timeout value for waiting to receive response from service, in milliseconds
             this.udpClient.Client.ReceiveTimeout = 1000; 
             ulong myaddr = MyAddress64();
 

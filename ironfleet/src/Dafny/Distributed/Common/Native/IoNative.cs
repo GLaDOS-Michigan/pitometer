@@ -301,6 +301,7 @@ public partial class Time
 
     public static void GetTime(out ulong time)
     {
+        // A tick is equivalent to 100 nanoseconds
         time = (ulong) DateTime.Now.Ticks / 10000;
     }
     
