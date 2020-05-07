@@ -886,8 +886,11 @@ func (_this *CompanionStruct_MutableMap_) EmptyMap() *MutableMap {
 
 //TONY: Done
 func (_this *CompanionStruct_MutableMap_) MapOf(other *MutableMap) _dafny.Map {
-	TraceAndExit()
-	return _dafny.EmptyMap
+	var mb = _dafny.NewMapBuilder()
+	for k, v := range other.mapImpl {
+		mb = mb.Add(k, v)
+	}
+	return mb.ToMap()
 }
 
 //TONY: Done
@@ -908,9 +911,10 @@ func (_this *MutableMap) Contains(key interface{}) bool {
 	return ok
 }
 
-//TONY: TODO
+// Remove deletes the key from the map if the key is in the map.
+//TONY: Done
 func (_this *MutableMap) Remove(key interface{}) {
-	TraceAndExit()
+	delete(_this.mapImpl, key)
 }
 
 //TONY: Done
