@@ -90,27 +90,27 @@
             return hex.Replace("-", "");
         }
 
-        protected void ReceiveLoop() {
-            byte[] bytes;
-            while (true)
-            {
-                bytes = Receive();
-                var end_time = (ulong)HiResTimer.Ticks;
-                Trace("Got the following reply:" + ByteArrayToString(bytes));
-                if (bytes.Length == 40)
-                {
-                    var start_time = ExtractBE64(bytes, 32);
-                    var request_time = end_time - start_time;
+        // protected void ReceiveLoop() {
+        //     byte[] bytes;
+        //     while (true)
+        //     {
+        //         bytes = Receive();
+        //         var end_time = (ulong)HiResTimer.Ticks;
+        //         Trace("Got the following reply (ReceiveLoop):" + ByteArrayToString(bytes));
+        //         if (bytes.Length == 40)
+        //         {
+        //             var start_time = ExtractBE64(bytes, 32);
+        //             var request_time = end_time - start_time;
 
-                    Trace("Request took " + request_time + " ticks");
-                    Console.WriteLine(request_time);
-                }
-                else
-                {
-                    Trace("Got an unexpected packet length: " + bytes.Length);
-                }
-            }
-        }
+        //             Trace("Request took " + request_time + " ticks");
+        //             Console.WriteLine(request_time);
+        //         }
+        //         else
+        //         {
+        //             Trace("Got an unexpected packet length: " + bytes.Length);
+        //         }
+        //     }
+        // }
 
         protected override void Main(ulong id, ulong num_reqs_at_once)
         {
@@ -118,7 +118,7 @@
 
             this.udpClient = new System.Net.Sockets.UdpClient(6000+(int)id);
             // Timeout value for waiting to receive response from service, in milliseconds
-            this.udpClient.Client.ReceiveTimeout = 1000; 
+            // this.udpClient.Client.ReceiveTimeout = 1000; 
             ulong myaddr = MyAddress64();
 
             int serverIdx = 0;
@@ -140,10 +140,11 @@
                     seq_num++;
                     var msg = new RequestMessage(seq_num, myaddr);
 
-                    Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + ClientBase.endpoints[serverIdx].ToString());
+                    var dest = ClientBase.endpoints[serverIdx];
+                    Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + dest);
 
                     var start_time = HiResTimer.Ticks;
-                    this.Send(msg, ClientBase.endpoints[serverIdx]);
+                    this.Send(msg, dest);
                     //foreach (var remote in ClientBase.endpoints)
                     //{
                     //    this.Send(msg, remote);
@@ -156,6 +157,7 @@
                         byte[] bytes;
                         try
                         {
+                            Console.WriteLine("Waiting for reply to request {0}", seq_num);
                             bytes = Receive();
                         }
                         catch (System.Net.Sockets.SocketException e)
@@ -163,18 +165,22 @@
                             serverIdx = (serverIdx + 1) % ClientBase.endpoints.Count();
                             Console.WriteLine("#timeout; rotating to server {0}", serverIdx);
                             Console.WriteLine(e.ToString());
+                            // Console.WriteLine("TONY DEBUG: Breaking");
                             break;
                         }
                         var end_time = HiResTimer.Ticks;
-                        Trace("Got the following reply:" + ByteArrayToString(bytes));
+                        // Trace("Got the following reply (Main):" + ByteArrayToString(bytes));
+                        // Console.WriteLine("TONY DEBUG: Length is {0}", bytes.Length);
                         if (bytes.Length == 32)
                         {
                             var reply_seq_num = ExtractBE64(bytes, offset: 8);
+                            // Console.WriteLine("TONY DEBUG: seq_num is {0}, reply_seq_num is {1}", seq_num,reply_seq_num);
                             if (reply_seq_num == seq_num)
                             {
                                 received_reply = true;
                                 // Report time in milliseconds, since that's what the Python script appears to expect
-                                Console.Out.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
+                                Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
+                                // Console.Out.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
                                 //long n = Interlocked.Increment(ref num_reqs);
                                 //if (1 == n || n % 1000 == 0)
                                 //{
@@ -192,17 +198,17 @@
             }
             else
             {
-                UDPListener(num_reqs_at_once);
+                // UDPListener(num_reqs_at_once);
 
-                for (ulong i = 0; i < num_reqs_at_once; i++)
-                {
-                    var msg = new RequestMessage(seq_num, myaddr);
-                    seq_num++;
-                    Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + ClientBase.endpoints[serverIdx].ToString());
+                // for (ulong i = 0; i < num_reqs_at_once; i++)
+                // {
+                //     var msg = new RequestMessage(seq_num, myaddr);
+                //     seq_num++;
+                //     Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + ClientBase.endpoints[serverIdx].ToString());
 
-                    this.Send(msg, ClientBase.endpoints[serverIdx]);
+                //     this.Send(msg, ClientBase.endpoints[serverIdx]);
 
-                }
+                // }
             }
         }
     }
