@@ -69,7 +69,7 @@
 
     public class Client : ClientBase
     {
-        public static bool DEBUG = true;
+        public static bool DEBUG = false;
 
         //private static long num_reqs = 0;
 
@@ -118,7 +118,7 @@
 
             this.udpClient = new System.Net.Sockets.UdpClient(6000+(int)id);
             // Timeout value for waiting to receive response from service, in milliseconds
-            // this.udpClient.Client.ReceiveTimeout = 1000; 
+            this.udpClient.Client.ReceiveTimeout = 1000; 
             ulong myaddr = MyAddress64();
 
             int serverIdx = 0;
@@ -157,20 +157,19 @@
                         byte[] bytes;
                         try
                         {
-                            Console.WriteLine("Waiting for reply to request {0}", seq_num);
+                            // Console.WriteLine("TONY DEBUG: Waiting for reply to request {0}", seq_num);
                             bytes = Receive();
                         }
                         catch (System.Net.Sockets.SocketException e)
                         {
                             serverIdx = (serverIdx + 1) % ClientBase.endpoints.Count();
-                            Console.WriteLine("#timeout; rotating to server {0}", serverIdx);
+                            Console.WriteLine("#TIMEOUT; rotating to server {0}", serverIdx);
                             Console.WriteLine(e.ToString());
                             // Console.WriteLine("TONY DEBUG: Breaking");
                             break;
                         }
                         var end_time = HiResTimer.Ticks;
                         // Trace("Got the following reply (Main):" + ByteArrayToString(bytes));
-                        // Console.WriteLine("TONY DEBUG: Length is {0}", bytes.Length);
                         if (bytes.Length == 32)
                         {
                             var reply_seq_num = ExtractBE64(bytes, offset: 8);
