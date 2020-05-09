@@ -6,6 +6,8 @@ module LiveRSL__Types_i {
 import opened AppStateMachine_i
 import opened Concrete_NodeIdentity_i
 
+datatype RslStep = ExternalStep | RslStep(actionIndex:int)
+
 type OperationNumber = int
 datatype Ballot = Ballot(seqno:int, proposer_id:int)
     
