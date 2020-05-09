@@ -6,5 +6,6 @@ CLIENT_DIR='../../ironfleet/src/IronfleetClient/IronfleetClient'
 # echo "Starting client build"
 
 mcs $CLIENT_DIR/Program.cs $CLIENT_DIR/MultiPaxos.cs $CLIENT_DIR/ClientBase.cs -out:client-debug.exe
+chmod -x client-debug.exe
 
 # echo "Build complete"
