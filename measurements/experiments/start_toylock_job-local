@@ -7,9 +7,10 @@ NUM_NODES=$1
 NUM_ROUNDS=$2
 DELAY=$3   # milliseconds of artificial delay to inject
 
-DATA_DIR="../analysis/toylock/data"
+DATA_DIR="data/toylock"
+TOYLOCK_DIR="../toylock"
 
-./build-mac
+./$TOYLOCK_DIR/build-mac
 
 echo "Starting local job with $NUM_NODES nodes and $NUM_ROUNDS rounds"
 
@@ -17,10 +18,10 @@ for ((i=$NUM_NODES;i>0;i--))
 do  
     if [ $i -gt 1 ]
     then
-        ./run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw &
+        ./$TOYLOCK_DIR/run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw &
     else
         # Wait on the last node
-        ./run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw 
+        ./$TOYLOCK_DIR/run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw 
     fi
 done
 

@@ -1,0 +1,5 @@
+#!/bin/bash
+# This script deletes the executables
+
+rm -f toylock-main
+rm -f rsl-main
