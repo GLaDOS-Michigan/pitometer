@@ -90,6 +90,12 @@ namespace IronfleetTestDriver
             
         }
 
+        public string ByteArrayToStringCB(byte[] ba)
+        {
+            string hex = BitConverter.ToString(ba);
+            return hex.Replace("-", "");
+        }
+
         protected abstract void Main(ulong id, ulong num_reqs);
 
         protected void Send(MessageBase msg, System.Net.IPEndPoint remote)
@@ -100,11 +106,13 @@ namespace IronfleetTestDriver
                 throw new InvalidOperationException("failed to send complete message.");
             }
         }
-
+        
         protected byte[] Receive()
         {
-            IPEndPoint endpoint = null;
-            return this.udpClient.Receive(ref endpoint);          
+            IPEndPoint endpoint = null;      
+            byte[] res = this.udpClient.Receive(ref endpoint);
+            // Console.WriteLine("TONY DEBUG: Received {0} from {1}", ByteArrayToStringCB(res), endpoint);
+            return res;     
         }
 
         // this should really be in the MultiPaxos.cs

@@ -6,10 +6,14 @@ export GOPATH=$RSL_DIR
 
 echo "Starting build"
 
+echo "Building rsl server"
 go build -o rsl-main "$RSL_DIR/src/Main.go" 
 
 export GOPATH='/Users/zhang/go'
 export PATH=$PATH:$(go env GOPATH)/bin
 export GOPATH=$(go env GOPATH)
+
+echo "Building rsl client"
+./build_client
 
 echo "Build complete"

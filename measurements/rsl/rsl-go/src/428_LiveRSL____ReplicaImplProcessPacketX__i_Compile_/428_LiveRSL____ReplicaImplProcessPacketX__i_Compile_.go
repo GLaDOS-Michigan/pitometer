@@ -347,8 +347,6 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_L
 		_5264_marshallable = _out469
 		if !(_5264_marshallable) {
 			ok = true
-			// TONY: Why do I receive unmarshallable packets?
-			// fmt.Printf("Why unmarshallable: %v\n", _5263_rr)
 			Companion_Default___.ReplicaNextProcessPacketUnmarshallable(r, _5263_rr)
 		} else if (((_5263_rr).Dtor_cpacket()).Dtor_msg()).Is_CMessage__Heartbeat() {
 			var _out470 bool
