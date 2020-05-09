@@ -154,13 +154,15 @@ predicate LProposerProcessRequest(s:LProposer, s':LProposer, packet:RslPacket)
 {
     var val := Request(packet.src, packet.msg.seqno_req, packet.msg.val);
        ElectionStateReflectReceivedRequest(s.election_state, s'.election_state, val)
-    && if    s.current_state != 0
+    && if    s.current_state != 0   
+            // If I am the leader in Phase 1 or Phase 2
           && (   val.client !in s.highest_seqno_requested_by_client_this_view
               || val.seqno > s.highest_seqno_requested_by_client_this_view[val.client]) then
            s' == s.(election_state := s'.election_state,
                     request_queue := s.request_queue + [val],
                     highest_seqno_requested_by_client_this_view := s.highest_seqno_requested_by_client_this_view[val.client := val.seqno])
        else
+            // Else I am not the leader
            s' == s.(election_state := s'.election_state)
 }
 
@@ -205,10 +207,14 @@ predicate LProposerNominateNewValueAndSend2a(s:LProposer, s':LProposer, clock:in
     requires LProposerCanNominateUsingOperationNumber(s, log_truncation_point, s.next_operation_number_to_propose);
     requires LAllAcceptorsHadNoProposal(s.received_1b_packets, s.next_operation_number_to_propose);
 {
+    // This is called when timer is up, or request queue is larger than batch size in LProposerMaybeNominateValueAndSend2a()
+    // If request queue is smaller than batch size, or no batching, then v takes the whole queue, else it takes the slice up to batchsize.
     var batchSize := if |s.request_queue| <= s.constants.all.params.max_batch_size || s.constants.all.params.max_batch_size < 0 then |s.request_queue| else s.constants.all.params.max_batch_size;
     var v := s.request_queue[..batchSize];
     var opn := s.next_operation_number_to_propose;
-       s' == s.(request_queue := s.request_queue[batchSize..],
+         // Request_queue in s' is the unsent suffix, and 
+         // If I send a full batch and there is at least one request waiting, turn on the IncompleteBatchTimer, else turn it off because I currently have no outstanding requests
+        s' == s.(request_queue := s.request_queue[batchSize..],
                 next_operation_number_to_propose := s.next_operation_number_to_propose + 1,
                 incomplete_batch_timer := if |s.request_queue| > batchSize then IncompleteBatchTimerOn(UpperBoundedAddition(clock, s.constants.all.params.max_batch_delay, s.constants.all.params.max_integer_val)) else IncompleteBatchTimerOff())
     && LBroadcastToEveryone(s.constants.all.config, s.constants.my_index, RslMessage_2a(s.max_ballot_i_sent_1a, opn, v), sent_packets)
@@ -232,10 +238,12 @@ predicate LProposerMaybeNominateValueAndSend2a(s:LProposer, s':LProposer, clock:
     else if !LAllAcceptorsHadNoProposal(s.received_1b_packets, s.next_operation_number_to_propose) then
         LProposerNominateOldValueAndSend2a(s, s', log_truncation_point, sent_packets)
     else if    (exists opn :: opn > s.next_operation_number_to_propose && !LAllAcceptorsHadNoProposal(s.received_1b_packets, opn))
+        // If request_queue is larger than batch size, or IncompleteBatchTimer is up, do LProposerNominateNewValueAndSend2a()
             || |s.request_queue| >= s.constants.all.params.max_batch_size
             || (|s.request_queue| > 0 && s.incomplete_batch_timer.IncompleteBatchTimerOn? && clock >= s.incomplete_batch_timer.when) then
         LProposerNominateNewValueAndSend2a(s, s', clock, log_truncation_point, sent_packets)
     else if |s.request_queue| > 0 && s.incomplete_batch_timer.IncompleteBatchTimerOff? then
+        // If I have a non-empty queue, but the batch timer is off, then turn it on 
         s' == s.(incomplete_batch_timer := IncompleteBatchTimerOn(UpperBoundedAddition(clock, s.constants.all.params.max_batch_delay, s.constants.all.params.max_integer_val))) && sent_packets == []
     else
         s' == s && sent_packets == []
