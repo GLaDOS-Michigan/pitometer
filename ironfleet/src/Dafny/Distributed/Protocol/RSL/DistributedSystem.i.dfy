@@ -11,7 +11,7 @@ import opened LiveRSL__Replica_i
 
 datatype RslState = RslState(
     constants:LConstants,
-    environment:LEnvironment<NodeIdentity, RslMessage>,
+    environment:LEnvironment<NodeIdentity, RslMessage, RslStep>,
     replicas:seq<LScheduler>,
     clients:set<NodeIdentity>
     )
@@ -50,7 +50,7 @@ predicate RslNextOneReplica(ps:RslState, ps':RslState, idx:int, ios:seq<RslIo>)
        RslNextCommon(ps, ps')
     && 0 <= idx < |ps.constants.config.replica_ids|
     && LSchedulerNext(ps.replicas[idx], ps'.replicas[idx], ios)
-    && ps.environment.nextStep == LEnvStepHostIos(ps.constants.config.replica_ids[idx], ios)
+    && ps.environment.nextStep == LEnvStepHostIos(ps.constants.config.replica_ids[idx], ios, RslStep(ps.replicas[idx].nextActionIndex))
     && ps'.replicas == ps.replicas[idx := ps'.replicas[idx]]
 }
 
@@ -65,7 +65,7 @@ predicate RslNextOneExternal(ps:RslState, ps':RslState, eid:NodeIdentity, ios:se
 {
        RslNextCommon(ps, ps')
     && eid !in ps.constants.config.replica_ids
-    && ps.environment.nextStep == LEnvStepHostIos(eid, ios)
+    && ps.environment.nextStep == LEnvStepHostIos(eid, ios, ExternalStep())
     && ps'.replicas == ps.replicas
 }
 
