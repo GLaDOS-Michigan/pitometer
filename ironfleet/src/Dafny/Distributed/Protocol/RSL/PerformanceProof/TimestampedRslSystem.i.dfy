@@ -5,12 +5,13 @@ include "../Constants.i.dfy"
 include "../Environment.i.dfy"
 include "../Replica.i.dfy"
 include "../../../Services/RSL/RslTimestampedDistributedSystem.i.dfy"
-
+include "Definitions.i.dfy"
 
 module TimestampedRslPerformanceProof_i {
 
 import opened RslTimestampedDistributedSystem_i
   import opened LiveRSL__DistributedSystem_i
+  import opened Definitions_i
 
 import opened Collections__Maps2_i
 import opened LiveRSL__Constants_i
@@ -75,11 +76,6 @@ predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRs
   RslNextOneReplica(UntimestampRslState(ps), UntimestampRslState(ps'), idx, UntagLIoOpSeq(ios))
 
     // LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
-      // && (if |ios| > 0 && ios[0].LIoOpReceive? then
-        // tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hstep)
-      // else
-        // tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hstep)
-        // )
 // 
       // && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == tls'.t_servers[id].ts)
       // && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
@@ -88,6 +84,12 @@ predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRs
     && 0 <= idx < |ps.constants.config.replica_ids|
     && ps.t_environment.nextStep == LEnvStepHostIos(ps.constants.config.replica_ids[idx], ios, RslStep(ps.t_replicas[idx].v.nextActionIndex))
     && ps'.t_replicas == ps.t_replicas[idx := ps'.t_replicas[idx]]
+
+    && var hstep := ps.t_environment.nextStep.nodeStep; (if |ios| > 0 && ios[0].LIoOpReceive? then
+      ps'.t_replicas[idx].ts == Rsl_RecvPerfUpdate(ps.t_replicas[idx].ts, ios[0].r.msg.ts, hstep)
+    else
+      ps'.t_replicas[idx].ts == Rsl_NoRecvPerfUpdate(ps.t_replicas[idx].ts, hstep)
+      )
 }
 
 predicate TimestampedRslNextEnvironment(ps:TimestampedRslState, ps':TimestampedRslState)
