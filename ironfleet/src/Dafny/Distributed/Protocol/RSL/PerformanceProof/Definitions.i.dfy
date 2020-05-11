@@ -40,6 +40,11 @@ function Rsl_RecvPerfUpdate(node_pr:Timestamp, pkt_pr:Timestamp, hstep:RslStep) 
   total_time
 }
 
+function Rsl_TimeoutPerfUpdate(node_ts:Timestamp, hstep:RslStep) : Timestamp
+{
+  node_ts + Timeout() + StepToTimeDelta(hstep)
+}
+
 predicate TimeEq(p1:Timestamp, p2:Timestamp)
 {
   p1 == p2
@@ -50,5 +55,15 @@ predicate TimeLe(p1:Timestamp, p2:Timestamp)
   p1 <= p2
 }
 
+
+function TimeBound1aSent() : Timestamp
+{
+  Timeout() + 2*L
+}
+
+function TimeBound1aReceived() : Timestamp
+{
+  L + D + L
+}
 
 }

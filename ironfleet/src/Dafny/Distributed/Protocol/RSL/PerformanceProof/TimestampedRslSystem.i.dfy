@@ -18,7 +18,8 @@ import opened LiveRSL__Constants_i
 import opened LiveRSL__Environment_i
 import opened LiveRSL__Replica_i
 
-type TimestampedLScheduler = TimestampedType<LScheduler>
+// type TimestampedLScheduler = TimestampedType<LScheduler>
+datatype TimestampedLScheduler = TimestampedLScheduler(v:LScheduler, ts:Timestamp, dts:Timestamp)
 
 datatype TimestampedRslState = TimestampedRslState(
     constants:LConstants,
@@ -74,22 +75,26 @@ predicate TimestampedRslNextCommon(ps:TimestampedRslState, ps':TimestampedRslSta
 predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRslState, idx:int, ios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>)
 {
   RslNextOneReplica(UntimestampRslState(ps), UntimestampRslState(ps'), idx, UntagLIoOpSeq(ios))
-
-    // LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios), hstep)
-// 
-      // && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == tls'.t_servers[id].ts)
-      // && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
-
     && TimestampedRslNextCommon(ps, ps')
     && 0 <= idx < |ps.constants.config.replica_ids|
     && ps.t_environment.nextStep == LEnvStepHostIos(ps.constants.config.replica_ids[idx], ios, RslStep(ps.t_replicas[idx].v.nextActionIndex))
     && ps'.t_replicas == ps.t_replicas[idx := ps'.t_replicas[idx]]
 
-    && var hstep := ps.t_environment.nextStep.nodeStep; (if |ios| > 0 && ios[0].LIoOpReceive? then
-      ps'.t_replicas[idx].ts == Rsl_RecvPerfUpdate(ps.t_replicas[idx].ts, ios[0].r.msg.ts, hstep)
+    && var hstep := ps.t_environment.nextStep.nodeStep;
+    (if |ios| > 0 && ios[0].LIoOpReceive? then
+      && ps'.t_replicas[idx].ts == Rsl_RecvPerfUpdate(ps.t_replicas[idx].ts, ios[0].r.msg.ts, hstep)
+      && (ps.t_replicas[idx].dts <= (ios[0].r.msg.ts + D) <= ps.t_replicas[idx].ts + Timeout())
+      && ps'.t_replicas[idx].dts == (ios[0].r.msg.ts + D)
+    else if |ios| > 0 && ios[0].LIoOpTimeoutReceive? then
+      && ps'.t_replicas[idx].ts == Rsl_TimeoutPerfUpdate(ps.t_replicas[idx].ts, hstep)
+      && ps'.t_replicas[idx].dts == ps.t_replicas[idx].ts + Timeout()
     else
-      ps'.t_replicas[idx].ts == Rsl_NoRecvPerfUpdate(ps.t_replicas[idx].ts, hstep)
+      && ps'.t_replicas[idx].ts == Rsl_NoRecvPerfUpdate(ps.t_replicas[idx].ts, hstep)
+      && ps'.t_replicas[idx].dts == ps.t_replicas[idx].dts
       )
+
+    && (forall io :: io in ios && io.LIoOpSend? ==> io.s.msg.ts == ps'.t_replicas[idx].ts)
+      
 }
 
 predicate TimestampedRslNextEnvironment(ps:TimestampedRslState, ps':TimestampedRslState)
