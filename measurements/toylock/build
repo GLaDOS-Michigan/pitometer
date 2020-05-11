@@ -1,11 +1,31 @@
 #!/bin/bash
-# Project build file for linux
+# Project build file
 
-LOCK_DIR='/home/nudzhang/Documents/pitometer/go-compiler/toylock-go'
-export GOPATH=$LOCK_DIR
+if uname -a | grep -q Darwin; then
+    # Build on mac
+    LOCK_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/toylock/toylock-go'
+    export GOPATH=$LOCK_DIR
 
-go build -o toylock-main "$LOCK_DIR/src/Main.go" 
+    echo "Starting OSX build"
 
-export GOPATH='/home/nudzhang/go'
-export PATH=$PATH:$(go env GOPATH)/bin
-export GOPATH=$(go env GOPATH)
+    go build -o toylock-main "$LOCK_DIR/src/Main.go" 
+
+    export GOPATH='/Users/zhang/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
+elif uname -a | grep -q Linux; then
+    # Build on Linux
+    LOCK_DIR='/home/nudzhang/Documents/pitometer/go-compiler/toylock-go'
+    export GOPATH=$LOCK_DIR
+
+    echo "Starting Linux build"
+
+    go build -o toylock-main "$LOCK_DIR/src/Main.go" 
+
+    export GOPATH='/home/nudzhang/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
+else
+    echo "Build failed"
+fi
+echo "Build complete"
