@@ -27,5 +27,6 @@ elif uname -a | grep -q Linux; then
     export GOPATH=$(go env GOPATH)
 else
     echo "Build failed"
+    exit 1
 fi
 echo "Build complete"
