@@ -82,6 +82,7 @@ predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRs
 
     && var hstep := ps.t_environment.nextStep.nodeStep;
     (if |ios| > 0 && ios[0].LIoOpReceive? then
+      && ios[0] in ios
       && ps'.t_replicas[idx].ts == Rsl_RecvPerfUpdate(ps.t_replicas[idx].ts, ios[0].r.msg.ts, hstep)
       && (ps.t_replicas[idx].dts <= (ios[0].r.msg.ts + D) <= ps.t_replicas[idx].ts + Timeout())
       && ps'.t_replicas[idx].dts == (ios[0].r.msg.ts + D)
