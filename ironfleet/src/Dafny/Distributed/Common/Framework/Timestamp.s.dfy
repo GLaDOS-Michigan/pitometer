@@ -38,6 +38,7 @@ abstract module Timestamp_s {
     ensures imaptotal(StepTime(hstep))
 
   function Timeout(): Timestamp
+    ensures Timeout() >= 0
 
   function TimeAdd2(p1:Timestamp, p2:Timestamp) : Timestamp
   {
