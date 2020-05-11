@@ -94,7 +94,6 @@ predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRs
       )
 
     && (forall io :: io in ios && io.LIoOpSend? ==> io.s.msg.ts == ps'.t_replicas[idx].ts)
-      
 }
 
 predicate TimestampedRslNextEnvironment(ps:TimestampedRslState, ps':TimestampedRslState)
