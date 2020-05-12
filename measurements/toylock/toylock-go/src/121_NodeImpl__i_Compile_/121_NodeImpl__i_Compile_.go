@@ -213,8 +213,6 @@ TAIL_CALL_START:
 
 // TONY: Measure this
 func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
-	nodeGrantLog.LogStartEvent("NodeNextGrant")
-	time.Sleep(time.Duration(delay) * time.Millisecond)
 	var ok bool = false
 	var _ = ok
 	var _1690_transfer__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
@@ -223,7 +221,7 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter,
 	var _ = _out84
 	var _out85 _44_Logic____Option__i_Compile.Option
 	var _ = _out85
-	_out84, _out85 = _115_Impl__Node__i_Compile.Companion_Default___.NodeGrantImpl(_this.Node)
+	_out84, _out85 = _115_Impl__Node__i_Compile.Companion_Default___.NodeGrantImpl(_this.Node, delay, nodeGrantCounter, nodeGrantLog)
 	(_this).Node = _out84
 	_1690_transfer__packet = _out85 // This is the packet that is sent
 	ok = true
@@ -238,8 +236,6 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter,
 		}
 	} else {
 	}
-	nodeGrantLog.LogEndEvent("NodeNextGrant")
-	nodeGrantCounter.Increment()
 	return ok
 }
 func (_this *NodeImpl) NodeNextAccept(delay int, nodeAcceptLog *clock.Stopwatch) bool {

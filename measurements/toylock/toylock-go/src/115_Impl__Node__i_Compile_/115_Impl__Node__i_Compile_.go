@@ -42,7 +42,9 @@ import (
 	_99_Math____power2__i_Compile "99_Math____power2__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -247,7 +249,11 @@ TAIL_CALL_START:
 	}
 	return node
 }
-func (_this *CompanionStruct_Default___) NodeGrantImpl(s CNode) (CNode, _44_Logic____Option__i_Compile.Option) {
+
+// TONY: This is the method that we want to time
+func (_this *CompanionStruct_Default___) NodeGrantImpl(s CNode, delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) (CNode, _44_Logic____Option__i_Compile.Option) {
+	nodeGrantLog.LogStartEvent("NodeNextGrant")
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var s_k CNode = Type_CNode_().Default().(CNode)
@@ -268,14 +274,18 @@ TAIL_CALL_START:
 		// _dafny.Print(_dafny.SeqOfString("I grant the lock "))
 		// _dafny.Print((s).Dtor_epoch())
 		// _dafny.Print(_dafny.SeqOfString("\n"))
+		nodeGrantCounter.Increment()
 	} else {
+		// TONY: This branch is observed to never be taken
 		s_k = s
 		{
 		}
 		packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_None{}}
 	}
+	nodeGrantLog.LogEndEvent("NodeNextGrant")
 	return s_k, packet
 }
+
 func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket) (CNode, _44_Logic____Option__i_Compile.Option) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
