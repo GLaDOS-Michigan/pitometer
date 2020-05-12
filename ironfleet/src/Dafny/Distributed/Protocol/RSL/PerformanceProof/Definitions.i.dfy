@@ -92,6 +92,11 @@ function {:verify false} TimeBound1aSent() : Timestamp
   Timeout() + ProcessPacket + MbeNewView
 }
 
+function TimeBound1bSent() : Timestamp
+{
+  TimeBound1aSent() + D + ProcessPacket + TimeActionRange(0)
+}
+
 function {:verify false} TimeBound1aReceived() : Timestamp
 {
   L + D + L
@@ -127,6 +132,15 @@ lemma TimeActionRangeHelper_Recv(dts:Timestamp, node_ts:Timestamp, dts':Timestam
   requires dts' >= node_ts;
   requires node_ts' == TimeMax(dts', node_ts) + StepToTimeDelta(RslStep(0))
   ensures node_ts' <= dts' + TimeActionRange(1);
+{
+}
+
+lemma BoundedLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp)
+  requires node_ts <= dts + TimeActionRange(0)
+  requires node_ts' == Rsl_RecvPerfUpdate(node_ts, pkt_ts, RslStep(0));
+  requires (pkt_ts + D) >= dts;
+
+  ensures node_ts' <= (pkt_ts + D + TimeActionRange(0) + ProcessPacket)
 {
 }
 
