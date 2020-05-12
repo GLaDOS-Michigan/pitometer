@@ -1,0 +1,104 @@
+#!/bin/bash
+# This script starts a distributed toylock job. It takes the following 
+# positional arguments:
+# ./start_toylock_job <results_dir> <num_rounds> <delay> <host_id..>
+# where each host_id refers to the respective host in hosts.csv that will participate in 
+# this toylock ring, and
+# results_dir is the directory in which all results should be collected
+
+HOSTS="hosts.csv"
+EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
+TEMP_DIR="/home/nudzhang/tmp"  # temporary dir to store output at each node
+
+# First, grab parameters
+
+RESULTS_DIR=$1
+NUM_ROUNDS=$2
+DELAY=$3   # milliseconds of artificial delay to inject
+shift; shift; shift
+HOST_ID_LIST=("$@")
+ 
+HOST_NAME_LIST=()
+HOST_IP_LIST=()
+HOST_PORT_LIST=()
+
+for i in "${HOST_ID_LIST[@]}"
+do
+    while IFS=, read -r id name address port
+    do 
+        if [ $id -eq $i ]
+        then
+            # echo "TONY: $name $address $port"
+            HOST_NAME_LIST+=("$name")
+            HOST_IP_LIST+=("$address")
+            HOST_PORT_LIST+=("$port")
+            break
+        fi
+    done < <(tail -n +2 $HOSTS)
+done
+
+echo "Starting Toylock experiment with parameters:"
+echo "  - Rounds: $NUM_ROUNDS"
+echo "  - Delay: $DELAY ms"
+echo "  - Ring size: ${#HOST_NAME_LIST[@]}"
+echo "  - Participants: ${HOST_NAME_LIST[@]}"
+
+# Build locally and send executables to the target machines
+./build_to_hosts ${HOST_ID_LIST[@]}
+
+
+# Build list of endpoints that is the argument to the main program
+ENDPOINTS=""  
+i="0"
+while [ $i -lt ${#HOST_NAME_LIST[@]} ]
+do
+    ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
+    i=$[$i+1]
+done
+
+
+# Run the experiments on each note via ssh
+# Note that we must start the head node, that is the initial node holder, last.
+
+i=$[ ${#HOST_NAME_LIST[@]} - 1]
+while [ $i -ge 0 ]
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ID=${HOST_ID_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+    NODE_PORT=${HOST_PORT_LIST[$i]}
+    echo "Starting node $NODE_ID, $NODE_NAME, $NODE_ADDR:$NODE_PORT"
+
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $NUM_ROUNDS $DELAY"
+
+    # Make dir to store local output
+    ssh nudzhang@$NODE_ADDR "mkdir -p $TEMP_DIR"  
+
+    # Kill any processes using the required port
+    ssh nudzhang@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
+
+    # Run experiment
+    if [ $i -gt 0 ] 
+    then 
+        ssh nudzhang@$NODE_ADDR "$EXP_DIR/toylock-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"  &
+        sleep .5
+    else
+        # Wait on the last node
+        ssh nudzhang@$NODE_ADDR "$EXP_DIR/toylock-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"
+    fi
+    i=$[$i-1]
+done
+echo "Trial completed"
+
+# Finally, grab results from each node to local machine
+echo "Collecting results..."
+
+i=$[ ${#HOST_NAME_LIST[@]} - 1]
+while [ $i -ge 0 ]
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+
+    scp $NODE_ADDR:$TEMP_DIR/node_$NODE_NAME.log $RESULTS_DIR
+    i=$[$i-1]
+done

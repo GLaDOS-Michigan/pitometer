@@ -23,8 +23,9 @@ do
         then
             echo "Copying builds to $name"
             scp toylock-main rsl-main client.exe nudzhang@$address:$HOST_TARGET_DIR
+            break
         fi
     done
 done
 
-echo "Done"
+echo "Done build to hosts"
