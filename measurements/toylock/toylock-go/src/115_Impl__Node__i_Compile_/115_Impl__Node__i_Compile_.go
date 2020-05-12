@@ -44,6 +44,7 @@ import (
 	_System "System_"
 	"clock"
 	_dafny "dafny"
+	"fmt"
 	"time"
 )
 
@@ -286,7 +287,9 @@ TAIL_CALL_START:
 	return s_k, packet
 }
 
-func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket) (CNode, _44_Logic____Option__i_Compile.Option) {
+func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket, delay int, nodeAcceptLog *clock.Stopwatch) (CNode, _44_Logic____Option__i_Compile.Option) {
+	nodeAcceptLog.LogStartEvent("NodeNextAccept")
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var s_k CNode = Type_CNode_().Default().(CNode)
@@ -305,9 +308,12 @@ TAIL_CALL_START:
 		}
 		// _dafny.Print(_dafny.SeqOfString("I hold the lock!\n"))
 	} else {
+		// TONY: This branch should not execute
+		fmt.Printf("TONY DEBUG: bad bad bad\n")
 		s_k = s
 		locked__packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_None{}}
 	}
+	nodeAcceptLog.LogEndEvent("NodeNextAccept")
 	return s_k, locked__packet
 }
 
