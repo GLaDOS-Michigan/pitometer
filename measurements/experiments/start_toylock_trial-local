@@ -18,10 +18,10 @@ for ((i=$NUM_NODES;i>0;i--))
 do  
     if [ $i -gt 1 ]
     then
-        ./$TOYLOCK_DIR/run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw &
+        ./$TOYLOCK_DIR/run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.log &
     else
         # Wait on the last node
-        ./$TOYLOCK_DIR/run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.raw 
+        ./$TOYLOCK_DIR/run-local $NUM_NODES $i $NUM_ROUNDS $DELAY > $DATA_DIR/node$i\_delay$DELAY.log 
     fi
 done
 
