@@ -242,7 +242,9 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter,
 	nodeGrantCounter.Increment()
 	return ok
 }
-func (_this *NodeImpl) NodeNextAccept() bool {
+func (_this *NodeImpl) NodeNextAccept(delay int, nodeAcceptLog *clock.Stopwatch) bool {
+	nodeAcceptLog.LogStartEvent("NodeNextAccept")
+	time.Sleep(time.Duration(delay) * time.Millisecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -287,9 +289,10 @@ TAIL_CALL_START:
 			}
 		}
 	}
+	nodeAcceptLog.LogEndEvent("NodeNextAccept")
 	return ok
 }
-func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch, nodeAcceptLog *clock.Stopwatch) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -302,7 +305,7 @@ TAIL_CALL_START:
 	} else {
 		var _out92 bool
 		var _ = _out92
-		_out92 = (_this).NodeNextAccept()
+		_out92 = (_this).NodeNextAccept(delay, nodeAcceptLog)
 		ok = _out92
 	}
 	return ok
