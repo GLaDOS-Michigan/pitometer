@@ -2,6 +2,7 @@ import sys
 import os
 import csv
 import statistics
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
@@ -80,6 +81,7 @@ def generate_statistics(input):
     res.append("n = %d" %len(input))
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.3f" %statistics.stdev(input))
+    res.append("99.9%% = %.3f" %np.percentile(input, 99.9))
     return "\n".join(res)
 
 
