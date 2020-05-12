@@ -4,7 +4,9 @@
 # ./start_toylock_job <results_dir> <num_rounds> <delay> <host_id..>
 # where each host_id refers to the respective host in hosts.csv that will participate in 
 # this toylock ring, and
-# results_dir is the directory in which all results should be collected
+# results_dir is the directory in which all results should be collected.
+
+# NOTE: This script assumes that the executables are in place
 
 HOSTS="hosts.csv"
 EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
@@ -37,14 +39,12 @@ do
     done < <(tail -n +2 $HOSTS)
 done
 
+date
 echo "Starting Toylock trial with parameters:"
 echo "  - Rounds: $NUM_ROUNDS"
 echo "  - Delay: $DELAY ms"
-echo "  - Ring size: ${#HOST_NAME_LIST[@]}"
+echo "  - Ring-size: ${#HOST_NAME_LIST[@]}"
 echo "  - Participants: ${HOST_NAME_LIST[@]}"
-
-# Build locally and send executables to the target machines
-./build_to_hosts ${HOST_ID_LIST[@]}
 
 
 # Build list of endpoints that is the argument to the main program
