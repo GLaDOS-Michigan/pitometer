@@ -1,7 +1,9 @@
 import sys
 import os
 import csv
+import statistics
 import matplotlib.pyplot as plt
+from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
 
@@ -55,13 +57,30 @@ def plot_figures(name, root, total_data, titles):
         except TypeError:
             # This is the case where fig contains a single axes subplot 
             this_ax = axes
+        # Plot the subfigure
         this_ax.set_title(titles[i])
+        this_ax.grid()
         durations_milli = list(map(lambda x: x/1_000_000, durations_nano))
         sns.distplot(durations_milli, kde=False, ax= this_ax)
+        stats = AnchoredText(generate_statistics(durations_milli), loc='upper right')
+        this_ax.add_artist(stats)
         i += 1
-    plt.tight_layout()
+    # plt.tight_layout()
     plt.savefig("%s/%s.pdf" %(root, name))
     plt.close(fig)
+
+
+def generate_statistics(input):
+    """
+    Generates a string containing some statistics for the input
+    Arguments:
+        input -- list of numbers
+    """
+    res = []
+    res.append("n = %d" %len(input))
+    res.append("μ = %.3f" %statistics.mean(input))
+    res.append("σ = %.3f" %statistics.stdev(input))
+    return "\n".join(res)
 
 
 def analyze_csv(filepath):
