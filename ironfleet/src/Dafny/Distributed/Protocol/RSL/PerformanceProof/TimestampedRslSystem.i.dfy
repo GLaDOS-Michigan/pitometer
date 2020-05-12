@@ -25,7 +25,8 @@ datatype TimestampedRslState = TimestampedRslState(
     constants:LConstants,
     t_environment:TimestampedLEnvironment<NodeIdentity, RslMessage, RslStep>,
     t_replicas:seq<TimestampedLScheduler>,
-    clients:set<NodeIdentity>
+    clients:set<NodeIdentity>,
+    undeliveredPackets:multiset<TimestampedLPacket<EndPoint, RslMessage>>
     )
 
 function UntimestampRslReplicas(t_replicas: seq<TimestampedLScheduler>) : seq<LScheduler>
@@ -63,6 +64,7 @@ predicate TimestampedRslInit(con:LConstants, ps:TimestampedRslState)
 
     && LEnvironment_Init(ps.t_environment)
     && TimestampedRslMapsComplete(ps)
+    && ps.undeliveredPackets == multiset{}
 }
 
 predicate TimestampedRslNextCommon(ps:TimestampedRslState, ps':TimestampedRslState)
@@ -72,12 +74,31 @@ predicate TimestampedRslNextCommon(ps:TimestampedRslState, ps':TimestampedRslSta
     && LEnvironment_Next(ps.t_environment, ps'.t_environment)
 }
 
+predicate NoPacketDuplication(s:TimestampedRslState)
+{
+  var nextStep := s.t_environment.nextStep;
+  nextStep.LEnvStepHostIos? ==> (
+  (forall io :: io in nextStep.ios && io.LIoOpReceive? ==> io.r in s.undeliveredPackets)
+  )
+}
+
+predicate UndeliveredPackets_Next(s:TimestampedRslState, s':TimestampedRslState)
+  requires s.t_environment.nextStep.LEnvStepHostIos?
+{
+  var nextStep := s.t_environment.nextStep;
+  var ios := nextStep.ios;
+  s'.undeliveredPackets == s.undeliveredPackets -
+    multiset((set io | io in ios && io.LIoOpReceive? :: io.r)) +
+    multiset((set io | io in ios && io.LIoOpSend? :: io.s))
+}
+
 predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRslState, idx:int, ios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>)
 {
   RslNextOneReplica(UntimestampRslState(ps), UntimestampRslState(ps'), idx, UntagLIoOpSeq(ios))
     && TimestampedRslNextCommon(ps, ps')
     && 0 <= idx < |ps.constants.config.replica_ids|
     && ps.t_environment.nextStep == LEnvStepHostIos(ps.constants.config.replica_ids[idx], ios, RslStep(ps.t_replicas[idx].v.nextActionIndex))
+    && UndeliveredPackets_Next(ps, ps')
     && ps'.t_replicas == ps.t_replicas[idx := ps'.t_replicas[idx]]
 
     && var hstep := ps.t_environment.nextStep.nodeStep;
