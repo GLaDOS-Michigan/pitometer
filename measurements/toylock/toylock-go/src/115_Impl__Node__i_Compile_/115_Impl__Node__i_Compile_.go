@@ -265,9 +265,9 @@ TAIL_CALL_START:
 		packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_Some{_7_Environment__s_Compile.LPacket{_7_Environment__s_Compile.LPacket_LPacket{((s).Dtor_config()).IndexUint64(_1670_dst__index).(_9_Native____Io__s_Compile.EndPoint), ((s).Dtor_config()).IndexUint64((s).Dtor_my__index()).(_9_Native____Io__s_Compile.EndPoint), _39_Message__i_Compile.CMessage{_39_Message__i_Compile.CMessage_CTransfer{((s).Dtor_epoch()) + (uint64(1))}}}}}}
 		{
 		}
-		_dafny.Print(_dafny.SeqOfString("I grant the lock "))
-		_dafny.Print((s).Dtor_epoch())
-		_dafny.Print(_dafny.SeqOfString("\n"))
+		// _dafny.Print(_dafny.SeqOfString("I grant the lock "))
+		// _dafny.Print((s).Dtor_epoch())
+		// _dafny.Print(_dafny.SeqOfString("\n"))
 	} else {
 		s_k = s
 		{
@@ -293,7 +293,7 @@ TAIL_CALL_START:
 		locked__packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_Some{_7_Environment__s_Compile.LPacket{_7_Environment__s_Compile.LPacket_LPacket{(transfer__packet).Dtor_src().(_9_Native____Io__s_Compile.EndPoint), ((s).Dtor_config()).IndexUint64((s).Dtor_my__index()).(_9_Native____Io__s_Compile.EndPoint), _39_Message__i_Compile.CMessage{_39_Message__i_Compile.CMessage_CLocked{((transfer__packet).Dtor_msg().(_39_Message__i_Compile.CMessage)).Dtor_transfer__epoch()}}}}}}
 		{
 		}
-		_dafny.Print(_dafny.SeqOfString("I hold the lock!\n"))
+		// _dafny.Print(_dafny.SeqOfString("I hold the lock!\n"))
 	} else {
 		s_k = s
 		locked__packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_None{}}
