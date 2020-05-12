@@ -16,5 +16,7 @@ This directory contains the scripts to run experiments, and stores the experimen
     * Start a single toylock trial with the specified remote hosts
 - start_toylock_trial-local
     * Start a single toylock trial with all nodes running locally, using the loopback IP addresses
+- toylock_log_to_csv
+    * Converts toylock log file into separate csv files for each toylock stopwatch. It places each resulting csv in the directory of its corresponding log file.
 
     
