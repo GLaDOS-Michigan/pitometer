@@ -187,6 +187,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 	{
 	}
 	var nodeGrantLog = clock.NewStopwatch(uint(numRounds*2), "NodeGrant Stopwatch")
+	var nodeAcceptLog = clock.NewStopwatch(uint(numRounds*2), "NodeAccept Stopwatch")
 	var nodeGrantCounter = clock.NewCounter("NodeGrant counter")
 	for _1761_ok {
 		{
@@ -199,7 +200,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		var _ = _out111
 		var _out112 _131_Host__i_Compile.CScheduler
 		var _ = _out112
-		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, delay, nodeGrantCounter, nodeGrantLog)
+		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, delay, nodeGrantCounter, nodeGrantLog, nodeAcceptLog)
 		_1761_ok = _out111
 		_1762_host__state = _out112
 		{
@@ -207,6 +208,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		if nodeGrantCounter.GetCount() == numRounds {
 			// Dump the event log
 			fmt.Println(nodeGrantLog.String())
+			fmt.Println(nodeAcceptLog.String())
 			return exitCode
 		}
 	}
