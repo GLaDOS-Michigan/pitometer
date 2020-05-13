@@ -285,6 +285,8 @@ predicate LReplicaNextProcessPacketWithoutReadingClock(s:LReplica, s':LReplica, 
       )
 }
 
+// TONY MEASURE: This is only ever called from one spot
+// This is method Replica_Next_ProcessPacketX() in the implementation
 predicate LReplicaNextProcessPacket(s:LReplica, s':LReplica, ios:seq<RslIo>)
 {
        |ios| >= 1
@@ -320,6 +322,7 @@ function SpontaneousClock(ios:seq<RslIo>) : ClockReading
         else ClockReading(0)  // nonsense to avoid putting a precondition on this function
 }
 
+// TONY MEASURE
 predicate LReplicaNoReceiveNext(s:LReplica, nextActionIndex:int, s':LReplica, ios:seq<RslIo>)
 {
     var sent_packets := ExtractSentPacketsFromIos(ios);
