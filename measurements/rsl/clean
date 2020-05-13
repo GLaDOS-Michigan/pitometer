@@ -5,6 +5,7 @@ echo "Starting clean"
 
 rm -rf IronfleetOutput/*
 rm -f client-debug.exe
+rm -f client.exe
 rm -f rsl-main
 rm -f node*.log
 
