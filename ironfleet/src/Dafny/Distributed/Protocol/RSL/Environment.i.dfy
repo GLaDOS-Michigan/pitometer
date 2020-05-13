@@ -7,7 +7,7 @@ import opened LiveRSL__Types_i
 import opened LiveRSL__Message_i
 import opened Environment_s
 
-type RslEnvironment = LEnvironment<NodeIdentity, RslMessage>
+type RslEnvironment = LEnvironment<NodeIdentity, RslMessage, RslStep>
 type RslPacket = LPacket<NodeIdentity, RslMessage>
 type RslIo = LIoOp<NodeIdentity, RslMessage>
 
