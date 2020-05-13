@@ -5,7 +5,7 @@ import opened LiveRSL__DistributedSystem_i
 
 function{:opaque} RestrictBehaviorToEnvironment(
     b:Behavior<RslState>
-    ):Behavior<LEnvironment<NodeIdentity, RslMessage>>
+    ):Behavior<LEnvironment<NodeIdentity, RslMessage, RslStep>>
     requires imaptotal(b);
     ensures  imaptotal(RestrictBehaviorToEnvironment(b));
     ensures  forall i {:trigger RestrictBehaviorToEnvironment(b)[i]} :: RestrictBehaviorToEnvironment(b)[i] == b[i].environment;

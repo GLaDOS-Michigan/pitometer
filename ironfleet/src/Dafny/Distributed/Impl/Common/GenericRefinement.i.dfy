@@ -1,27 +1,29 @@
 include "../../Common/Native/NativeTypes.s.dfy"
 include "../../Common/Collections/Maps.i.dfy"
 include "../../Common/Collections/Sets.i.dfy"
+include "../../Common/Collections/Seqs.i.dfy"
 
 module GenericRefinement_i {
 import opened Native__NativeTypes_s
 import opened Collections__Maps_i
 import opened Collections__Sets_i
+import opened Collections__Seqs_i
 
 // Useful to give this cast a name, so it can be used as a higher-order function
 function uint64_to_int(u:uint64) : int { int(u) }
 
 //////////////////////////////////////////////////////////////////////////////
 //  Generic seq-to-seq refinement
-function {:opaque} MapSeqToSeq<T(!new),U>(s:seq<T>, refine_func:T->U) : seq<U>
-    reads refine_func.reads;
-    requires forall i :: refine_func.reads(i) == {};
-    requires forall i :: 0 <= i < |s| ==> refine_func.requires(s[i]);
-    ensures |MapSeqToSeq(s, refine_func)| == |s|;
-    ensures forall i :: 0 <= i < |s| ==> refine_func(s[i]) == MapSeqToSeq(s,refine_func)[i];
-{
-    if |s| == 0 then []
-    else [refine_func(s[0])] + MapSeqToSeq(s[1..], refine_func)
-}
+// function {:opaque} MapSeqToSeq<T(!new),U>(s:seq<T>, refine_func:T->U) : seq<U>
+//     reads refine_func.reads;
+//     requires forall i :: refine_func.reads(i) == {};
+//     requires forall i :: 0 <= i < |s| ==> refine_func.requires(s[i]);
+//     ensures |MapSeqToSeq(s, refine_func)| == |s|;
+//     ensures forall i :: 0 <= i < |s| ==> refine_func(s[i]) == MapSeqToSeq(s,refine_func)[i];
+// {
+//     if |s| == 0 then []
+//     else [refine_func(s[0])] + MapSeqToSeq(s[1..], refine_func)
+// }
 
 /////////////////////////////////////////////////////////
 //  Generic map refinement from concrete to abstract 
