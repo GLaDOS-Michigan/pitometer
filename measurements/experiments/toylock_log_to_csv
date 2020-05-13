@@ -1,0 +1,31 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./nodelog_to_csv <root_dir>
+# Converts each log file in <root_dir>, and its sub-directories into separate csv files 
+# for each toylock stopwatch. It places each resulting csv in the directory of its 
+# corresponding log file.
+
+ROOT_DIR=$1
+
+LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
+
+echo "Looking in dir $ROOT_DIR"
+
+for lf in "${LOGFILES[@]}"
+do :
+    echo $lf
+    dir=$(dirname "${lf}")      # directory path
+    name=$(basename -- "$lf")
+    ext="${name##*.}"          
+    name="${name%.*}"           # filename without extension
+
+    # Convert to csv. Currently there are two Stopwatches:
+    #   - NodeNextGrant
+    #   - NodeNextAccept
+
+    grantcsv=$dir/"$name"_grant.csv
+    cat $lf | grep "NodeNextGrant" > $grantcsv
+
+    acceptcsv=$dir/"$name"_accept.csv
+    cat $lf | grep "NodeNextAccept" > $acceptcsv
+done
