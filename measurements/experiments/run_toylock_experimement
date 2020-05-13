@@ -18,7 +18,7 @@ for ring_size in "${RING_SIZES[@]}"
 do
     # Generate node id's to use
     node_ids=()
-    for ((id=1;id<$[ $ring_size + 1];id++))
+    for ((id=6;id>$[ 6 - $ring_size ];id--))
     do
         node_ids+=("$id")
     done
@@ -29,7 +29,8 @@ do
 
     for delay in "${DELAYS[@]}"
     do
-        echo "Starting trial with ring-size $ring_size and delay $delay"
+        time=$(date +"%d-%b-%H%M")
+        echo "Starting trial with ring-size $ring_size and delay $delay at time $time"
 
         trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay"
         mkdir -p $trial_dir 
