@@ -137,6 +137,10 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"fmt"
+	"os"
+	"strconv"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -276,6 +280,27 @@ var _ _620_MarshallProof__i_Compile.Dummy__
 var _ _622_Main__i_Compile.Dummy__
 
 func main() {
+
+	// Grab the second-to-last argument from os.Args -- that is the duration to run this server.
+	// After this duration, the process exits.
+	var numRounds, err1 = strconv.ParseInt(os.Args[len(os.Args)-2], 10, 64)
+	if int(numRounds) <= 0 || err1 != nil {
+		fmt.Printf("Error: Invalid round number %v\n", os.Args[len(os.Args)-2])
+		os.Exit(1)
+	}
+	// Grab the last argument from os.Args -- that is the artificial delay
+	var delay, err2 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
+	if int(delay) < 0 || err2 != nil {
+		fmt.Printf("Error: Invalid delay %v\n", os.Args[len(os.Args)-1])
+		os.Exit(1)
+	}
+	os.Args = os.Args[:len(os.Args)-2]
+
+	go func(msg string) {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println(msg)
+		// os.Exit(0)
+	}("going")
 
 	_622_Main__i_Compile.Companion_Default___.Default_Main_()
 }
