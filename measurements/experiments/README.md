@@ -10,6 +10,8 @@ This directory contains the scripts to run experiments, and stores the experimen
     * Script that builds rsl and toylock locally, and then copies the executables to the specified hosts
 - clean_builds
     * Cleaning script that deletes executables and miscellaneous temp files.
+- git_pull_all_hosts
+    * Script that does a 'git pull' on all hosts for a specified branch for
 - hosts.csv
     * A map from Skynode machine ID to their IP address
 - run_toylock_experiment
