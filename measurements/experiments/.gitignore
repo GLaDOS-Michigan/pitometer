@@ -1,2 +1,5 @@
-toylock-main
 data/
+tmp/
+toylock-main
+rsl-main
+client.exe

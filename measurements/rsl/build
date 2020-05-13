@@ -1,15 +1,43 @@
 #!/bin/bash
-# Project build file for linux
+# Project build file
 
-RSL_DIR='/home/nudzhang/Documents/pitometer/measurements/rsl/rsl-go'
-export GOPATH=$RSL_DIR
+if uname -a | grep -q Darwin; then
+    # Build on mac
+    RSL_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/rsl'
+    RSL_GO_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/rsl/rsl-go'
+    export GOPATH=$RSL_GO_DIR
 
-echo "Starting build"
+    echo "Starting RSL OSX build"
 
-go build -o rsl-main "$RSL_DIR/src/Main.go" 
+    echo "Building rsl server"
+    go build -o rsl-main "$RSL_GO_DIR/src/Main.go" 
 
-export GOPATH='/home/nudzhang/go'
-export PATH=$PATH:$(go env GOPATH)/bin
-export GOPATH=$(go env GOPATH)
+    export GOPATH='/Users/zhang/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
 
+    echo "Building rsl client"
+    $RSL_DIR/build_client
+
+elif uname -a | grep -q Linux; then
+    # Build on Linux
+    RSL_DIR='/home/nudzhang/Documents/pitometer/measurements/rsl'
+    RSL_GO_DIR='/home/nudzhang/Documents/pitometer/measurements/rsl/rsl-go'
+    export GOPATH=$RSL_GO_DIR
+
+    echo "Starting RSL Linux build"
+
+    echo "Building rsl server"
+    go build -o rsl-main "$RSL_GO_DIR/src/Main.go" 
+
+    export GOPATH='/Users/zhang/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
+
+    echo "Building rsl client"
+    $RSL_DIR/build_client
+else
+    echo "Build failed"
+    exit 1
+fi
 echo "Build complete"
