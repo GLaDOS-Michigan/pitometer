@@ -278,7 +278,8 @@ func (ct *CompanionStruct_Time_) GetDebugTimeTicks() uint64 {
 // TONY: DONE
 func (ct *CompanionStruct_Time_) GetTime() uint64 {
 	// In C#, this returns DateTime.Now.Ticks / 10000;
-	return uint64(time.Now().UnixNano() / 1_000_000)
+	// return uint64(time.Now().UnixNano()) / 1_000_000
+	return uint64(time.Now().UnixNano()) / 10_000
 }
 
 func (_this *Time) Equals(other *Time) bool {

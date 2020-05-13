@@ -69,7 +69,7 @@
 
     public class Client : ClientBase
     {
-        public static bool DEBUG = false;
+        public static bool DEBUG = true;
 
         //private static long num_reqs = 0;
 
@@ -137,7 +137,7 @@
                     //    seqNum = newSeqNum;
                     //}
 
-                    seq_num++;
+                    // seq_num++;
                     var msg = new RequestMessage(seq_num, myaddr);
 
                     var dest = ClientBase.endpoints[serverIdx];
@@ -157,7 +157,7 @@
                         byte[] bytes;
                         try
                         {
-                            // Console.WriteLine("TONY DEBUG: Waiting for reply to request {0}", seq_num);
+                            Console.WriteLine("TONY DEBUG: Waiting for reply to request {0}", seq_num);
                             bytes = Receive();
                         }
                         catch (System.Net.Sockets.SocketException e)
@@ -169,7 +169,7 @@
                             break;
                         }
                         var end_time = HiResTimer.Ticks;
-                        // Trace("Got the following reply (Main):" + ByteArrayToString(bytes));
+                        Trace("Got the following reply (Main):" + ByteArrayToString(bytes));
                         if (bytes.Length == 32)
                         {
                             var reply_seq_num = ExtractBE64(bytes, offset: 8);
@@ -179,6 +179,7 @@
                                 received_reply = true;
                                 // Report time in milliseconds, since that's what the Python script appears to expect
                                 Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
+                                seq_num++;
                                 // Console.Out.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
                                 //long n = Interlocked.Increment(ref num_reqs);
                                 //if (1 == n || n % 1000 == 0)

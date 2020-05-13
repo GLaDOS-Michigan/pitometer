@@ -1,0 +1,7 @@
+id,name,address,port,
+1,skynode1.eecs.umich.edu,141.212.114.57,4000,
+2,skynode2.eecs.umich.edu,141.212.114.214,4000,
+3,skynode3.eecs.umich.edu,,4000,
+4,skynode4.eecs.umich.edu,141.212.114.47,4000,
+5,skynode5.eecs.umich.edu,141.212.114.213,4000,
+6,skynode6.eecs.umich.edu,141.212.114.46,4000,
