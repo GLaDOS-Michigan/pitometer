@@ -67,10 +67,16 @@ def plot_figures(name, root, total_data, titles):
             # This is the case where fig contains a single axes subplot 
             this_ax = axes
         # Plot the subfigure
-        this_ax.set_title(titles[i])
+        this_ax.set_title(titles[i], fontsize=9)
         this_ax.grid()
         sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
-        stats = AnchoredText(generate_statistics(durations_milli), loc='upper right')
+        stats = AnchoredText(
+            generate_statistics(durations_milli), 
+            loc='upper right',  
+            prop=dict(size=8),
+            bbox_to_anchor=(1.1, 1),
+            bbox_transform=this_ax.transAxes
+        )
         this_ax.add_artist(stats)
         # this_ax.set_xlim(0, x_max)
         # this_ax.set_ylim(0, 1)
