@@ -1,0 +1,32 @@
+#!/bin/bash
+# This script builds ToyLock and RSL on the local machine, and copies the executable to the 
+# target directory of the specified hosts. It takes the following positional arguments
+# ./build_to_hosts [host_id...],
+# where each host_id refers to the respective host in hosts.csv
+
+
+HOSTS="hosts.csv"
+HOST_TARGET_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
+RSL_DIR="../rsl"
+TOYLOCK_DIR="../toylock"
+
+# Do local build
+./clean_builds
+./$TOYLOCK_DIR/build
+./$RSL_DIR/build
+
+for i in "$@"
+do
+    tail -n +2 $HOSTS | while IFS=, read -r id name address port
+    do
+        if [ $id -eq $i ]
+        then
+            echo "Copying builds to $name"
+            ssh nudzhang@$address "lsof -t -i:$port | xargs -I{} kill -9 {} > /dev/null" 
+            scp toylock-main rsl-main client.exe nudzhang@$address:$HOST_TARGET_DIR
+            break
+        fi
+    done
+done
+
+echo "Done build to hosts"
