@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 )
@@ -31,7 +32,7 @@ type IPEndPoint struct {
 // UDPAddrToIPEndPoint doc
 func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
 	var port = uint16(udpAddr.Port)
-	var byteIPArr = []byte(udpAddr.IP)
+	var byteIPArr = []byte(udpAddr.IP.To4())
 	var interfaceIPArray []interface{}
 	for _, value := range byteIPArr {
 		interfaceIPArray = append(interfaceIPArray, interface{}(value))
@@ -53,11 +54,14 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	}
 	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
 	var ipAndPortStr = ip + ":" + strconv.FormatUint(uint64(ep.port), 10)
+	fmt.Printf("ip %v\n", ip)
+	fmt.Printf("ipAndPortStr %v\n", ipAndPortStr)
 
 	// Next convert to net.UDPAddr
 	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+		debug.PrintStack()
 		os.Exit(1)
 	}
 	return udpAddr
@@ -111,7 +115,8 @@ func NewUDPClient(localEndpoint *IPEndPoint) (bool, *UDPClient) {
 	var localEp = localEndpoint.GetUDPAddr()
 	conn, err := net.ListenUDP("udp", localEp)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
+		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
+		debug.PrintStack()
 		return false, nil
 	}
 	var udp = newUDPClient(localEndpoint, conn)

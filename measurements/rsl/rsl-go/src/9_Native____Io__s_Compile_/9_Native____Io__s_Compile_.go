@@ -461,7 +461,7 @@ type IPEndPoint struct {
 // TONY : DONE
 func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
 	var port = uint16(udpAddr.Port)
-	var byteIPArr = []byte(udpAddr.IP)
+	var byteIPArr = []byte(udpAddr.IP.To4())
 	var interfaceIPArray []interface{}
 	for _, value := range byteIPArr {
 		interfaceIPArray = append(interfaceIPArray, interface{}(value))
