@@ -1,0 +1,32 @@
+#!/bin/bash
+# Project build file
+
+if uname -a | grep -q Darwin; then
+    # Build on mac
+    NET_DIR='/Users/zhang/Dropbox/UMich2020sp/pitometer/measurements/network'
+    export GOPATH=$NET_DIR
+
+    echo "Starting Network Agent OSX build"
+
+    go build -o network-main "$NET_DIR/src/main.go" 
+
+    export GOPATH='/Users/zhang/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
+elif uname -a | grep -q Linux; then
+    # Build on Linux
+    NET_DIR='/home/nudzhang/Documents/pitometer/measurements/network'
+    export GOPATH=$NET_DIR
+
+    echo "Starting Network Agent Linux build"
+
+    go build -o network-main "$NET_DIR/src/main.go" 
+
+    export GOPATH='/home/nudzhang/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
+else
+    echo "Build failed"
+    exit 1
+fi
+echo "Build complete"
