@@ -22,10 +22,13 @@ func (s *Server) StartServerLoop() {
 		os.Exit(1)
 	}
 
+	fmt.Printf("Starting new server at %v\n", s.LocalAddr)
 	// Main event loop
 	for true {
 		_, _, remote, packet := udpClient.Receive()
-		packet.Dest = remote // Do the dest switcheroo
+		native.Debug(fmt.Sprintf("Server %v received packet from %v, %v", s.LocalAddr, remote.GetUDPAddr(), packet))
+		packet.EndPoint = remote // Do the dest switcheroo
+		native.Debug(fmt.Sprintf("Server %v responding %v with %v", s.LocalAddr, remote.GetUDPAddr(), packet))
 		udpClient.Send(packet)
 	}
 }
