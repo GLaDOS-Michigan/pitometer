@@ -47,7 +47,7 @@ func (c *Client) StartClientLoop() {
 		// Receive packet
 		_, _, remote, receivedPacket := udpClient.Receive()
 		native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
-		c.PingLog.LogStartEvent("Receive reply")
+		c.PingLog.LogEndEvent("Receive reply")
 
 		if len(receivedPacket.Buffer) != int(c.PacketSize) {
 			fmt.Printf("Error: got packet length %v, expected %v\n",
