@@ -36,18 +36,20 @@ func (c *Client) StartClientLoop() {
 	c.active = true
 
 	fmt.Printf("Starting new client at %v targeting %v\n", c.LocalAddr, c.Target)
+	var sendNote = fmt.Sprintf("Send to target,%v", c.Target)
+	var receiveNote = fmt.Sprintf("Receive from target,%v", c.Target)
 	// Main event loop
 	for c.active {
 
 		// Send packet
 		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
 		udpClient.Send(pack)
-		c.PingLog.LogStartEvent("Send ping")
+		c.PingLog.LogStartEvent(sendNote)
 
 		// Receive packet
 		_, _, remote, receivedPacket := udpClient.Receive()
 		native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
-		c.PingLog.LogEndEvent("Receive reply")
+		c.PingLog.LogEndEvent(receiveNote)
 
 		if len(receivedPacket.Buffer) != int(c.PacketSize) {
 			fmt.Printf("Error: got packet length %v, expected %v\n",
