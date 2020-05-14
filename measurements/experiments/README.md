@@ -16,6 +16,9 @@ entire experiments
     * Script that does a 'git pull' on all hosts for a specified branch for
 - hosts.csv
     * A map from Skynode machine ID to their IP address
+- **process_network_results**
+    * Converts network log file into separate csv files for each network client. It places each resulting csv in the directory of its corresponding log file.
+    * Then, it calls analyze_network.py to generate graphs
 - **process_toylock_results**
     * Converts toylock log file into separate csv files for each toylock stopwatch. It places each resulting csv in the directory of its corresponding log file.
     * Then, it calls analyze_toylock.py to generate graphs
