@@ -24,7 +24,6 @@ do
         if [ $id -eq $i ]
         then
             echo "Copying builds to $name"
-            ssh nudzhang@$address "lsof -t -i:$port | xargs -I{} kill -9 {} > /dev/null" 
             scp network-main toylock-main rsl-main client.exe nudzhang@$address:$HOST_TARGET_DIR
             break
         fi

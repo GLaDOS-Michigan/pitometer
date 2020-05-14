@@ -21,7 +21,11 @@ entire experiments
     * Then, it calls analyze_toylock.py to generate graphs
 - **run_toylock_experiment**
     * Start a toylock experiment, which consists of a set of trials
-- start_toylock_trial-local
+- **run_network_experiment**
+    * Start a network experiment, which consists of a set of trials
+- start_network_trial
+    * Start a single network trial with remote hosts
+- start_toylock_trial
     * Start a single toylock trial with the specified remote hosts
 - start_toylock_trial-local
     * Start a single toylock trial with all nodes running locally, using the loopback IP addresses
