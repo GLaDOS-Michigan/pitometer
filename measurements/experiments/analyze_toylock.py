@@ -56,16 +56,21 @@ def plot_figures(name, root, total_data, titles):
         titles -- list of titles for each subfigure
     """
 
-    fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 7), sharex=True)
+    if len(total_data) <= 3:
+        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*len(total_data)), sharex=True)
+    else:
+        fig, axes = plt.subplots(3, 2, figsize=(14, 9), sharex=True)
     fig.suptitle(name)
     sns.despine(left=True)
     i = 0
     for durations_milli in total_data:
-        try:
-            this_ax = axes[i]
-        except TypeError:
-            # This is the case where fig contains a single axes subplot 
+        if len(total_data) == 1:
             this_ax = axes
+        else:
+            if len(total_data) <= 3:
+                this_ax = axes[i]
+            else:
+                this_ax = axes[i%3][i//3]
         # Plot the subfigure
         this_ax.set_title(titles[i], fontsize=9)
         this_ax.grid()
@@ -78,10 +83,15 @@ def plot_figures(name, root, total_data, titles):
             bbox_transform=this_ax.transAxes
         )
         this_ax.add_artist(stats)
+        # this_ax.set_xlabel('time (ms)', fontsize=9)
+        # this_ax.set_ylabel('count', fontsize=9)
         # this_ax.set_xlim(0, x_max)
         # this_ax.set_ylim(0, 1)
         i += 1
     # plt.tight_layout()
+    plt.subplots_adjust(hspace=0.2)
+    plt.xlabel('time (ms)', fontsize=10)
+    plt.ylabel('count', fontsize=10)
     plt.savefig("%s/%s.pdf" %(root, name))
     plt.close(fig)
 
