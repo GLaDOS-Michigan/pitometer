@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script starts a distributed toylock job. It takes the following 
 # positional arguments:
-# ./start_toylock_job <results_dir> <num_rounds> <delay> <host_id..>
+# ./start_toylock_trial <results_dir> <num_rounds> <delay> <host_id..>
 # where each host_id refers to the respective host in hosts.csv that will participate in 
 # this toylock ring, and
 # results_dir is the directory in which all results should be collected.
