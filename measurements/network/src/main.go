@@ -2,6 +2,7 @@ package main
 
 import (
 	"agents"
+	"clock"
 	"fmt"
 	"math/rand"
 	"native"
@@ -108,8 +109,8 @@ func main() {
 			LocalAddr:  clientAddr,
 			Target:     targetAddr,       // remote address to send packet
 			Interval:   uint64(interval), // milliseconds to sleep in between pings
-			PacketSize: uint64(payloadSz)}
-
+			PacketSize: uint64(payloadSz),
+			PingLog:    clock.NewStopwatch(uint(duration*1000/interval+100), fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP))}
 		clientsMap[clientPort] = localClientAgent
 	}
 
@@ -125,6 +126,10 @@ func main() {
 	// Experiment complete
 	<-experimentTimer.C
 	for _, clientAgent := range clientsMap {
-		go clientAgent.StopClientLoop()
+		clientAgent.StopClientLoop()
+	}
+	for _, clientAgent := range clientsMap {
+		fmt.Printf("Log of pings from %v to %v\n", clientAgent.LocalAddr.IP, clientAgent.Target.IP)
+		fmt.Printf(clientAgent.PingLog.String())
 	}
 }

@@ -1,6 +1,7 @@
 package agents
 
 import (
+	"clock"
 	"fmt"
 	native "native"
 	"net"
@@ -11,9 +12,10 @@ import (
 // Client is an agent that sends UDP packets and times their round-trip time (RTT)
 type Client struct {
 	LocalAddr  *net.UDPAddr
-	Target     *net.UDPAddr // remote address to send packet
-	Interval   uint64       // milliseconds to sleep in between pings
-	PacketSize uint64       // size of UDP payload to send
+	Target     *net.UDPAddr     // remote address to send packet
+	Interval   uint64           // milliseconds to sleep in between pings
+	PacketSize uint64           // size of UDP payload to send
+	PingLog    *clock.Stopwatch // record of ping events
 	active     bool
 }
 
@@ -40,10 +42,12 @@ func (c *Client) StartClientLoop() {
 		// Send packet
 		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
 		udpClient.Send(pack)
+		c.PingLog.LogStartEvent("Send ping")
 
 		// Receive packet
 		_, _, remote, receivedPacket := udpClient.Receive()
-		native.Debug(fmt.Sprintf("Cleint %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
+		native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
+		c.PingLog.LogStartEvent("Receive reply")
 
 		if len(receivedPacket.Buffer) != int(c.PacketSize) {
 			fmt.Printf("Error: got packet length %v, expected %v\n",
