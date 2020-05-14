@@ -13,10 +13,35 @@ import (
 	"strings"
 )
 
+/*****************************************************************************************
+*                                         Debug                                          *
+*****************************************************************************************/
+
+// DebugMode toggle
+var DebugMode bool
+
+// Debug prints
+func Debug(msg string) {
+	if DebugMode {
+		fmt.Println(msg)
+	}
+}
+
+/*****************************************************************************************
+*                                    Class Packet                                        *
+*****************************************************************************************/
+
 // Packet to be sent on the network
 type Packet struct {
-	Dest   *IPEndPoint
-	Buffer []byte
+	// When receiving a packet, EndPoint the SOURCE
+	// When sending a packet, EndPoint the DEST
+	EndPoint *IPEndPoint
+	Buffer   []byte
+}
+
+// String formats Packet into a string
+func (p *Packet) String() string {
+	return fmt.Sprintf("Packet{ dest %v, size %v }", p.EndPoint.GetUDPAddr(), len(p.Buffer))
 }
 
 /*****************************************************************************************
@@ -54,8 +79,6 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	}
 	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
 	var ipAndPortStr = ip + ":" + strconv.FormatUint(uint64(ep.port), 10)
-	fmt.Printf("ip %v\n", ip)
-	fmt.Printf("ipAndPortStr %v\n", ipAndPortStr)
 
 	// Next convert to net.UDPAddr
 	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
@@ -104,7 +127,7 @@ func newUDPClient(myEP *IPEndPoint, conn *net.UDPConn) *UDPClient {
 		sendQueue:     goconcurrentqueue.NewFIFO(),
 		receiveQueue:  goconcurrentqueue.NewFIFO(),
 	}
-	fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
+	// fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
 	go _this.sendLoop()
 	go _this.receiveLoop()
 	return &_this
@@ -129,9 +152,10 @@ func (client *UDPClient) sendLoop() {
 		var pack, ok = packInterface.(Packet)
 		if !ok {
 			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			debug.PrintStack()
 			os.Exit(1)
 		}
-		var _, err2 = client.connection.WriteToUDP(pack.Buffer, pack.Dest.GetUDPAddr())
+		var _, err2 = client.connection.WriteToUDP(pack.Buffer, pack.EndPoint.GetUDPAddr())
 		if err2 != nil {
 			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
 			os.Exit(1)
@@ -161,7 +185,7 @@ func (client *UDPClient) receiveLoop() {
 // Send a packet to the remote ep
 func (client *UDPClient) Send(packet *Packet) bool {
 	// Create Packet struct and enqueue to send_queue
-	client.sendQueue.Enqueue(&packet)
+	client.sendQueue.Enqueue(*packet)
 	return true
 }
 
@@ -179,5 +203,5 @@ func (client *UDPClient) Receive() (bool, bool, *IPEndPoint, *Packet) {
 		fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
 		os.Exit(1)
 	}
-	return true, false, pack.Dest, &pack
+	return true, false, pack.EndPoint, &pack
 }

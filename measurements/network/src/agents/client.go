@@ -30,26 +30,20 @@ func (c *Client) StartClientLoop() {
 	// Craft packet and initialize dest
 	var payload = make([]byte, c.PacketSize, c.PacketSize)
 	var dest = native.UDPAddrToIPEndPoint(c.Target)
-	var pack = &native.Packet{Dest: dest, Buffer: payload[0:]}
+	var pack = &native.Packet{EndPoint: dest, Buffer: payload[0:]}
+	c.active = true
 
+	fmt.Printf("Starting new client at %v targeting %v\n", c.LocalAddr, c.Target)
 	// Main event loop
 	for c.active {
 
 		// Send packet
+		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
 		udpClient.Send(pack)
 
 		// Receive packet
 		_, _, remote, receivedPacket := udpClient.Receive()
-
-		// Decode and check for errors
-		if !remote.GetUDPAddr().IP.Equal(c.LocalAddr.IP) {
-			fmt.Printf("Error: mismatched IP\n")
-			os.Exit(1)
-		}
-		if remote.GetUDPAddr().Port != c.LocalAddr.Port {
-			fmt.Printf("Error: mismatched port\n")
-			os.Exit(1)
-		}
+		native.Debug(fmt.Sprintf("Cleint %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
 
 		if len(receivedPacket.Buffer) != int(c.PacketSize) {
 			fmt.Printf("Error: got packet length %v, expected %v\n",

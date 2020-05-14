@@ -3,6 +3,8 @@ package main
 import (
 	"agents"
 	"fmt"
+	"math/rand"
+	"native"
 	"net"
 	"os"
 	"strconv"
@@ -12,11 +14,16 @@ import (
 // BaseClientPort is the first client port to use. The i^th client agent uses port BaseClientPort + i
 const BaseClientPort uint64 = 5000
 
+// Debug mode
+const Debug bool = true
+
 func main() {
 	// This program takes the following positional arguments
 	// Each agent only needs to know a priori the target servers' addresses
 	// The local client's port is dynamic based on how many client agents I spawn, let's reserve 5000-5999 for now
 	// <target1 ip:s_port> <target2 ip:s_port> ... <local ip:s_port> <interval> <payload_sz> <duration>
+
+	native.DebugMode = Debug
 
 	// Pop the last argument from os.Args -- that is the duration to run this server in seconds
 	// After this duration, the process exits.
@@ -70,6 +77,13 @@ func main() {
 		targetServerAddresses = append(targetServerAddresses, targetServerAddr)
 	}
 
+	fmt.Printf("Initializing Network Agent with the following parameters:\n")
+	fmt.Printf("    duration      = %v seconds\n", duration)
+	fmt.Printf("    payload size  = %v bytes\n", payloadSz)
+	fmt.Printf("    ping interval = %v milliseconds\n", interval)
+	fmt.Printf("    local server  = %v\n", localServerAddr)
+	fmt.Printf("    targets       = %v\n", targetServerAddresses)
+
 	// Start local server
 	var localServerAgent = agents.Server{LocalAddr: localServerAddr}
 	go localServerAgent.StartServerLoop()
@@ -79,7 +93,16 @@ func main() {
 	var clientsMap = make(map[uint64]*agents.Client) // map from local port used, to the client agents
 
 	for i, targetAddr := range targetServerAddresses {
-		var clientPort = BaseClientPort + uint64(i)
+		rand.Seed(time.Now().UnixNano())
+		var clientPort uint64
+		if localIP.IsLoopback() {
+			// If running a local experiment, pick random client port so that they are
+			// unlikely to clash. This is really janky, but ok since this is not meant to
+			// be run locally anyways
+			clientPort = BaseClientPort + uint64(i) + uint64(rand.Intn(990))
+		} else {
+			clientPort = BaseClientPort + uint64(i)
+		}
 		var clientAddr = &net.UDPAddr{IP: localIP, Port: int(clientPort)}
 		var localClientAgent = &agents.Client{
 			LocalAddr:  clientAddr,
@@ -96,6 +119,7 @@ func main() {
 	}
 
 	// Start experiment timer
+	fmt.Printf("Starting experiment for duration %v seconds at %v\n", duration, time.Now())
 	experimentTimer := time.NewTimer(time.Duration(duration) * time.Second)
 
 	// Experiment complete
