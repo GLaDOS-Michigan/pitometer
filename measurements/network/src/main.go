@@ -16,7 +16,7 @@ import (
 const BaseClientPort uint64 = 5000
 
 // Debug mode
-const Debug bool = true
+const Debug bool = false
 
 func main() {
 	// This program takes the following positional arguments
