@@ -89,6 +89,11 @@ func main() {
 	var localServerAgent = agents.Server{LocalAddr: localServerAddr}
 	go localServerAgent.StartServerLoop()
 
+	// Wait some time for all clients to start
+	var waitTime = time.Duration(2+len(targetServerAddresses)) * time.Second
+	native.Debug(fmt.Sprintf("Wait for %v seconds\n", waitTime))
+	time.Sleep(waitTime)
+
 	// Start all clients
 	var localIP = localServerAddr.IP
 	var clientsMap = make(map[uint64]*agents.Client) // map from local port used, to the client agents
@@ -128,8 +133,9 @@ func main() {
 	for _, clientAgent := range clientsMap {
 		clientAgent.StopClientLoop()
 	}
+	time.Sleep(1 * time.Second)
 	for _, clientAgent := range clientsMap {
-		fmt.Printf("Log of pings from %v to %v\n", clientAgent.LocalAddr.IP, clientAgent.Target.IP)
+		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
 		fmt.Printf(clientAgent.PingLog.String())
 	}
 }
