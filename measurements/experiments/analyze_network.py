@@ -111,6 +111,8 @@ def generate_statistics(input):
     Arguments:
         input -- list of numbers
     """
+    if len(input) == 0:
+        return ""
     res = []
     res.append("n = %d" %len(input))
     res.append("μ = %.3f" %statistics.mean(input))
