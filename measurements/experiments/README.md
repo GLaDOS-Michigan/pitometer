@@ -8,6 +8,8 @@ entire experiments
     * Directory that stores experimental results
 - analyze_toylock.py
     * Python script to plot results from a toylock experiment
+- analyze_network.py
+    * Python script to plot results from a network experiment
 - build_to_hosts
     * Script that builds rsl and toylock locally, and then copies the executables to the specified hosts
 - clean_builds
