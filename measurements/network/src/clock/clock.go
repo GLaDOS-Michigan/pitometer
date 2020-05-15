@@ -133,6 +133,6 @@ func (c *Counter) GetCount() int {
 
 // String formats the counter into a string
 func (c *Counter) String() string {
-	var res = fmt.Sprintf("%s %v\n", c.name, c.count)
+	var res = fmt.Sprintf("%s %v", c.name, c.count)
 	return res
 }
