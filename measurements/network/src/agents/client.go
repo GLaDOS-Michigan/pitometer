@@ -9,14 +9,18 @@ import (
 	"time"
 )
 
+// ClientTimeOut duration
+var ClientTimeOut time.Duration
+
 // Client is an agent that sends UDP packets and times their round-trip time (RTT)
 type Client struct {
-	LocalAddr  *net.UDPAddr
-	Target     *net.UDPAddr     // remote address to send packet
-	Interval   uint64           // milliseconds to sleep in between pings
-	PacketSize uint64           // size of UDP payload to send
-	PingLog    *clock.Stopwatch // record of ping events
-	active     bool
+	LocalAddr    *net.UDPAddr
+	Target       *net.UDPAddr     // remote address to send packet
+	Interval     uint64           // milliseconds to sleep in between pings
+	PacketSize   uint64           // size of UDP payload to send
+	PingLog      *clock.Stopwatch // record of ping events
+	TimeoutCount *clock.Counter   // count timeout events
+	active       bool
 }
 
 // StartClientLoop is the main event loop of the Client. It receives UDP packets and
@@ -47,10 +51,28 @@ func (c *Client) StartClientLoop() {
 		c.PingLog.LogStartEvent(sendNote)
 
 		// Receive packet
-		_, _, remote, receivedPacket := udpClient.Receive()
-		native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
-		c.PingLog.LogEndEvent(receiveNote)
+		var remote *native.IPEndPoint = nil
+		var receivedPacket *native.Packet = nil
+		var timedOutChan = make(chan bool, 2)
+		go func(c *Client, timedOutChan chan bool) {
+			_, _, remote, receivedPacket = udpClient.Receive()
+			native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
+			c.PingLog.LogEndEvent(receiveNote)
+			timedOutChan <- false
+		}(c, timedOutChan)
+		go func(timedOutChan chan bool) {
+			time.Sleep(ClientTimeOut)
+			timedOutChan <- true
+		}(timedOutChan)
 
+		var timedOut = <-timedOutChan
+
+		if timedOut {
+			c.PingLog.PopStartEvent()
+			native.Debug("Timed out!")
+			c.TimeoutCount.Increment()
+			continue
+		}
 		if len(receivedPacket.Buffer) != int(c.PacketSize) {
 			fmt.Printf("Error: got packet length %v, expected %v\n",
 				len(receivedPacket.Buffer),
