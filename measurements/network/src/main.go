@@ -18,6 +18,10 @@ const BaseClientPort uint64 = 5000
 // Debug mode
 const Debug bool = false
 
+// TimeOut is the period after which a client retries if failed to receive response
+// In all likelihood, the packet is dropped by the network
+var TimeOut time.Duration = 5 * time.Second
+
 func main() {
 	// This program takes the following positional arguments
 	// Each agent only needs to know a priori the target servers' addresses
@@ -25,6 +29,7 @@ func main() {
 	// <target1 ip:s_port> <target2 ip:s_port> ... <local ip:s_port> <interval> <payload_sz> <duration>
 
 	native.DebugMode = Debug
+	agents.ClientTimeOut = TimeOut
 
 	// Pop the last argument from os.Args -- that is the duration to run this server in seconds
 	// After this duration, the process exits.
@@ -111,11 +116,12 @@ func main() {
 		}
 		var clientAddr = &net.UDPAddr{IP: localIP, Port: int(clientPort)}
 		var localClientAgent = &agents.Client{
-			LocalAddr:  clientAddr,
-			Target:     targetAddr,       // remote address to send packet
-			Interval:   uint64(interval), // milliseconds to sleep in between pings
-			PacketSize: uint64(payloadSz),
-			PingLog:    clock.NewStopwatch(uint(duration*1000/interval+100), fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP))}
+			LocalAddr:    clientAddr,
+			Target:       targetAddr,       // remote address to send packet
+			Interval:     uint64(interval), // milliseconds to sleep in between pings
+			PacketSize:   uint64(payloadSz),
+			PingLog:      clock.NewStopwatch(uint(duration*1000/interval+100), fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP)),
+			TimeoutCount: clock.NewCounter("Timeouts")}
 		clientsMap[clientPort] = localClientAgent
 	}
 
@@ -136,6 +142,7 @@ func main() {
 	time.Sleep(1 * time.Second)
 	for _, clientAgent := range clientsMap {
 		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
+		fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Target, clientAgent.TimeoutCount)
 		fmt.Printf(clientAgent.PingLog.String())
 	}
 }

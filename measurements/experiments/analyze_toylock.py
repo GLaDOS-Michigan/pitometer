@@ -57,7 +57,7 @@ def plot_figures(name, root, total_data, titles):
     """
 
     if len(total_data) <= 3:
-        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*len(total_data)), sharex=True)
+        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*max(2, len(total_data))), sharex=True)
     else:
         fig, axes = plt.subplots(3, 2, figsize=(14, 9), sharex=True)
     fig.suptitle(name)
@@ -88,6 +88,18 @@ def plot_figures(name, root, total_data, titles):
         # this_ax.set_xlim(0, x_max)
         # this_ax.set_ylim(0, 1)
         i += 1
+
+    # Display some global figures
+    global_data = []
+    for row in total_data:
+        global_data.extend(row)
+
+    global_stats =  "Global statistics:\n%s" %generate_statistics(global_data)
+    plt.figtext(0.86, 0.11, global_stats,
+            fontsize=8,
+            bbox=dict(boxstyle="round", facecolor='#D8D8D8',
+            ec="0.5", pad=0.3, alpha=1))
+    
     # plt.tight_layout()
     plt.subplots_adjust(hspace=0.2)
     plt.xlabel('time (ms)', fontsize=10)
