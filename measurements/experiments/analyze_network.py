@@ -4,6 +4,7 @@ import csv
 import statistics
 import numpy as np
 import matplotlib.pyplot as plt
+import textwrap as tw
 from matplotlib.offsetbox import AnchoredText
 import seaborn as sns
 
@@ -39,7 +40,8 @@ def main(exp_dir):
 
                     total_node_data[i][j] = analyze_csv("%s/%s" %(root, i_j_csv))
 
-            plot_figures("rtt", root, total_node_data, titles)
+            payload = root.split('/')[-1]
+            plot_figures("rtt_%s" %payload, root, total_node_data, titles)
     print("Done")
 
 
@@ -82,7 +84,20 @@ def plot_figures(name, root, total_data, titles):
             # this_ax.set_ylabel('count', fontsize=9)
             # this_ax.set_xlim(0, x_max)
             # this_ax.set_ylim(0, 1)
-    # plt.tight_layout()
+
+    # Display some global figures
+    global_data = []
+    for row in total_data:
+        for rtts in row:
+            global_data.extend(rtts)
+
+    global_stats =  "Global statistics:\n%s" %generate_statistics(global_data)
+    plt.figtext(0.8, 0.91, global_stats,
+            fontsize=12,
+            bbox=dict(boxstyle="round", facecolor='#D8D8D8',
+            ec="0.5", pad=0.5, alpha=1), fontweight='bold')
+
+    # Draw plot
     plt.subplots_adjust(hspace=0.2, wspace=0.3)
     # plt.xlabel('latency (ms)', fontsize=10)
     # plt.ylabel('count', fontsize=10)
