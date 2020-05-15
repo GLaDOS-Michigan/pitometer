@@ -57,7 +57,7 @@ def plot_figures(name, root, total_data, titles):
     """
 
     if len(total_data) <= 3:
-        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*len(total_data)), sharex=True)
+        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*max(2, len(total_data))), sharex=True)
     else:
         fig, axes = plt.subplots(3, 2, figsize=(14, 9), sharex=True)
     fig.suptitle(name)
@@ -95,7 +95,7 @@ def plot_figures(name, root, total_data, titles):
         global_data.extend(row)
 
     global_stats =  "Global statistics:\n%s" %generate_statistics(global_data)
-    plt.figtext(0.85, 0.88, global_stats,
+    plt.figtext(0.86, 0.11, global_stats,
             fontsize=8,
             bbox=dict(boxstyle="round", facecolor='#D8D8D8',
             ec="0.5", pad=0.3, alpha=1))
