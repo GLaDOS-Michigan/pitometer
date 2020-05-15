@@ -13,8 +13,8 @@ import opened RslTimestampedDistributedSystem_i
 // Generic action step time
 ghost const {:verify false} L:Timestamp
 
-ghost const {:verify false} Ds := DeliveryTime();
 ghost const {:verify false} D:Timestamp
+ghost const {:verify false} SelfDelivery:Timestamp
 ghost const {:verify false} ProcessPacket:Timestamp
 ghost const {:verify false} MbeNewView:Timestamp
 ghost const {:verify false} MbeP2:Timestamp
@@ -86,20 +86,24 @@ predicate {:verify false} TimeLe(p1:Timestamp, p2:Timestamp)
   p1 <= p2
 }
 
-
 function {:verify false} TimeBound1aSent() : Timestamp
 {
   Timeout() + ProcessPacket + MbeNewView
 }
 
-function TimeBound1bSent() : Timestamp
+function {:verify false} TimeBound1aDelivery() : Timestamp
 {
-  TimeBound1aSent() + D + ProcessPacket + TimeActionRange(0)
+  TimeBound1aSent() + D
 }
 
-function {:verify false} TimeBound1aReceived() : Timestamp
+function {:verify false} TimeBound1aSelfDelivery() : Timestamp
 {
-  L + D + L
+  TimeBound1aSent() + SelfDelivery
+}
+
+function TimeBound1bDelivery() : Timestamp
+{
+  TimeBound1aDelivery() + ProcessPacket + TimeActionRange(0) + D
 }
 
 function {:verify false} {:fuel 2} TimeActionRangeInclusive(prevActionIndex:int) : Timestamp
@@ -120,6 +124,13 @@ function {:verify false} TimeActionRange(nextActionIndex:int) : Timestamp
     TimeActionRangeInclusive(nextActionIndex - 1)
 }
 
+function TimeBoundPhase1Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Timestamp
+  requires ell >= 0
+  requires 0 <= nextActionIndex < 10
+{
+  dts + (ell + 1) * TimeActionRange(0) + TimeActionRange(nextActionIndex)
+}
+
 lemma {:verify false} TimeActionRangeHelper_NoRecv(dts:Timestamp, node_ts:Timestamp, nextActionIndex:int)
   requires 0 < nextActionIndex < 10
   requires node_ts <= dts + TimeActionRange(nextActionIndex)
@@ -135,14 +146,23 @@ lemma TimeActionRangeHelper_Recv(dts:Timestamp, node_ts:Timestamp, dts':Timestam
 {
 }
 
-lemma BoundedLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp)
-  requires node_ts <= dts + TimeActionRange(0)
+lemma BoundedLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp, lag:Timestamp)
+  requires node_ts <= dts + lag
   requires node_ts' == Rsl_RecvPerfUpdate(node_ts, pkt_ts, RslStep(0));
-  requires (pkt_ts + D) >= dts;
+  requires pkt_ts >= dts;
 
-  ensures node_ts' <= (pkt_ts + D + TimeActionRange(0) + ProcessPacket)
+  ensures node_ts' <= (pkt_ts + lag + ProcessPacket)
 {
 }
 
+lemma BoundedSizeLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp, size:int)
+  requires node_ts <= dts + size * TimeActionRange(0) + TimeActionRange(0)
+  requires 0 <= size
+  requires node_ts' == Rsl_RecvPerfUpdate(node_ts, pkt_ts, RslStep(0));
+  requires (pkt_ts + D) >= dts;
+
+  ensures node_ts' <= (pkt_ts + D + (size + 1) * TimeActionRange(0) + ProcessPacket)
+{
+}
 
 }
