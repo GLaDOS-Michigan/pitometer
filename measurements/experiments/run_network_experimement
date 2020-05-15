@@ -32,4 +32,4 @@ do
 done
 
 end_timestamp=$(date +"%d-%b-%H%M")
-echo "Toylock experiment completed at time $end_timestamp"
+echo "Network experiment completed at time $end_timestamp"

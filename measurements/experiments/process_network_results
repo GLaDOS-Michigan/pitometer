@@ -47,3 +47,6 @@ done
 
 
 python3 analyze_network.py $ROOT_DIR
+
+# Delete intermediate csv files
+find $ROOT_DIR -type f -name "*.csv" -delete
