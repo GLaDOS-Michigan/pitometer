@@ -5,10 +5,20 @@ ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/netwo
 GIT_BRANCH="measurements"
 NODES_IDS=("1" "2" "3" "4" "5" "6")
 
-INTERVAL=100  # ping interval in ms
-DURATION=3600   # duration for each trial in seconds
-PAYLOADS=("0" "16" "32" "256" "512" "1024" "2048" "4096")  # payload size variable
+INTERVAL=150  # ping interval in ms
+DURATION=5400   # duration for each trial in seconds
+PAYLOADS=("4" "16" "32" "512" "2048" "4096")  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
+
+# Max payload size must be <= 4096, as dicated by Go sockets
+for num_bytes in "${PAYLOADS[@]}"
+do
+    if [ $num_bytes -gt 4096 ]
+    then
+        echo "Error: Payload size cannot be larger than 4096 bytes"
+        exit 1
+    fi
+done
 
 echo "Starting new Network experiment at time $TIMESTAMP"
 echo ""
