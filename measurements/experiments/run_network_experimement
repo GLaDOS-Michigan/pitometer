@@ -6,8 +6,7 @@ GIT_BRANCH="measurements"
 NODES_IDS=("1" "2" "3" "4" "5" "6")
 
 INTERVAL=150  # ping interval in ms
-# DURATION=5400   # duration for each trial in seconds
-DURATION=20
+DURATION=5400   # duration for each trial in seconds=
 PAYLOADS=("4" "16" "32" "512" "2048" "4096")  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
