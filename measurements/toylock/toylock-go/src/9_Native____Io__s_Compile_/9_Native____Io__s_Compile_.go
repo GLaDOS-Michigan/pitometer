@@ -580,13 +580,13 @@ func (client *UdpClient) sendLoop() {
 		var pack, ok = packInterface.(Packet)
 		// fmt.Printf("TONY DEBUG: sendLoop() found a packet with dest %v and contents %v\n", pack.ep.GetUDPAddr(), pack.buffer)
 		if !ok {
-			fmt.Printf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			fmt.Printf("Fatal error: Cannot convert %v to Packet\n", pack)
 			os.Exit(1)
 		}
 		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
 		// fmt.Printf("TONY DEBUG: sendLoop() sent %v bytes over UDP to %v\n", n, pack.ep.GetUDPAddr())
 		if err2 != nil {
-			fmt.Printf(os.Stderr, "Fatal error %s", err2.Error())
+			fmt.Printf("Fatal error %s", err2.Error())
 			os.Exit(1)
 		}
 	}
