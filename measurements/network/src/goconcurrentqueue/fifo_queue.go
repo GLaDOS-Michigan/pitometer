@@ -37,7 +37,7 @@ func (st *FIFO) initialize(waitForNextElementChanCapacity int) {
 // Enqueue enqueues an element. Returns error if queue is locked.
 func (st *FIFO) Enqueue(value interface{}) error {
 	if st.isLocked {
-		return NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
+		// return NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
 	}
 
 	// check if there is a listener waiting for the next element (this element)
@@ -70,7 +70,7 @@ func (st *FIFO) Enqueue(value interface{}) error {
 // Dequeue dequeues an element. Returns error if queue is locked or empty.
 func (st *FIFO) Dequeue() (interface{}, error) {
 	if st.isLocked {
-		return nil, NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
+		// return nil, NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
 	}
 
 	st.rwmutex.Lock()
@@ -92,7 +92,7 @@ func (st *FIFO) Dequeue() (interface{}, error) {
 func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 	for {
 		if st.isLocked {
-			return nil, NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
+			// return nil, NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
 		}
 
 		// get the slice's len
@@ -117,6 +117,11 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 						return dequeuedItem, nil
 					case <-time.After(time.Millisecond * time.Duration(i)):
 						if dequeuedItem, err := st.Dequeue(); err == nil {
+							if len(st.waitForNextElementChan) == 0 {
+								fmt.Printf("Error: This cannot be the case=\n")
+								return dequeuedItem, NewQueueError(QueueErrorCodeEmptyQueue, "waitForNextElementChan cannot be empty")
+							}
+							<-st.waitForNextElementChan //TONY: Need to add this line
 							return dequeuedItem, nil
 						}
 					}
