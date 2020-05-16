@@ -84,7 +84,7 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		debug.PrintStack()
+		fmt.Printf("%v\n", debug.Stack())
 		os.Exit(1)
 	}
 	return udpAddr
@@ -139,7 +139,7 @@ func NewUDPClient(localEndpoint *IPEndPoint) (bool, *UDPClient) {
 	conn, err := net.ListenUDP("udp", localEp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error: %s", err.Error())
-		debug.PrintStack()
+		fmt.Printf("%v\n", debug.Stack())
 		return false, nil
 	}
 	var udp = newUDPClient(localEndpoint, conn)
@@ -151,19 +151,19 @@ func (client *UDPClient) sendLoop() {
 		var packInterface, err = client.sendQueue.DequeueOrWaitForNextElement()
 		if err != nil {
 			fmt.Printf("Error: DequeueOrWaitForNextElement() failed with %v\n", err)
-			debug.PrintStack()
+			fmt.Printf("%v\n", debug.Stack())
 			os.Exit(1)
 		}
 		var pack, ok = packInterface.(Packet)
 		if !ok {
 			fmt.Printf("Fatal error: Cannot convert %v to Packet\n", pack)
-			debug.PrintStack()
+			fmt.Printf("%v\n", debug.Stack())
 			os.Exit(1)
 		}
 		var _, err2 = client.connection.WriteToUDP(pack.Buffer, pack.EndPoint.GetUDPAddr())
 		if err2 != nil {
 			fmt.Printf("Fatal error %s", err2.Error())
-			debug.PrintStack()
+			fmt.Printf("%v\n", debug.Stack())
 			os.Exit(1)
 		}
 	}
@@ -202,13 +202,13 @@ func (client *UDPClient) Receive() (bool, bool, *IPEndPoint, *Packet) {
 	var packet, err = client.ReceiveQueue.DequeueOrWaitForNextElementMax1()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
-		debug.PrintStack()
+		fmt.Printf("%v\n", debug.Stack())
 		os.Exit(1)
 	}
 	var pack, ok = packet.(Packet)
 	if !ok {
 		fmt.Printf("Error: Cannot convert %v to Packet\n", pack)
-		debug.PrintStack()
+		fmt.Printf("%v\n", debug.Stack())
 		os.Exit(1)
 	}
 	return true, false, pack.EndPoint, &pack
