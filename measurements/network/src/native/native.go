@@ -115,7 +115,7 @@ type UDPClient struct {
 	localEndpoint *IPEndPoint
 	connection    *net.UDPConn
 	sendQueue     goconcurrentqueue.Queue
-	receiveQueue  goconcurrentqueue.Queue
+	ReceiveQueue  goconcurrentqueue.Queue
 }
 
 // TONY : DONE
@@ -125,7 +125,7 @@ func newUDPClient(myEP *IPEndPoint, conn *net.UDPConn) *UDPClient {
 		localEndpoint: myEP,
 		connection:    conn,
 		sendQueue:     goconcurrentqueue.NewFIFO(),
-		receiveQueue:  goconcurrentqueue.NewFIFO(),
+		ReceiveQueue:  goconcurrentqueue.NewFIFO(),
 	}
 	// fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
 	go _this.sendLoop()
@@ -177,7 +177,7 @@ func (client *UDPClient) receiveLoop() {
 		if addr != nil {
 			var packetEp = UDPAddrToIPEndPoint(addr)
 			var packet = Packet{packetEp, buffer[0:n]}
-			client.receiveQueue.Enqueue(packet)
+			client.ReceiveQueue.Enqueue(packet)
 		}
 	}
 }
@@ -193,7 +193,7 @@ func (client *UDPClient) Send(packet *Packet) bool {
 // returns <ok> <timedOut> <remoteEp> <packet>
 func (client *UDPClient) Receive() (bool, bool, *IPEndPoint, *Packet) {
 	// Note that in Toylock, this is only ever called with timeout 0
-	var packet, err = client.receiveQueue.DequeueOrWaitForNextElement()
+	var packet, err = client.ReceiveQueue.DequeueOrWaitForNextElementMax1()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
