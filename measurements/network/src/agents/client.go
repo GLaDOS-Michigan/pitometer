@@ -68,8 +68,13 @@ func (c *Client) StartClientLoop() {
 		var timedOut = <-timedOutChan
 
 		if timedOut {
-			c.PingLog.PopStartEvent()
 			native.Debug("Timed out!")
+			ok, err := udpClient.ReceiveQueue.DequeueOrWaitForNextElementCancel()
+			if !ok {
+				fmt.Printf("Error: DequeueOrWaitForNextElementCancel failed. %v\n", err)
+				os.Exit(1)
+			}
+			c.PingLog.PopStartEvent()
 			c.TimeoutCount.Increment()
 			continue
 		}

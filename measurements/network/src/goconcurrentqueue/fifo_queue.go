@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	WaitForNextElementChanCapacity           = 1000
+	//WaitForNextElementChanCapacity is the maximum number of pending calls to DequeueOrWaitForNextElement() allowed
+	WaitForNextElementChanCapacity           = 1
 	dequeueOrWaitForNextElementInvokeGapTime = 10
 )
 
@@ -142,6 +143,35 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 
 		st.rwmutex.Unlock()
 		return elementToReturn, nil
+	}
+}
+
+// DequeueOrWaitForNextElementMax1 calls DequeueOrWaitForNextElement, while ensuring that
+// there are no more than 1 calls to DequeueOrWaitForNextElement() waiting
+func (st *FIFO) DequeueOrWaitForNextElementMax1() (interface{}, error) {
+	if len(st.waitForNextElementChan) > 0 {
+		return nil, NewQueueError(QueueErrorCodeEmptyQueue, "There is a previous call to DequeueOrWaitForNextElement() waiting")
+	}
+	return st.DequeueOrWaitForNextElement()
+}
+
+// DequeueOrWaitForNextElementCancel deletes the wait channel from the previous DequeOrWaitForNextElement request
+func (st *FIFO) DequeueOrWaitForNextElementCancel() (bool, error) {
+	if st.isLocked {
+		return false, NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
+	}
+
+	// get the slice's len
+	st.rwmutex.Lock()
+	defer st.rwmutex.Unlock()
+
+	select {
+	case <-st.waitForNextElementChan:
+		// Pop the head off st.waitForNextElementChan
+		return true, nil
+	default:
+		// No calls to DequeueOrWaitForNextElement are waiting
+		return false, NewQueueError(QueueErrorCodeEmptyQueue, "There are no calls to DequeueOrWaitForNextElement() waiting")
 	}
 }
 
