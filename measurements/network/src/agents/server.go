@@ -15,7 +15,7 @@ type Server struct {
 // StartServerLoop is the main event loop of the Server. It receives UDP packets and
 // bounces them back to the sender
 func (s *Server) StartServerLoop() {
-	var ok, udpClient = native.NewUDPClient(native.UDPAddrToIPEndPoint(s.LocalAddr))
+	var ok, udpClient = native.NewUDPClient(native.UDPAddrToIPEndPoint(s.LocalAddr), 1, 1)
 
 	if !ok {
 		fmt.Printf("Error: failed to initialize server\n")
