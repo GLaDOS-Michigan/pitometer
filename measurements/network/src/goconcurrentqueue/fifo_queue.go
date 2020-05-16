@@ -98,7 +98,7 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 		// get the slice's len
 		st.rwmutex.Lock()
 		length := len(st.slice)
-		// st.rwmutex.Unlock()
+		st.rwmutex.Unlock()
 
 		if length == 0 {
 			// channel to wait for next enqueued element
@@ -117,11 +117,11 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 						return dequeuedItem, nil
 					case <-time.After(time.Millisecond * time.Duration(i)):
 						if dequeuedItem, err := st.Dequeue(); err == nil {
-							if len(st.waitForNextElementChan) == 0 {
-								fmt.Printf("Error: This cannot be the case=\n")
-								return dequeuedItem, NewQueueError(QueueErrorCodeEmptyQueue, "waitForNextElementChan cannot be empty")
+							if len(st.waitForNextElementChan) > 0 {
+								// fmt.Printf("Error: This cannot be the case\n")
+								<-st.waitForNextElementChan //TONY: Need to add this line
+								// return dequeuedItem, NewQueueError(QueueErrorCodeEmptyQueue, "waitForNextElementChan cannot be empty")
 							}
-							<-st.waitForNextElementChan //TONY: Need to add this line
 							return dequeuedItem, nil
 						}
 					}
@@ -135,7 +135,7 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 			}
 		}
 
-		// st.rwmutex.Lock()
+		st.rwmutex.Lock()
 
 		// verify that at least 1 item resides on the queue
 		if len(st.slice) == 0 {
