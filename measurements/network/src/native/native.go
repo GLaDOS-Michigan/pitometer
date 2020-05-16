@@ -148,7 +148,12 @@ func NewUDPClient(localEndpoint *IPEndPoint) (bool, *UDPClient) {
 
 func (client *UDPClient) sendLoop() {
 	for true {
-		var packInterface, _ = client.sendQueue.DequeueOrWaitForNextElement()
+		var packInterface, err = client.sendQueue.DequeueOrWaitForNextElement()
+		if err != nil {
+			fmt.Printf("Error: DequeueOrWaitForNextElement() failed with %v\n", err)
+			debug.PrintStack()
+			os.Exit(1)
+		}
 		var pack, ok = packInterface.(Packet)
 		if !ok {
 			fmt.Printf("Fatal error: Cannot convert %v to Packet\n", pack)
