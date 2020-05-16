@@ -155,7 +155,7 @@ func (st *FIFO) DequeueOrWaitForNextElementMax1() (interface{}, error) {
 	return st.DequeueOrWaitForNextElement()
 }
 
-// DequeueOrWaitForNextElementCancel deletes the wait channel from the previous DequeOrWaitForNextElement request
+// DequeueOrWaitForNextElementCancel deletes the wait channel from the previous DequeueOrWaitForNextElement request
 func (st *FIFO) DequeueOrWaitForNextElementCancel() (bool, error) {
 	if st.isLocked {
 		return false, NewQueueError(QueueErrorCodeLockedQueue, "The queue is locked")
