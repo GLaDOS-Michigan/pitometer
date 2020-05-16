@@ -400,7 +400,7 @@ func (seq Seq) Elements() Iterator {
 	fmt.Printf("Error: unimplemented\n")
 	fmt.Printf("%s:%d %s\n\n", frame.File, frame.Line, frame.Function)
 
-	fmt.Printf("%v\n", debug.Stack())
+	fmt.Printf("%v\n", string(debug.Stack()))
 	os.Exit(1)
 	return nil
 }
