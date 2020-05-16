@@ -26,7 +26,7 @@ type Client struct {
 // StartClientLoop is the main event loop of the Client. It receives UDP packets and
 // bounces them back to the sender
 func (c *Client) StartClientLoop() {
-	var ok, udpClient = native.NewUDPClient(native.UDPAddrToIPEndPoint(c.LocalAddr))
+	var ok, udpClient = native.NewUDPClient(native.UDPAddrToIPEndPoint(c.LocalAddr), 1, 1)
 
 	if !ok {
 		fmt.Printf("Error: failed to initialize client\n")

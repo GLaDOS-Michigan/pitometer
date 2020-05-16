@@ -119,13 +119,13 @@ type UDPClient struct {
 }
 
 // TONY : DONE
-func newUDPClient(myEP *IPEndPoint, conn *net.UDPConn) *UDPClient {
+func newUDPClient(myEP *IPEndPoint, conn *net.UDPConn, sendCap int, receiveCap int) *UDPClient {
 	// Initialize record and start send and receive loops
 	_this := UDPClient{
 		localEndpoint: myEP,
 		connection:    conn,
-		sendQueue:     goconcurrentqueue.NewFIFO(),
-		ReceiveQueue:  goconcurrentqueue.NewFIFO(),
+		sendQueue:     goconcurrentqueue.NewFIFO(sendCap),
+		ReceiveQueue:  goconcurrentqueue.NewFIFO(receiveCap),
 	}
 	// fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
 	go _this.sendLoop()
@@ -134,7 +134,7 @@ func newUDPClient(myEP *IPEndPoint, conn *net.UDPConn) *UDPClient {
 }
 
 // NewUDPClient starts a UDPClient listening at the localEndPoint
-func NewUDPClient(localEndpoint *IPEndPoint) (bool, *UDPClient) {
+func NewUDPClient(localEndpoint *IPEndPoint, sendCap int, receiveCap int) (bool, *UDPClient) {
 	var localEp = localEndpoint.GetUDPAddr()
 	conn, err := net.ListenUDP("udp", localEp)
 	if err != nil {
@@ -142,7 +142,7 @@ func NewUDPClient(localEndpoint *IPEndPoint) (bool, *UDPClient) {
 		fmt.Printf("%v\n", string(debug.Stack()))
 		return false, nil
 	}
-	var udp = newUDPClient(localEndpoint, conn)
+	var udp = newUDPClient(localEndpoint, conn, sendCap, receiveCap)
 	return true, udp
 }
 

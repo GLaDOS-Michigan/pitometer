@@ -7,8 +7,6 @@ import (
 )
 
 const (
-	//WaitForNextElementChanCapacity is the maximum number of pending calls to DequeueOrWaitForNextElement() allowed
-	WaitForNextElementChanCapacity           = 1
 	dequeueOrWaitForNextElementInvokeGapTime = 10
 )
 
@@ -19,20 +17,21 @@ type FIFO struct {
 	lockRWmutex sync.RWMutex
 	isLocked    bool
 	// queue for watchers that will wait for next elements (if queue is empty at DequeueOrWaitForNextElement execution )
-	waitForNextElementChan chan chan interface{}
+	waitForNextElementChan         chan chan interface{}
+	WaitForNextElementChanCapacity int
 }
 
 // NewFIFO returns a new FIFO concurrent queue
-func NewFIFO() *FIFO {
+func NewFIFO(waitForNextElementChanCapacity int) *FIFO {
 	ret := &FIFO{}
-	ret.initialize()
-
+	ret.initialize(waitForNextElementChanCapacity)
 	return ret
 }
 
-func (st *FIFO) initialize() {
+func (st *FIFO) initialize(waitForNextElementChanCapacity int) {
 	st.slice = make([]interface{}, 0)
-	st.waitForNextElementChan = make(chan chan interface{}, WaitForNextElementChanCapacity)
+	st.waitForNextElementChan = make(chan chan interface{}, waitForNextElementChanCapacity)
+	st.WaitForNextElementChanCapacity = waitForNextElementChanCapacity
 }
 
 // Enqueue enqueues an element. Returns error if queue is locked.
@@ -99,7 +98,7 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 		// get the slice's len
 		st.rwmutex.Lock()
 		length := len(st.slice)
-		st.rwmutex.Unlock()
+		// st.rwmutex.Unlock()
 
 		if length == 0 {
 			// channel to wait for next enqueued element
@@ -131,7 +130,7 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 			}
 		}
 
-		st.rwmutex.Lock()
+		// st.rwmutex.Lock()
 
 		// verify that at least 1 item resides on the queue
 		if len(st.slice) == 0 {
@@ -149,7 +148,10 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 // DequeueOrWaitForNextElementMax1 calls DequeueOrWaitForNextElement, while ensuring that
 // there are no more than 1 calls to DequeueOrWaitForNextElement() waiting
 func (st *FIFO) DequeueOrWaitForNextElementMax1() (interface{}, error) {
-	if len(st.waitForNextElementChan) > 0 {
+	st.rwmutex.Lock()
+	var l = len(st.waitForNextElementChan)
+	st.rwmutex.Unlock()
+	if l > 0 {
 		return nil, NewQueueError(QueueErrorCodeEmptyQueue, "There is a previous call to DequeueOrWaitForNextElement() waiting")
 	}
 	return st.DequeueOrWaitForNextElement()
