@@ -151,13 +151,14 @@ func (client *UDPClient) sendLoop() {
 		var packInterface, _ = client.sendQueue.DequeueOrWaitForNextElement()
 		var pack, ok = packInterface.(Packet)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			fmt.Printf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
 			debug.PrintStack()
 			os.Exit(1)
 		}
 		var _, err2 = client.connection.WriteToUDP(pack.Buffer, pack.EndPoint.GetUDPAddr())
 		if err2 != nil {
-			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
+			fmt.Printf(os.Stderr, "Fatal error %s", err2.Error())
+			debug.PrintStack()
 			os.Exit(1)
 		}
 	}
@@ -196,11 +197,13 @@ func (client *UDPClient) Receive() (bool, bool, *IPEndPoint, *Packet) {
 	var packet, err = client.ReceiveQueue.DequeueOrWaitForNextElementMax1()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
+		debug.PrintStack()
 		os.Exit(1)
 	}
 	var pack, ok = packet.(Packet)
 	if !ok {
 		fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+		debug.PrintStack()
 		os.Exit(1)
 	}
 	return true, false, pack.EndPoint, &pack
