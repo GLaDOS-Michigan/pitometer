@@ -41,7 +41,7 @@ func TraceAndExit() {
 	fmt.Printf("\nERROR: Unimplemented\n")
 	fmt.Printf("%s:%d %s\n\n", frame.File, frame.Line, frame.Function)
 
-	debug.PrintStack()
+	fmt.Printf("%v\n", string(debug.Stack()))
 	os.Exit(1)
 }
 
