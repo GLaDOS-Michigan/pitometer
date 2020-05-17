@@ -23,7 +23,7 @@ do
         ./$RSL_DIR/run_server-local $num_nodes $i $DURATION > $DATA_DIR/node$i.log &
     else
         # Start the client and wait on the last node
-        ./$RSL_DIR/run_client-local $num_nodes $CLIENT_THREADS $DURATION
+        ./$RSL_DIR/run_client-local $num_nodes $CLIENT_THREADS $DURATION $DATA_DIR
         ./$RSL_DIR/run_server-local $num_nodes $i $DURATION > $DATA_DIR/node$i.log 
     fi
 done

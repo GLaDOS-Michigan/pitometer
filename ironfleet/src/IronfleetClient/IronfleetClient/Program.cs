@@ -12,19 +12,23 @@
 
         static void usage()
         {
-            Console.WriteLine("Expected usage: clientIP IP0 port0 IP1 port1 IP2 port2 num_threads duration_secs [send_reqs_at_once]");
+            // Console.WriteLine("Expected usage: clientIP IP0 port0 IP1 port1 IP2 port2 num_threads duration_secs [send_reqs_at_once]");
+            Console.WriteLine("Expected usage: clientIP IP_1 port_1 ... IP_n port_n num_threads duration_secs output_dir");
         }
 
         static void Main(string[] args)
         {            
-            if (args.Length < 9)
+            if (args.Length < 10)
             {
                 usage();
                 return;
             }
+            
+            string guid = Guid.NewGuid().ToString();
 
             ulong num_threads = 1;
             ulong experiment_duration = 60;
+            string output_directory = String.Format("IronfleetOutput/Job-{0}", guid);
             IPAddress client_ip;
             IPEndPoint ip0;
             IPEndPoint ip1;
@@ -33,6 +37,7 @@
 
             try
             {
+                output_directory = args[args.Length-1];
                 client_ip = IPAddress.Parse(args[0]);
                 ip0 = new IPEndPoint(IPAddress.Parse(args[1]), Convert.ToInt32(args[2]));
                 ip1 = new IPEndPoint(IPAddress.Parse(args[3]), Convert.ToInt32(args[4]));
@@ -41,10 +46,11 @@
                 num_threads = Convert.ToUInt64(args[7]);
                 experiment_duration = Convert.ToUInt64(args[8]);
 
-                if (args.Length > 9)
-                {
-                    send_reqs_at_once = true;
-                }
+                // TONY: Delete this functionality for now
+                // if (args.Length > 9)
+                // {
+                //     send_reqs_at_once = true;
+                // }
             }
             catch (Exception e)
             {
@@ -57,13 +63,9 @@
             ClientBase.my_addr = client_ip;
 
             // Create a directory for logging all of our output
-            string guid = Guid.NewGuid().ToString();
             // string output_directory = String.Format("{0}\\IronfleetOutput\\Job-{1}",
             //     System.Environment.GetEnvironmentVariable("TMP"),
             //     guid);
-            string output_directory = String.Format("IronfleetOutput/Job-{0}",
-                // System.Environment.GetEnvironmentVariable("TMP"),
-                guid);
             Directory.CreateDirectory(output_directory);
 
             // Create the log file itself
