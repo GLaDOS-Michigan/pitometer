@@ -279,29 +279,28 @@ var _ _615_AbstractServiceRSL__s_Compile.Dummy__
 var _ _620_MarshallProof__i_Compile.Dummy__
 var _ _622_Main__i_Compile.Dummy__
 
+// This program takes the following positional arguments
+// <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <duration>
 func main() {
 
-	// Grab the second-to-last argument from os.Args -- that is the duration to run this server.
+	// Grab the last argument from os.Args -- that is the duration to run this server.
 	// After this duration, the process exits.
-	var duration, err1 = strconv.ParseInt(os.Args[len(os.Args)-2], 10, 64)
+	var duration, err1 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
 	if int(duration) < 0 || err1 != nil {
-		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-2])
+		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-1])
 		os.Exit(1)
 	}
-	// Grab the last argument from os.Args -- that is the artificial delay
-	// TONY TODO: So far this doesn't do anything
-	var delay, err2 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
-	if int(delay) < 0 || err2 != nil {
-		fmt.Printf("Error: Invalid delay %v\n", os.Args[len(os.Args)-1])
-		os.Exit(1)
-	}
-	os.Args = os.Args[:len(os.Args)-2]
+	os.Args = os.Args[:len(os.Args)-1]
 
-	go func(msg string) {
+	fmt.Printf("Starting %v\n", os.Args)
+
+	go func() {
+		var dur = time.Duration(duration) * time.Second
+		fmt.Printf("Starting %v node expiry timer\n", dur)
 		time.Sleep(time.Duration(duration) * time.Second)
-		fmt.Println(msg)
+		fmt.Println("Node reached expiry")
 		os.Exit(0)
-	}("going")
+	}()
 
 	_622_Main__i_Compile.Companion_Default___.Default_Main_()
 }
