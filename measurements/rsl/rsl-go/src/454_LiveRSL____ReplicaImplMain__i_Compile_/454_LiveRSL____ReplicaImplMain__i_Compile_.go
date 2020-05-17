@@ -105,6 +105,7 @@ import (
 	_99_LiveRSL____Election__i_Compile "99_LiveRSL____Election__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -270,7 +271,7 @@ TAIL_CALL_START:
 	}
 	return a_k
 }
-func (_this *CompanionStruct_Default___) ReplicaNextMainProcessPacketX(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl) bool {
+func (_this *CompanionStruct_Default___) ReplicaNextMainProcessPacketX(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextProcessPacketLog *clock.Stopwatch) bool {
 	var ok bool = false
 	var _ = ok
 	{
@@ -283,7 +284,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainProcessPacketX(r *_383_L
 	}
 	var _out512 bool
 	var _ = _out512
-	_out512 = _428_LiveRSL____ReplicaImplProcessPacketX__i_Compile.Companion_Default___.Replica__Next__ProcessPacketX(r)
+	_out512 = _428_LiveRSL____ReplicaImplProcessPacketX__i_Compile.Companion_Default___.Replica__Next__ProcessPacketX(r, LReplicaNextProcessPacketLog)
 	ok = _out512
 	if !(ok) {
 		return ok
@@ -420,7 +421,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainReadClock(r *_383_LiveRS
 	}
 	return ok
 }
-func (_this *CompanionStruct_Default___) Replica__Next__main(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl) bool {
+func (_this *CompanionStruct_Default___) Replica__Next__main(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -428,7 +429,7 @@ TAIL_CALL_START:
 	if (r.NextActionIndex) == (uint64(0)) {
 		var _out516 bool
 		var _ = _out516
-		_out516 = Companion_Default___.ReplicaNextMainProcessPacketX(r)
+		_out516 = Companion_Default___.ReplicaNextMainProcessPacketX(r, logs["LReplicaNextProcessPacket"])
 		ok = _out516
 	} else if (((((r.NextActionIndex) == (uint64(1))) || ((r.NextActionIndex) == (uint64(2)))) || ((r.NextActionIndex) == (uint64(4)))) || ((r.NextActionIndex) == (uint64(5)))) || ((r.NextActionIndex) == (uint64(6))) {
 		var _out517 bool
