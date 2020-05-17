@@ -10,7 +10,8 @@ OUTPUT_DIR=$4
 ENDPOINTS=""
 for ((i=1;i<=$NUM_NODES;i++))
 do
-    ENDPOINTS="$ENDPOINTS 127.0.0.1 400$i"
+    port=$(( 4000 + i ))
+    ENDPOINTS="$ENDPOINTS 127.0.0.1 $port"
 done
 
 echo "Starting client"
