@@ -225,6 +225,7 @@ predicate LReplicaNextReadClockMaybeSendHeartbeat(s:LReplica, s':LReplica, clock
                                                         s.constants.my_index in s.proposer.election_state.current_view_suspectors,
                                                         s.executor.ops_complete),
            sent_packets)*/
+        // NOTE: 
         sent_packets == []
         && s' == s.(nextHeartbeatTime := s'.nextHeartbeatTime)
 }
