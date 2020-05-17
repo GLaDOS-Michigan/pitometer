@@ -102,6 +102,13 @@ predicate No1aToDst(undeliveredPackets:UndeliveredPackets, dst:NodeIdentity)
     ==> pkt.dst != dst)
 }
 
+predicate No1bFromSrc(undeliveredPackets:UndeliveredPackets, src:NodeIdentity)
+{
+  && (forall pkt :: pkt in undeliveredPackets
+    && pkt.msg.v.RslMessage_1b?
+    ==> pkt.src != src)
+}
+
 //predicate TriggerPacket(pkt:TimestampedRslPacket)
 //{
   //true
@@ -121,10 +128,15 @@ predicate Phase1GenericUndeliveredPacketsInvariant(undeliveredPackets:Undelivere
   )
 
   && (forall pkt :: && pkt in undeliveredPackets
-  && pkt.msg.v.RslMessage_1b?
-  && 0 < |constants.config.replica_ids|
-  ==> pkt.dst == constants.config.replica_ids[0]
-  && TimeLe(pkt.msg.ts, TimeBound1bDelivery())
+      && pkt.msg.v.RslMessage_1b?
+  ==>
+     && 0 < |constants.config.replica_ids|
+     && pkt.dst == constants.config.replica_ids[0]
+     && TimeLe(pkt.msg.ts, TimeBound1bDelivery())
+     && pkt.msg.v.bal_1b == Ballot(1, 0)
+
+     && (var undeliveredPackets' := undeliveredPackets - {pkt};
+      No1bFromSrc(undeliveredPackets', pkt.src))
   )
 
   && (forall pkt :: && pkt in undeliveredPackets
@@ -159,7 +171,7 @@ predicate Phase1GenericInvariant(s:TimestampedRslState)
 
   && (0 < |s.t_replicas| ==>
     && s.t_replicas[0].v.replica.proposer.current_state == 1
-    && s.t_replicas[0].v.replica.proposer.max_ballot_i_sent_1a == s.t_replicas[0].v.replica.proposer.election_state.current_view
+    && s.t_replicas[0].v.replica.proposer.max_ballot_i_sent_1a == s.t_replicas[0].v.replica.proposer.election_state.current_view == Ballot(1, 0)
   )
 
   && (forall idx :: && 0 < idx < |s.t_replicas|
@@ -221,7 +233,7 @@ predicate Phase1UnpreparedLeaderInvariant(s:TimestampedRslState, leader_1a_pkt:T
   && Phase1GenericInvariant(s)
 }
 
-predicate Phase1PreparedLeaderInvariant(s:TimestampedRslState) // , received_1b_ids:set<NodeIdentity>)
+predicate Phase1PreparedLeaderInvariant(s:TimestampedRslState, received_1b_ids:set<NodeIdentity>)
   requires RslConsistency(s)
 {
   && (0 < |s.t_replicas| ==>
@@ -229,15 +241,22 @@ predicate Phase1PreparedLeaderInvariant(s:TimestampedRslState) // , received_1b_
   )
 
 
-  //&& (0 < |s.t_replicas| ==>
-  //==> (forall other_packet :: other_packet in s.t_replicas[0].v.replica.proposer.received_1b_packets ==> other_packet.src in received_1b_ids)
-  //)
+  && (0 < |s.t_replicas|
+  ==> (forall other_packet :: other_packet in s.t_replicas[0].v.replica.proposer.received_1b_packets ==> other_packet.src in received_1b_ids)
+  )
 
   && (forall pkt :: pkt in s.undeliveredPackets
      && pkt.msg.v.RslMessage_1a?
      ==>
-     true
-     // pkt.dst !in received_1b_ids
+     pkt.dst !in received_1b_ids
+     && No1bFromSrc(s.undeliveredPackets, pkt.dst)
+  )
+
+  && (forall pkt :: pkt in s.undeliveredPackets
+     && pkt.msg.v.RslMessage_1b?
+     ==>
+     pkt.src !in received_1b_ids
+     && No1aToDst(s.undeliveredPackets, pkt.src)
   )
 
   && Phase1GenericInvariant(s)
@@ -369,6 +388,8 @@ lemma lemma_leader_noreceive_Phase1UnpreparedLeaderGoesToPhase1UnpreparedLeader(
 }
 
 lemma lemma_leader_0_Phase1UnpreparedLeaderGoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int, pkt:TimestampedRslPacket)
+  returns (received_1b_ids:set<NodeIdentity>)
+
   requires RslAssumption(s);
   requires RslAssumption(s');
   requires RslConsistency(s);
@@ -383,8 +404,9 @@ lemma lemma_leader_0_Phase1UnpreparedLeaderGoesToPhase1(s:TimestampedRslState, s
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires Phase1UnpreparedLeaderInvariant(s, pkt)
-  ensures Phase1UnpreparedLeaderInvariant(s', pkt) || Phase1PreparedLeaderInvariant(s')
+  requires Phase1UnpreparedLeaderInvariant(s, pkt);
+  ensures Phase1UnpreparedLeaderInvariant(s', pkt) || Phase1PreparedLeaderInvariant(s', received_1b_ids);
+
 {
   reveal_PacketDeliveredInOrder();
   var ios := s.t_environment.nextStep.ios;
@@ -399,13 +421,14 @@ lemma lemma_leader_0_Phase1UnpreparedLeaderGoesToPhase1(s:TimestampedRslState, s
     assert ios[0].r == pkt;
     assert ios[0].r.src == s.constants.config.replica_ids[0];
     BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
-    assert Phase1PreparedLeaderInvariant(s');
+    received_1b_ids := {};
+    assert Phase1PreparedLeaderInvariant(s', received_1b_ids);
   } else {
     assert Phase1UnpreparedLeaderInvariant(s', pkt);
   }
 }
 
-lemma lemma_notleader_noreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int)
+lemma lemma_notleader_noreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int, received_1b_ids:set<NodeIdentity>)
   requires RslAssumption(s);
   requires RslAssumption(s');
   requires RslConsistency(s);
@@ -420,13 +443,13 @@ lemma lemma_notleader_noreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':Tim
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires Phase1PreparedLeaderInvariant(s)
-  ensures Phase1PreparedLeaderInvariant(s')
+  requires Phase1PreparedLeaderInvariant(s, received_1b_ids)
+  ensures Phase1PreparedLeaderInvariant(s', received_1b_ids)
 {
   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
 }
 
-lemma lemma_notleader_receive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int)
+lemma lemma_notleader_receive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int, received_1b_ids:set<NodeIdentity>)
   requires RslAssumption(s);
   requires RslAssumption(s');
   requires RslConsistency(s);
@@ -441,8 +464,8 @@ lemma lemma_notleader_receive_Phase1GoesToPhase1(s:TimestampedRslState, s':Times
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires Phase1PreparedLeaderInvariant(s)
-  ensures Phase1PreparedLeaderInvariant(s')
+  requires Phase1PreparedLeaderInvariant(s, received_1b_ids)
+  ensures Phase1PreparedLeaderInvariant(s', received_1b_ids)
 {
   var ios := s.t_environment.nextStep.ios;
   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
@@ -453,7 +476,7 @@ lemma lemma_notleader_receive_Phase1GoesToPhase1(s:TimestampedRslState, s':Times
   }
 }
 
-lemma lemma_leader_notreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int)
+lemma lemma_leader_notreceiveOrPhase2_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int, received_1b_ids:set<NodeIdentity>)
   requires RslAssumption(s);
   requires RslAssumption(s');
   requires RslConsistency(s);
@@ -465,15 +488,16 @@ lemma lemma_leader_notreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':Times
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires s.t_environment.nextStep.nodeStep != RslStep(0)
+  requires s.t_environment.nextStep.nodeStep != RslStep(2)
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires Phase1PreparedLeaderInvariant(s)
-  ensures Phase1PreparedLeaderInvariant(s')
+  requires Phase1PreparedLeaderInvariant(s, received_1b_ids)
+  ensures Phase1PreparedLeaderInvariant(s', received_1b_ids)
 {
 }
 
-lemma lemma_leader_notreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int)
+lemma lemma_leader_mbePhase2_Phase1GoesToPhase1OrPhase2(s:TimestampedRslState, s':TimestampedRslState, j:int, received_1b_ids:set<NodeIdentity>)
   requires RslAssumption(s);
   requires RslAssumption(s');
   requires RslConsistency(s);
@@ -484,13 +508,51 @@ lemma lemma_leader_notreceive_Phase1GoesToPhase1(s:TimestampedRslState, s':Times
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep != RslStep(0)
+  requires s.t_environment.nextStep.nodeStep == RslStep(2)
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires Phase1PreparedLeaderInvariant(s)
-  ensures Phase1PreparedLeaderInvariant(s')
+  requires Phase1PreparedLeaderInvariant(s, received_1b_ids)
+  ensures Phase1PreparedLeaderInvariant(s', received_1b_ids) || Phase2Invariant(s')
 {
+}
+
+lemma lemma_leader_receive_Phase1GoesToPhase1(s:TimestampedRslState, s':TimestampedRslState, j:int, received_1b_ids:set<NodeIdentity>)
+  returns (received_1b_ids':set<NodeIdentity>)
+  requires RslAssumption(s);
+  requires RslAssumption(s');
+  requires RslConsistency(s);
+  requires RslConsistency(s');
+  requires 0 <= j < |s.constants.config.replica_ids|
+
+  requires j == 0;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires s.t_environment.nextStep.nodeStep == RslStep(0)
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires Phase1PreparedLeaderInvariant(s, received_1b_ids)
+  ensures Phase1PreparedLeaderInvariant(s', received_1b_ids')
+{
+  var ios := s.t_environment.nextStep.ios;
+  if ios[0].LIoOpReceive? {
+    assert ios[0].r.msg.v.RslMessage_1b?;
+    var size := |s.t_replicas[0].v.replica.proposer.received_1b_packets|;
+    assert |s'.t_replicas[0].v.replica.proposer.received_1b_packets| == size + 1;
+    received_1b_ids' := received_1b_ids + {ios[0].r.src};
+    BoundedSizeLagImpliesBoundedProcessingTime(s.t_replicas[0].dts,
+      s.t_replicas[0].ts,
+      ios[0].r.msg.ts,
+      s'.t_replicas[0].ts,
+      size + 1
+      );
+  } else {
+    received_1b_ids' := received_1b_ids;
+    LeaderTimeoutPreservesPhase1Invariant(s'.t_replicas[0].dts, |s.t_replicas[0].v.replica.proposer.received_1b_packets|, s'.t_replicas[0].v.nextActionIndex);
+    assert Phase1PreparedLeaderInvariant(s', received_1b_ids');
+  }
 }
 
 /*
