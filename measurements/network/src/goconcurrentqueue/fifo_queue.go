@@ -117,11 +117,11 @@ func (st *FIFO) DequeueOrWaitForNextElement() (interface{}, error) {
 						return dequeuedItem, nil
 					case <-time.After(time.Millisecond * time.Duration(i)):
 						if dequeuedItem, err := st.Dequeue(); err == nil {
-							if len(st.waitForNextElementChan) == 0 {
-								fmt.Printf("Error: This cannot be the case=\n")
-								return dequeuedItem, NewQueueError(QueueErrorCodeEmptyQueue, "waitForNextElementChan cannot be empty")
+							if len(st.waitForNextElementChan) > 0 {
+								// fmt.Printf("Error: This cannot be the case\n")
+								<-st.waitForNextElementChan //TONY: Need to add this line
+								// return dequeuedItem, NewQueueError(QueueErrorCodeEmptyQueue, "waitForNextElementChan cannot be empty")
 							}
-							<-st.waitForNextElementChan //TONY: Need to add this line
 							return dequeuedItem, nil
 						}
 					}

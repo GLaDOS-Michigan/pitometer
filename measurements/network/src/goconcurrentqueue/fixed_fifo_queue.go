@@ -18,7 +18,7 @@ func NewFixedFIFO(capacity int) *FixedFIFO {
 func (st *FixedFIFO) initialize(capacity int) {
 	st.queue = make(chan interface{}, capacity)
 	st.lockChan = make(chan struct{}, 1)
-	st.waitForNextElementChan = make(chan chan interface{}, WaitForNextElementChanCapacity)
+	st.waitForNextElementChan = make(chan chan interface{}, capacity)
 }
 
 // Enqueue enqueues an element. Returns error if queue is locked or it is at full capacity.
