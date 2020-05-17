@@ -161,6 +161,8 @@ import opened LiveRSL__CClockReading_i
         assert Q_LScheduler_Next(old(r.AbstractifyToLScheduler()), r.AbstractifyToLScheduler(), ios);
     }
 
+
+    // TONY MEASURE
     method ReplicaNextMainReadClock(r:ReplicaImpl)
         returns (ok:bool, ghost udpEventLog:seq<UdpEvent>, ghost ios:seq<RslIo>)
         requires r != null;

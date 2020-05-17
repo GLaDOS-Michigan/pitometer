@@ -322,20 +322,21 @@ function SpontaneousClock(ios:seq<RslIo>) : ClockReading
         else ClockReading(0)  // nonsense to avoid putting a precondition on this function
 }
 
-// TONY MEASURE
+// TONY MEASURE : Actions 1, 2, 4, 5, 6 occur in impl of Replica_NoReceive_NoClock_Next
+// Actions 3, 7, 8, 9 occur in impl of ReplicaNextMainReadClock
 predicate LReplicaNoReceiveNext(s:LReplica, nextActionIndex:int, s':LReplica, ios:seq<RslIo>)
 {
     var sent_packets := ExtractSentPacketsFromIos(ios);
 
     if nextActionIndex == 1 then
            SpontaneousIos(ios, 0)
-        && LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a(s, s', sent_packets)
+        && LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a(s, s', sent_packets)  
     else if nextActionIndex == 2 then
            SpontaneousIos(ios, 0)
         && LReplicaNextSpontaneousMaybeEnterPhase2(s, s', sent_packets)
     else if nextActionIndex == 3 then
            SpontaneousIos(ios, 1)
-        && LReplicaNextReadClockMaybeNominateValueAndSend2a(s, s', SpontaneousClock(ios), sent_packets)
+        && LReplicaNextReadClockMaybeNominateValueAndSend2a(s, s', SpontaneousClock(ios), sent_packets) 
     else if nextActionIndex == 4 then
            SpontaneousIos(ios, 0)
         && LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints(s, s', sent_packets)
@@ -347,12 +348,12 @@ predicate LReplicaNoReceiveNext(s:LReplica, nextActionIndex:int, s':LReplica, io
         && LReplicaNextSpontaneousMaybeExecute(s, s', sent_packets)
     else if nextActionIndex == 7 then
            SpontaneousIos(ios, 1)
-        && LReplicaNextReadClockCheckForViewTimeout(s, s', SpontaneousClock(ios), sent_packets)
+        && LReplicaNextReadClockCheckForViewTimeout(s, s', SpontaneousClock(ios), sent_packets)  
     else if nextActionIndex == 8 then
            SpontaneousIos(ios, 1)
-        && LReplicaNextReadClockCheckForQuorumOfViewSuspicions(s, s', SpontaneousClock(ios), sent_packets)
+        && LReplicaNextReadClockCheckForQuorumOfViewSuspicions(s, s', SpontaneousClock(ios), sent_packets)  
     else
-           nextActionIndex == 9
+           nextActionIndex == 9                                                                 
         && SpontaneousIos(ios, 1)
         && LReplicaNextReadClockMaybeSendHeartbeat(s, s', SpontaneousClock(ios), sent_packets)
 }

@@ -250,6 +250,7 @@ import opened LiveRSL__CClockReading_i
         lemma_EstablishQLReplicaNoReceiveNextFromNoClock(old(r.AbstractifyToLReplica()), r.AbstractifyToLReplica(), AbstractifyOutboundCPacketsToSeqOfRslPackets(sent_packets), int(r.nextActionIndex), ios);
     }
 
+    // TONY MEASURE
     method Replica_NoReceive_NoClock_Next(r:ReplicaImpl) returns (ok:bool, ghost udpEventLog:seq<UdpEvent>, ghost ios:seq<RslIo>)
         requires r != null;
         requires r.nextActionIndex==1 || r.nextActionIndex==2 || r.nextActionIndex==4 || r.nextActionIndex==5 || r.nextActionIndex==6;
