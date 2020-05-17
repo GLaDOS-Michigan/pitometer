@@ -63,10 +63,9 @@ function {:verify false} Rsl_NoRecvPerfUpdate(node_pr:Timestamp, hstep:RslStep) 
   total_time
 }
 
-function {:verify false} Rsl_RecvPerfUpdate(node_pr:Timestamp, pkt_pr:Timestamp, hstep:RslStep) : Timestamp
+function {:verify false} Rsl_RecvPerfUpdate(node_ts:Timestamp, pkt_ts:Timestamp, hstep:RslStep) : Timestamp
 {
-  var deliveryTime := TimeAdd2(pkt_pr, D);
-  var handlerStartTime := TimeMax(deliveryTime, node_pr);
+  var handlerStartTime := TimeMax(pkt_ts, node_ts);
   var total_time := TimeAdd2(handlerStartTime, StepToTimeDelta(hstep));
   total_time
 }
@@ -131,6 +130,13 @@ function TimeBoundPhase1Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Ti
   dts + (ell + 1) * TimeActionRange(0) + TimeActionRange(nextActionIndex)
 }
 
+lemma LeaderTimeoutPreservesPhase1Invariant(dts:Timestamp, ell:int, nextActionIndex:int)
+  requires ell >= 0
+  ensures dts + ProcessPacket <= TimeBoundPhase1Leader(dts, ell, nextActionIndex)
+{
+  
+}
+
 lemma {:verify false} TimeActionRangeHelper_NoRecv(dts:Timestamp, node_ts:Timestamp, nextActionIndex:int)
   requires 0 < nextActionIndex < 10
   requires node_ts <= dts + TimeActionRange(nextActionIndex)
@@ -159,9 +165,9 @@ lemma BoundedSizeLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestam
   requires node_ts <= dts + size * TimeActionRange(0) + TimeActionRange(0)
   requires 0 <= size
   requires node_ts' == Rsl_RecvPerfUpdate(node_ts, pkt_ts, RslStep(0));
-  requires (pkt_ts + D) >= dts;
+  requires pkt_ts >= dts;
 
-  ensures node_ts' <= (pkt_ts + D + (size + 1) * TimeActionRange(0) + ProcessPacket)
+  ensures node_ts' <= (pkt_ts + (size + 1) * TimeActionRange(0) + ProcessPacket)
 {
 }
 
