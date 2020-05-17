@@ -9,8 +9,12 @@ DURATION=$3
 ENDPOINTS=""
 for ((i=1;i<=$NUM_NODES;i++))
 do
-    ENDPOINTS="$ENDPOINTS 127.0.0.1 400$i"
+    port=$(( 4000 + i ))
+    ENDPOINTS="$ENDPOINTS 127.0.0.1 $port"
 done
 
+my_port=$(( 4000 + MY_ID ))
 echo "Starting node $MY_ID"
-./rsl-main $ENDPOINTS 127.0.0.1 400$MY_ID $DURATION 0
+
+lsof -t -i :$my_port | xargs -I{} kill -9 {} > /dev/null
+./rsl-main $ENDPOINTS 127.0.0.1 $my_port $DURATION
