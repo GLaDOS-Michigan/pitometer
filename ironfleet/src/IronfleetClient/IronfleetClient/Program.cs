@@ -67,7 +67,7 @@
 
             // Create the log file itself
             // FileStream log = new FileStream(output_directory + "\\client.txt", FileMode.Create);
-            FileStream log = new FileStream(output_directory + "/client.txt", FileMode.Create);
+            FileStream log = new FileStream(output_directory + "/client.log", FileMode.Create);
             StreamWriter log_stream = new StreamWriter(log);
 
             HiResTimer.Initialize();
