@@ -8,6 +8,8 @@ entire experiments
     * Directory that stores experimental results
 - analyze_toylock.py
     * Python script to plot results from a toylock experiment
+- analyze_rsl.py
+    * Python script to plot results from a rsl experiment
 - analyze_network.py
     * Python script to plot results from a network experiment
 - build_to_hosts
@@ -21,6 +23,9 @@ entire experiments
 - **process_network_results**
     * Converts network log file into separate csv files for each network client. It places each resulting csv in the directory of its corresponding log file.
     * Then, it calls analyze_network.py to generate graphs
+- **process_rsl_results**
+    * Converts rsl log file into separate csv files for each toylock stopwatch. It places each resulting csv in the directory of its corresponding log file.
+    * Then, it calls analyze_rsl.py to generate graphs
 - **process_toylock_results**
     * Converts toylock log file into separate csv files for each toylock stopwatch. It places each resulting csv in the directory of its corresponding log file.
     * Then, it calls analyze_toylock.py to generate graphs
