@@ -1,0 +1,119 @@
+#!/bin/bash
+# This script starts a distributed rsl job. It takes the following 
+# positional arguments:
+# ./start_rsl_trial <results_dir> <duration> <client_id> <host_id..>
+# where client_id refers to the id of the client in hosts.csv, and
+# each host_id refers to the respective host in hosts.csv that will participate in 
+# this paxos group, and
+# results_dir is the directory in which all results should be collected.
+
+# NOTE: This script assumes that the executables are in place
+
+# if ! uname -a | grep -q Linux; 
+# then
+#     echo "Error: This script should only be run on Linux"
+#     exit 1
+# fi
+
+HOSTS="hosts.csv"
+EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
+TEMP_DIR="/home/nudzhang/tmp"  # temporary dir to store output at each node
+NUM_CLIENTS="1"
+
+# First, grab parameters
+
+RESULTS_DIR=$1
+CLIENT_DURATION=$2
+CLIENT_ID=$3
+shift; shift; shift; 
+HOST_ID_LIST=("$@")
+ 
+HOST_NAME_LIST=()
+HOST_IP_LIST=()
+HOST_PORT_LIST=()
+
+# Get the client host
+while IFS=, read -r id name address port
+do 
+    if [ $id -eq $CLIENT_ID ]
+    then
+        # echo "TONY: $name $address $port"
+        CLIENT_NAME=$name
+        CLIENT_IP=$address
+        break
+    fi
+done < <(tail -n +2 $HOSTS)
+
+# Get info on the rsl hosts
+for i in "${HOST_ID_LIST[@]}"
+do
+    while IFS=, read -r id name address port
+    do 
+        if [ $id -eq $i ]
+        then
+            # echo "TONY: $name $address $port"
+            HOST_NAME_LIST+=("$name")
+            HOST_IP_LIST+=("$address")
+            HOST_PORT_LIST+=("$port")
+            break
+        fi
+    done < <(tail -n +2 $HOSTS)
+done
+
+date
+echo "Starting RSL trial with parameters:"
+echo "  - Duration    : $CLIENT_DURATION seconds"
+echo "  - Client      : $CLIENT_NAME"
+echo "  - Participants: ${HOST_NAME_LIST[@]}"
+
+
+# Build list of endpoints that is the argument to the main program
+ENDPOINTS=""  
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
+done
+
+node_duration=$(( CLIENT_DURATION + 2 )) # make node live slightly longer than client
+
+# Run the experiments on each note via ssh
+for ((i=$[ ${#HOST_NAME_LIST[@]} - 1];i>=0;i--))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ID=${HOST_ID_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+    NODE_PORT=${HOST_PORT_LIST[$i]}
+    echo "Starting node $NODE_ID, $NODE_NAME, $NODE_ADDR:$NODE_PORT"
+
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration"
+    # echo $ARGS
+
+    # Clean and make dir to store local output
+    ssh nudzhang@$NODE_ADDR "rm -rf $TEMP_DIR"  
+    ssh nudzhang@$NODE_ADDR "mkdir -p $TEMP_DIR"  
+
+    # Kill any processes using the required port
+    ssh nudzhang@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
+
+    # Run experiment
+    ssh nudzhang@$NODE_ADDR "$EXP_DIR/rsl-main $ARGS > $TEMP_DIR/node_$NODE_ID.log"  &
+done
+sleep 1
+
+# Run the client
+mono client.exe $CLIENT_IP $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
+
+echo "Run completed"
+
+# Finally, grab results from each node to local machine
+echo "Collecting results..."
+
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+
+    scp "$NODE_ADDR:$TEMP_DIR/*.log" $RESULTS_DIR
+done
+
+echo "RSL trial completed"
