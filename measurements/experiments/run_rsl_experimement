@@ -46,9 +46,7 @@ do
         # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $client_id ${node_ids[@]} > $trial_dir/info.log"
         ./start_rsl_trial $trial_dir $TRIAL_DURATION $client_id ${node_ids[@]} > $trial_dir/info.log
 
-        # Sleep a little after each trial
         echo "Completed trial $trial for f=$f"
-        sleep 3
     done
 done
 
