@@ -8,6 +8,12 @@
 
 # NOTE: This script assumes that the executables are in place
 
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
 HOSTS="hosts.csv"
 EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
 TEMP_DIR="/home/nudzhang/tmp"  # temporary dir to store output at each node

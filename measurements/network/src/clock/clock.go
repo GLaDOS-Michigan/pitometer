@@ -103,6 +103,7 @@ func (el *Stopwatch) String() string {
 		}
 		res += eStr
 	}
+	res += fmt.Sprintf("End of log %s\n", el.name)
 	return res
 }
 

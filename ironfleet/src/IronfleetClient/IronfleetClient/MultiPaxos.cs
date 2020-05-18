@@ -69,7 +69,7 @@
 
     public class Client : ClientBase
     {
-        public static bool DEBUG = true;
+        public static bool DEBUG = false;
 
         //private static long num_reqs = 0;
 
@@ -157,7 +157,7 @@
                         byte[] bytes;
                         try
                         {
-                            Console.WriteLine("TONY DEBUG: Waiting for reply to request {0}", seq_num);
+                            Trace(": Waiting for reply to request " + seq_num);
                             bytes = Receive();
                         }
                         catch (System.Net.Sockets.SocketException e)
