@@ -9,11 +9,11 @@
 
 # NOTE: This script assumes that the executables are in place
 
-# if ! uname -a | grep -q Linux; 
-# then
-#     echo "Error: This script should only be run on Linux"
-#     exit 1
-# fi
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
 
 HOSTS="hosts.csv"
 EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
@@ -39,7 +39,7 @@ do
     then
         # echo "TONY: $name $address $port"
         CLIENT_NAME=$name
-        CLIENT_IP=$address
+        CLIENT_ADDR=$address
         break
     fi
 done < <(tail -n +2 $HOSTS)
@@ -74,7 +74,15 @@ do
     ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
 done
 
-node_duration=$(( CLIENT_DURATION + 2 )) # make node live slightly longer than client
+node_duration=$(( CLIENT_DURATION + 3 )) # make node live slightly longer than client
+
+# Clean the temp directories in all the nodes
+ssh nudzhang@$CLIENT_ADDR "rm -f $TEMP_DIR/*.log"  
+for addr in "${HOST_IP_LIST[@]}"
+do
+    ssh nudzhang@$addr "rm -f $TEMP_DIR/*.log"  
+done
+
 
 # Run the experiments on each note via ssh
 for ((i=$[ ${#HOST_NAME_LIST[@]} - 1];i>=0;i--))
@@ -88,8 +96,7 @@ do
     ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration"
     # echo $ARGS
 
-    # Clean and make dir to store local output
-    ssh nudzhang@$NODE_ADDR "rm -rf $TEMP_DIR"  
+    # Make dir to store local output
     ssh nudzhang@$NODE_ADDR "mkdir -p $TEMP_DIR"  
 
     # Kill any processes using the required port
@@ -98,10 +105,10 @@ do
     # Run experiment
     ssh nudzhang@$NODE_ADDR "$EXP_DIR/rsl-main $ARGS > $TEMP_DIR/node_$NODE_ID.log"  &
 done
-sleep 1
+sleep 2
 
 # Run the client
-mono client.exe $CLIENT_IP $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
+mono client.exe $CLIENT_ADDR $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
 
 echo "Run completed"
 
@@ -115,5 +122,7 @@ do
 
     scp "$NODE_ADDR:$TEMP_DIR/*.log" $RESULTS_DIR
 done
+
+scp "$CLIENT_ADDR:$TEMP_DIR/*.log" $RESULTS_DIR
 
 echo "RSL trial completed"
