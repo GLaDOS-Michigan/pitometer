@@ -220,11 +220,13 @@ predicate LReplicaNextReadClockMaybeSendHeartbeat(s:LReplica, s':LReplica, clock
         s' == s && sent_packets == []
     else
            s'.nextHeartbeatTime == UpperBoundedAddition(clock.t, s.constants.all.params.heartbeat_period, s.constants.all.params.max_integer_val)
-        && LBroadcastToEveryone(s.constants.all.config, s.constants.my_index,
+        && /*LBroadcastToEveryone(s.constants.all.config, s.constants.my_index,
                                 RslMessage_Heartbeat(s.proposer.election_state.current_view,
                                                         s.constants.my_index in s.proposer.election_state.current_view_suspectors,
                                                         s.executor.ops_complete),
-                                sent_packets)
+           sent_packets)*/
+        // NOTE: 
+        sent_packets == []
         && s' == s.(nextHeartbeatTime := s'.nextHeartbeatTime)
 }
 
