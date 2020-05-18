@@ -1,0 +1,54 @@
+#!/bin/bash
+# Run a Toylock experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
+GIT_BRANCH="measurements"
+
+TRIAL_DURATION=5    # duration of each trial
+ITERATIONS=500        # repeats of each trial
+F_VALUES=("1" "2")
+TIMESTAMP=$(date +"%d-%b-%H%M")
+
+echo "Starting new RSL experiment at time $TIMESTAMP"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+for f in "${F_VALUES[@]}"
+do
+    client_id=1
+    # Generate node id's to use
+    node_ids=()
+    for ((id=2;id<$[ 2 + 2*f+1 ];id++))
+    do
+        node_ids+=("$id")
+    done
+
+    # Build locally and send executables to the target machines
+    ./build_to_hosts $client_id
+    ./build_to_hosts ${node_ids[@]}
+    echo ""
+
+    for ((trial=0;trial<$ITERATIONS;trial++))
+    do
+        time=$(date +"%d-%b-%H%M")
+        echo "Starting trial $trial for f=$f"
+        trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/trial$trial"
+        mkdir -p $trial_dir 
+
+        # Start trial
+        # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $client_id ${node_ids[@]} > $trial_dir/info.log"
+        ./start_rsl_trial $trial_dir $TRIAL_DURATION $client_id ${node_ids[@]} > $trial_dir/info.log
+
+        echo "Completed trial $trial for f=$f"
+    done
+done
+
+end_timestamp=$(date +"%d-%b-%H%M")
+echo "RSL experiment completed at time $end_timestamp"

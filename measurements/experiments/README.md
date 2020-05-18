@@ -29,10 +29,12 @@ entire experiments
 - **process_toylock_results**
     * Converts toylock log file into separate csv files for each toylock stopwatch. It places each resulting csv in the directory of its corresponding log file.
     * Then, it calls analyze_toylock.py to generate graphs
-- **run_toylock_experiment**
-    * Start a toylock experiment, which consists of a set of trials
 - **run_network_experiment**
     * Start a network experiment, which consists of a set of trials
+- **run_rsl_experiment**
+    * Start an rsl experiment, which consists of a set of trials
+- **run_toylock_experiment**
+    * Start a toylock experiment, which consists of a set of trials
 - start_network_trial
     * Start a single network trial with remote hosts
 - start_rsl_trial
