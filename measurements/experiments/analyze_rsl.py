@@ -5,20 +5,21 @@ import statistics
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
+from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 F_VALUES = [1, 2]
 NODES = [2, 3, 4, 5, 6]
 METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
-        #    "LReplicaNextSpontaneousMaybeEnterPhase2",
-        #    "LReplicaNextReadClockMaybeNominateValueAndSend2a",
-        #    "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints",
-        #    "LReplicaNextSpontaneousMaybeMakeDecision",
-        #    "LReplicaNextSpontaneousMaybeExecute",
-        #    "LReplicaNextReadClockCheckForViewTimeout",
-        #    "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
-        #    "LReplicaNextReadClockMaybeSendHeartbeat"
+           "LReplicaNextSpontaneousMaybeEnterPhase2",
+           "LReplicaNextReadClockMaybeNominateValueAndSend2a",
+           "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints",
+           "LReplicaNextSpontaneousMaybeMakeDecision",
+           "LReplicaNextSpontaneousMaybeExecute",
+           "LReplicaNextReadClockCheckForViewTimeout",
+           "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
+           "LReplicaNextReadClockMaybeSendHeartbeat"
            ]
 
 def main(exp_dir):
@@ -118,63 +119,47 @@ def plot_individual_figures(name, root, data):
     """
 
     num_nodes = len(data)               # num rows
-    num_methods = len(METHODS)          # num cols
+    num_methods = len(METHODS)          # num pages
 
-    fig, axes = plt.subplots(num_nodes, num_methods, figsize=(6*num_methods, 2*num_nodes), sharex=True)
-    fig.suptitle(name, fontsize=12, fontweight='bold')
-    sns.despine(left=True)
-
-    row = 0
-    nodes = list(data.keys())
-    nodes.sort()
-    for node in nodes:
-        col = 0
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for method in METHODS:
-            try:
-                durations_milli = data[node][method]
-            except KeyError:
-                # print("No data for method %s in node %d" %(method, node))
-                col += 1
-                continue
-            if num_methods == 1:
+            fig, axes = plt.subplots(num_nodes, 1, figsize=(8.5, 11), sharex=True)
+            fig.suptitle(method, fontsize=12, fontweight='bold')
+            sns.despine(left=True)
+
+            row = 0
+            nodes = list(data.keys())
+            nodes.sort()
+            for node in nodes:
+                try:
+                    durations_milli = data[node][method]
+                except KeyError:
+                    # print("No data for method %s in node %d" %(method, node))
+                    continue
+
                 this_ax = axes[row]
-            else: 
-                this_ax = axes[row][col]
-            # Plot the subfigure 
-            # this_ax.set_title("Node %d: %s" %(node, method), fontsize=8)
-            this_ax.grid()
-            sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
-            if len(durations_milli) > 0:
-                stats = AnchoredText(
-                    generate_statistics(durations_milli), 
-                    loc='upper right',  
-                    prop=dict(size=8),
-                    bbox_to_anchor=(1.1, 1),
-                    bbox_transform=this_ax.transAxes
-                )
-                this_ax.add_artist(stats)
-            # this_ax.set_xlabel('time (ms)', fontsize=9)
-            # this_ax.set_ylabel('count', fontsize=9)
-            # this_ax.set_xlim(0, x_max)
-            # this_ax.set_ylim(0, 1)
-            col += 1
-        row += 1
-
-    pad = 5
-    for ax, col in zip(axes[0], METHODS):
-        ax.annotate(col, xy=(0.5, 1), xytext=(0, pad),
-                xycoords='axes fraction', textcoords='offset points',
-                fontsize=10, ha='center', va='baseline')
-
-    for ax, row in zip(axes[:,0], list(data.keys())):
-        ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
-                xycoords=ax.yaxis.label, textcoords='offset points',
-                fontsize=10, ha='right', va='center')
-    fig.tight_layout()
-    fig.subplots_adjust(left=0.12, top=0.92, right=0.93)
-    plt.subplots_adjust(hspace=0.2)
-    plt.savefig("%s/%s.pdf" %(root, name))
-    plt.close(fig)
+                # Plot the subfigure 
+                this_ax.grid()
+                sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+                if len(durations_milli) > 0:
+                    stats = AnchoredText(
+                        generate_statistics(durations_milli), 
+                        loc='upper right',  
+                        prop=dict(size=8),
+                        bbox_to_anchor=(1.1, 1),
+                        bbox_transform=this_ax.transAxes
+                    )
+                    this_ax.add_artist(stats)
+                row += 1
+            pad = 5
+            for ax, row in zip(axes, list(data.keys())):
+                ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                        xycoords=ax.yaxis.label, textcoords='offset points',
+                        fontsize=10, ha='right', va='center')
+            fig.tight_layout()
+            fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
+            plt.subplots_adjust(hspace=0.2)
+            pp.savefig(fig)
 
 
 def generate_statistics(input):
