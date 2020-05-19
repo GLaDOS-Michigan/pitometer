@@ -113,8 +113,9 @@ mono client.exe $CLIENT_ADDR $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
 echo "Run completed"
 
 # Finally, grab results from each node to local machine
-sleep $(( node_duration * 10 ))    # allow some time for the logs to finish writing to file. These logs are massive
-                                   # so leave plenty of time
+echo "sleep $(( node_duration ))"
+sleep $(( node_duration ))    # allow some time for the logs to finish writing to file. These logs are massive
+                              # so leave plenty of time
 echo "Collecting results..."
 
 for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
