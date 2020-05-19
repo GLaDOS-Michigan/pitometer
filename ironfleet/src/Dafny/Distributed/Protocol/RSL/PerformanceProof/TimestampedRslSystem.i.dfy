@@ -7,7 +7,7 @@ include "../Replica.i.dfy"
 include "../../../Services/RSL/RslTimestampedDistributedSystem.i.dfy"
 include "Definitions.i.dfy"
 
-module TimestampedRslPerformanceProof_i {
+module TimestampedRslSystem_i {
 
 import opened RslTimestampedDistributedSystem_i
   import opened LiveRSL__DistributedSystem_i
