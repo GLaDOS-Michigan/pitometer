@@ -9,11 +9,13 @@ HOSTS="hosts.csv"
 HOST_TARGET_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
 RSL_DIR="../rsl"
 TOYLOCK_DIR="../toylock"
+NETWORK_DIR="../network"
 
 # Do local build
 ./clean_builds
 ./$TOYLOCK_DIR/build
 ./$RSL_DIR/build
+./$NETWORK_DIR/build
 
 for i in "$@"
 do
@@ -22,8 +24,7 @@ do
         if [ $id -eq $i ]
         then
             echo "Copying builds to $name"
-            ssh nudzhang@$address "lsof -t -i:$port | xargs -I{} kill -9 {} > /dev/null" 
-            scp toylock-main rsl-main client.exe nudzhang@$address:$HOST_TARGET_DIR
+            scp network-main toylock-main rsl-main client.exe nudzhang@$address:$HOST_TARGET_DIR
             break
         fi
     done

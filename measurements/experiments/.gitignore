@@ -1,5 +1,6 @@
 data/
 tmp/
+network-main
 toylock-main
 rsl-main
 client.exe

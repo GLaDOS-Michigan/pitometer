@@ -441,7 +441,7 @@ type IPEndPoint struct {
 // TONY : DONE
 func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
 	var port = uint16(udpAddr.Port)
-	var byteIPArr = []byte(udpAddr.IP)
+	var byteIPArr = []byte(udpAddr.IP.To4())
 	var interfaceIPArray []interface{}
 	for _, value := range byteIPArr {
 		interfaceIPArray = append(interfaceIPArray, interface{}(value))
@@ -464,6 +464,7 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	}
 	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
 	var ipAndPortStr = ip + ":" + strconv.FormatUint(uint64(ep.port), 10)
+	fmt.Printf("%v\n", ipAndPortStr)
 
 	// Next convert to net.UDPAddr
 	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
@@ -579,13 +580,13 @@ func (client *UdpClient) sendLoop() {
 		var pack, ok = packInterface.(Packet)
 		// fmt.Printf("TONY DEBUG: sendLoop() found a packet with dest %v and contents %v\n", pack.ep.GetUDPAddr(), pack.buffer)
 		if !ok {
-			fmt.Fprintf(os.Stderr, "Fatal error: Cannot convert %v to Packet\n", pack)
+			fmt.Printf("Fatal error: Cannot convert %v to Packet\n", pack)
 			os.Exit(1)
 		}
 		var _, err2 = client.connection.WriteToUDP(pack.buffer, pack.ep.GetUDPAddr())
 		// fmt.Printf("TONY DEBUG: sendLoop() sent %v bytes over UDP to %v\n", n, pack.ep.GetUDPAddr())
 		if err2 != nil {
-			fmt.Fprintf(os.Stderr, "Fatal error %s", err2.Error())
+			fmt.Printf("Fatal error %s", err2.Error())
 			os.Exit(1)
 		}
 	}
@@ -629,7 +630,7 @@ func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 // TONY : DONE
 func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_dafny.Array) {
 	// Note that in Toylock, this is only ever called with timeout 0
-	var packet, err = client.receive_queue.DequeueOrWaitForNextElement()
+	var packet, err = client.receive_queue.Dequeue()
 	if err != nil {
 		// receive queue is empty
 		// fmt.Printf("TONY DEBUG: receive_queue empty\n")

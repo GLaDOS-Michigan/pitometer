@@ -102,6 +102,7 @@ import (
 	_99_LiveRSL____Election__i_Compile "99_LiveRSL____Election__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -316,7 +317,11 @@ func (_this *CompanionStruct_Default___) ReplicaNextProcessPacketNonHeartbeat(r 
 	}
 	return ok
 }
-func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl) bool {
+
+// Replica__Next__ProcessPacketX corresponds to LReplicaNextProcessPacket
+// TONY MEASURE
+func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextProcessPacketLog *clock.Stopwatch) bool {
+	LReplicaNextProcessPacketLog.LogStartEvent("LReplicaNextProcessPacket")
 	var ok bool = false
 	var _ = ok
 	{
@@ -329,11 +334,11 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_L
 	var _ = _out468
 	_out468 = _368_LiveRSL____UdpRSL__i_Compile.Companion_Default___.Receive(r.UdpClient, r.LocalAddr, (((r.Replica).Dtor_constants()).Dtor_all()).Dtor_config(), r.Msg__grammar)
 	_5263_rr = _out468
-	// fmt.Printf("TONY DEBUG: Received Packet %v\n", _5263_rr)
 	{
 	}
 	if (_5263_rr).Is_RRFail() {
 		ok = false
+		LReplicaNextProcessPacketLog.PopStartEvent()
 		return ok
 	} else if (_5263_rr).Is_RRTimeout() {
 		ok = true
@@ -360,6 +365,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_L
 			ok = _out471
 		}
 	}
+	LReplicaNextProcessPacketLog.LogEndEvent("LReplicaNextProcessPacket")
 	return ok
 }
 

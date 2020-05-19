@@ -210,7 +210,7 @@ TAIL_CALL_START:
 	return ok
 }
 
-// TONY: Measure this
+// TONY MEASURE
 func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
 	var ok bool = false
 	var _ = ok
