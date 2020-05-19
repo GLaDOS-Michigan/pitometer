@@ -8,8 +8,7 @@ from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
-F_VALUES = [1, 2]
-NODES = [2, 3, 4, 5, 6]
+F_VALUES = [1, 2, 3, 4, 5, 6]
 THROWAWAY = 1000  # How many initial executions to ignore
 METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
