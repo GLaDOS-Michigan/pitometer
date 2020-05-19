@@ -2,4 +2,6 @@
 # This script deletes the executables
 
 rm -f toylock-main
+rm -f network-main
 rm -f rsl-main
+rm -f client.exe

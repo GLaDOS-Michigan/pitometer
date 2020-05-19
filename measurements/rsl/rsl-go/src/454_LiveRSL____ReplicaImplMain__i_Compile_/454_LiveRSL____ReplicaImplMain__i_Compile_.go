@@ -316,7 +316,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainProcessPacketX(r *_383_L
 	}
 	return ok
 }
-func (_this *CompanionStruct_Default___) ReplicaNextMainNoClock(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl) bool {
+func (_this *CompanionStruct_Default___) ReplicaNextMainNoClock(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
 	var ok bool = false
 	var _ = ok
 	var _5278_curActionIndex uint64
@@ -330,7 +330,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainNoClock(r *_383_LiveRSL_
 	}
 	var _out513 bool
 	var _ = _out513
-	_out513 = _439_LiveRSL____ReplicaImplNoReceiveNoClock__i_Compile.Companion_Default___.Replica__NoReceive__NoClock__Next(r)
+	_out513 = _439_LiveRSL____ReplicaImplNoReceiveNoClock__i_Compile.Companion_Default___.Replica__NoReceive__NoClock__Next(r, logs)
 	ok = _out513
 	if !(ok) {
 		return ok
@@ -367,7 +367,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainNoClock(r *_383_LiveRSL_
 	}
 	return ok
 }
-func (_this *CompanionStruct_Default___) ReplicaNextMainReadClock(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl) bool {
+func (_this *CompanionStruct_Default___) ReplicaNextMainReadClock(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
 	var ok bool = false
 	var _ = ok
 	var _5280_curActionIndex uint64
@@ -381,7 +381,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainReadClock(r *_383_LiveRS
 	}
 	var _out514 bool
 	var _ = _out514
-	_out514 = _450_LiveRSL____ReplicaImplNoReceiveClock__i_Compile.Companion_Default___.Replica__NoReceive__ReadClock__Next(r)
+	_out514 = _450_LiveRSL____ReplicaImplNoReceiveClock__i_Compile.Companion_Default___.Replica__NoReceive__ReadClock__Next(r, logs)
 	ok = _out514
 	if !(ok) {
 		return ok
@@ -434,12 +434,12 @@ TAIL_CALL_START:
 	} else if (((((r.NextActionIndex) == (uint64(1))) || ((r.NextActionIndex) == (uint64(2)))) || ((r.NextActionIndex) == (uint64(4)))) || ((r.NextActionIndex) == (uint64(5)))) || ((r.NextActionIndex) == (uint64(6))) {
 		var _out517 bool
 		var _ = _out517
-		_out517 = Companion_Default___.ReplicaNextMainNoClock(r)
+		_out517 = Companion_Default___.ReplicaNextMainNoClock(r, logs)
 		ok = _out517
 	} else if ((r.NextActionIndex) == (uint64(3))) || (((uint64(7)) <= (r.NextActionIndex)) && ((r.NextActionIndex) <= (uint64(9)))) {
 		var _out518 bool
 		var _ = _out518
-		_out518 = Companion_Default___.ReplicaNextMainReadClock(r)
+		_out518 = Companion_Default___.ReplicaNextMainReadClock(r, logs)
 		ok = _out518
 	}
 	return ok
