@@ -107,6 +107,22 @@ func (el *Stopwatch) String() string {
 	return res
 }
 
+// PrintLog prints the log line by line
+func (el *Stopwatch) PrintLog() {
+	fmt.Printf("%s,%v\n", el.name, el.startTime)
+	for _, e := range *el.log {
+		switch e.event {
+		case Start:
+			fmt.Printf("%d,Start,%s,%v\n", e.id, e.functionName, e.instant.Nanoseconds())
+		case End:
+			fmt.Printf("%d,End,%s,%v\n", e.id, e.functionName, e.instant.Nanoseconds())
+		default:
+			fmt.Printf("Error: Invalid case %v\n", e.event)
+		}
+	}
+	fmt.Printf("End of log %s\n", el.name)
+}
+
 /*****************************************************************************************
 ************************************** Counter *******************************************
 *****************************************************************************************/

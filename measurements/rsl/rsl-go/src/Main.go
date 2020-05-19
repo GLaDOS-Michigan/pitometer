@@ -316,7 +316,7 @@ func main() {
 		time.Sleep(time.Duration(duration) * time.Second)
 		fmt.Printf("Node reached expiry. Printing log\n")
 		for _, sw := range logs {
-			fmt.Printf("%s\n", sw)
+			sw.PrintLog()
 		}
 		os.Exit(0)
 	}()
