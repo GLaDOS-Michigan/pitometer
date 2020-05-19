@@ -22,6 +22,9 @@ METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextReadClockMaybeSendHeartbeat"
            ]
 
+plt.rc('xtick', labelsize=8)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=8) 
+
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
@@ -33,7 +36,9 @@ def main(exp_dir):
 
     # Print graphs
     for f in F_VALUES:
+        print("\tDrawing charts for f=%d" %f)
         plot_individual_figures("f_%d_individual_plots" %f, exp_dir, total_data[f])
+        plot_overall_figures("f_%d_aggregate_plots" %f, exp_dir, total_data[f])
     print("Done")
 
 
@@ -108,10 +113,8 @@ def analyze_csv(filepath):
     return durations_milli
 
 
-
-
 def plot_individual_figures(name, root, data):
-    """ Plot a figure where each subfigure is from an element in total_data
+    """ Plot a the data for each method, for each node
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
@@ -119,7 +122,6 @@ def plot_individual_figures(name, root, data):
     """
 
     num_nodes = len(data)               # num rows
-    num_methods = len(METHODS)          # num pages
 
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for method in METHODS:
@@ -160,6 +162,64 @@ def plot_individual_figures(name, root, data):
             fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
             plt.subplots_adjust(hspace=0.2)
             pp.savefig(fig)
+            plt.close(fig)
+
+
+def plot_overall_figures(name, root, data):
+    """ Plot a the data for each method, aggregated across all nodes
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        data -- data[node_id][method_name] = list of durations
+    """
+
+    # Collect and organize data
+    # aggregated_method_data[method] is a list of all durations for method
+    aggregated_method_data = dict()  
+    for method_name in METHODS:
+        if method_name not in aggregated_method_data:
+            aggregated_method_data[method_name] = []
+        for node_id in data.keys():
+            aggregated_method_data[method_name].extend(data[node_id][method_name])
+
+    # Plot the data
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        fig, axes = plt.subplots(len(METHODS), 1, figsize=(8.5, 11), sharex=True)
+        sns.despine(left=True)
+
+        row = 0
+        for method in METHODS:
+            try:
+                durations_milli = aggregated_method_data[method]
+            except KeyError:
+                # print("No data for method %s in node %d" %(method, node))
+                row += 1
+                continue
+
+            this_ax = axes[row]
+            # Plot the subfigure 
+            this_ax.grid()
+            sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+            if len(durations_milli) > 0:
+                stats = AnchoredText(
+                    generate_statistics(durations_milli), 
+                    loc='upper right',  
+                    prop=dict(size=8),
+                    bbox_to_anchor=(1.1, 1),
+                    bbox_transform=this_ax.transAxes
+                )
+                this_ax.add_artist(stats)
+            row += 1
+        pad = 5
+        for ax, row in zip(axes, METHODS):
+            ax.annotate(row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                    xycoords=ax.yaxis.label, textcoords='offset points',
+                    fontsize=7, ha='right', va='center')
+        fig.tight_layout()
+        fig.subplots_adjust(left=0.4, top=0.92, right=0.85)
+        plt.subplots_adjust(hspace=0.2)
+        pp.savefig(fig)
+        plt.close(fig)
 
 
 def generate_statistics(input):
