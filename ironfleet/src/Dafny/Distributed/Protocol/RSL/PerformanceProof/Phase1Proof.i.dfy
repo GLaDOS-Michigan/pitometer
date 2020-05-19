@@ -9,8 +9,8 @@ include "TimestampedRslSystem.i.dfy"
 
 include "../CommonProof/Constants.i.dfy"
 
-module RslPerformanceProof_i {
-import opened TimestampedRslPerformanceProof_i
+module RslPhase1Proof_i {
+import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
 predicate RslAssumption(s:TimestampedRslState)
@@ -109,11 +109,11 @@ predicate No1bFromSrc(undeliveredPackets:UndeliveredPackets, src:NodeIdentity)
     ==> pkt.src != src)
 }
 
-//predicate TriggerPacket(pkt:TimestampedRslPacket)
-//{
-  //true
-//}
-//
+predicate TriggerPacket(pkt:TimestampedRslPacket)
+{
+ true
+}
+
 //predicate TriggerIdx(idx:int)
 //{
   //true
@@ -129,7 +129,7 @@ predicate Phase1GenericUndeliveredPacketsInvariant(undeliveredPackets:Undelivere
    || pkt.msg.v.RslMessage_1b?
   )
 
-  && (forall pkt :: && pkt in undeliveredPackets
+  && (forall pkt {:trigger pkt.msg.v.RslMessage_1b?} :: && pkt in undeliveredPackets
       && pkt.msg.v.RslMessage_1b?
   ==>
      && 0 < |constants.config.replica_ids|
@@ -141,7 +141,7 @@ predicate Phase1GenericUndeliveredPacketsInvariant(undeliveredPackets:Undelivere
       No1bFromSrc(undeliveredPackets', pkt.src))
   )
 
-  && (forall pkt :: && pkt in undeliveredPackets
+  && (forall pkt {:trigger pkt.msg.v.RslMessage_1a?} :: && pkt in undeliveredPackets
       && pkt.msg.v.RslMessage_1a?
    ==> TimeLe(pkt.msg.ts, TimeBound1aDelivery())
       && 0 < |constants.config.replica_ids|
@@ -159,14 +159,14 @@ predicate Phase1GenericInvariant(s:TimestampedRslState, progresses:map<NodeIdent
   && AlwaysInvariant(s)
   && Phase1GenericUndeliveredPacketsInvariant(s.undeliveredPackets, s.constants)
 
-  && (progresses.Keys == MapSeqToSet(s.constants.config.replica_ids, x => x))
-  && (forall pkt :: && pkt in s.undeliveredPackets && pkt.msg.v.RslMessage_1a?
+  && (forall id :: id in progresses.Keys <==> id in s.constants.config.replica_ids)
+  && (forall pkt {:trigger pkt.msg.v.RslMessage_1a?} :: && pkt in s.undeliveredPackets && pkt.msg.v.RslMessage_1a?
       ==> progresses[pkt.dst] == P1a
   )
-  && (forall pkt :: && pkt in s.undeliveredPackets && pkt.msg.v.RslMessage_1b?
+  && (forall pkt {:trigger pkt.msg.v.RslMessage_1b?} :: && pkt in s.undeliveredPackets && pkt.msg.v.RslMessage_1b?
       ==> progresses[pkt.src] == P1b
   )
-  && (forall pkt :: 0 < |s.t_replicas| && pkt in s.t_replicas[0].v.replica.proposer.received_1b_packets
+  && (forall pkt {:trigger pkt in s.t_replicas[0].v.replica.proposer.received_1b_packets}:: 0 < |s.t_replicas| && pkt in s.t_replicas[0].v.replica.proposer.received_1b_packets
       ==> pkt.src in s.constants.config.replica_ids && progresses[pkt.src] == P1done
   )
 
@@ -192,7 +192,7 @@ predicate Phase1GenericInvariant(s:TimestampedRslState, progresses:map<NodeIdent
     LSchedulerLagTimeBound(s.t_replicas[idx])
   else
     (
-    No1aToDst(s.undeliveredPackets, s.constants.config.replica_ids[idx])
+    progresses[s.constants.config.replica_ids[idx]] != P1a
     )
   )
 }
@@ -250,25 +250,6 @@ predicate Phase1PreparedLeaderInvariant(s:TimestampedRslState, received_1b_ids:s
 {
   && (0 < |s.t_replicas| ==>
     && PreparedLeaderPhase1TimeBound(s.t_replicas[0], s.undeliveredPackets, s.constants.config.replica_ids[0])
-  )
-
-
-  && (0 < |s.t_replicas|
-  ==> (forall other_packet :: other_packet in s.t_replicas[0].v.replica.proposer.received_1b_packets ==> other_packet.src in received_1b_ids)
-  )
-
-  && (forall pkt :: pkt in s.undeliveredPackets
-     && pkt.msg.v.RslMessage_1a?
-     ==>
-     pkt.dst !in received_1b_ids
-     && No1bFromSrc(s.undeliveredPackets, pkt.dst)
-  )
-
-  && (forall pkt :: pkt in s.undeliveredPackets
-     && pkt.msg.v.RslMessage_1b?
-     ==>
-     pkt.src !in received_1b_ids
-     && No1aToDst(s.undeliveredPackets, pkt.src)
   )
 
   && Phase1GenericInvariant(s, progresses)
