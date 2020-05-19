@@ -29,24 +29,36 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
-    total_data = dict()  # total_data[f][node_id][method_name] = list of durations
+    total_node_data = dict()  # total_data[f][node_id][method_name] = list of durations
+    total_client_data = dict()  # total_client_data[f][i] = list of client durations for trial i
 
     for f in F_VALUES:
-        total_data[f] = analyze_f(exp_dir, f)
+        total_node_data[f], total_client_data[f] = analyze_f(exp_dir, f)
 
     # Print graphs
     for f in F_VALUES:
         print("\tDrawing charts for f=%d" %f)
-        plot_individual_figures("f_%d_individual_plots" %f, exp_dir, total_data[f])
-        plot_overall_figures("f_%d_aggregate_plots" %f, exp_dir, total_data[f])
+        plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_node_data[f])
+        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_node_data[f])
+        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_client_data[f])
     print("Done")
 
 
 def analyze_f(exp_dir, f):
+    """Analyze all the trials for sub-experiment with f failures
+
+    Arguments:
+        exp_dir {string} -- root directory of the experiment
+        f {int} -- f value for rsl
+    Returns:
+        dict[node_id] -> (dict[method_name] -> list of durations)
+        dict[trial_num] -> list of durations
+    """
     f_dir = "%s/f_%d" %(exp_dir, f)
     print("\tAnalyzing data for f=%d in %s" %(f, f_dir))
 
-    f_data = dict()  # f_data[node_id][method_name] = list of durations
+    f_node_data = dict()    # f_data[node_id][method_name] = list of durations
+    f_client_data = dict()  # f_client_data[i] is list of client durations for trial i
 
     # Gather a list of trial directories
     trial_dirs = []  # list of trial directories under f_dir
@@ -58,15 +70,16 @@ def analyze_f(exp_dir, f):
 
     # Look under each trial directory and analyze results
     for trial_dir in trial_dirs:
-        trial_data = analyze_trial_dir(trial_dir)
+        trial_num = int(trial_dir.split('trial')[1])
+        trial_data, f_client_data[trial_num] = analyze_trial_dir(trial_dir)
         for node_id in trial_data:
-            if node_id not in f_data:
-                f_data[node_id] = dict()  # f_data[node_id][method_name] = list of durations
+            if node_id not in f_node_data:
+                f_node_data[node_id] = dict()  # f_data[node_id][method_name] = list of durations
             for method_name in trial_data[node_id]:
-                if method_name not in f_data[node_id]:
-                    f_data[node_id][method_name] = []
-                f_data[node_id][method_name].extend(trial_data[node_id][method_name])
-    return f_data
+                if method_name not in f_node_data[node_id]:
+                    f_node_data[node_id][method_name] = []
+                f_node_data[node_id][method_name].extend(trial_data[node_id][method_name])
+    return f_node_data, f_client_data
 
 
 def analyze_trial_dir(trial_dir):
@@ -75,9 +88,11 @@ def analyze_trial_dir(trial_dir):
         trial_dir {string} -- absolute directory of a trial
     Returns:
         dict[node_id] -> (dict[method_name] -> list of durations)
+        list of client durations for trial
     """
     print("\t\tAnalyzing trial for %s" %trial_dir)
     trial_data = dict()   # trial_data[node_id][method_name] = list of durations
+    client_data = []
     for root, _, files in os.walk(trial_dir):
         files = [f for f in files if not f[0] == '.']  # ignore hidden files
         for csv in files:
@@ -90,14 +105,13 @@ def analyze_trial_dir(trial_dir):
                     if method_name in METHODS:
                         if node_id not in trial_data:
                             trial_data[node_id] = dict()
-                        trial_data[node_id][method_name] = analyze_csv("%s/%s" %(trial_dir, csv))
-                else:
-                    # TODO: Ignore the client for now
-                    pass
-    return trial_data
+                        trial_data[node_id][method_name] = analyze_node_csv("%s/%s" %(trial_dir, csv))
+            elif file_extension == '.log' and 'client' in file_name:
+                client_data = analyze_client_csv("%s/%s" %(trial_dir, csv))
+    return trial_data, client_data
 
 
-def analyze_csv(filepath):
+def analyze_node_csv(filepath):
     durations_nano = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
@@ -110,6 +124,17 @@ def analyze_csv(filepath):
                     dur = int(row[3]) - prevStart  # duration in nanoseconds
                     durations_nano.append(dur)
     durations_milli = list(map(lambda x: x/1_000_000.0, durations_nano))
+    return durations_milli
+
+
+def analyze_client_csv(filepath):
+    durations_milli = []
+    with open(filepath, 'r') as client:
+        csvreader = csv.reader(client, delimiter=' ',)
+        for row in csvreader:
+            req_start = int(row[1])
+            req_end = int(row[2])
+            durations_milli.append(req_end - req_start)
     return durations_milli
 
 
@@ -155,7 +180,7 @@ def plot_individual_figures(name, root, data):
                     this_ax.add_artist(stats)
                 row += 1
             pad = 5
-            for ax, row in zip(axes, list(data.keys())):
+            for ax, row in zip(axes, nodes):
                 ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
                         xycoords=ax.yaxis.label, textcoords='offset points',
                         fontsize=10, ha='right', va='center')
@@ -223,6 +248,85 @@ def plot_overall_figures(name, root, data):
         pp.savefig(fig)
         plt.close(fig)
 
+def plot_client_figures(name, root, data):
+    """ Plot a the data for each method, for each node
+    Arguments:
+        name {string} -- name of this figure
+        root {string} -- directory to save this figure
+        data {dict} -- data[trial_id] = list of durations
+    """
+    print("\t\tDrawing chart for client")
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        # Draw aggregate
+        aggregate_duration = []
+        for durs in data.values():
+            aggregate_duration.extend(durs)
+        fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
+        fig.suptitle("Aggregate client data over %d trials" %len(list(data.keys())), fontsize=12, fontweight='bold')
+        this_ax.grid()
+        sns.distplot(aggregate_duration, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+        if len(aggregate_duration) > 0:
+            stats = AnchoredText(
+                generate_statistics(aggregate_duration), 
+                loc='upper right',  
+                prop=dict(size=8),
+                bbox_to_anchor=(1.1, 1),
+                bbox_transform=this_ax.transAxes
+            )
+            this_ax.add_artist(stats)
+        fig.tight_layout()
+        fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
+        plt.subplots_adjust(hspace=0.2)
+        pp.savefig(fig)
+        plt.close(fig)
+
+        # Draw individual trials
+        trials = list(data.keys())
+        trials.sort()
+
+        trials_per_page = 5
+        trials_pages = [trials[i:i + trials_per_page] for i in range(0, len(trials), trials_per_page)]  
+
+        for trial_page in trials_pages:
+            fig, axes = plt.subplots(len(trial_page), 1, figsize=(8.5, 11), sharex=True)
+            fig.suptitle("Client data for each trial", fontsize=12, fontweight='bold')
+            sns.despine(left=True)
+
+            row = 0
+            for t in trial_page:
+                durations_milli = data[t]
+                if len(trial_page) == 1:
+                    this_ax = axes
+                else:
+                    this_ax = axes[row]
+                # Plot the subfigure 
+                this_ax.grid()
+                sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+                if len(durations_milli) > 0:
+                    stats = AnchoredText(
+                        generate_statistics(durations_milli), 
+                        loc='upper right',  
+                        prop=dict(size=8),
+                        bbox_to_anchor=(1.1, 1),
+                        bbox_transform=this_ax.transAxes
+                    )
+                    this_ax.add_artist(stats)
+                row += 1
+            pad = 5
+            if len(trial_page) == 1:
+                axes.annotate("Trial %d" %trial_page[0], xy=(0, 0.5), xytext=(-axes.yaxis.labelpad - pad, 0),
+                            xycoords=axes.yaxis.label, textcoords='offset points',
+                            fontsize=10, ha='right', va='center')
+            else:
+                for ax, t in zip(axes, trial_page):
+                    ax.annotate("Trial %d" %t, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                            xycoords=ax.yaxis.label, textcoords='offset points',
+                            fontsize=10, ha='right', va='center')
+            fig.tight_layout()
+            fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
+            plt.subplots_adjust(hspace=0.2)
+            pp.savefig(fig)
+            plt.close(fig)
 
 def generate_statistics(input):
     """
