@@ -298,6 +298,15 @@ func main() {
 	// Initialize each stopwatch
 	var logs = make(map[string]*clock.Stopwatch)
 	logs["LReplicaNextProcessPacket"] = clock.NewStopwatch(initialSize, "LReplicaNextProcessPacket")
+	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+	logs["LReplicaNextSpontaneousMaybeEnterPhase2"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterPhase2")
+	logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockMaybeNominateValueAndSend2a")
+	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecision")
+	logs["LReplicaNextSpontaneousMaybeExecute"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeExecute")
+	logs["LReplicaNextReadClockCheckForViewTimeout"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForViewTimeout")
+	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+	logs["LReplicaNextReadClockMaybeSendHeartbeat"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockMaybeSendHeartbeat")
 
 	fmt.Printf("Starting %v\n", os.Args)
 
