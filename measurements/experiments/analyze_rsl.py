@@ -10,6 +10,7 @@ import seaborn as sns
 
 F_VALUES = [1, 2]
 NODES = [2, 3, 4, 5, 6]
+THROWAWAY = 1000  # How many initial executions to ignore
 METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            "LReplicaNextSpontaneousMaybeEnterPhase2",
@@ -102,7 +103,7 @@ def analyze_csv(filepath):
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
         for row in csvreader:
-            if len(row) > 2:
+            if len(row) > 2 and int(row[0]) > THROWAWAY:
                 event_type = row[1]
                 if event_type == 'Start':
                     prevStart = int(row[3])
@@ -133,6 +134,7 @@ def plot_individual_figures(name, root, data):
             nodes = list(data.keys())
             nodes.sort()
             for node in nodes:
+                print("\t\tDrawing individual chart for node %d : %s" %(node, method))
                 try:
                     durations_milli = data[node][method]
                 except KeyError:
@@ -189,6 +191,7 @@ def plot_overall_figures(name, root, data):
 
         row = 0
         for method in METHODS:
+            print("\t\tDrawing overall chart for method %s" %(method))
             try:
                 durations_milli = aggregated_method_data[method]
             except KeyError:
@@ -229,7 +232,7 @@ def generate_statistics(input):
         input -- list of numbers
     """
     res = []
-    res.append("n = %d" %len(input))
+    res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.4f" %statistics.stdev(input))
     res.append("99.9%% = %.3f" %np.percentile(input, 99.9))
