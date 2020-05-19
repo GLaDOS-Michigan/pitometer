@@ -1,0 +1,29 @@
+#!/bin/bash
+# Kills all experiments running on all hosts
+
+BRANCH=$1
+WORKING_DIR="/home/nudzhang/Documents/pitometer"
+HOSTS="hosts.csv"
+
+echo "Starting kill experiment on all hosts"
+
+while IFS=, read -r id name address port
+do 
+    echo "    Killing experiments on node $name"
+    rsl_1="ps axf | grep rsl-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    rsl_2="ps axf | grep start_rsl_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    rsl_3="ps axf | grep run_rsl_experimement | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    ssh -n nudzhang@$address "$rsl_1 && $rsl_2 && $rsl_3"
+
+    toylock_1="ps axf | grep toylock-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    toylock_2="ps axf | grep start_toylock_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    toylock_3="ps axf | grep run_toylock_experimement | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    ssh -n nudzhang@$address "$toylock_1 && $toylock_2 && $toylock_3"
+
+    network_1="ps axf | grep network-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    network_2="ps axf | grep start_network_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    network_3="ps axf | grep run_network_experimement | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    ssh -n nudzhang@$address "$network_1 && $network_2 && $network_3"
+done < <(tail -n +2 $HOSTS)
+
+echo "Done kill experiment on all hosts"
