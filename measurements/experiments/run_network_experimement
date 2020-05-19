@@ -1,0 +1,51 @@
+#!/bin/bash
+# Run a Network experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/network"
+GIT_BRANCH="measurements"
+NODES_IDS=("1" "2" "3" "4" "5" "6")
+
+INTERVAL=150  # ping interval in ms
+# DURATION=5400   # duration for each trial in seconds
+DURATION=20
+PAYLOADS=("4" "16" "32" "512" "2048" "4096")  # payload size variable
+TIMESTAMP=$(date +"%d-%b-%H%M")
+
+# Max payload size must be <= 4096, as dicated by Go sockets
+for num_bytes in "${PAYLOADS[@]}"
+do
+    if [ $num_bytes -gt 4096 ]
+    then
+        echo "Error: Payload size cannot be larger than 4096 bytes"
+        exit 1
+    fi
+done
+
+echo "Starting new Network experiment at time $TIMESTAMP"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+# Build locally and send executables to the target machines
+./build_to_hosts ${NODES_IDS[@]}
+
+for payload_size in "${PAYLOADS[@]}"
+do
+    time=$(date +"%d-%b-%H%M")
+    echo "Starting trial with payload size $payload_size bytes at time $time"
+
+    trial_dir="$ROOT_DIR/$TIMESTAMP/payload$payload_size"
+    mkdir -p $trial_dir 
+
+    # Start trial
+    ./start_network_trial $trial_dir $INTERVAL $payload_size $DURATION > $trial_dir/info.log
+done
+
+end_timestamp=$(date +"%d-%b-%H%M")
+echo "Network experiment completed at time $end_timestamp"

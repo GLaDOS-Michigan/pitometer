@@ -108,6 +108,7 @@ import (
 	_99_LiveRSL____Election__i_Compile "99_LiveRSL____Election__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -445,7 +446,7 @@ func (_this *CompanionStruct_Default___) HostInitImpl() (bool, CScheduler, _240_
 	}
 	return ok, host__state, config, id
 }
-func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler) (bool, CScheduler) {
+func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, logs map[string]*clock.Stopwatch) (bool, CScheduler) {
 	var ok bool = false
 	var _ = ok
 	var host__state_k CScheduler = Type_CScheduler_().Default().(CScheduler)
@@ -463,7 +464,7 @@ func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler) (b
 	var _ = _5342_okay
 	var _out532 bool
 	var _ = _out532
-	_out532 = _454_LiveRSL____ReplicaImplMain__i_Compile.Companion_Default___.Replica__Next__main((host__state).Dtor_replica__impl())
+	_out532 = _454_LiveRSL____ReplicaImplMain__i_Compile.Companion_Default___.Replica__Next__main((host__state).Dtor_replica__impl(), logs)
 	_5342_okay = _out532
 	if _5342_okay {
 		{

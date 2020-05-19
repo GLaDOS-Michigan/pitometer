@@ -136,7 +136,12 @@ import (
 	_99_LiveRSL____Election__i_Compile "99_LiveRSL____Election__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
+	"fmt"
+	"os"
+	"strconv"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -275,7 +280,37 @@ var _ _615_AbstractServiceRSL__s_Compile.Dummy__
 var _ _620_MarshallProof__i_Compile.Dummy__
 var _ _622_Main__i_Compile.Dummy__
 
+const initialSize = 1000 // starting size of each stopwatch log
+
+// This program takes the following positional arguments
+// <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <duration>
 func main() {
 
-	_622_Main__i_Compile.Companion_Default___.Default_Main_()
+	// Grab the last argument from os.Args -- that is the duration to run this server.
+	// After this duration, the process exits.
+	var duration, err1 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
+	if int(duration) < 0 || err1 != nil {
+		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-1])
+		os.Exit(1)
+	}
+	os.Args = os.Args[:len(os.Args)-1]
+
+	// Initialize each stopwatch
+	var logs = make(map[string]*clock.Stopwatch)
+	logs["LReplicaNextProcessPacket"] = clock.NewStopwatch(initialSize, "LReplicaNextProcessPacket")
+
+	fmt.Printf("Starting %v\n", os.Args)
+
+	go func() {
+		var dur = time.Duration(duration) * time.Second
+		fmt.Printf("Starting %v node expiry timer\n", dur)
+		time.Sleep(time.Duration(duration) * time.Second)
+		fmt.Printf("Node reached expiry. Printing log\n")
+		for _, sw := range logs {
+			fmt.Printf("%s\n", sw)
+		}
+		os.Exit(0)
+	}()
+
+	_622_Main__i_Compile.Companion_Default___.Default_Main_(logs)
 }

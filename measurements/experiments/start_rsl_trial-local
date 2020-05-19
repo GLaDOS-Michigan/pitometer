@@ -1,0 +1,32 @@
+#!/bin/bash
+# This script starts a rsl job using the local EP. It takes the following 
+# positional arguments:
+# ./start_rsl_trial-local <f>  <duration> <client_treads>
+
+F=$1
+CLIENT_DURATION=$2  # life of client in seconds
+CLIENT_THREADS=$3
+
+DATA_DIR="data/rsl"
+RSL_DIR="../rsl"
+
+node_duration=$(( CLIENT_DURATION + 2 )) # make node live slightly longer than client
+
+./$RSL_DIR/build
+
+num_nodes=$(( 2*F + 1 ))
+
+echo "Starting local rsl trial with f=$F, $num_nodes nodes with $CLIENT_DURATION seconds duration"
+
+for ((i=$num_nodes;i>0;i--))
+do  
+    ./$RSL_DIR/run_server-local $num_nodes $i $node_duration > $DATA_DIR/node$i.log &
+done
+
+# Give nodes some time to initialize before starting client
+sleep 1 
+
+# Start the client
+./$RSL_DIR/run_client-local $num_nodes $CLIENT_THREADS $CLIENT_DURATION $DATA_DIR
+
+echo "Trial complete"

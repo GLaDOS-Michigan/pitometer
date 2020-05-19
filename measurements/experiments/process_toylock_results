@@ -1,19 +1,19 @@
 #!/bin/bash
 # This script takes the following positional arguments
-# ./nodelog_to_csv <root_dir>
+# ./process_toylock_results <root_dir>
 # Converts each log file in <root_dir>, and its sub-directories into separate csv files 
 # for each toylock stopwatch. It places each resulting csv in the directory of its 
-# corresponding log file.
+# corresponding log file. Then, it calls analyze_toylock.py to generate graphs
 
 ROOT_DIR=$1
 
 LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
 
-echo "Looking in dir $ROOT_DIR"
+echo "Processing results in $ROOT_DIR"
 
 for lf in "${LOGFILES[@]}"
 do :
-    echo $lf
+    echo "        Converting file $lf"
     dir=$(dirname "${lf}")      # directory path
     name=$(basename -- "$lf")
     ext="${name##*.}"          
@@ -29,3 +29,6 @@ do :
     acceptcsv=$dir/"$name"_accept.csv
     cat $lf | grep "NodeNextAccept" > $acceptcsv
 done
+
+
+python3 analyze_toylock.py $ROOT_DIR

@@ -1,12 +1,18 @@
 #!/bin/bash
 # This script starts a distributed toylock job. It takes the following 
 # positional arguments:
-# ./start_toylock_job <results_dir> <num_rounds> <delay> <host_id..>
+# ./start_toylock_trial <results_dir> <num_rounds> <delay> <host_id..>
 # where each host_id refers to the respective host in hosts.csv that will participate in 
 # this toylock ring, and
 # results_dir is the directory in which all results should be collected.
 
 # NOTE: This script assumes that the executables are in place
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
 
 HOSTS="hosts.csv"
 EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"

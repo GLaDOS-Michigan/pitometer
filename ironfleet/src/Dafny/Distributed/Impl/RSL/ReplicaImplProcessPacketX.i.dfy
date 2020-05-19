@@ -165,6 +165,8 @@ import opened LiveRSL__Unsendable_i
         //RecordTimingSeq("Replica_Next_ProcessPacket_work", process_start_time, end_time);
     }
 
+    // TONY MEASURE
+    // This corresponds to LReplicaNextProcessPacket
     method Replica_Next_ProcessPacketX(r:ReplicaImpl)
         returns (ok:bool, ghost udpEventLog:seq<UdpEvent>, ghost ios:seq<RslIo>)
         requires r != null;

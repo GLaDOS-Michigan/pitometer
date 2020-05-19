@@ -41,7 +41,7 @@ func TraceAndExit() {
 	fmt.Printf("\nERROR: Unimplemented\n")
 	fmt.Printf("%s:%d %s\n\n", frame.File, frame.Line, frame.Function)
 
-	debug.PrintStack()
+	fmt.Printf("%v\n", string(debug.Stack()))
 	os.Exit(1)
 }
 
@@ -461,7 +461,7 @@ type IPEndPoint struct {
 // TONY : DONE
 func UDPAddrToIPEndPoint(udpAddr *net.UDPAddr) *IPEndPoint {
 	var port = uint16(udpAddr.Port)
-	var byteIPArr = []byte(udpAddr.IP)
+	var byteIPArr = []byte(udpAddr.IP.To4())
 	var interfaceIPArray []interface{}
 	for _, value := range byteIPArr {
 		interfaceIPArray = append(interfaceIPArray, interface{}(value))
@@ -653,7 +653,7 @@ func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 // returns <ok> <timedOut> <remoteEp> <buffer>
 func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_dafny.Array) {
 	// Note that in Toylock, this is only ever called with timeout 0
-	var packet, err = client.receive_queue.DequeueOrWaitForNextElement()
+	var packet, err = client.receive_queue.Dequeue()
 	if err != nil {
 		// receive queue is empty
 		// fmt.Printf("TONY DEBUG: receive_queue empty\n")

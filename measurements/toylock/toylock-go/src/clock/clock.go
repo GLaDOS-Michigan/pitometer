@@ -2,6 +2,7 @@ package clock
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -72,6 +73,21 @@ func (el *Stopwatch) LogEndEvent(name string) {
 	el.log = &newlog
 }
 
+// PopStartEvent deletes the last event from the log, which must be a start event
+func (el *Stopwatch) PopStartEvent() {
+	var l = len(*el.log)
+	if l == 0 {
+		fmt.Printf("Error: Log is empty\n")
+		os.Exit(1)
+	}
+	if (*el.log)[l-1].event != Start {
+		fmt.Printf("Error: Expected start event\n")
+		os.Exit(1)
+	}
+	var newLog = (*el.log)[:l-1]
+	el.log = &newLog
+}
+
 // String formats the log into a string
 func (el *Stopwatch) String() string {
 	var res = fmt.Sprintf("%s,%v\n", el.name, el.startTime)
@@ -87,6 +103,7 @@ func (el *Stopwatch) String() string {
 		}
 		res += eStr
 	}
+	res += fmt.Sprintf("End of log %s\n", el.name)
 	return res
 }
 

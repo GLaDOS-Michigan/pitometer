@@ -56,26 +56,54 @@ def plot_figures(name, root, total_data, titles):
         titles -- list of titles for each subfigure
     """
 
-    fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 7), sharex=True)
+    if len(total_data) <= 3:
+        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*max(2, len(total_data))), sharex=True)
+    else:
+        fig, axes = plt.subplots(3, 2, figsize=(14, 9), sharex=True)
     fig.suptitle(name)
     sns.despine(left=True)
     i = 0
     for durations_milli in total_data:
-        try:
-            this_ax = axes[i]
-        except TypeError:
-            # This is the case where fig contains a single axes subplot 
+        if len(total_data) == 1:
             this_ax = axes
+        else:
+            if len(total_data) <= 3:
+                this_ax = axes[i]
+            else:
+                this_ax = axes[i%3][i//3]
         # Plot the subfigure
-        this_ax.set_title(titles[i])
+        this_ax.set_title(titles[i], fontsize=9)
         this_ax.grid()
         sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
-        stats = AnchoredText(generate_statistics(durations_milli), loc='upper right')
+        stats = AnchoredText(
+            generate_statistics(durations_milli), 
+            loc='upper right',  
+            prop=dict(size=8),
+            bbox_to_anchor=(1.1, 1),
+            bbox_transform=this_ax.transAxes
+        )
         this_ax.add_artist(stats)
+        # this_ax.set_xlabel('time (ms)', fontsize=9)
+        # this_ax.set_ylabel('count', fontsize=9)
         # this_ax.set_xlim(0, x_max)
         # this_ax.set_ylim(0, 1)
         i += 1
+
+    # Display some global figures
+    global_data = []
+    for row in total_data:
+        global_data.extend(row)
+
+    global_stats =  "Global statistics:\n%s" %generate_statistics(global_data)
+    plt.figtext(0.86, 0.11, global_stats,
+            fontsize=8,
+            bbox=dict(boxstyle="round", facecolor='#D8D8D8',
+            ec="0.5", pad=0.3, alpha=1))
+    
     # plt.tight_layout()
+    plt.subplots_adjust(hspace=0.2)
+    plt.xlabel('time (ms)', fontsize=10)
+    plt.ylabel('count', fontsize=10)
     plt.savefig("%s/%s.pdf" %(root, name))
     plt.close(fig)
 

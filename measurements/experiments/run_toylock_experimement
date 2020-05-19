@@ -1,30 +1,42 @@
 #!/bin/bash
 # Run a Toylock experiment
 
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
+GIT_BRANCH="measurements"
 
 NUM_ROUNDS=4000
-DELAYS=("0" "5" "10" "20" "50" "100" "200")
-RING_SIZES=("1" "2" "3")
+DELAYS=("0" "20" "50" "100" "200")
+RING_SIZES=("1" "2" "3" "4" "5" "6")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new Toylock experiment at time $TIMESTAMP"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
 
 for ring_size in "${RING_SIZES[@]}"
 do
     # Generate node id's to use
     node_ids=()
-    for ((id=4;id<$[ $ring_size + 4];id++))
+    for ((id=6;id>$[ 6 - $ring_size ];id--))
     do
         node_ids+=("$id")
     done
 
     # Build locally and send executables to the target machines
     ./build_to_hosts ${node_ids[@]}
+    echo ""
 
     for delay in "${DELAYS[@]}"
     do
-        echo "Starting trial with ring-size $ring_size and delay $delay"
+        time=$(date +"%d-%b-%H%M")
+        echo "Starting trial with ring-size $ring_size and delay $delay at time $time"
 
         trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay"
         mkdir -p $trial_dir 

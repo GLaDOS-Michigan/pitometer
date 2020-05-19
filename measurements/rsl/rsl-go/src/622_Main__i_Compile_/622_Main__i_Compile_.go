@@ -137,6 +137,7 @@ import (
 	_99_LiveRSL____Election__i_Compile "99_LiveRSL____Election__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -320,7 +321,7 @@ func (_this type_Default___) Default() interface{} {
 func (_this type_Default___) String() string {
 	return "_622_Main__i_Compile.Default__"
 }
-func (_this *CompanionStruct_Default___) Default_Main_() _dafny.Int {
+func (_this *CompanionStruct_Default___) Default_Main_(logs map[string]*clock.Stopwatch) _dafny.Int {
 	var exitCode _dafny.Int = _dafny.Zero
 	var _ = exitCode
 	var _5343_ok bool
@@ -357,7 +358,7 @@ func (_this *CompanionStruct_Default___) Default_Main_() _dafny.Int {
 		var _ = _out537
 		var _out538 _466_Host__i_Compile.CScheduler
 		var _ = _out538
-		_out537, _out538 = _466_Host__i_Compile.Companion_Default___.HostNextImpl(_5344_host__state)
+		_out537, _out538 = _466_Host__i_Compile.Companion_Default___.HostNextImpl(_5344_host__state, logs)
 		_5343_ok = _out537
 		_5344_host__state = _out538
 		{
