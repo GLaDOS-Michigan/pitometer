@@ -19,7 +19,7 @@ METHODS=( "LReplicaNextProcessPacket"
            "LReplicaNextReadClockMaybeSendHeartbeat" )
 
 # Delete old files
-find $ROOT_DIR -type f -name "*.csv" -delete
+# find $ROOT_DIR -type f -name "*.csv" -delete
 # Delete old files
 find $ROOT_DIR -type f -name "*.pdf" -delete
 
@@ -48,4 +48,4 @@ done
 python3 analyze_rsl.py $ROOT_DIR
 
 # Delete intermediate csv files
-find $ROOT_DIR -type f -name "*.csv" -delete
+# find $ROOT_DIR -type f -name "*.csv" -delete
