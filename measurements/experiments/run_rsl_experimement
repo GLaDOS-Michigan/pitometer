@@ -10,10 +10,9 @@ fi
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
 GIT_BRANCH="measurements"
 
-TRIAL_DURATION=4    # duration of each trial
-ITERATIONS=1        # repeats of each trial
-# F_VALUES=("1" "2" "3" "4" "5" "6")
-F_VALUES=("1" "4" "6")
+TRIAL_DURATION=4     # duration of each trial
+ITERATIONS=10        # repeats of each trial
+F_VALUES=("1" "2" "3" "4" "5" "6")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new RSL experiment at time $TIMESTAMP"
