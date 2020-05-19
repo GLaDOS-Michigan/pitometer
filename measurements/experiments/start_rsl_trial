@@ -105,7 +105,7 @@ do
     # Run experiment
     ssh nudzhang@$NODE_ADDR "$EXP_DIR/rsl-main $ARGS > $TEMP_DIR/node_$NODE_ID.log"  &
 done
-sleep 2
+sleep 1
 
 # Run the client
 mono client.exe $CLIENT_ADDR $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR

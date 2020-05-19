@@ -11,8 +11,8 @@ ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
 GIT_BRANCH="measurements"
 
 TRIAL_DURATION=5    # duration of each trial
-ITERATIONS=500        # repeats of each trial
-F_VALUES=("1" "2")
+ITERATIONS=5        # repeats of each trial
+F_VALUES=("1" "2" "3" "4" "5" "6")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new RSL experiment at time $TIMESTAMP"
@@ -22,17 +22,16 @@ echo ""
 
 for f in "${F_VALUES[@]}"
 do
-    client_id=1
+    client_id=2
     # Generate node id's to use
     node_ids=()
-    for ((id=2;id<$[ 2 + 2*f+1 ];id++))
+    for ((id=7;id<$[ 7 + 2*f+1 ];id++))
     do
         node_ids+=("$id")
     done
 
     # Build locally and send executables to the target machines
-    ./build_to_hosts $client_id
-    ./build_to_hosts ${node_ids[@]}
+    ./build_to_hosts $client_id ${node_ids[@]}
     echo ""
 
     for ((trial=0;trial<$ITERATIONS;trial++))
