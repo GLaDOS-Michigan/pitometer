@@ -10,7 +10,7 @@ import seaborn as sns
 
 F_VALUES = [1, 2, 3, 4, 5, 6]
 THROWAWAY = 1000  # How many initial executions to ignore
-CLIENT_DURATION = 4.0
+CLIENT_DURATION = 0
 METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            "LReplicaNextSpontaneousMaybeEnterPhase2",
@@ -354,6 +354,7 @@ def generate_client_statistics(input, num_trials=1):
     """
     res = []
     res.append(f"rate = {'{:,}'.format((len(input)/num_trials)/CLIENT_DURATION)} reqs/sec")
+    res.append(f"duration = %.1f" %CLIENT_DURATION)
     res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.4f" %statistics.stdev(input))
@@ -366,8 +367,10 @@ def generate_client_statistics(input, num_trials=1):
 
 if __name__ == "__main__":
     # positional arguments <experiment_dir>
-    if len(sys.argv) < 2 or len(sys.argv) > 2:
-        print("Error: Script takes a single positional argument that is the directory containing the toylock trials")
+    if len(sys.argv) < 3 or len(sys.argv) > 3:
+        print("Error: arguments are <exp_dir> <client_duration>")
         exit(1)
     exp_dir =sys.argv[1]
+    client_dur = float(sys.argv[2])
+    CLIENT_DURATION = client_dur
     main(exp_dir)
