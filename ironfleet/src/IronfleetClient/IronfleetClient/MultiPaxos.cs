@@ -125,6 +125,7 @@
             
             if (num_reqs_at_once == 0)
             {
+                // Console.WriteLine("Client send first request time: " + DateTime.Now);
                 while (true)
                 {
                     // Make the sequence number a time stamp

@@ -6,10 +6,10 @@
     using System.IO;
     using System.Net;
     using System.Collections.Generic;
+    using System.Diagnostics;
 
     class Program
     {
-
         static void usage()
         {
             // Console.WriteLine("Expected usage: clientIP IP0 port0 IP1 port1 IP2 port2 num_threads duration_secs [send_reqs_at_once]");
@@ -18,12 +18,15 @@
 
         static void Main(string[] args)
         {            
+            // Console.WriteLine("Client launch time: " + DateTime.Now);
             if (args.Length < 10)  // length 10 gives n=3 nodes, the paxos minimum for f=1
             {
                 usage();
                 return;
             }
-            
+
+            int CLIENT_LAG = 3000;  // account for client lag between starting timer and sending first messages 
+
             string guid = Guid.NewGuid().ToString();
 
             ulong num_threads = 1;
@@ -94,7 +97,8 @@
             }
             else
             {
-                Thread.Sleep((int)experiment_duration * 1000);
+                // Console.WriteLine("Client timer start time: " + DateTime.Now);
+                Thread.Sleep((int)experiment_duration * 1000 + CLIENT_LAG);  // TONY: Add 3000
                 stdout.WriteLine("[[DONE]]");
                 stdout.Flush();
                 log_stream.Flush();
