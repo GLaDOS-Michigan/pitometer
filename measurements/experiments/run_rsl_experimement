@@ -10,6 +10,7 @@ fi
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
 GIT_BRANCH="measurements"
 
+CLIENT_ID=20         # node to use as client
 TRIAL_DURATION=7     # duration of each trial
 ITERATIONS=10        # repeats of each trial
 F_VALUES=("1" "2" "3" "4" "5" "6")
@@ -22,7 +23,6 @@ echo ""
 
 for f in "${F_VALUES[@]}"
 do
-    client_id=2
     # Generate node id's to use
     node_ids=()
     for ((id=7;id<$[ 7 + 2*f+1 ];id++))
@@ -31,7 +31,7 @@ do
     done
 
     # Build locally and send executables to the target machines
-    ./build_to_hosts $client_id ${node_ids[@]}
+    ./build_to_hosts $CLIENT_ID ${node_ids[@]}
     echo ""
 
     for ((trial=0;trial<$ITERATIONS;trial++))
@@ -42,8 +42,8 @@ do
         mkdir -p $trial_dir 
 
         # Start trial
-        # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $client_id ${node_ids[@]} > $trial_dir/info.log"
-        ./start_rsl_trial $trial_dir $TRIAL_DURATION $client_id ${node_ids[@]} > $trial_dir/info.log
+        # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID ${node_ids[@]} > $trial_dir/info.log"
+        ./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID ${node_ids[@]} > $trial_dir/info.log
 
         echo "Completed trial $trial for f=$f"
     done
