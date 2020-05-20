@@ -290,22 +290,21 @@ func (_this type_Default___) String() string {
 	return "_236_LiveRSL____ParametersState__i_Compile.Default__"
 }
 func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
-	// TONY: The commented-out values are from the C# implementation.
 	// The values for periods and delays need to be tuned
-	// return ParametersState{ParametersState_ParametersState{ // These are units of milliseconds
-	// 	Max__log__length:                uint64(7),
-	// 	Baseline__view__timeout__period: uint64(1000),
-	// 	Heartbeat__period:               uint64(100),
-	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
-	// 	Max__batch__size:                uint64(32),
-	// 	Max__batch__delay:               uint64(10)}}
-	return ParametersState{ParametersState_ParametersState{ // These are units of 0.01 milliseconds
+	return ParametersState{ParametersState_ParametersState{ // These are units of milliseconds, same as original C# implementation
 		Max__log__length:                uint64(7),
 		Baseline__view__timeout__period: uint64(1000),
-		Heartbeat__period:               uint64(1_000),
+		Heartbeat__period:               uint64(100),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
-		Max__batch__size:                uint64(1),
-		Max__batch__delay:               uint64(100)}}
+		Max__batch__size:                uint64(32),
+		Max__batch__delay:               uint64(10)}}
+	// return ParametersState{ParametersState_ParametersState{ // These are units of 0.01 milliseconds, Tony's tune
+	// 	Max__log__length:                uint64(7),
+	// 	Baseline__view__timeout__period: uint64(1000),
+	// 	Heartbeat__period:               uint64(1_000),
+	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
+	// 	Max__batch__size:                uint64(1),
+	// 	Max__batch__delay:               uint64(100)}}
 }
 
 // End of class Default__
