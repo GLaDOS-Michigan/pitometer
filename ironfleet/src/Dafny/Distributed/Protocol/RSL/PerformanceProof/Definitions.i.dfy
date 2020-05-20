@@ -15,6 +15,7 @@ import opened RslTimestampedDistributedSystem_i
 // Generic action step time
 ghost const L:Timestamp
 
+ghost const minD:Timestamp
 ghost const D:Timestamp
 ghost const SelfDelivery:Timestamp
 ghost const ProcessPacket:Timestamp
@@ -119,7 +120,7 @@ function TimeBound2aDelivery(req_time:Timestamp) : Timestamp
 
 function TimeBound2bDelivery(req_time:Timestamp) : Timestamp
 {
-  0
+  TimeBound2aDelivery(req_time) + ProcessPacket + TimeActionRange(0) + D
 }
 
 function TimeActionRangeInclusive(prevActionIndex:int) : Timestamp
