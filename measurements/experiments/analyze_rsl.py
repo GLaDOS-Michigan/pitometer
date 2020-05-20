@@ -10,6 +10,7 @@ import seaborn as sns
 
 F_VALUES = [1, 2, 3, 4, 5, 6]
 THROWAWAY = 1000  # How many initial executions to ignore
+CLIENT_DURATION = 4.0
 METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            "LReplicaNextSpontaneousMaybeEnterPhase2",
@@ -256,6 +257,7 @@ def plot_client_figures(name, root, data):
         data {dict} -- data[trial_id] = list of durations
     """
     print("\t\tDrawing chart for client")
+    num_trials = len(data.keys())
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw aggregate
         aggregate_duration = []
@@ -267,7 +269,7 @@ def plot_client_figures(name, root, data):
         sns.distplot(aggregate_duration, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
         if len(aggregate_duration) > 0:
             stats = AnchoredText(
-                generate_statistics(aggregate_duration), 
+                generate_client_statistics(aggregate_duration, num_trials=num_trials), 
                 loc='upper right',  
                 prop=dict(size=8),
                 bbox_to_anchor=(1.1, 1),
@@ -304,7 +306,7 @@ def plot_client_figures(name, root, data):
                 sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
                 if len(durations_milli) > 0:
                     stats = AnchoredText(
-                        generate_statistics(durations_milli), 
+                        generate_client_statistics(durations_milli), 
                         loc='upper right',  
                         prop=dict(size=8),
                         bbox_to_anchor=(1.1, 1),
@@ -335,6 +337,23 @@ def generate_statistics(input):
         input -- list of numbers
     """
     res = []
+    res.append(f"n = {'{:,}'.format(len(input))}")
+    res.append("μ = %.3f" %statistics.mean(input))
+    res.append("σ = %.4f" %statistics.stdev(input))
+    res.append("99.9%% = %.3f" %np.percentile(input, 99.9))
+    res.append("")
+    res.append("max = %.3f" %np.max(input))
+    res.append("min = %.3f" %np.min(input))
+    return "\n".join(res)
+
+def generate_client_statistics(input, num_trials=1):
+    """
+    Generates a string containing some statistics for the input
+    Arguments:
+        input -- list of numbers
+    """
+    res = []
+    res.append(f"rate = {'{:,}'.format((len(input)/num_trials)/CLIENT_DURATION)} reqs/sec")
     res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.4f" %statistics.stdev(input))
