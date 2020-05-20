@@ -165,7 +165,7 @@
                         {
                             serverIdx = (serverIdx + 1) % ClientBase.endpoints.Count();
                             Console.WriteLine("#TIMEOUT; rotating to server {0}", serverIdx);
-                            // Console.WriteLine(e.ToString());
+                            Trace(e.ToString());
                             // Console.WriteLine("TONY DEBUG: Breaking");
                             break;
                         }
