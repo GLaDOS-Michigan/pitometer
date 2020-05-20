@@ -107,7 +107,22 @@ function TimeBound1bDelivery() : Timestamp
   TimeBound1aDelivery() + ProcessPacket + TimeActionRange(0) + D
 }
 
-function {:fuel 2} TimeActionRangeInclusive(prevActionIndex:int) : Timestamp
+function TimeBound2aSent(req_time:Timestamp) : Timestamp
+{
+  req_time + TimeActionRange(0) + TimeActionRange(4)
+}
+
+function TimeBound2aDelivery(req_time:Timestamp) : Timestamp
+{
+  TimeBound2aSent(req_time) + D
+}
+
+function TimeBound2bDelivery(req_time:Timestamp) : Timestamp
+{
+  0
+}
+
+function TimeActionRangeInclusive(prevActionIndex:int) : Timestamp
   requires prevActionIndex >= 0
 {
   if prevActionIndex == 0 then
