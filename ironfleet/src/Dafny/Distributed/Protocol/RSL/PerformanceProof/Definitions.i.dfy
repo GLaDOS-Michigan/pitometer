@@ -118,6 +118,11 @@ function TimeBound2aDelivery(req_time:Timestamp) : Timestamp
   TimeBound2aSent(req_time) + D
 }
 
+function TimeBound2aSelfDelivery(req_time:Timestamp) : Timestamp
+{
+  TimeBound2aSent(req_time) + SelfDelivery
+}
+
 function TimeBound2bDelivery(req_time:Timestamp) : Timestamp
 {
   TimeBound2aDelivery(req_time) + ProcessPacket + TimeActionRange(0) + D
@@ -142,6 +147,13 @@ function TimeActionRange(nextActionIndex:int) : Timestamp
 }
 
 function TimeBoundPhase1Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Timestamp
+  requires ell >= 0
+  requires 0 <= nextActionIndex < 10
+{
+  dts + (ell + 1) * TimeActionRange(0) + TimeActionRange(nextActionIndex)
+}
+
+function TimeBoundPhase2Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Timestamp
   requires ell >= 0
   requires 0 <= nextActionIndex < 10
 {
