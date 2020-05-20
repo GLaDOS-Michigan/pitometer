@@ -473,10 +473,9 @@ lemma lemma_notleader_receive_Phase1GoesToPhase1(s:TimestampedRslState, s':Times
   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
   progresses' := progresses;
   if ios[0].LIoOpReceive? {
-    if (ios[0].r.msg.v.RslMessage_1a?) {
-      BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
-      progresses' := progresses[s.constants.config.replica_ids[j] := P1b];
-    }
+    assert (ios[0].r.msg.v.RslMessage_1a?);
+    BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
+    progresses' := progresses[s.constants.config.replica_ids[j] := P1b];
   }
 }
 
