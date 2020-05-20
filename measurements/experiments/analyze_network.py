@@ -15,60 +15,58 @@ THROWAWAY = 10 # Number of starting readings to throw away
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
-    for root, _, files in os.walk(exp_dir):
+    for root, dirs, files in os.walk(exp_dir):
         files = [f for f in files if not f[0] == '.']  # ignore hidden files
-        if files != []:
+        if dirs == []:
             # This is a leaf directory containing trial csv files
             print("\tAnalyzing trial %s" %root)
             
-            # total_node_data[i][j] is the timings for node i to node j
-            total_node_data = [[None for j in NODES] for i in NODES] 
-            titles = [["node%d -> node%d" %(node_i, node_j) for node_j in NODES] for node_i in NODES] 
+            # Grab the payload of this sub-experiment
+            print("TONY: " + root)
+            payload = int(root.split('payload')[-1])
 
-            for i in range(len(NODES)):
-                grep_str = "node%d" %NODES[i]
+            # {2D map} total_data[i][j] is the timings for node i to node j
+            total_data = dict()
+
+            for i in NODES:
+                grep_str = "node%d" %i
                 nodei_csvs= [f for f in files if grep_str in f.split('-')[0] and ".csv" in f]
                 nodei_csvs.sort()
-                # print(nodei_csvs)
+                total_data[i] = dict()
 
-                for j in range(len(nodei_csvs)):
+                for j in NODES:
                     # File for log of nodei->nodej
                     # print(NODES[j], j)
-                    i_j_csv = nodei_csvs[j]
-                    grep_str = "node%d" %NODES[j]
+                    i_j_csv = nodei_csvs[NODES.index(j)]
+                    grep_str = "node%d" %j
                     assert grep_str in i_j_csv.split('-')[1]  # sanity check to make sure we have the right target file
-
-                    total_node_data[i][j] = analyze_csv("%s/%s" %(root, i_j_csv))
-
-            payload = root.split('/')[-1]
-            plot_figures("rtt_%s" %payload, root, total_node_data, titles)
+                    total_data[i][j] = analyze_csv("%s/%s" %(root, i_j_csv))
+            plot_figures("rtt_payload%d" %payload, root, total_data)
     print("Done")
 
 
-def plot_figures(name, root, total_data, titles):
+def plot_figures(name, root, total_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Assumes total_data and titles are 2d arrays of same shape, len(NODES) * len(NODES)
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
-        total_data -- list of lists of data
-        titles -- list of titles for each subfigure
+        total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
-
-    assert len(total_data) == len(NODES) and len(total_data[0]) == len(NODES)
-    assert len(titles) == len(NODES) and len(titles[0]) == len(NODES)
+    assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
 
     fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
     fig.suptitle(name)
     sns.despine(left=True)
     
-    for i in range(len(NODES)):
-        for j in range(len(NODES)):
+    row = 0
+    for i in total_data.keys():
+        col = 0
+        for j in total_data[i].keys():
             i_j_data = total_data[i][j]
-            i_j_title = titles[i][j]
-            this_ax = axes[i][j]
+            this_ax = axes[row][col]
 
-            this_ax.set_title(i_j_title, fontsize=9)
+            this_ax.set_title("node%d -> node%d" %(i, j), fontsize=9)
             this_ax.grid()
             sns.distplot(i_j_data, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
             stats = AnchoredText(
@@ -84,12 +82,13 @@ def plot_figures(name, root, total_data, titles):
             # this_ax.set_ylabel('count', fontsize=9)
             # this_ax.set_xlim(0, x_max)
             # this_ax.set_ylim(0, 1)
-
+            col += 1
+        row += 1
     # Display some global figures
     global_data = []
-    for row in total_data:
-        for rtts in row:
-            global_data.extend(rtts)
+    for i in total_data.keys():
+        for j in total_data[i].keys():
+            global_data.extend(total_data[i][j])
 
     global_stats =  "Global statistics:\n%s" %generate_statistics(global_data)
     plt.figtext(0.8, 0.91, global_stats,
