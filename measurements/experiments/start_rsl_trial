@@ -74,7 +74,7 @@ do
     ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
 done
 
-node_duration=$(( CLIENT_DURATION + 2 )) # make node live slightly longer than client
+node_duration=$(( CLIENT_DURATION + 7 )) # make node live slightly longer than client
 
 # Clean the temp directories in all the nodes
 ssh nudzhang@$CLIENT_ADDR "rm -f $TEMP_DIR/*.log"  
@@ -83,8 +83,6 @@ do
     ssh nudzhang@$addr "rm -f $TEMP_DIR/*.log"  
 done
 
-# Run the client first, because it takes 3 seconds before it sends the first request
-mono client.exe $CLIENT_ADDR $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
 
 # Run the experiments on each note via ssh
 for ((i=$[ ${#HOST_NAME_LIST[@]} - 1];i>=0;i--))
@@ -105,14 +103,11 @@ do
     ssh nudzhang@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
 
     # Run experiment
-    if [ $i -gt 0 ] 
-    then 
-        ssh nudzhang@$NODE_ADDR "$EXP_DIR/rsl-main $ARGS > $TEMP_DIR/node_$NODE_ID.log"  &
-    else
-        # Wait on the last node
-        ssh nudzhang@$NODE_ADDR "$EXP_DIR/rsl-main $ARGS > $TEMP_DIR/node_$NODE_ID.log"
-    fi
+    ssh nudzhang@$NODE_ADDR "$EXP_DIR/rsl-main $ARGS > $TEMP_DIR/node_$NODE_ID.log" &
 done
+
+# Run the client
+mono client.exe $CLIENT_ADDR $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
 
 echo "Run completed"
 
