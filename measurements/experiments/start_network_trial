@@ -80,7 +80,7 @@ do
         ssh nudzhang@$NODE_ADDR "$EXP_DIR/network-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"
     fi
 done
-sleep 1
+sleep 20
 echo "Run completed"
 
 # Finally, grab results from each node to local machine
