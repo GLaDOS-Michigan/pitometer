@@ -11,6 +11,8 @@ ROOT_DIR=$1
 
 LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
 
+find $ROOT_DIR -type f -name "*.pdf" -delete
+
 HOST_ID_LIST=()
 HOST_NAME_LIST=()
 HOST_IP_LIST=()

@@ -48,27 +48,64 @@ def main(exp_dir):
 
 def plot_figures(name, root, total_data):
     """ Plot all network figures
-    Assumes total_data and titles are 2d arrays of same shape, len(NODES) * len(NODES)
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
+    assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        plot_aggregate(pp, name, root, total_data)
         plot_individuals(pp, name, root, total_data)
 
 
-def plot_individuals(pp, name, root, total_data):
-    """ Plot a figure where each subfigure is from an element in total_data
-    Assumes total_data and titles are 2d arrays of same shape, len(NODES) * len(NODES)
+def plot_aggregate(pp, name, root, total_data):
+    """ Plot the aggregated network behavior
     Arguments:
         pp -- PdfPages object
         name -- name of this figure
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
-    assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
+    # First, collect list of ALL data
+    aggregate_data = []  
+    for i in total_data.keys():
+        for durations in total_data[i].values():
+            aggregate_data.extend(durations)
 
+    # Next, draw the graph
+    fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
+    fig.suptitle(name)
+    sns.despine(left=True)
+    
+    this_ax.set_title("Aggregate data across all nodes", fontsize=9)
+    this_ax.grid()
+    sns.distplot(aggregate_data, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+    stats = AnchoredText(
+        generate_statistics(aggregate_data), 
+        loc='upper right',  
+        prop=dict(size=8),
+        bbox_to_anchor=(1.1, 1),
+        bbox_transform=this_ax.transAxes
+    )
+    this_ax.add_artist(stats)
+    this_ax.set_xlabel('round trip time (ms)', fontsize=10)
+    this_ax.set_ylabel('count', fontsize=10)
+
+    # Draw plot
+    # plt.subplots_adjust(hspace=0.2, wspace=0.3)
+    pp.savefig(fig)
+    plt.close(fig)
+
+
+def plot_individuals(pp, name, root, total_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        pp -- PdfPages object
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data {2D map} -- total_data[i][j] is the timings for node i to node j
+    """
     fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
     fig.suptitle(name)
     sns.despine(left=True)
