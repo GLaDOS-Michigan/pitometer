@@ -9,12 +9,12 @@ fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/network"
 GIT_BRANCH="measurements"
-NODES_IDS=("1" "2" "3" "4" "5" "6")
+NODES_IDS=("7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20") 
 
-INTERVAL=150  # ping interval in ms
-# DURATION=5400   # duration for each trial in seconds
-DURATION=20
-PAYLOADS=("4" "16" "32" "512" "2048" "4096")  # payload size variable
+INTERVAL=1      # ping interval in ms
+DURATION=900    # duration for each trial in seconds
+ITERATIONS=8    # How many times to run each payload
+PAYLOADS=("4" "16" "32" "128" "512")  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 # Max payload size must be <= 4096, as dicated by Go sockets
@@ -37,14 +37,17 @@ echo ""
 
 for payload_size in "${PAYLOADS[@]}"
 do
-    time=$(date +"%d-%b-%H%M")
-    echo "Starting trial with payload size $payload_size bytes at time $time"
+    for ((trial=0;trial<$ITERATIONS;trial++))
+    do
+        time=$(date +"%d-%b-%H%M")
+        echo "Starting trial $trial for payload size $payload_size bytes at time $time"
 
-    trial_dir="$ROOT_DIR/$TIMESTAMP/payload$payload_size"
-    mkdir -p $trial_dir 
+        trial_dir="$ROOT_DIR/$TIMESTAMP/payload$payload_size/trial$trial"
+        mkdir -p $trial_dir 
 
-    # Start trial
-    ./start_network_trial $trial_dir $INTERVAL $payload_size $DURATION > $trial_dir/info.log
+        # Start trial
+        ./start_network_trial $trial_dir $INTERVAL $payload_size $DURATION > $trial_dir/info.log
+    done
 done
 
 end_timestamp=$(date +"%d-%b-%H%M")
