@@ -6,6 +6,13 @@
 # corresponding log file. Then, it calls analyze_toylock.py to generate graphs
 
 ROOT_DIR=$1
+DURATION=$2
+
+if [ ${#@} -lt 2 ]
+then
+    echo "Usage: ./process_toylock_results <root_dir> <client_duration>"
+    exit 1
+fi
 
 METHODS=( "LReplicaNextProcessPacket"
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"
@@ -45,7 +52,7 @@ do :
     done
 done
 
-python3 analyze_rsl.py $ROOT_DIR
+python3 analyze_rsl.py $ROOT_DIR $DURATION
 
 # Delete intermediate csv files
 # find $ROOT_DIR -type f -name "*.csv" -delete
