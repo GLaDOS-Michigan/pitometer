@@ -464,7 +464,7 @@ func (ep *IPEndPoint) GetUDPAddr() *net.UDPAddr {
 	}
 	var ip = strings.Trim(strings.Join(strings.Fields(fmt.Sprint(intArr)), "."), "[]")
 	var ipAndPortStr = ip + ":" + strconv.FormatUint(uint64(ep.port), 10)
-	fmt.Printf("%v\n", ipAndPortStr)
+	// fmt.Printf("%v\n", ipAndPortStr)
 
 	// Next convert to net.UDPAddr
 	udpAddr, err := net.ResolveUDPAddr("udp", ipAndPortStr)
