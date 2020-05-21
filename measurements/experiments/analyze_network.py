@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import textwrap as tw
 from matplotlib.offsetbox import AnchoredText
+from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 NODES = [1, 2, 3, 4, 5, 6]
@@ -22,7 +23,6 @@ def main(exp_dir):
             print("\tAnalyzing trial %s" %root)
             
             # Grab the payload of this sub-experiment
-            print("TONY: " + root)
             payload = int(root.split('payload')[-1])
 
             # {2D map} total_data[i][j] is the timings for node i to node j
@@ -41,14 +41,28 @@ def main(exp_dir):
                     grep_str = "node%d" %j
                     assert grep_str in i_j_csv.split('-')[1]  # sanity check to make sure we have the right target file
                     total_data[i][j] = analyze_csv("%s/%s" %(root, i_j_csv))
+            print("\tDrawing trial %s" %root)
             plot_figures("rtt_payload%d" %payload, root, total_data)
     print("Done")
 
 
 def plot_figures(name, root, total_data):
+    """ Plot all network figures
+    Assumes total_data and titles are 2d arrays of same shape, len(NODES) * len(NODES)
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data {2D map} -- total_data[i][j] is the timings for node i to node j
+    """
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        plot_individuals(pp, name, root, total_data)
+
+
+def plot_individuals(pp, name, root, total_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Assumes total_data and titles are 2d arrays of same shape, len(NODES) * len(NODES)
     Arguments:
+        pp -- PdfPages object
         name -- name of this figure
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
@@ -100,7 +114,7 @@ def plot_figures(name, root, total_data):
     plt.subplots_adjust(hspace=0.2, wspace=0.3)
     # plt.xlabel('latency (ms)', fontsize=10)
     # plt.ylabel('count', fontsize=10)
-    plt.savefig("%s/%s.pdf" %(root, name))
+    pp.savefig(fig)
     plt.close(fig)
 
 
