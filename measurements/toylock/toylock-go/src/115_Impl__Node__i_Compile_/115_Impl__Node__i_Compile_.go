@@ -254,7 +254,7 @@ TAIL_CALL_START:
 // TONY: This is the method that we want to time
 func (_this *CompanionStruct_Default___) NodeGrantImpl(s CNode, delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) (CNode, _44_Logic____Option__i_Compile.Option) {
 	nodeGrantLog.LogStartEvent("NodeNextGrant")
-	time.Sleep(time.Duration(delay) * time.Millisecond)
+	time.Sleep(time.Duration(delay) * time.Microsecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var s_k CNode = Type_CNode_().Default().(CNode)

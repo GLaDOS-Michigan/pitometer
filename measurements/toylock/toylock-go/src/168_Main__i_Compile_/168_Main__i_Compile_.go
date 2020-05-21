@@ -58,7 +58,7 @@ import (
 	_System "System_"
 	"clock"
 	_dafny "dafny"
-	"fmt"
+	"os"
 )
 
 var _ _dafny.Dummy__
@@ -207,9 +207,9 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		}
 		if nodeGrantCounter.GetCount() == numRounds {
 			// Dump the event log
-			fmt.Println(nodeGrantLog.String())
-			fmt.Println(nodeAcceptLog.String())
-			return exitCode
+			nodeGrantLog.PrintLog()
+			nodeAcceptLog.PrintLog()
+			os.Exit(0)
 		}
 	}
 	return exitCode
