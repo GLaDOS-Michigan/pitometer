@@ -37,7 +37,7 @@ do
     for ((trial=0;trial<$ITERATIONS;trial++))
     do
         time=$(date +"%d-%b-%H%M")
-        echo "Starting trial $trial for f=$f"
+        echo "Starting trial $trial for f=$f at time $time"
         trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/trial$trial"
         mkdir -p $trial_dir 
 
