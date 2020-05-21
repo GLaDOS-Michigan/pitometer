@@ -126,7 +126,7 @@ func main() {
 		fmt.Printf("Error: Invalid round number %v\n", os.Args[len(os.Args)-2])
 		os.Exit(1)
 	}
-	// Grab the last argument from os.Args -- that is the artificial delay
+	// Grab the last argument from os.Args -- that is the artificial delay in MICROseconds
 	var delay, err2 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
 	if int(delay) < 0 || err2 != nil {
 		fmt.Printf("Error: Invalid delay %v\n", os.Args[len(os.Args)-1])
