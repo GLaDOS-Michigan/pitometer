@@ -22,7 +22,7 @@ TEMP_DIR="/home/nudzhang/tmp"  # temporary dir to store output at each node
 
 RESULTS_DIR=$1
 NUM_ROUNDS=$2
-DELAY=$3   # milliseconds of artificial delay to inject
+DELAY=$3   # microseconds of artificial delay to inject
 shift; shift; shift
 HOST_ID_LIST=("$@")
  
@@ -48,7 +48,7 @@ done
 date
 echo "Starting Toylock trial with parameters:"
 echo "  - Rounds: $NUM_ROUNDS"
-echo "  - Delay: $DELAY ms"
+echo "  - Delay: $DELAY microseconds"
 echo "  - Ring-size: ${#HOST_NAME_LIST[@]}"
 echo "  - Participants: ${HOST_NAME_LIST[@]}"
 
@@ -85,13 +85,15 @@ do
     if [ $i -gt 0 ] 
     then 
         ssh nudzhang@$NODE_ADDR "$EXP_DIR/toylock-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"  &
-        sleep .5
     else
         # Wait on the last node
+        sleep 1
         ssh nudzhang@$NODE_ADDR "$EXP_DIR/toylock-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"
     fi
 done
-sleep 1
+# Rest a little after each trial
+echo "sleep ${#HOST_ID_LIST[@]}s"
+sleep ${#HOST_ID_LIST[@]} 
 echo "Run completed"
 
 # Finally, grab results from each node to local machine

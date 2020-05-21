@@ -10,9 +10,10 @@ fi
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
 GIT_BRANCH="measurements"
 
-NUM_ROUNDS=4000
-DELAYS=("0" "20" "50" "100" "200")
-RING_SIZES=("1" "2" "3" "4" "5" "6")
+NUM_ROUNDS=400
+ITERATIONS=10
+DELAYS=("0" "200" "1000" "5000" "25000")   # delays are in microseconds
+RING_SIZES=("2" "4" "6" "8" "10" "12" "14")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new Toylock experiment at time $TIMESTAMP"
@@ -24,10 +25,11 @@ for ring_size in "${RING_SIZES[@]}"
 do
     # Generate node id's to use
     node_ids=()
-    for ((id=6;id>$[ 6 - $ring_size ];id--))
+    for ((id=20;id>$[ 20 - $ring_size ];id--))
     do
         node_ids+=("$id")
     done
+    # echo ${node_ids[@]}
 
     # Build locally and send executables to the target machines
     ./build_to_hosts ${node_ids[@]}
@@ -35,14 +37,18 @@ do
 
     for delay in "${DELAYS[@]}"
     do
-        time=$(date +"%d-%b-%H%M")
-        echo "Starting trial with ring-size $ring_size and delay $delay at time $time"
+        for ((trial=0;trial<$ITERATIONS;trial++))
+        do
+            time=$(date +"%d-%b-%H%M")
+            echo "Starting trial $trial for ring-size $ring_size and delay $delay at time $time"
 
-        trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay"
-        mkdir -p $trial_dir 
+            trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay/trial$trial"
+            mkdir -p $trial_dir 
 
-        # Start trial
-        ./start_toylock_trial $trial_dir $NUM_ROUNDS $delay ${node_ids[@]} > $trial_dir/info.log
+            # Start trial
+            ./start_toylock_trial $trial_dir $NUM_ROUNDS $delay ${node_ids[@]} > $trial_dir/info.log
+            sleep 1
+        done
     done
 done
 
