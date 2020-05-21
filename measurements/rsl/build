@@ -30,7 +30,7 @@ elif uname -a | grep -q Linux; then
     echo "Building rsl server"
     go build -o rsl-main "$RSL_GO_DIR/src/Main.go" 
 
-    export GOPATH='/Users/zhang/go'
+    export GOPATH='/home/nudzhang/go'
     export PATH=$PATH:$(go env GOPATH)/bin
     export GOPATH=$(go env GOPATH)
 
