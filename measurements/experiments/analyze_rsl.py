@@ -30,18 +30,17 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
-    total_node_data = dict()  # total_data[f][node_id][method_name] = list of durations
-    total_client_data = dict()  # total_client_data[f][i] = list of client durations for trial i
+    total_f_node_data = dict()  # total_f_node_data[node_id][method_name] = list of durations
+    total_f_client_data = dict()  # total_f_client_data[i] = list of client durations for trial i
 
     for f in F_VALUES:
-        total_node_data[f], total_client_data[f] = analyze_f(exp_dir, f)
+        total_f_node_data, total_f_client_data = analyze_f(exp_dir, f)
 
-    # Print graphs
-    for f in F_VALUES:
+        # Print graphs
         print("\tDrawing charts for f=%d" %f)
-        plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_node_data[f])
-        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_node_data[f])
-        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_client_data[f])
+        plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
+        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
+        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data)
     print("Done")
 
 
@@ -91,7 +90,7 @@ def analyze_trial_dir(trial_dir):
         dict[node_id] -> (dict[method_name] -> list of durations)
         list of client durations for trial
     """
-    print("\t\tAnalyzing trial for %s" %trial_dir)
+    print("\t\tAnalyzing trial %s" %trial_dir)
     trial_data = dict()   # trial_data[node_id][method_name] = list of durations
     client_data = []
     for root, _, files in os.walk(trial_dir):
