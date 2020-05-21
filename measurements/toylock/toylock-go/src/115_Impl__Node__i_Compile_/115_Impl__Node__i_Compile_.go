@@ -289,7 +289,7 @@ TAIL_CALL_START:
 
 func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket, delay int, nodeAcceptLog *clock.Stopwatch) (CNode, _44_Logic____Option__i_Compile.Option) {
 	nodeAcceptLog.LogStartEvent("NodeNextAccept")
-	time.Sleep(time.Duration(delay) * time.Millisecond)
+	time.Sleep(time.Duration(delay) * time.Microsecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var s_k CNode = Type_CNode_().Default().(CNode)
