@@ -74,7 +74,7 @@ do
     ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
 done
 
-node_duration=$(( CLIENT_DURATION + 7 )) # make node live slightly longer than client
+node_duration=$(( CLIENT_DURATION + 1 + ${#HOST_NAME_LIST[@]} )) # make node live slightly longer than client
 
 # Clean the temp directories in all the nodes
 ssh nudzhang@$CLIENT_ADDR "rm -f $TEMP_DIR/*.log"  
