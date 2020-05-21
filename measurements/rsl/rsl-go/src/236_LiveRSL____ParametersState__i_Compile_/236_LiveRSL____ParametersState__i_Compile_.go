@@ -291,20 +291,23 @@ func (_this type_Default___) String() string {
 }
 func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 	// The values for periods and delays need to be tuned
-	return ParametersState{ParametersState_ParametersState{ // These are units of milliseconds, same as original C# implementation
-		Max__log__length:                uint64(7),
+	// return ParametersState{ParametersState_ParametersState{ // These are units of milliseconds, same as original C# implementation
+	// 	Max__log__length:                uint64(7),
+	// 	Baseline__view__timeout__period: uint64(1000),
+	// 	Heartbeat__period:               uint64(100),
+	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
+	// 	Max__batch__size:                uint64(32),
+	// 	Max__batch__delay:               uint64(10)}}
+	return ParametersState{ParametersState_ParametersState{
+		// These are units of milliseconds, same as original C# implementation
+		// Tony's tune: make log length really long to avoid it happening during an execution
+		// make heartbeats infrequent such that they don't interfere with our message queues
+		Max__log__length:                uint64(2_000),
 		Baseline__view__timeout__period: uint64(1000),
-		Heartbeat__period:               uint64(100),
+		Heartbeat__period:               uint64(20_000),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(32),
 		Max__batch__delay:               uint64(10)}}
-	// return ParametersState{ParametersState_ParametersState{ // These are units of 0.01 milliseconds, Tony's tune
-	// 	Max__log__length:                uint64(7),
-	// 	Baseline__view__timeout__period: uint64(1000),
-	// 	Heartbeat__period:               uint64(1_000),
-	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
-	// 	Max__batch__size:                uint64(1),
-	// 	Max__batch__delay:               uint64(100)}}
 }
 
 // End of class Default__
