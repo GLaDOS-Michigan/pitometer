@@ -13,6 +13,7 @@ GIT_BRANCH="measurements"
 CLIENT_ID=20         # node to use as client
 TRIAL_DURATION=8     # duration of each trial
 ITERATIONS=20        # repeats of each trial
+BATCH_SIZE=1         # paxos batch size
 F_VALUES=("1" "2" "3" "4" "5")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
@@ -42,8 +43,8 @@ do
         mkdir -p $trial_dir 
 
         # Start trial
-        # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID ${node_ids[@]} > $trial_dir/info.log"
-        ./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID ${node_ids[@]} > $trial_dir/info.log
+        # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID $BATCH_SIZE ${node_ids[@]} > $trial_dir/info.log"
+        ./start_rsl_trial "$trial_dir $TRIAL_DURATION $CLIENT_ID $BATCH_SIZE ${node_ids[@]}"s > $trial_dir/info.log
 
         echo "Completed trial $trial for f=$f"
     done

@@ -1,13 +1,19 @@
 #!/bin/bash
 # This script starts a distributed rsl job. It takes the following 
 # positional arguments:
-# ./start_rsl_trial <results_dir> <duration> <client_id> <host_id..>
+# ./start_rsl_trial <results_dir> <duration> <client_id> <paxos_batch_size> <host_id..>
 # where client_id refers to the id of the client in hosts.csv, and
 # each host_id refers to the respective host in hosts.csv that will participate in 
 # this paxos group, and
 # results_dir is the directory in which all results should be collected.
 
 # NOTE: This script assumes that the executables are in place
+
+if [ ${#@} -lt 7 ]
+then
+    echo "Usage: ./start_rsl_trial <results_dir> <duration> <client_id> <paxos_batch_size> <host_id..>"
+    exit 1
+fi
 
 if ! uname -a | grep -q Linux; 
 then
@@ -25,7 +31,8 @@ NUM_CLIENTS="1"
 RESULTS_DIR=$1
 CLIENT_DURATION=$2
 CLIENT_ID=$3
-shift; shift; shift; 
+BATCH_SIZE=$4
+shift; shift; shift; shift; 
 HOST_ID_LIST=("$@")
  
 HOST_NAME_LIST=()
@@ -65,6 +72,7 @@ echo "Starting RSL trial with parameters:"
 echo "  - Duration    : $CLIENT_DURATION seconds"
 echo "  - Client      : $CLIENT_NAME"
 echo "  - Participants: ${HOST_NAME_LIST[@]}"
+echo "  - Batch size  : $BATCH_SIZE"
 
 
 # Build list of endpoints that is the argument to the main program
@@ -93,7 +101,7 @@ do
     NODE_PORT=${HOST_PORT_LIST[$i]}
     echo "Starting node $NODE_ID, $NODE_NAME, $NODE_ADDR:$NODE_PORT"
 
-    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration"
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration $BATCH_SIZE"
     # echo $ARGS
 
     # Make dir to store local output
