@@ -5,107 +5,176 @@ import statistics
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
+from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
+
+
+NODES = list(range(1, 21))
+DELAYS = [0, 10]
 
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
-    for root, _, files in os.walk(exp_dir):
-        files = [f for f in files if not f[0] == '.']  # ignore hidden files
-        if files != []:
-            # This is a leaf directory containing trial csv files
-            print("\tAnalyzing trial %s" %root)
-            
-            total_grant_data = []
-            total_accept_data = []
-            total_round_data = []
-            grant_titles = []
-            accept_titles = []
-            round_titles = []
 
-            for f in files:
-                file_name, file_extension = os.path.splitext(f)
-                if file_extension == '.csv':
-                    if "grant" in file_name:
-                        total_grant_data.append(analyze_grant_or_accept_csv("%s/%s" %(root, f)))
-                        total_round_data.append(analyze_round_csv("%s/%s" %(root, f)))
-                        grant_titles.append(file_name)
-                        round_titles.append(file_name)
-                    if "accept" in file_name:
-                        total_accept_data.append(analyze_grant_or_accept_csv("%s/%s" %(root, f)))
-                        accept_titles.append(file_name)
+    # each data is dict of (size -> delay -> node -> [ durs ])
+    total_grant_data, total_accept_data, total_round_data = parse_files(exp_dir)  
 
-            # Plot Grant
-            plot_figures("nodeGrant", root, total_grant_data, grant_titles)
+    print("\nPlotting graphs for experiment %s" %exp_dir)
+    # Plot Grant
+    plot_grant_or_accept("nodeGrant", exp_dir, total_grant_data)
 
-            # Plot Accept
-            plot_figures("nodeAccept", root, total_accept_data, accept_titles)
+    # Plot Accept
+    plot_grant_or_accept("nodeAccept", exp_dir, total_accept_data)
 
-            # Plot Rounds
-            plot_figures("rounds", root, total_round_data, round_titles)
+    # Plot Rounds
+    plot_round("rounds", exp_dir, total_round_data)
     print("Done")
 
 
-def plot_figures(name, root, total_data, titles):
+def parse_files(exp_dir):
+    """ Parse all csv files under exp_dir into dict format
+
+    Arguments:
+        exp_dir {string} -- Root directory of the experiment
+
+    Returns:
+        total_grant_data -- dict of (size -> delay -> node -> [ durs ])
+        total_accept_data -- dict of (size -> delay -> node -> [ durs ])
+        total_round_data -- dict of (size -> delay -> node -> [ durs ])
+    """
+    exp_dir = os.path.abspath(exp_dir)
+
+    total_grant_data = dict()    # size -> delay -> node -> [ durs ]
+    total_accept_data = dict()   # size -> delay -> node -> [ durs ]
+    total_round_data = dict()    # size -> delay -> node -> [ durs ]
+
+    for root, _, files in os.walk(exp_dir):
+        files = [f for f in files if not f[0] == '.']  # ignore hidden files
+        if files != [] and 'delay' in root:
+            # This is a leaf directory containing trial csv files
+            print("\tAnalyzing trial %s" %root)
+            size = int(root.split('size')[1].split('/')[0])
+            delay = int(root.split('delay')[1].split('/')[0])
+            
+            # Make sure dict is initialized
+            if size not in total_grant_data:
+                total_grant_data[size] = dict()
+            if size not in total_accept_data:
+                total_accept_data[size] = dict()
+            if size not in total_round_data:
+                total_round_data[size] = dict()
+            if delay not in total_grant_data[size]:
+                total_grant_data[size][delay] = dict()
+            if delay not in total_accept_data[size]:
+                total_accept_data[size][delay] = dict()
+            if delay not in total_round_data[size]:
+                total_round_data[size][delay] = dict()
+            
+            for f in files:
+                file_name, file_extension = os.path.splitext(f)
+                if file_extension == '.csv':
+                    node_id = int(file_name.split('skynode')[1].split('.')[0])
+                    if "grant" in file_name:
+                        if node_id not in total_grant_data[size][delay]:
+                            total_grant_data[size][delay][node_id] = []
+                        if node_id not in total_round_data[size][delay]:
+                            total_round_data[size][delay][node_id] = []
+                        total_grant_data[size][delay][node_id].extend(analyze_grant_or_accept_csv("%s/%s" %(root, f)))
+                        total_round_data[size][delay][node_id].extend(analyze_round_csv("%s/%s" %(root, f)))
+                    if "accept" in file_name:
+                        if node_id not in total_accept_data[size][delay]:
+                            total_accept_data[size][delay][node_id] = []
+                        total_accept_data[size][delay][node_id].extend(analyze_grant_or_accept_csv("%s/%s" %(root, f)))
+    return total_grant_data, total_accept_data, total_round_data
+
+
+def plot_grant_or_accept(name, root, total_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
-        total_data -- list of lists of data
-        titles -- list of titles for each subfigure
+        total_data -- dict of (size -> delay -> node -> [ durs ])
     """
+    for delay in DELAYS:
+        plot_grant_or_accept_delay(name, root, delay, total_data)
 
-    if len(total_data) <= 3:
-        fig, axes = plt.subplots(len(total_data), 1, figsize=(7, 3*max(2, len(total_data))), sharex=True)
-    else:
-        fig, axes = plt.subplots(3, 2, figsize=(14, 9), sharex=True)
-    fig.suptitle(name)
-    sns.despine(left=True)
-    i = 0
-    for durations_milli in total_data:
-        if len(total_data) == 1:
-            this_ax = axes
-        else:
-            if len(total_data) <= 3:
-                this_ax = axes[i]
-            else:
-                this_ax = axes[i%3][i//3]
-        # Plot the subfigure
-        this_ax.set_title(titles[i], fontsize=9)
-        this_ax.grid()
-        sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
-        stats = AnchoredText(
-            generate_statistics(durations_milli), 
-            loc='upper right',  
-            prop=dict(size=8),
-            bbox_to_anchor=(1.1, 1),
-            bbox_transform=this_ax.transAxes
-        )
-        this_ax.add_artist(stats)
-        # this_ax.set_xlabel('time (ms)', fontsize=9)
-        # this_ax.set_ylabel('count', fontsize=9)
-        # this_ax.set_xlim(0, x_max)
-        # this_ax.set_ylim(0, 1)
-        i += 1
 
-    # Display some global figures
-    global_data = []
-    for row in total_data:
-        global_data.extend(row)
+def plot_grant_or_accept_delay(name, root, delay, total_data):
+    print("\tPlot %s for delay %d" %(name, delay))
+    # Get total data for this delay, regardless of size or node
+    total_aggregate_data = []
+    for size in total_data.keys():
+        for node in total_data[size][delay].keys():
+            total_aggregate_data.extend(total_data[size][delay][node])
+    # Plot graph
+    with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
+        fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
+        plot_histogram(this_ax, total_aggregate_data)
+        pp.savefig(fig)
+        plt.close(fig)
 
-    global_stats =  "Global statistics:\n%s" %generate_statistics(global_data)
-    plt.figtext(0.86, 0.11, global_stats,
-            fontsize=8,
-            bbox=dict(boxstyle="round", facecolor='#D8D8D8',
-            ec="0.5", pad=0.3, alpha=1))
+
+def plot_round(name, root, total_round_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data -- dict of (size -> delay -> node -> [ durs ])
+    """
+    for delay in DELAYS:
+        plot_round_delay(name, root, delay, total_round_data)
+    return
+
+
+def plot_round_delay(name, root, delay, total_round_data):
+    """
+    On each page, plot 1 graph for a single size, from the perspective of the leader node
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        delay -- delay to plot
+        total_round_data -- dict of (size -> delay -> node -> [ durs ])
+    """
     
-    # plt.tight_layout()
-    plt.subplots_adjust(hspace=0.2)
-    plt.xlabel('time (ms)', fontsize=10)
-    plt.ylabel('count', fontsize=10)
-    plt.savefig("%s/%s.pdf" %(root, name))
-    plt.close(fig)
+    print("\tPlot %s for delay %d" %(name, delay))
+    sizes = list(total_round_data.keys())
+    sizes.sort()
+
+    with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
+        for size in sizes:
+            all_nodes = list(total_round_data[size][delay].keys())
+            all_nodes.sort()
+            leader_node = all_nodes[0]
+            data = total_round_data[size][delay][leader_node]
+            fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
+            plot_histogram(this_ax, data)
+            pp.savefig(fig)
+            plt.close(fig)
+
+
+def plot_histogram(this_ax, data, stats=True, kde=False):
+    """Plot a histogram
+    Arguments:
+        ax {axes} -- axes on which to plot
+        data {list} -- list of data
+        stats {bool} -- toggle statistics box
+        kde {bool} -- toggle kde option
+    """
+    this_ax.grid()
+    this_ax.set_xlabel('latency (ms)', fontsize=10)
+    this_ax.set_ylabel('count', fontsize=10)
+    sns.distplot(data, kde=kde, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+    if len(data) > 0:
+        stats = AnchoredText(
+                generate_statistics(data), 
+                loc='upper right',  
+                prop=dict(size=8),
+                bbox_to_anchor=(1.1, 1),
+                bbox_transform=this_ax.transAxes
+                )
+        this_ax.add_artist(stats)
+
 
 
 def generate_statistics(input):
@@ -126,6 +195,12 @@ def generate_statistics(input):
 
 
 def analyze_grant_or_accept_csv(filepath):
+    """ Computes the time taken for each nodeAccept or nodeGrant from the csv file
+    Arguments:
+        filepath -- path to a nodeGrant/nodeAccept csv file
+    Returns:
+        durations_milli -- A list of the times taken for each round in milliseconds
+    """
     durations_nano = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
