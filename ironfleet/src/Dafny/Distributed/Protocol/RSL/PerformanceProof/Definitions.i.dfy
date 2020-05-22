@@ -157,13 +157,26 @@ function TimeBoundPhase2Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Ti
   requires ell >= 0
   requires 0 <= nextActionIndex < 10
 {
-  dts + (ell + 1) * TimeActionRange(0) + TimeActionRange(nextActionIndex)
+  dts + ell * TimeActionRange(0) + TimeActionRange(nextActionIndex)
+}
+
+function TimeBoundReply(req_time:Timestamp, c:LConstants) : Timestamp
+{
+  TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), LMinQuorumSize(c.config) + 2, 8) + D
 }
 
 lemma LeaderTimeoutPreservesPhase1Invariant(dts:Timestamp, ell:int, nextActionIndex:int)
   requires ell >= 0
   requires 0 <= nextActionIndex < 10
   ensures dts + ProcessPacket <= TimeBoundPhase1Leader(dts, ell, nextActionIndex)
+{
+  
+}
+
+lemma LeaderTimeoutPreservesPhase2Invariant(dts:Timestamp, ell:int, nextActionIndex:int)
+  requires ell >= 0
+  requires 0 <= nextActionIndex < 10
+  ensures dts + ProcessPacket <= TimeBoundPhase2Leader(dts, ell, nextActionIndex)
 {
   
 }
