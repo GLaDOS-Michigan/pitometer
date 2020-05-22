@@ -1,7 +1,7 @@
 #!/bin/bash
 # This script starts a distributed rsl job. It takes the following 
 # positional arguments:
-# ./start_rsl_trial <results_dir> <duration> <client_id> <paxos_batch_size> <host_id..>
+# ./start_rsl_trial <results_dir> <duration> <client_id> <client_threads> <paxos_batch_size> <host_id..>
 # where client_id refers to the id of the client in hosts.csv, and
 # each host_id refers to the respective host in hosts.csv that will participate in 
 # this paxos group, and
@@ -9,9 +9,9 @@
 
 # NOTE: This script assumes that the executables are in place
 
-if [ ${#@} -lt 7 ]
+if [ ${#@} -lt 8 ]
 then
-    echo "Usage: ./start_rsl_trial <results_dir> <duration> <client_id> <paxos_batch_size> <host_id..>"
+    echo "Usage: ./start_rsl_trial <results_dir> <duration> <client_id> <client_threads> <paxos_batch_size> <host_id..>"
     exit 1
 fi
 
@@ -24,15 +24,15 @@ fi
 HOSTS="hosts.csv"
 EXP_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments"
 TEMP_DIR="/home/nudzhang/tmp"  # temporary dir to store output at each node
-NUM_CLIENTS="1"
 
 # First, grab parameters
 
 RESULTS_DIR=$1
 CLIENT_DURATION=$2
 CLIENT_ID=$3
-BATCH_SIZE=$4
-shift; shift; shift; shift; 
+CLIENT_THREADS=$4
+BATCH_SIZE=$5
+shift; shift; shift; shift; shift;
 HOST_ID_LIST=("$@")
  
 HOST_NAME_LIST=()
@@ -115,7 +115,7 @@ do
 done
 
 # Run the client
-mono client.exe $CLIENT_ADDR $ENDPOINTS $NUM_CLIENTS $CLIENT_DURATION $TEMP_DIR
+mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $TEMP_DIR
 
 echo "Run completed"
 

@@ -11,6 +11,7 @@ ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
 GIT_BRANCH="measurements"
 
 CLIENT_ID=20         # node to use as client
+CLIENT_THREADS=1     # number of clients
 TRIAL_DURATION=8     # duration of each trial
 ITERATIONS=20        # repeats of each trial
 BATCH_SIZE=1         # paxos batch size
@@ -38,13 +39,17 @@ do
     for ((trial=0;trial<$ITERATIONS;trial++))
     do
         time=$(date +"%d-%b-%H%M")
-        echo "Starting trial $trial for f=$f at time $time"
+                echo "Starting RSL Lat-Tp trial at time $time"
+                echo "    - f          : $f"
+                echo "    - clients    : $CLIENT_THREADS"
+                echo "    - batch size : $BATCH_SIZE"
+                echo "    - trial      : $trial"
         trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/trial$trial"
         mkdir -p $trial_dir 
 
         # Start trial
         # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID $BATCH_SIZE ${node_ids[@]} > $trial_dir/info.log"
-        ./start_rsl_trial "$trial_dir $TRIAL_DURATION $CLIENT_ID $BATCH_SIZE ${node_ids[@]}"s > $trial_dir/info.log
+        ./start_rsl_trial "$trial_dir $TRIAL_DURATION $CLIENT_ID $CLIENT_THREADS $BATCH_SIZE ${node_ids[@]}"s > $trial_dir/info.log
 
         echo "Completed trial $trial for f=$f"
     done
