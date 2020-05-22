@@ -35,6 +35,8 @@ entire experiments
     * Start a network experiment, which consists of a set of trials
 - **run_rsl_experiment**
     * Start an rsl experiment, which consists of a set of trials
+- **run_rsl_throughput_experiment**
+    * Start an rsl experiment that is designed to measure throughput-latency data
 - **run_toylock_experiment**
     * Start a toylock experiment, which consists of a set of trials
 - start_network_trial
