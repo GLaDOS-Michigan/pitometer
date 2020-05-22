@@ -310,8 +310,7 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 		Heartbeat__period:               uint64(30_000),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(BatchSize),
-		Max__batch__delay:               uint64(2000)}}
-	// Max__batch__delay:               uint64(10)}}
+		Max__batch__delay:               uint64(10)}}
 }
 
 // End of class Default__
