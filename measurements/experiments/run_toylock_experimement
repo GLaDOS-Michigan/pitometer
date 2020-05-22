@@ -10,8 +10,8 @@ fi
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
 GIT_BRANCH="measurements"
 
-NUM_ROUNDS=400
-ITERATIONS=10
+NUM_ROUNDS=100
+ITERATIONS=40
 DELAYS=("0" "200" "1000" "5000" "25000")   # delays are in microseconds
 RING_SIZES=("2" "4" "6" "8" "10" "12" "14")
 TIMESTAMP=$(date +"%d-%b-%H%M")
@@ -40,13 +40,17 @@ do
         for ((trial=0;trial<$ITERATIONS;trial++))
         do
             time=$(date +"%d-%b-%H%M")
-            echo "Starting trial $trial for ring-size $ring_size and delay $delay at time $time"
+            time_limit=$(( $ring_size * 1 *  $NUM_ROUNDS + $ring_size))
+            echo "Starting trial $trial for ring-size $ring_size and delay $delay at time $time, time limit is $time_limit s"
 
             trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay/trial$trial"
             mkdir -p $trial_dir 
 
             # Start trial
-            ./start_toylock_trial $trial_dir $NUM_ROUNDS $delay ${node_ids[@]} > $trial_dir/info.log
+            timeout $time_limit ./start_toylock_trial $trial_dir $NUM_ROUNDS $delay ${node_ids[@]} > $trial_dir/info.log
+            if [ $? == 124 ]; then 
+                echo "Timed-out!"
+            fi
             sleep 1
         done
     done
