@@ -109,7 +109,8 @@ def plot_grant_or_accept_delay(name, root, delay, total_data):
             total_aggregate_data.extend(total_data[size][delay][node])
     # Plot graph
     with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
-        fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
+        fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=False)
+        fig.suptitle("%s, delay %d" %(name, delay), fontweight='bold')
         plot_histogram(this_ax, total_aggregate_data)
         pp.savefig(fig)
         plt.close(fig)
@@ -147,23 +148,39 @@ def plot_round_delay(name, root, delay, total_round_data):
             all_nodes.sort()
             leader_node = all_nodes[0]
             data = total_round_data[size][delay][leader_node]
-            fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
-            plot_histogram(this_ax, data)
+            fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
+            fig.suptitle("%s, delay %d, size %d" %(name, delay, size), fontweight='bold')
+            plot_histogram(axes[0], data)
+            plot_cdf(axes[1], data)
             pp.savefig(fig)
             plt.close(fig)
 
-
-def plot_histogram(this_ax, data, stats=True, kde=False):
+def plot_cdf(this_ax, data, title=None):
     """Plot a histogram
     Arguments:
-        ax {axes} -- axes on which to plot
+        this_ax {axes} -- axes on which to plot
+        title {string}  -- title of this_ax
         data {list} -- list of data
+    """
+    kwargs = {'cumulative': True}
+    sns.distplot(data, hist_kws=kwargs, kde_kws=kwargs, vertical=True)
+    this_ax.set_xlim(0, 1)
+    this_ax.xaxis.set_ticks(np.arange(0, 1, 0.1))
+    this_ax.grid()
+    if title is not None:
+        this_ax.set_title(title)
+    this_ax.set_xlabel('cumulative probability', fontsize=10)
+    this_ax.set_ylabel('latency (ms)', fontsize=10)
+
+def plot_histogram(this_ax, data, title=None, stats=True, kde=False):
+    """Plot a histogram
+    Arguments:
+        this_ax {axes} -- axes on which to plot
+        data {list} -- list of data
+        title {string}  -- title of this_ax
         stats {bool} -- toggle statistics box
         kde {bool} -- toggle kde option
     """
-    this_ax.grid()
-    this_ax.set_xlabel('latency (ms)', fontsize=10)
-    this_ax.set_ylabel('count', fontsize=10)
     sns.distplot(data, kde=kde, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
     if len(data) > 0:
         stats = AnchoredText(
@@ -174,6 +191,11 @@ def plot_histogram(this_ax, data, stats=True, kde=False):
                 bbox_transform=this_ax.transAxes
                 )
         this_ax.add_artist(stats)
+    this_ax.grid()
+    if title is not None:
+        this_ax.set_title(title)
+    this_ax.set_xlabel('latency (ms)', fontsize=10)
+    this_ax.set_ylabel('count', fontsize=10)
 
 
 
