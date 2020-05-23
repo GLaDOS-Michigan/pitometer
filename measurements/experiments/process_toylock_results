@@ -31,5 +31,6 @@ do :
     cat $lf | grep "NodeNextAccept" > $acceptcsv
 done
 
-
 python3 analyze_toylock.py $ROOT_DIR
+
+# find $ROOT_DIR -type f -name "*.csv" -delete

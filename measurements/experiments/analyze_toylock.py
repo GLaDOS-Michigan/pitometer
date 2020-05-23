@@ -10,7 +10,7 @@ import seaborn as sns
 
 
 NODES = list(range(1, 21))
-DELAYS = [0, 10]
+DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
 
 
 def main(exp_dir):
@@ -101,7 +101,16 @@ def plot_grant_or_accept(name, root, total_data):
 
 
 def plot_grant_or_accept_delay(name, root, delay, total_data):
-    print("\tPlot %s for delay %d" %(name, delay))
+    """
+    Aggregate all data in total_data for this delay, since execution time should be 
+    independent of node id or ring size
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        delay -- delay to plot, in units of microseconds
+        total_data -- dict of (size -> delay -> node -> [ durs ])
+    """
+    print("\tPlot %s for delay %.1f ms" %(name, delay/1000.0))
     # Get total data for this delay, regardless of size or node
     total_aggregate_data = []
     for size in total_data.keys():
@@ -110,7 +119,7 @@ def plot_grant_or_accept_delay(name, root, delay, total_data):
     # Plot graph
     with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
         fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=False)
-        fig.suptitle("%s, delay %d" %(name, delay), fontweight='bold')
+        fig.suptitle("%s, delay %.1f ms" %(name, delay/1000.0), fontweight='bold')
         plot_histogram(this_ax, total_aggregate_data)
         pp.savefig(fig)
         plt.close(fig)
@@ -134,11 +143,10 @@ def plot_round_delay(name, root, delay, total_round_data):
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
-        delay -- delay to plot
+        delay -- delay to plot, in units of microseconds
         total_round_data -- dict of (size -> delay -> node -> [ durs ])
     """
-    
-    print("\tPlot %s for delay %d" %(name, delay))
+    print("\tPlot %s for delay %.1f ms" %(name, delay/1000.0))
     sizes = list(total_round_data.keys())
     sizes.sort()
 
@@ -149,7 +157,7 @@ def plot_round_delay(name, root, delay, total_round_data):
             leader_node = all_nodes[0]
             data = total_round_data[size][delay][leader_node]
             fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
-            fig.suptitle("%s, delay %d, size %d" %(name, delay, size), fontweight='bold')
+            fig.suptitle("%s, delay %.1f ms, size %d" %(name, delay/1000.0, size), fontweight='bold')
             plot_histogram(axes[0], data)
             plot_cdf(axes[1], data)
             pp.savefig(fig)
