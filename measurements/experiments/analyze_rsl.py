@@ -8,9 +8,8 @@ from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
-F_VALUES = [1, 2, 3, 4, 5, 6]
+F_VALUES = [1, 2, 3, 4, 5]
 THROWAWAY = 1000  # How many initial executions to ignore
-CLIENT_DURATION = 0
 METHODS = ["LReplicaNextProcessPacket",
            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            "LReplicaNextSpontaneousMaybeEnterPhase2",
@@ -30,17 +29,19 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
-    total_f_node_data = dict()  # total_f_node_data[node_id][method_name] = list of durations
-    total_f_client_data = dict()  # total_f_client_data[i] = list of client durations for trial i
-
     for f in F_VALUES:
-        total_f_node_data, total_f_client_data = analyze_f(exp_dir, f)
+        """
+        total_f_node_data[node_id][method_name] = list of durations
+        total_f_client_data[i] = list of client durations for trial i
+        total_f_client_start_end[i] = (start, end) time of trial i, defined from start of first request to end of last request
+        """
+        total_f_node_data, total_f_client_data, total_f_client_start_end = analyze_f(exp_dir, f)
 
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
         plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
         plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
-        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data)
+        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
     print("Done")
 
 
@@ -57,8 +58,14 @@ def analyze_f(exp_dir, f):
     f_dir = "%s/f_%d" %(exp_dir, f)
     print("\tAnalyzing data for f=%d in %s" %(f, f_dir))
 
-    f_node_data = dict()    # f_data[node_id][method_name] = list of durations
-    f_client_data = dict()  # f_client_data[i] is list of client durations for trial i
+    """
+    f_node_data[node_id][method_name] = list of durations
+    f_client_data[i] = list of client durations for trial i
+    f_client_start_end[i] = (start, end) time of trial i, defined from start of first request to end of last request
+    """
+    f_node_data = dict()  
+    f_client_data = dict() 
+    f_client_start_end = dict() 
 
     # Gather a list of trial directories
     trial_dirs = []  # list of trial directories under f_dir
@@ -71,7 +78,7 @@ def analyze_f(exp_dir, f):
     # Look under each trial directory and analyze results
     for trial_dir in trial_dirs:
         trial_num = int(trial_dir.split('trial')[1])
-        trial_data, f_client_data[trial_num] = analyze_trial_dir(trial_dir)
+        trial_data, f_client_data[trial_num], f_client_start_end[trial_num] = analyze_trial_dir(trial_dir)
         for node_id in trial_data:
             if node_id not in f_node_data:
                 f_node_data[node_id] = dict()  # f_data[node_id][method_name] = list of durations
@@ -79,7 +86,7 @@ def analyze_f(exp_dir, f):
                 if method_name not in f_node_data[node_id]:
                     f_node_data[node_id][method_name] = []
                 f_node_data[node_id][method_name].extend(trial_data[node_id][method_name])
-    return f_node_data, f_client_data
+    return f_node_data, f_client_data, f_client_start_end
 
 
 def analyze_trial_dir(trial_dir):
@@ -87,12 +94,14 @@ def analyze_trial_dir(trial_dir):
     Arguments:
         trial_dir {string} -- absolute directory of a trial
     Returns:
-        dict[node_id] -> (dict[method_name] -> list of durations)
+        dict of (node_id -> method_name -> [durations...])
         list of client durations for trial
+        tuple (start, end) time of this client, defined from start of first request to end of last request
     """
     print("\t\tAnalyzing trial %s" %trial_dir)
     trial_data = dict()   # trial_data[node_id][method_name] = list of durations
     client_data = []
+    client_start_end = (-1, -1)
     for root, _, files in os.walk(trial_dir):
         files = [f for f in files if not f[0] == '.']  # ignore hidden files
         for csv in files:
@@ -107,8 +116,8 @@ def analyze_trial_dir(trial_dir):
                             trial_data[node_id] = dict()
                         trial_data[node_id][method_name] = analyze_node_csv("%s/%s" %(trial_dir, csv))
             elif file_extension == '.log' and 'client' in file_name:
-                client_data = analyze_client_csv("%s/%s" %(trial_dir, csv))
-    return trial_data, client_data
+                client_data, client_start_end = analyze_client_csv("%s/%s" %(trial_dir, csv))
+    return trial_data, client_data, client_start_end
 
 
 def analyze_node_csv(filepath):
@@ -128,14 +137,26 @@ def analyze_node_csv(filepath):
 
 
 def analyze_client_csv(filepath):
+    """
+    Arguments:
+        filepath {string} -- path to client csv file
+
+    Returns:
+        list [durations ... ]
+        tuple (start, end) time of this client, defined from start of first request to end of last request
+    """
     durations_milli = []
+    start = 999999999999
+    end = 0
     with open(filepath, 'r') as client:
         csvreader = csv.reader(client, delimiter=' ',)
         for row in csvreader:
             req_start = int(row[1])
             req_end = int(row[2])
+            start = min(start, req_start)   # Note: this is rather inefficient
+            end = max(end, req_end)
             durations_milli.append(req_end - req_start)
-    return durations_milli
+    return durations_milli, (start, end)
 
 
 def plot_individual_figures(name, root, data):
@@ -248,15 +269,15 @@ def plot_overall_figures(name, root, data):
         pp.savefig(fig)
         plt.close(fig)
 
-def plot_client_figures(name, root, data):
+def plot_client_figures(name, root, data, start_end_data):
     """ Plot a the data for each method, for each node
     Arguments:
         name {string} -- name of this figure
         root {string} -- directory to save this figure
         data {dict} -- data[trial_id] = list of durations
+        start_end_data {dict} = start_end_data[i] = (start, end) time of trial i, defined from start of first request to end of last request
     """
     print("\t\tDrawing chart for client")
-    num_trials = len(data.keys())
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw aggregate
         aggregate_duration = []
@@ -268,7 +289,7 @@ def plot_client_figures(name, root, data):
         sns.distplot(aggregate_duration, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
         if len(aggregate_duration) > 0:
             stats = AnchoredText(
-                generate_client_statistics(aggregate_duration, num_trials=num_trials), 
+                generate_client_statistics(aggregate_duration), 
                 loc='upper right',  
                 prop=dict(size=8),
                 bbox_to_anchor=(1.1, 1),
@@ -305,7 +326,7 @@ def plot_client_figures(name, root, data):
                 sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
                 if len(durations_milli) > 0:
                     stats = AnchoredText(
-                        generate_client_statistics(durations_milli), 
+                        generate_client_statistics(durations_milli, start_end=start_end_data[t]), 
                         loc='upper right',  
                         prop=dict(size=8),
                         bbox_to_anchor=(1.1, 1),
@@ -345,15 +366,20 @@ def generate_statistics(input):
     res.append("min = %.3f" %np.min(input))
     return "\n".join(res)
 
-def generate_client_statistics(input, num_trials=1):
+def generate_client_statistics(input, start_end=None):
     """
     Generates a string containing some statistics for the input
     Arguments:
-        input -- list of numbers
+        input {list} -- list of numbers
+        start_end {tuple} -- (start, end) time of trial i, defined from start of first request to end of last request
     """
     res = []
-    res.append(f"rate = {'{:,}'.format((len(input)/num_trials)/CLIENT_DURATION)} reqs/sec")
-    res.append(f"duration = %.1f" %CLIENT_DURATION)
+    if start_end is not None:
+        start = start_end[0]
+        end = start_end[1]
+        assert start > 0 and end > 0
+        res.append(f"rate = {'{:,}'.format((len(input)/float(end-start)*1000.0))} reqs/sec")
+        res.append(f"duration = %.1f" %(float(end-start)/1000.0))
     res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.4f" %statistics.stdev(input))
@@ -366,10 +392,5 @@ def generate_client_statistics(input, num_trials=1):
 
 if __name__ == "__main__":
     # positional arguments <experiment_dir>
-    if len(sys.argv) < 3 or len(sys.argv) > 3:
-        print("Error: arguments are <exp_dir> <client_duration>")
-        exit(1)
     exp_dir =sys.argv[1]
-    client_dur = float(sys.argv[2])
-    CLIENT_DURATION = client_dur
     main(exp_dir)
