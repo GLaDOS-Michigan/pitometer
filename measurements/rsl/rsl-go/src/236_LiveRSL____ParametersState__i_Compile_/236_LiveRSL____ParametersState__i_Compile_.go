@@ -133,6 +133,9 @@ var _ _225_LiveRSL____CMessageRefinements__i_Compile.Dummy__
 var _ _228_LiveRSL____PacketParsing__i_Compile.Dummy__
 var _ _234_Common____UpperBound__i_Compile.Dummy__
 
+// BatchSize is the size of each paxos batch
+var BatchSize int64 = 1 // make 1 the default
+
 type Dummy__ struct{}
 
 // Definition of data type ParametersState
@@ -306,7 +309,7 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 		Baseline__view__timeout__period: uint64(1000),
 		Heartbeat__period:               uint64(30_000),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
-		Max__batch__size:                uint64(32),
+		Max__batch__size:                uint64(BatchSize),
 		Max__batch__delay:               uint64(10)}}
 }
 

@@ -1,0 +1,65 @@
+#!/bin/bash
+# Run a rsl experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
+GIT_BRANCH="measurements"
+
+CLIENT_ID=20         # node to use as client
+TRIAL_DURATION=5     # duration of each trial
+ITERATIONS=3         # repeats of each trial
+CLIENT_THREADS=("1" "2" "4" "8" "16" "32" "64")
+F_VALUES=("1" "2")
+BATCH_SIZES=("1" "32")
+TIMESTAMP=$(date +"%d-%b-%H%M")
+
+echo "Starting new RSL latency-throughput experiment at time $TIMESTAMP"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+for f in "${F_VALUES[@]}"
+do
+    # Generate node id's to use
+    node_ids=()
+    for ((id=7;id<$[ 7 + 2*f+1 ];id++))
+    do
+        node_ids+=("$id")
+    done
+
+    # Build locally and send executables to the target machines
+    ./build_to_hosts $CLIENT_ID ${node_ids[@]}
+    echo ""
+
+    for batch_size in "${BATCH_SIZES[@]}"
+    do
+        for ct in "${CLIENT_THREADS[@]}"
+        do 
+            for ((trial=0;trial<$ITERATIONS;trial++))
+            do
+                time=$(date +"%d-%b-%H%M")
+                echo "Starting RSL Lat-Tp trial at time $time"
+                echo "    - f          : $f"
+                echo "    - clients    : $ct"
+                echo "    - batch size : $batch_size"
+                echo "    - trial      : $trial"
+
+                trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/threads_$ct/trial$trial"
+                mkdir -p $trial_dir 
+
+                # Start trial
+                # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID $ct $batch_size ${node_ids[@]} > $trial_dir/info.log"
+                ./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID $ct $batch_size ${node_ids[@]} > $trial_dir/info.log
+                echo "Completed trial $trial for f=$f"
+            done
+        done
+    done
+done
+
+end_timestamp=$(date +"%d-%b-%H%M")
+echo "RSL experiment completed at time $end_timestamp"
