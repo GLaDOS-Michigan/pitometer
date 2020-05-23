@@ -283,17 +283,29 @@ var _ _622_Main__i_Compile.Dummy__
 const initialSize = 1000 // starting size of each stopwatch log
 
 // This program takes the following positional arguments
-// <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <duration>
+// <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <duration> <batch_size>
 func main() {
 
-	// Grab the last argument from os.Args -- that is the duration to run this server.
-	// After this duration, the process exits.
-	var duration, err1 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
-	if int(duration) < 0 || err1 != nil {
-		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-1])
+	fmt.Printf("%v\n", os.Args)
+
+	// Grab the last argument from os.Args -- that is the batch size
+	var batch, err1 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
+	if int(batch) < 0 || err1 != nil {
+		fmt.Printf("Error: Invalid batch size %v\n", os.Args[len(os.Args)-1])
 		os.Exit(1)
 	}
-	os.Args = os.Args[:len(os.Args)-1]
+
+	// Set the batch size
+	_236_LiveRSL____ParametersState__i_Compile.BatchSize = batch
+
+	// Grab the second-to-last argument from os.Args -- that is the duration to run this server.
+	// After this duration, the process exits.
+	var duration, err2 = strconv.ParseInt(os.Args[len(os.Args)-2], 10, 64)
+	if int(duration) < 0 || err2 != nil {
+		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-2])
+		os.Exit(1)
+	}
+	os.Args = os.Args[:len(os.Args)-2]
 
 	// Initialize each stopwatch
 	var logs = make(map[string]*clock.Stopwatch)

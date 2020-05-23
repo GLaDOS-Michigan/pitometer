@@ -118,9 +118,10 @@ def plot_grant_or_accept_delay(name, root, delay, total_data):
             total_aggregate_data.extend(total_data[size][delay][node])
     # Plot graph
     with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
-        fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=False)
+        fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
         fig.suptitle("%s, delay %.1f ms" %(name, delay/1000.0), fontweight='bold')
-        plot_histogram(this_ax, total_aggregate_data)
+        plot_histogram(axes[0], total_aggregate_data)
+        plot_cdf(axes[1], total_aggregate_data)
         pp.savefig(fig)
         plt.close(fig)
 
