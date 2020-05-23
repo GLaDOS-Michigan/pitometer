@@ -1,0 +1,10 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./process_throughput_results <root_dir>
+# It calls analyze_rsl_throughput.py to generate graphs
+
+ROOT_DIR=$1
+
+# find $ROOT_DIR -type f -name "*.pdf" -delete
+
+python3 analyze_rsl_throughput.py $ROOT_DIR
