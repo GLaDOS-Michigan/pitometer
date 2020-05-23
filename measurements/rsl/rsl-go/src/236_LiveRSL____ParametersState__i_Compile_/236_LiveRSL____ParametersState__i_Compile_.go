@@ -306,7 +306,7 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 		// Tony's tune: make log length really long to avoid it happening during an execution
 		// make heartbeats infrequent such that they don't interfere with our message queues
 		Max__log__length:                uint64(10_000),
-		Baseline__view__timeout__period: uint64(1000),
+		Baseline__view__timeout__period: uint64(10_000),
 		Heartbeat__period:               uint64(30_000),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(BatchSize),
