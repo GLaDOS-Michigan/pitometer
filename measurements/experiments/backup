@@ -1,0 +1,37 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./backup <root_dir> <rsl|net|toy>
+
+BACKUP_DIR='/home/nudzhang/Documents/backup_data'
+REPO_DIR='/home/nudzhang/Documents/pitometer-data'
+NODE_19='nudzhang@skynode19.eecs.umich.edu'
+NODE_18='nudzhang@skynode18.eecs.umich.edu'
+
+root_dir=$1
+type=$2
+timestamp=$(date +"%d-%b-%H%M")
+
+if [ $type == 'rsl' ]; 
+then
+    echo "backup rsl"
+    cp -r --verbose $root_dir "$BACKUP_DIR/rsl"
+    cp -r --verbose $root_dir "$REPO_DIR/rsl"
+    scp -r $root_dir "$NODE_18:$BACKUP_DIR/rsl"
+    scp -r $root_dir "$NODE_19:$BACKUP_DIR/rsl"
+elif [ $type == 'net' ]; 
+then
+    echo "backup network"
+    cp -r --verbose $root_dir "$BACKUP_DIR/network"
+    cp -r --verbose $root_dir "$REPO_DIR/network"
+    scp -r $root_dir "$NODE_18:$BACKUP_DIR/network"
+    scp -r $root_dir "$NODE_19:$BACKUP_DIR/network"
+elif [ $type == 'toy' ]; 
+then
+    echo "backup toylock"
+    cp -r --verbose $root_dir "$BACKUP_DIR/toylock"
+    cp -r --verbose $root_dir "$REPO_DIR/toylock"
+    scp -r $root_dir "$NODE_18:$BACKUP_DIR/toylock"
+    scp -r $root_dir "$NODE_19:$BACKUP_DIR/toylock"
+else
+    echo "Usage: ./backup <root_dir> <rsl|net|toy>"
+fi
