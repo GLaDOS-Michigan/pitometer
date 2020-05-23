@@ -9,8 +9,9 @@
 
 # NOTE: This script assumes that the executables are in place
 
-if [ ${#@} -lt 8 ]
+if [ $# -lt 8 ];
 then
+    echo "Got args : ${@}"
     echo "Usage: ./start_rsl_trial <results_dir> <duration> <client_id> <client_threads> <paxos_batch_size> <host_id..>"
     exit 1
 fi
