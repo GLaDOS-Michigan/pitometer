@@ -215,7 +215,7 @@ def generate_statistics(input):
         input -- list of numbers
     """
     res = []
-    res.append("n = %d" %len(input))
+    res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.4f" %statistics.stdev(input))
     res.append("99.9%% = %.3f" %np.percentile(input, 99.9))
