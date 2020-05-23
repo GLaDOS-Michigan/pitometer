@@ -379,7 +379,7 @@ def generate_client_statistics(input, start_end=None):
         end = start_end[1]
         assert start > 0 and end > 0
         res.append(f"rate = {'{:,}'.format((len(input)/float(end-start)*1000.0))} reqs/sec")
-        res.append(f"duration = %.1f" %(float(end-start)/1000.0))
+        res.append(f"duration = %.2f s" %(float(end-start)/1000.0))
     res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
     res.append("σ = %.4f" %statistics.stdev(input))
