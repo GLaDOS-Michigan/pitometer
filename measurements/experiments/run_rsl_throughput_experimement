@@ -12,9 +12,9 @@ GIT_BRANCH="measurements"
 
 CLIENT_ID=20         # node to use as client
 TRIAL_DURATION=5     # duration of each trial
-ITERATIONS=3         # repeats of each trial
+ITERATIONS=5         # repeats of each trial
 CLIENT_THREADS=("1" "2" "4" "8" "16" "32" "64")
-F_VALUES=("1" "2")
+F_VALUES=("1" "2" "3")
 BATCH_SIZES=("1" "32")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
@@ -47,14 +47,16 @@ do
                 echo "    - f          : $f"
                 echo "    - clients    : $ct"
                 echo "    - batch size : $batch_size"
+                echo "    - duration   : $TRIAL_DURATION s"
                 echo "    - trial      : $trial"
 
-                trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/threads_$ct/trial$trial"
+                trial_dir="$ROOT_DIR/LatencyThroughput_$TIMESTAMP/batch_$batch_size/f_$f/threads_$ct/trial$trial"
                 mkdir -p $trial_dir 
 
                 # Start trial
                 # echo "./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID $ct $batch_size ${node_ids[@]} > $trial_dir/info.log"
                 ./start_rsl_trial $trial_dir $TRIAL_DURATION $CLIENT_ID $ct $batch_size ${node_ids[@]} > $trial_dir/info.log
+                rm $trial_dir/node_*.log
                 echo "Completed trial $trial for f=$f"
             done
         done
