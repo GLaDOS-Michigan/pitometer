@@ -82,7 +82,27 @@ def plot_latency_throughput(this_ax, title, latencies, throughputs):
     this_ax.set_xlabel("throughput (reqs/sec)")
     this_ax.set_ylabel("latency (ms)")
     this_ax.grid()
+    stats = AnchoredText(
+            generate_statistics(latencies, throughputs), 
+            loc='upper right',  
+            prop=dict(size=8),
+            bbox_to_anchor=(1.1, 1),
+            bbox_transform=this_ax.transAxes
+            )
+    this_ax.add_artist(stats)
     this_ax.plot(throughputs, latencies, marker='x')
+
+
+def generate_statistics(latencies, throughputs):
+    """
+    Generates a string containing some statistics for the input
+    Arguments:
+        input -- list of numbers
+    """
+    res = []
+    res.append("min latency = %.3f" %(min(latencies)))
+    res.append("max throughput = %.3f" %(max(throughputs)))
+    return "\n".join(res)
 
 
 def compute_average_throughputs(total_f_data):
