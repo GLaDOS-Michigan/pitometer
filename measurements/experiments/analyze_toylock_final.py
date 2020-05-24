@@ -80,23 +80,33 @@ def plot_micro_2_size_fidelity(name, root, total_round_data):
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for delay in DELAYS:
             x_vals_ring_size = sorted(list(total_round_data.keys()))
+            y_vals_max = []
             y_vals_ninety_nine_point_nine_percentiles = []
             y_vals_fifty_percentiles = []
             for ring_size in x_vals_ring_size:
                 leader_node = sorted(list(total_round_data[ring_size][delay].keys()))[0]
                 y_vals_ninety_nine_point_nine_percentiles.append(np.percentile(total_round_data[ring_size][delay][leader_node], 99.9))
                 y_vals_fifty_percentiles.append(np.percentile(total_round_data[ring_size][delay][leader_node], 50))
+                y_vals_max.append(np.max(total_round_data[ring_size][delay][leader_node]))
             fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=False)
-            plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, y_vals_fifty_percentiles, y_vals_ninety_nine_point_nine_percentiles)
+            plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, y_vals_fifty_percentiles, y_vals_ninety_nine_point_nine_percentiles, y_vals_max)
             pp.savefig(fig)
             plt.close(fig)
 
-def plot_micro_2_size_fidelity_ax(this_ax, title, x_vals_ring_size, y_vals_fifty_percentiles, y_vals_ninety_nine_point_nine_percentiles):
+def plot_micro_2_size_fidelity_ax(
+    this_ax, 
+    title, 
+    x_vals_ring_size, 
+    y_vals_fifty_percentiles,
+    y_vals_ninety_nine_point_nine_percentiles,
+    y_vals_max):
     this_ax.set_title(title)
     this_ax.set_xlabel("ring size")
     this_ax.set_ylabel("latency (ms)")
-    this_ax.plot(x_vals_ring_size, y_vals_fifty_percentiles, label='observed 50%%-ile', marker='x', color='blue')
-    this_ax.plot(x_vals_ring_size, y_vals_ninety_nine_point_nine_percentiles, label='observed 99.9%%-ile', marker='x', color='red')
+    this_ax.plot(x_vals_ring_size, y_vals_fifty_percentiles, label='observed 50 percentile', marker='x', color='blue')
+    this_ax.plot(x_vals_ring_size, y_vals_ninety_nine_point_nine_percentiles, label='observed 99.9 percentile', marker='x', color='red')
+    this_ax.plot(x_vals_ring_size, y_vals_max, label='observed max', marker='x', color='orange')
+    this_ax.legend()
 
 
 if __name__ == "__main__":
