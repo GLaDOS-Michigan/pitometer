@@ -3,30 +3,17 @@ import os
 import csv
 import statistics
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 import pickle
 
+# Plotting constants
+from plot_constants import *
+
 
 NODES = list(range(1, 21))
 DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
-
-# Global plotting params
-# Fonts
-plt.rc('font', family='serif') 
-plt.rc('font', size=12)              # controls default text sizes
-plt.rc('axes', titlesize=12)        # fontsize of the axes title
-plt.rc('axes', labelsize=12)        # fontsize of the x and y labels
-plt.rc('xtick', labelsize=12)       # fontsize of the tick labels
-plt.rc('ytick', labelsize=12)       # fontsize of the tick labels
-plt.rc('legend', fontsize=12)       # legend fontsize
-plt.rc('figure', titlesize=15)      # fontsize of the figure title
-
-# Lines
-plt.rc('lines', linewidth=1)
-
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
