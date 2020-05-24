@@ -51,7 +51,8 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 leader_node = participants[0]
                 actual_round_latencies = total_round_data[ring_size][delay][leader_node]
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
-                fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=False)
+                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+                fig.subplots_adjust(left=0.2, right=0.85, top=0.9, bottom=0.1 )
                 plot_micro_1_distr_fidelity_ax(this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
@@ -91,7 +92,6 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.set_xlim(0, 1)
     # this_ax.set_ylim(0, np.percentile(actual_round_latencies, 99))
     this_ax.set_yscale("log")
-    this_ax.grid()
     this_ax.xaxis.set_ticks(np.arange(0, 1, 0.1))
     this_ax.legend()
 
@@ -115,7 +115,8 @@ def plot_micro_2_size_fidelity(name, root, total_round_data):
                 y_vals_ninety_nine_point_nine_percentiles.append(np.percentile(total_round_data[ring_size][delay][leader_node], 99.9))
                 y_vals_fifty_percentiles.append(np.percentile(total_round_data[ring_size][delay][leader_node], 50))
                 y_vals_max.append(np.max(total_round_data[ring_size][delay][leader_node]))
-            fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=False)
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
             plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, y_vals_fifty_percentiles, y_vals_ninety_nine_point_nine_percentiles, y_vals_max)
             pp.savefig(fig)
             plt.close(fig)
