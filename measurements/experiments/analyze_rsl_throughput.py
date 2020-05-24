@@ -66,7 +66,11 @@ def gen_latency_throughput_graphs(name, root, total_batch_data):
             latencies = compute_average_latencies(total_batch_data[f])
             throughputs = compute_average_throughputs(total_batch_data[f])
             # Test run, plot the latencies only
-            plot_latency_throughput(axes[row], "f = %d" %(f), latencies, throughputs)
+            if len(total_batch_data) == 1:
+                ax = axes
+            else:
+                ax = axes[row]
+            plot_latency_throughput(ax, "f = %d" %(f), latencies, throughputs)
             row += 1
         pp.savefig(fig)
         plt.close(fig)
@@ -75,6 +79,8 @@ def gen_latency_throughput_graphs(name, root, total_batch_data):
 
 def plot_latency_throughput(this_ax, title, latencies, throughputs):
     this_ax.set_title(title)
+    this_ax.set_xlabel("throughput (reqs/sec)")
+    this_ax.set_ylabel("latency (ms)")
     this_ax.grid()
     this_ax.plot(throughputs, latencies, marker='x')
 
@@ -150,6 +156,8 @@ def parse_client_log(client_log):
     with open(client_log, 'r') as client:
         csvreader = csv.reader(client, delimiter=' ')
         for row in csvreader:
+            if 'TIMEOUT' in row[0]:
+                continue
             req_start = int(row[1])
             req_end = int(row[2])
             client_id = int(row[3])
