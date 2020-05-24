@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
+import pickle
 
 
 NODES = list(range(1, 21))
@@ -19,6 +20,20 @@ def main(exp_dir):
 
     # each data is dict of (size -> delay -> node -> [ durs ])
     total_grant_data, total_accept_data, total_round_data = parse_files(exp_dir)  
+    
+    with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'wb') as handle:
+        pickle.dump(total_grant_data, handle)
+    with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'wb') as handle:
+        pickle.dump(total_accept_data, handle)
+    with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'wb') as handle:
+        pickle.dump(total_round_data, handle)
+
+    with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'rb') as handle:
+        total_grant_data = pickle.load(handle)
+    with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'rb') as handle:
+        total_accept_data = pickle.load(handle)
+    with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'rb') as handle:
+        total_round_data = pickle.load(handle)
 
     print("\nPlotting graphs for experiment %s" %exp_dir)
     # Plot Grant
