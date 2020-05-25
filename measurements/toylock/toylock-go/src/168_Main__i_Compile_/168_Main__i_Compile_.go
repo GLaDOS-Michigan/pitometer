@@ -58,6 +58,7 @@ import (
 	_System "System_"
 	"clock"
 	_dafny "dafny"
+	"fmt"
 	"os"
 	"time"
 )
@@ -191,6 +192,8 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 	var nodeAcceptLog = clock.NewStopwatch(uint(numRounds*2), "NodeAccept Stopwatch")
 	var nodeGrantCounter = clock.NewCounter("NodeGrant counter")
 	for _1761_ok {
+		nodeGrantLog.LogStartEvent("NodeNextGrant")
+		nodeAcceptLog.LogStartEvent("NodeNextAccept")
 		{
 		}
 		{
@@ -201,10 +204,24 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		var _ = _out111
 		var _out112 _131_Host__i_Compile.CScheduler
 		var _ = _out112
-		_out111, _out112 = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, delay, nodeGrantCounter, nodeGrantLog, nodeAcceptLog)
+		var status string
+		_out111, _out112, status = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, delay, nodeGrantCounter)
 		_1761_ok = _out111
 		_1762_host__state = _out112
 		{
+		}
+		switch status {
+		case "accept ok":
+			nodeAcceptLog.LogEndEvent("NodeNextAccept")
+			nodeGrantLog.PopStartEvent()
+		case "accept fail":
+			nodeAcceptLog.PopStartEvent()
+			nodeGrantLog.PopStartEvent()
+		case "grant ok":
+			nodeGrantLog.LogEndEvent("NodeNextGrant")
+			nodeAcceptLog.PopStartEvent()
+		default:
+			fmt.Printf("Error: unexpected main loop result")
 		}
 		if nodeGrantCounter.GetCount() == numRounds {
 			// Dump the event log
