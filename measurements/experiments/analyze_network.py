@@ -1,6 +1,7 @@
 import sys
 import os
 import csv
+import pickle
 import statistics
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,6 +49,10 @@ def main(exp_dir):
                         if i_j_csv is not None:
                             total_payload_data[i][j].extend(analyze_csv("%s/%s" %(root, i_j_csv)))
         print("\tDrawing payload %d" %payload)
+        with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'wb') as handle:
+            pickle.dump(total_payload_data, handle)
+        with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'rb') as handle:
+            total_payload_data = pickle.load(handle)
         plot_figures("rtt_payload%d" %payload, exp_dir, total_payload_data)
     print("Done")
 
