@@ -211,7 +211,7 @@ TAIL_CALL_START:
 }
 
 // TONY MEASURE
-func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter) bool {
 	var ok bool = false
 	var _ = ok
 	var _1690_transfer__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
@@ -220,7 +220,7 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter,
 	var _ = _out84
 	var _out85 _44_Logic____Option__i_Compile.Option
 	var _ = _out85
-	_out84, _out85 = _115_Impl__Node__i_Compile.Companion_Default___.NodeGrantImpl(_this.Node, delay, nodeGrantCounter, nodeGrantLog)
+	_out84, _out85 = _115_Impl__Node__i_Compile.Companion_Default___.NodeGrantImpl(_this.Node, delay, nodeGrantCounter)
 	(_this).Node = _out84
 	_1690_transfer__packet = _out85 // This is the packet that is sent
 	ok = true
@@ -237,7 +237,7 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter,
 	}
 	return ok
 }
-func (_this *NodeImpl) NodeNextAccept(delay int, nodeAcceptLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) NodeNextAccept(delay int) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -268,7 +268,7 @@ TAIL_CALL_START:
 		var _ = _out88
 		var _out89 _44_Logic____Option__i_Compile.Option
 		var _ = _out89
-		_out88, _out89 = _115_Impl__Node__i_Compile.Companion_Default___.NodeAcceptImpl(_this.Node, (_1691_rr).Dtor_cpacket(), delay, nodeAcceptLog)
+		_out88, _out89 = _115_Impl__Node__i_Compile.Companion_Default___.NodeAcceptImpl(_this.Node, (_1691_rr).Dtor_cpacket(), delay)
 		(_this).Node = _out88
 		_1692_locked__packet = _out89
 		// TONY: Comment out the following because we don't want to send acks.
@@ -287,20 +287,22 @@ TAIL_CALL_START:
 	return ok
 }
 func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch, nodeAcceptLog *clock.Stopwatch) bool {
-	goto TAIL_CALL_START
-TAIL_CALL_START:
 	var ok bool = false
 	var _ = ok
 	if (_this.Node).Dtor_held() {
+		nodeGrantLog.LogStartEvent("NodeNextGrant")
 		var _out91 bool
 		var _ = _out91
-		_out91 = (_this).NodeNextGrant(delay, nodeGrantCounter, nodeGrantLog)
+		_out91 = (_this).NodeNextGrant(delay, nodeGrantCounter)
 		ok = _out91
+		nodeGrantLog.LogEndEvent("NodeNextGrant")
 	} else {
+		nodeGrantLog.LogStartEvent("NodeNextAccept")
 		var _out92 bool
 		var _ = _out92
-		_out92 = (_this).NodeNextAccept(delay, nodeAcceptLog)
+		_out92 = (_this).NodeNextAccept(delay)
 		ok = _out92
+		nodeGrantLog.LogEndEvent("NodeNextAccept")
 	}
 	return ok
 }

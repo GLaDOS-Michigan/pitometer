@@ -252,8 +252,7 @@ TAIL_CALL_START:
 }
 
 // TONY: This is the method that we want to time
-func (_this *CompanionStruct_Default___) NodeGrantImpl(s CNode, delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch) (CNode, _44_Logic____Option__i_Compile.Option) {
-	nodeGrantLog.LogStartEvent("NodeNextGrant")
+func (_this *CompanionStruct_Default___) NodeGrantImpl(s CNode, delay int, nodeGrantCounter *clock.Counter) (CNode, _44_Logic____Option__i_Compile.Option) {
 	time.Sleep(time.Duration(delay) * time.Microsecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
@@ -283,12 +282,10 @@ TAIL_CALL_START:
 		}
 		packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_None{}}
 	}
-	nodeGrantLog.LogEndEvent("NodeNextGrant")
 	return s_k, packet
 }
 
-func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket, delay int, nodeAcceptLog *clock.Stopwatch) (CNode, _44_Logic____Option__i_Compile.Option) {
-	nodeAcceptLog.LogStartEvent("NodeNextAccept")
+func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket, delay int) (CNode, _44_Logic____Option__i_Compile.Option) {
 	time.Sleep(time.Duration(delay) * time.Microsecond)
 	goto TAIL_CALL_START
 TAIL_CALL_START:
@@ -313,7 +310,6 @@ TAIL_CALL_START:
 		s_k = s
 		locked__packet = _44_Logic____Option__i_Compile.Option{_44_Logic____Option__i_Compile.Option_None{}}
 	}
-	nodeAcceptLog.LogEndEvent("NodeNextAccept")
 	return s_k, locked__packet
 }
 
