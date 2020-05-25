@@ -1,4 +1,5 @@
 import sys
+import pickle
 import os
 import csv
 import statistics
@@ -36,6 +37,21 @@ def main(exp_dir):
         total_f_client_start_end[i] = (start, end) time of trial i, defined from start of first request to end of last request
         """
         total_f_node_data, total_f_client_data, total_f_client_start_end = analyze_f(exp_dir, f)
+
+        # Save data
+        with open("%s/total_f%d_node_data.pickle" %(exp_dir, f), 'wb') as handle:
+            pickle.dump(total_f_node_data, handle)
+        with open("%s/total_f%d_client_data.pickle" %(exp_dir, f), 'wb') as handle:
+            pickle.dump(total_f_client_data, handle)
+        with open("%s/total_f%d_client_start_end.pickle" %(exp_dir, f), 'wb') as handle:
+            pickle.dump(total_f_client_start_end, handle)
+
+        with open("%s/total_f%d_node_data.pickle" %(exp_dir, f), 'rb') as handle:
+            total_f_node_data = pickle.load(handle)
+        with open("%s/total_f%d_client_data.pickle" %(exp_dir, f), 'rb') as handle:
+            total_f_client_data = pickle.load(handle)
+        with open("%s/total_f%d_client_start_end.pickle" %(exp_dir, f), 'rb') as handle:
+            total_f_client_start_end = pickle.load(handle)
 
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
