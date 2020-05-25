@@ -8,7 +8,8 @@ then
 fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
-GIT_BRANCH="measurements"
+# GIT_BRANCH="measurements"
+GIT_BRANCH="correct"
 
 NUM_ROUNDS=100
 # ITERATIONS=40
