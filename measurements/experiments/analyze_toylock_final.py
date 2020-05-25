@@ -60,7 +60,7 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 actual_network_latencies = compute_actual_network(participants, total_network_data)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
                 fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
-                plot_micro_1_distr_fidelity_ax(ring_size, this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+                plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
 
@@ -97,6 +97,7 @@ def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring
 
 
 def plot_micro_1_distr_fidelity_ax(
+    delay,
     ring_size, 
     this_ax, 
     name, 
@@ -105,16 +106,23 @@ def plot_micro_1_distr_fidelity_ax(
     actual_accept_latencies,
     actual_network_latencies
 ):
-    # show_hist = False
-    # kwargs = {'cumulative': True}
-    # sns.distplot(actual_round_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='round')
-    # sns.distplot(actual_grant_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='grant')
-    # sns.distplot(actual_accept_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='accept')
+    print("Delay: %d, ring_size: %d" %(delay, ring_size))
     round_cdf, round_bins = raw_data_to_cdf(actual_round_latencies)
     grant_cdf, grant_bins = raw_data_to_cdf(actual_grant_latencies)
     accept_cdf, accept_bins = raw_data_to_cdf(actual_accept_latencies)
     network_cdf, network_bins = raw_data_to_cdf(actual_network_latencies)
-    predict_cdf, predict_bins = compute_predicted_toylock_cdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+    predict_pdf, predict_cdf, predict_bins = compute_predicted_toylock_cdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+    print("\tmin grant: %.4f" %(min(actual_grant_latencies)))
+    print("\tmin accept: %.4f" %(min(actual_accept_latencies)))
+    print("\tmin network: %.4f" %(min(actual_network_latencies)))
+    print("\tmin round: %.4f" %(min(actual_round_latencies)))
+    print("\tmin predict: %.4f" %(min(predict_bins)))
+    # print("\tactual mean: %.2f, predicted mean: %.2f, actual 99.9: %.2f, predicted 99,9: %.2f, actual max: %.2f" 
+    #     %(np.mean(actual_round_latencies),
+    #     get_mean(predict_pdf, predict_bins),
+    #     np.percentile(actual_round_latencies, 99.9),
+    #     get_percentile(predict_cdf, predict_bins, 99.9),
+    #     max(actual_round_latencies)))
     plt.plot(round_cdf, round_bins[:-1], label='actual round', linewidth=0.7)
     plt.plot(predict_cdf, predict_bins, label='predicted')
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
@@ -123,11 +131,24 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
-    # this_ax.set_ylim(min(actual_round_latencies), np.percentile(actual_round_latencies, 99.9))
+    this_ax.set_ylim(min(actual_round_latencies), max(actual_round_latencies)+1)
     this_ax.set_xlim(0, 1)
-    this_ax.set_yscale("log")
+    # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
+
+def get_mean(pdf, bins):
+    sum = 0
+    for i in range(len(pdf)):
+        sum += pdf[i] * float(bins[i])
+    return sum
+
+def get_percentile(cdf, bins, percentile):
+    assert percentile >= 0 and percentile <= 100
+    for i in range(len(cdf)):
+        if cdf[i] > percentile/100.0:
+            return bins[i]
+    return bins[-1]
 
 def raw_data_to_cdf(data):
     binsize = 1e-3
@@ -163,8 +184,9 @@ def compute_predicted_toylock_cdf(ring_size, actual_grant_latencies, actual_acce
     # conv_bins = np.linspace(newstart, max_data, len(total_sum_pdf))
     # return total_sum_pdf, conv_bins
     binrange = newbinsize * len(total_sum_pdf)
+    print("\tbin size: %.4f" %(newbinsize))
     conv_bins = np.linspace(newstart, newstart + binrange, len(total_sum_pdf))
-    return pdf_to_cdf(total_sum_pdf), conv_bins
+    return total_sum_pdf, pdf_to_cdf(total_sum_pdf), conv_bins
 
 def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
     """
