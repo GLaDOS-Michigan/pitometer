@@ -59,8 +59,8 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
                 actual_network_latencies = compute_actual_network(participants, total_network_data)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                fig.subplots_adjust(left=0.2, right=0.85, top=0.9, bottom=0.1 )
-                plot_micro_1_distr_fidelity_ax(this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+                fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
+                plot_micro_1_distr_fidelity_ax(ring_size, this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
 
@@ -76,7 +76,7 @@ def compute_actual_network(participants, total_network_data):
         this = participants[i]
         succ = participants[(i+1)%len(participants)]
         aggregate_network_latencies.extend(total_network_data[this][succ])
-    return aggregate_network_latencies
+    return [x/2.0 for x in aggregate_network_latencies]
 
 
 def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size):
@@ -97,6 +97,7 @@ def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring
 
 
 def plot_micro_1_distr_fidelity_ax(
+    ring_size, 
     this_ax, 
     name, 
     actual_round_latencies, 
@@ -113,16 +114,16 @@ def plot_micro_1_distr_fidelity_ax(
     grant_cdf, grant_bins = raw_data_to_cdf(actual_grant_latencies)
     accept_cdf, accept_bins = raw_data_to_cdf(actual_accept_latencies)
     network_cdf, network_bins = raw_data_to_cdf(actual_network_latencies)
-    predict_cdf, predict_bins = compute_predicted_toylock_cdf(actual_grant_latencies, actual_accept_latencies)
-    plt.plot(round_cdf, round_bins[:-1], label='round')
-    # plt.plot(predict_cdf, predict_bins, label='grant+accept')
-    plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
-    plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashed')
-    plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dashed')
+    predict_cdf, predict_bins = compute_predicted_toylock_cdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+    plt.plot(round_cdf, round_bins[:-1], label='actual round', linewidth=0.7)
+    plt.plot(predict_cdf, predict_bins, label='predicted')
+    # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
+    # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
+    # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
-    # this_ax.set_ylim(0, 2.5)
+    # this_ax.set_ylim(min(actual_round_latencies), np.percentile(actual_round_latencies, 99.9))
     this_ax.set_xlim(0, 1)
     this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
@@ -144,14 +145,26 @@ def pdf_to_cdf(pdf):
     cdf = np.cumsum(pdf/pdf.sum()).tolist()
     return cdf
 
-def compute_predicted_toylock_cdf(actual_grant_latencies, actual_accept_latencies):
+def compute_predicted_toylock_cdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies):
     initial_binsize = 1e-4
     grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, initial_binsize)
     accept_pdf, _ = raw_data_to_pdf(actual_accept_latencies, initial_binsize)
-    summed_pdf, _, newbinsize = add_histograms(grant_pdf, accept_pdf, 0, 0, initial_binsize, initial_binsize)
-    num_bins = len(summed_pdf)
-    conv_bins = np.linspace(min(actual_grant_latencies+actual_accept_latencies), max(actual_grant_latencies)+max(actual_accept_latencies), num_bins)
-    return pdf_to_cdf(summed_pdf), conv_bins
+    network_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
+    grant_accept_pdf, newstart, newbinsize = add_histograms(grant_pdf, accept_pdf, min(actual_grant_latencies), min(actual_accept_latencies), initial_binsize, initial_binsize)
+    grant_accept_network_pdf, newstart,  newbinsize = add_histograms(grant_accept_pdf, network_pdf, newstart, min(actual_network_latencies), newbinsize, initial_binsize)
+    max_data = (max(actual_grant_latencies) + max(actual_accept_latencies) + max(actual_network_latencies))
+    # print(len(grant_accept_network_pdf))
+    grant_accept_net_start, grant_accept_net_binsize, grant_accept_net_max = newstart, newbinsize, max_data
+    total_sum_pdf = grant_accept_network_pdf
+    for i in range(ring_size-1):
+        total_sum_pdf, newstart,  newbinsize = add_histograms(total_sum_pdf, grant_accept_network_pdf, newstart, grant_accept_net_start, newbinsize, grant_accept_net_binsize)
+        max_data = max_data + grant_accept_net_max
+    bincount = int((max_data - newstart)/newbinsize)
+    # conv_bins = np.linspace(newstart, max_data, len(total_sum_pdf))
+    # return total_sum_pdf, conv_bins
+    binrange = newbinsize * len(total_sum_pdf)
+    conv_bins = np.linspace(newstart, newstart + binrange, len(total_sum_pdf))
+    return pdf_to_cdf(total_sum_pdf), conv_bins
 
 def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
     """
