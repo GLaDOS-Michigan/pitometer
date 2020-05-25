@@ -22,11 +22,11 @@ def main(exp_dir):
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
     # each toylock data is dict of (size -> delay -> node -> [ durs ])
-    with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_grant_data2.pickle'), 'rb') as handle:
         total_grant_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_accept_data2.pickle'), 'rb') as handle:
         total_accept_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_round_data2.pickle'), 'rb') as handle:
         total_round_data = pickle.load(handle)
     # total_network_data[i][j] is the timings for node i to node j
     with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
@@ -127,15 +127,15 @@ def plot_micro_1_distr_fidelity_ax(
     print()
     plt.plot(round_cdf, round_bins[:-1], label='actual round', linewidth=0.7)
     plt.plot(predict_cdf, predict_bins, label='predicted')
-    plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
-    plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
-    plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
+    # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
+    # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
+    # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
     # this_ax.set_ylim(min(actual_round_latencies), max(actual_round_latencies)+1)
     this_ax.set_xlim(0, 1)
-    this_ax.set_yscale("log")
+    # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
 
