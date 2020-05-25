@@ -72,6 +72,12 @@ def compute_actual_network(participants, total_network_data):
     """
     participants.sort()
     aggregate_network_latencies = []
+    for k in total_network_data.keys():
+        for j in total_network_data.keys():
+            if k != j: 
+                aggregate_network_latencies.extend(total_network_data[j][k])
+    return [x/2.0 for x in aggregate_network_latencies]
+
     for i in range(len(participants)):
         this = participants[i]
         succ = participants[(i+1)%len(participants)]
@@ -89,10 +95,11 @@ def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring
     """
     aggregate_grant_latencies = []
     aggregate_accept_latencies = []
-    for node in total_grant_data[ring_size][delay].keys():
-        aggregate_grant_latencies.extend(total_grant_data[ring_size][delay][node])
-    for node in total_accept_data[ring_size][delay].keys():
-        aggregate_accept_latencies.extend(total_accept_data[ring_size][delay][node])
+    for r in total_grant_data.keys():
+        for node in total_grant_data[r][delay].keys():
+            aggregate_grant_latencies.extend(total_grant_data[r][delay][node])
+        for node in total_accept_data[r][delay].keys():
+            aggregate_accept_latencies.extend(total_accept_data[r][delay][node])
     return aggregate_grant_latencies, aggregate_accept_latencies
 
 
@@ -130,7 +137,7 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.legend()
 
 def raw_data_to_cdf(data):
-    binsize = 1e-3
+    binsize = 1e-4
     pdf, bins = raw_data_to_pdf(data, binsize)
     cdf, bins = pdf_to_cdf(pdf), bins.tolist()
     return [0] + cdf, [bins[0]] + bins
@@ -163,7 +170,9 @@ def compute_predicted_toylock_cdf(ring_size, actual_grant_latencies, actual_acce
     # conv_bins = np.linspace(newstart, max_data, len(total_sum_pdf))
     # return total_sum_pdf, conv_bins
     binrange = newbinsize * len(total_sum_pdf)
-    conv_bins = np.linspace(newstart, newstart + binrange, len(total_sum_pdf))
+    # Want the bin to hold the upper bound on each bin. E.g. a bin [0, 1)
+    # should be plotted at the point 1
+    conv_bins = np.linspace(newstart + newbinsize, newstart + binrange, len(total_sum_pdf))
     return pdf_to_cdf(total_sum_pdf), conv_bins
 
 def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
@@ -175,7 +184,7 @@ def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
     conv_pdf = signal.fftconvolve(pdf1,pdf2,'full')
     conv_pdf = conv_pdf/float(conv_pdf.sum()) # This should be unnecessary, but
                                               # keeping it just in case pdf1 and pdf2 don't have a sum of 1
-    binsize_out = binsize1 + binsize2
+    binsize_out = binsize1 # + binsize2
     start_out = start1 + start2
     return conv_pdf, start_out, binsize_out
 
