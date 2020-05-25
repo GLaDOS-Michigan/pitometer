@@ -81,19 +81,33 @@ def plot_micro_1_distr_fidelity_ax(
     actual_grant_latencies, 
     actual_accept_latencies
 ):
-    show_hist = False
-    kwargs = {'cumulative': True}
-    sns.distplot(actual_round_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='round')
-    sns.distplot(actual_grant_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='grant')
-    sns.distplot(actual_accept_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='accept')
-    this_ax.set_xlabel('cumulative probability')
-    this_ax.set_ylabel('latency (ms)')
+    # show_hist = False
+    # kwargs = {'cumulative': True}
+    # sns.distplot(actual_round_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='round')
+    # sns.distplot(actual_grant_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='grant')
+    # sns.distplot(actual_accept_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='accept')
+    round_cdf, round_bins = raw_data_to_cdf(actual_round_latencies)
+    grant_cdf, grant_bins = raw_data_to_cdf(actual_grant_latencies)
+    accept_cdf, accept_bins = raw_data_to_cdf(actual_accept_latencies)
+    plt.plot(round_cdf, round_bins[:-1], label='round')
+    plt.plot(grant_cdf, grant_bins[:-1], label='grant')
+    plt.plot(accept_cdf, accept_bins[:-1], label='accept')
+    # this_ax.set_xlabel('cumulative probability')
+    # this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
     this_ax.set_xlim(0, 1)
-    # this_ax.set_ylim(0, np.percentile(actual_round_latencies, 99))
+    # this_ax.set_ylim(0, 10)
     this_ax.set_yscale("log")
-    this_ax.xaxis.set_ticks(np.arange(0, 1, 0.1))
+    this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
+    this_ax.grid()
     this_ax.legend()
+
+def raw_data_to_cdf(data):
+    binsize = 1e-3
+    bincount = int((max(data) - min(data))/binsize)
+    bins = np.linspace(min(data), max(data), bincount)
+    pdf, bins = np.histogram(data, bins=bins)
+    return np.cumsum(pdf/pdf.sum()).tolist(), bins.tolist()
 
 
 def plot_micro_2_size_fidelity(name, root, total_round_data):
