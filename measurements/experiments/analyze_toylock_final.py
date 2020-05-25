@@ -21,28 +21,32 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
-    # each data is dict of (size -> delay -> node -> [ durs ])
+    # each toylock data is dict of (size -> delay -> node -> [ durs ])
     with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'rb') as handle:
         total_grant_data = pickle.load(handle)
     with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'rb') as handle:
         total_accept_data = pickle.load(handle)
     with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'rb') as handle:
         total_round_data = pickle.load(handle)
+    # total_network_data[i][j] is the timings for node i to node j
+    with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
+        total_network_data = pickle.load(handle)
 
     print("\nPlotting graphs for experiment %s" %exp_dir)
 
     # Plot Rounds
-    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data)
+    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data)
     print("Done")
 
 
-def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, total_accept_data):
+def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
         total_data -- dict of (size -> delay -> node -> [ durs ])
+        total_network_data -- total_network_data[i][j] is the timings for node i to node j
     """
     print("Plotting graphs for Micro-benchmark 1")
     for delay in DELAYS:
@@ -53,11 +57,27 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 leader_node = participants[0]
                 actual_round_latencies = total_round_data[ring_size][delay][leader_node]
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
+                actual_network_latencies = compute_actual_network(participants, total_network_data)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
                 fig.subplots_adjust(left=0.2, right=0.85, top=0.9, bottom=0.1 )
-                plot_micro_1_distr_fidelity_ax(this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies)
+                plot_micro_1_distr_fidelity_ax(this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
+
+def compute_actual_network(participants, total_network_data):
+    """Compute the aggregate grant and accept latencies for this delay and ring_size
+    Arguments:
+        participants {list} -- list of participants in this ring
+        total_network_data -- total_network_data[i][j] is the timings for node i to node j
+    """
+    participants.sort()
+    aggregate_network_latencies = []
+    for i in range(len(participants)):
+        this = participants[i]
+        succ = participants[(i+1)%len(participants)]
+        aggregate_network_latencies.extend(total_network_data[this][succ])
+    return aggregate_network_latencies
+
 
 def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size):
     """Compute the aggregate grant and accept latencies for this delay and ring_size
@@ -81,7 +101,8 @@ def plot_micro_1_distr_fidelity_ax(
     name, 
     actual_round_latencies, 
     actual_grant_latencies, 
-    actual_accept_latencies
+    actual_accept_latencies,
+    actual_network_latencies
 ):
     # show_hist = False
     # kwargs = {'cumulative': True}
@@ -91,14 +112,17 @@ def plot_micro_1_distr_fidelity_ax(
     round_cdf, round_bins = raw_data_to_cdf(actual_round_latencies)
     grant_cdf, grant_bins = raw_data_to_cdf(actual_grant_latencies)
     accept_cdf, accept_bins = raw_data_to_cdf(actual_accept_latencies)
-    sum_cdf, sum_bins = sum_toylock_cdf(actual_grant_latencies, actual_accept_latencies)
-    # plt.plot(round_cdf, round_bins[:-1], label='round')
-    plt.plot(sum_cdf, sum_bins, label='grant+accept')
-    plt.plot(grant_cdf, grant_bins[:-1], label='grant')
-    plt.plot(accept_cdf, accept_bins[:-1], label='accept')
+    network_cdf, network_bins = raw_data_to_cdf(actual_network_latencies)
+    predict_cdf, predict_bins = compute_predicted_toylock_cdf(actual_grant_latencies, actual_accept_latencies)
+    plt.plot(round_cdf, round_bins[:-1], label='round')
+    # plt.plot(predict_cdf, predict_bins, label='grant+accept')
+    plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
+    plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashed')
+    plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dashed')
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
+    # this_ax.set_ylim(0, 2.5)
     this_ax.set_xlim(0, 1)
     this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
@@ -120,11 +144,11 @@ def pdf_to_cdf(pdf):
     cdf = np.cumsum(pdf/pdf.sum()).tolist()
     return cdf
 
-def sum_toylock_cdf(actual_grant_latencies, actual_accept_latencies):
-    binsize = 1e-3
-    grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, binsize)
-    accept_pdf, _ = raw_data_to_pdf(actual_accept_latencies, binsize)
-    summed_pdf, _, newbinsize = add_histograms(grant_pdf, accept_pdf, 0, 0, binsize, binsize)
+def compute_predicted_toylock_cdf(actual_grant_latencies, actual_accept_latencies):
+    initial_binsize = 1e-4
+    grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, initial_binsize)
+    accept_pdf, _ = raw_data_to_pdf(actual_accept_latencies, initial_binsize)
+    summed_pdf, _, newbinsize = add_histograms(grant_pdf, accept_pdf, 0, 0, initial_binsize, initial_binsize)
     num_bins = len(summed_pdf)
     conv_bins = np.linspace(min(actual_grant_latencies+actual_accept_latencies), max(actual_grant_latencies)+max(actual_accept_latencies), num_bins)
     return pdf_to_cdf(summed_pdf), conv_bins
@@ -151,7 +175,7 @@ def plot_micro_2_size_fidelity(name, root, total_round_data):
         root -- directory to save this figure
         total_data -- dict of (size -> delay -> node -> [ durs ])
     """
-    print("Plotting graphs for Micro-benchmark 1")
+    print("Plotting graphs for Micro-benchmark 2")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for delay in DELAYS:
             x_vals_ring_size = sorted(list(total_round_data.keys()))
