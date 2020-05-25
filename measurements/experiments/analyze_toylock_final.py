@@ -92,14 +92,12 @@ def plot_micro_1_distr_fidelity_ax(
     plt.plot(round_cdf, round_bins[:-1], label='round')
     plt.plot(grant_cdf, grant_bins[:-1], label='grant')
     plt.plot(accept_cdf, accept_bins[:-1], label='accept')
-    # this_ax.set_xlabel('cumulative probability')
-    # this_ax.set_ylabel('latency (ms)')
+    this_ax.set_xlabel('cumulative probability')
+    this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
     this_ax.set_xlim(0, 1)
-    # this_ax.set_ylim(0, 10)
     this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
-    this_ax.grid()
     this_ax.legend()
 
 def raw_data_to_cdf(data):
@@ -107,7 +105,8 @@ def raw_data_to_cdf(data):
     bincount = int((max(data) - min(data))/binsize)
     bins = np.linspace(min(data), max(data), bincount)
     pdf, bins = np.histogram(data, bins=bins)
-    return np.cumsum(pdf/pdf.sum()).tolist(), bins.tolist()
+    cdf, bins = np.cumsum(pdf/pdf.sum()).tolist(), bins.tolist()
+    return [0] + cdf, [bins[0]] + bins
 
 
 def plot_micro_2_size_fidelity(name, root, total_round_data):
