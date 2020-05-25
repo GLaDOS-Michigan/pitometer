@@ -5,6 +5,8 @@ import statistics
 import numpy as np
 from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
+from scipy import stats
+from scipy import signal
 import seaborn as sns
 import pickle
 
@@ -89,7 +91,9 @@ def plot_micro_1_distr_fidelity_ax(
     round_cdf, round_bins = raw_data_to_cdf(actual_round_latencies)
     grant_cdf, grant_bins = raw_data_to_cdf(actual_grant_latencies)
     accept_cdf, accept_bins = raw_data_to_cdf(actual_accept_latencies)
-    plt.plot(round_cdf, round_bins[:-1], label='round')
+    sum_cdf, sum_bins = sum_toylock_cdf(actual_grant_latencies, actual_accept_latencies)
+    # plt.plot(round_cdf, round_bins[:-1], label='round')
+    plt.plot(sum_cdf, sum_bins, label='grant+accept')
     plt.plot(grant_cdf, grant_bins[:-1], label='grant')
     plt.plot(accept_cdf, accept_bins[:-1], label='accept')
     this_ax.set_xlabel('cumulative probability')
@@ -102,11 +106,42 @@ def plot_micro_1_distr_fidelity_ax(
 
 def raw_data_to_cdf(data):
     binsize = 1e-3
+    pdf, bins = raw_data_to_pdf(data, binsize)
+    cdf, bins = pdf_to_cdf(pdf), bins.tolist()
+    return [0] + cdf, [bins[0]] + bins
+
+def raw_data_to_pdf(data, binsize):
     bincount = int((max(data) - min(data))/binsize)
     bins = np.linspace(min(data), max(data), bincount)
     pdf, bins = np.histogram(data, bins=bins)
-    cdf, bins = np.cumsum(pdf/pdf.sum()).tolist(), bins.tolist()
-    return [0] + cdf, [bins[0]] + bins
+    return pdf, bins
+
+def pdf_to_cdf(pdf):
+    cdf = np.cumsum(pdf/pdf.sum()).tolist()
+    return cdf
+
+def sum_toylock_cdf(actual_grant_latencies, actual_accept_latencies):
+    binsize = 1e-3
+    grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, binsize)
+    accept_pdf, _ = raw_data_to_pdf(actual_accept_latencies, binsize)
+    summed_pdf, _, newbinsize = add_histograms(grant_pdf, accept_pdf, 0, 0, binsize, binsize)
+    num_bins = len(summed_pdf)
+    conv_bins = np.linspace(min(actual_grant_latencies+actual_accept_latencies), max(actual_grant_latencies)+max(actual_accept_latencies), num_bins)
+    return pdf_to_cdf(summed_pdf), conv_bins
+
+def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
+    """
+    pdf{j} should be a seq of numbers representing the histogram for the jth
+    distribution. Assumes that the numbers in the sequence pdf{j} sum to 1
+    start{j} is the starting of pmf1
+    """
+    conv_pdf = signal.fftconvolve(pdf1,pdf2,'full')
+    conv_pdf = conv_pdf/float(conv_pdf.sum()) # This should be unnecessary, but
+                                              # keeping it just in case pdf1 and pdf2 don't have a sum of 1
+    binsize_out = binsize1 + binsize2
+    start_out = start1 + start2
+    return conv_pdf, start_out, binsize_out
+
 
 
 def plot_micro_2_size_fidelity(name, root, total_round_data):
