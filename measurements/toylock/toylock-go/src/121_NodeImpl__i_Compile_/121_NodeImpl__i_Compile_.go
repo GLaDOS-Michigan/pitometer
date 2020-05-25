@@ -237,7 +237,7 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter)
 	}
 	return ok
 }
-func (_this *NodeImpl) NodeNextAccept(delay int) bool {
+func (_this *NodeImpl) NodeNextAccept(delay int, nodeAcceptLog *clock.Stopwatch) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -254,11 +254,13 @@ TAIL_CALL_START:
 	}
 	if (_1691_rr).Is_RRFail() {
 		ok = false
+		nodeAcceptLog.PopStartEvent()
 		return ok
 	} else if (_1691_rr).Is_RRTimeout() {
 		ok = true
 		{
 		}
+		nodeAcceptLog.PopStartEvent()
 		return ok
 	} else {
 		ok = true
@@ -283,6 +285,7 @@ TAIL_CALL_START:
 		// 	{
 		// 	}
 		// }
+		nodeAcceptLog.LogEndEvent("NodeNextAccept")
 	}
 	return ok
 }
@@ -297,12 +300,11 @@ func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, 
 		ok = _out91
 		nodeGrantLog.LogEndEvent("NodeNextGrant")
 	} else {
-		nodeGrantLog.LogStartEvent("NodeNextAccept")
+		nodeAcceptLog.LogStartEvent("NodeNextAccept")
 		var _out92 bool
 		var _ = _out92
-		_out92 = (_this).NodeNextAccept(delay)
+		_out92 = (_this).NodeNextAccept(delay, nodeAcceptLog)
 		ok = _out92
-		nodeGrantLog.LogEndEvent("NodeNextAccept")
 	}
 	return ok
 }

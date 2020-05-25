@@ -33,4 +33,4 @@ done
 
 python3 analyze_toylock.py $ROOT_DIR
 
-find $ROOT_DIR -type f -name "*.csv" -delete
+# find $ROOT_DIR -type f -name "*.csv" -delete
