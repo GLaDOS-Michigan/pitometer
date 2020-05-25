@@ -59,6 +59,7 @@ import (
 	"clock"
 	_dafny "dafny"
 	"os"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -209,6 +210,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 			// Dump the event log
 			nodeGrantLog.PrintLog()
 			nodeAcceptLog.PrintLog()
+			time.Sleep(1 * time.Second)
 			os.Exit(0)
 		}
 	}
