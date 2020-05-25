@@ -47,8 +47,8 @@ func (c *Client) StartClientLoop() {
 
 		// Send packet
 		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
-		udpClient.Send(pack)
 		c.PingLog.LogStartEvent(sendNote)
+		udpClient.Send(pack)
 
 		// Receive packet
 		var remote *native.IPEndPoint = nil
