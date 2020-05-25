@@ -83,12 +83,12 @@ def plot_micro_1_distr_fidelity_ax(
 ):
     show_hist = False
     kwargs = {'cumulative': True}
-    this_ax.set_xlabel('cumulative probability', fontsize=10)
-    this_ax.set_ylabel('latency (ms)', fontsize=10)
-    this_ax.set_title(name)
     sns.distplot(actual_round_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='round')
     sns.distplot(actual_grant_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='grant')
     sns.distplot(actual_accept_latencies, hist=show_hist, hist_kws=kwargs, kde_kws=kwargs, vertical=True, label='accept')
+    this_ax.set_xlabel('cumulative probability')
+    this_ax.set_ylabel('latency (ms)')
+    this_ax.set_title(name)
     this_ax.set_xlim(0, 1)
     # this_ax.set_ylim(0, np.percentile(actual_round_latencies, 99))
     this_ax.set_yscale("log")
