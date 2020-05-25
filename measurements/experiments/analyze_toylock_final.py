@@ -14,19 +14,19 @@ import pickle
 from plot_constants import *
 
 
-NODES = list(range(1, 21))
-DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
+# DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
+DELAYS = [0, 200, 1_000]  # units of microseconds
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
     # each toylock data is dict of (size -> delay -> node -> [ durs ])
-    with open("%s/%s" %(exp_dir, 'total_grant_data2.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_grant_data_test.pickle'), 'rb') as handle:
         total_grant_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_accept_data2.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_accept_data_test.pickle'), 'rb') as handle:
         total_accept_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_round_data2.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_round_data_test.pickle'), 'rb') as handle:
         total_round_data = pickle.load(handle)
     # total_network_data[i][j] is the timings for node i to node j
     with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:

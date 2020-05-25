@@ -237,7 +237,7 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter)
 	}
 	return ok
 }
-func (_this *NodeImpl) NodeNextAccept(delay int, nodeAcceptLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) NodeNextAccept(delay int) (bool, string) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -254,14 +254,12 @@ TAIL_CALL_START:
 	}
 	if (_1691_rr).Is_RRFail() {
 		ok = false
-		nodeAcceptLog.PopStartEvent()
-		return ok
+		return ok, "accept fail"
 	} else if (_1691_rr).Is_RRTimeout() {
 		ok = true
 		{
 		}
-		nodeAcceptLog.PopStartEvent()
-		return ok
+		return ok, "accept fail"
 	} else {
 		ok = true
 		var _1692_locked__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
@@ -285,28 +283,26 @@ TAIL_CALL_START:
 		// 	{
 		// 	}
 		// }
-		nodeAcceptLog.LogEndEvent("NodeNextAccept")
+		return ok, "accept ok"
 	}
-	return ok
 }
-func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, nodeGrantLog *clock.Stopwatch, nodeAcceptLog *clock.Stopwatch) bool {
+func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter) (bool, string) {
 	var ok bool = false
 	var _ = ok
 	if (_this.Node).Dtor_held() {
-		nodeGrantLog.LogStartEvent("NodeNextGrant")
 		var _out91 bool
 		var _ = _out91
 		_out91 = (_this).NodeNextGrant(delay, nodeGrantCounter)
 		ok = _out91
-		nodeGrantLog.LogEndEvent("NodeNextGrant")
+		return ok, "grant ok"
 	} else {
-		nodeAcceptLog.LogStartEvent("NodeNextAccept")
 		var _out92 bool
 		var _ = _out92
-		_out92 = (_this).NodeNextAccept(delay, nodeAcceptLog)
+		var accept_status string
+		_out92, accept_status = (_this).NodeNextAccept(delay)
 		ok = _out92
+		return ok, accept_status
 	}
-	return ok
 }
 
 // End of class NodeImpl
