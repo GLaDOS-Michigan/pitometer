@@ -73,17 +73,17 @@ def compute_actual_network(participants, total_network_data):
     """
     # participants.sort()
     aggregate_network_latencies = []
-    # for k in total_network_data.keys():
-    #     for j in total_network_data.keys():
-    #         if k != j: 
-    #             aggregate_network_latencies.extend(total_network_data[j][k])
-    # return [x/2.0 for x in aggregate_network_latencies]
-
-    for i in range(len(participants)):
-        this = participants[i]
-        succ = participants[(i+1)%len(participants)]
-        aggregate_network_latencies.extend(total_network_data[this][succ])
+    for k in total_network_data.keys():
+        for j in total_network_data.keys():
+            if k != j: 
+                aggregate_network_latencies.extend(total_network_data[j][k])
     return [x/2.0 for x in aggregate_network_latencies]
+
+    # for i in range(len(participants)):
+    #     this = participants[i]
+    #     succ = participants[(i+1)%len(participants)]
+    #     aggregate_network_latencies.extend(total_network_data[this][succ])
+    # return [x/2.0 for x in aggregate_network_latencies]
 
 
 def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size):
@@ -219,7 +219,8 @@ def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, t
             x_vals_ring_size = sorted(list(total_round_data.keys()))
             y_vals_observed_max = []
             y_vals_observed_ninety_nine_point_nine_percentiles = []
-            y_vals_observed_fifty_percentiles = []
+            y_vals_observed_mean = []
+            y_vals_predicted_mean = []
             y_vals_predicted_ninety_nine_point_nine_percentiles = []
             y_vals_predicted_max = []
             for ring_size in x_vals_ring_size:
@@ -230,20 +231,22 @@ def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, t
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
                 actual_network_latencies = compute_actual_network(participants, total_network_data)
                 y_vals_observed_ninety_nine_point_nine_percentiles.append(np.percentile(actual_round_latencies, 99.9))
-                y_vals_observed_fifty_percentiles.append(np.percentile(actual_round_latencies, 50))
+                y_vals_observed_mean.append(np.mean(actual_round_latencies))
                 y_vals_observed_max.append(max(actual_round_latencies))
 
                 predict_pdf, predict_bins = compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 predict_cdf = pdf_to_cdf(predict_pdf)
+                y_vals_predicted_mean.append(get_mean(predict_pdf, predict_bins))
                 y_vals_predicted_ninety_nine_point_nine_percentiles.append(get_percentile(predict_cdf, predict_bins, 99.9))
                 y_vals_predicted_max.append(get_percentile(predict_cdf, predict_bins, 100))
 
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
             plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, 
-                y_vals_observed_fifty_percentiles, 
+                y_vals_observed_mean,
                 y_vals_observed_ninety_nine_point_nine_percentiles, 
                 y_vals_observed_max,
+                y_vals_predicted_mean,
                 y_vals_predicted_ninety_nine_point_nine_percentiles,
                 y_vals_predicted_max)
             pp.savefig(fig)
@@ -253,15 +256,17 @@ def plot_micro_2_size_fidelity_ax(
     this_ax, 
     title, 
     x_vals_ring_size, 
-    y_vals_observed_fifty_percentiles,
+    y_vals_observed_mean,
     y_vals_observed_ninety_nine_point_nine_percentiles,
     y_vals_observed_max,
+    y_vals_predicted_mean,
     y_vals_predicted_ninety_nine_point_nine_percentiles,
     y_vals_predicted_max):
     this_ax.set_title(title)
     this_ax.set_xlabel("ring size")
     this_ax.set_ylabel("latency (ms)")
-    # this_ax.plot(x_vals_ring_size, y_vals_observed_fifty_percentiles, label='observed 50 percentile', marker='x')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_mean, label='observed mean', marker='v', color='green')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_mean, label='predicted mean', marker='v', color='green', linestyle='dashed')
     this_ax.plot(x_vals_ring_size, y_vals_observed_ninety_nine_point_nine_percentiles, label='observed 99.9 percentile', marker='o', color='blue')
     this_ax.plot(x_vals_ring_size, y_vals_predicted_ninety_nine_point_nine_percentiles, label='predicted 99.9 percentile', marker='x', color='blue', linestyle='dashed')
     this_ax.plot(x_vals_ring_size, y_vals_observed_max, label='observed max', marker='o', color='red')
