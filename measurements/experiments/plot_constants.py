@@ -16,6 +16,16 @@ plt.rc('legend', fontsize=base_size)       # legend fontsize
 plt.rc('lines', linewidth=0.5)
 plt.rc('lines', markersize=2)
 plt.rc('legend', frameon=False)        # No frame around legend
+plt.rc('axes', linewidth=0.5)
+# plt.rcParams['xtick.major.size'] = 2
+plt.rcParams['xtick.major.width'] = 0.5
+plt.rcParams['xtick.minor.width'] = 0.5
+# plt.rcParams['ytick.major.size'] = 2
+plt.rcParams['ytick.major.width'] = 0.5
+plt.rcParams['ytick.minor.width'] = 0.5
+plt.rcParams['xtick.direction'] = 'in'
+plt.rcParams['ytick.direction'] = 'in'
+
 
 # Figure size
 fig_width = 3
