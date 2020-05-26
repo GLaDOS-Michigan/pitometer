@@ -125,7 +125,19 @@ def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
 def predict_f_mean(total_network_data, total_f_node_data, f):
     actions_times = mean_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(actions_times, f, np.mean(network_delays))
+    return sum_from_action_times(actions_times, f, mean_network_delay(network_delays))
+
+
+def mean_network_delay(network_delays, f):
+    cdf, bins = raw_data_to_cdf(network_delays)
+    total_cdf = cdf
+    for q in range(f):
+        for i in range(len(cdf)):
+            total_cdf[i] = total_cdf[i] * cdf[i]
+    mean = 0
+    for i in range(len(bins)):
+        mean += bins[i]- cdf[i] * binsize[i]
+    return mean
 
 def max_action_times(total_f_node_data):
     """
