@@ -57,7 +57,7 @@ def main(exp_dir):
             total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../../network/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
+    with open("%s/../../network/run1/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
 
     # Plot graphs
@@ -125,7 +125,7 @@ def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
 def predict_f_mean(total_network_data, total_f_node_data, f):
     actions_times = mean_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(actions_times, f, mean_network_delay(network_delays))
+    return sum_from_action_times(actions_times, f, mean_network_delay(network_delays, f))
 
 
 def mean_network_delay(network_delays, f):
@@ -135,8 +135,9 @@ def mean_network_delay(network_delays, f):
         for i in range(len(cdf)):
             total_cdf[i] = total_cdf[i] * cdf[i]
     mean = 0
-    for i in range(len(bins)):
-        mean += bins[i]- cdf[i] * binsize[i]
+    for i in range(len(bins)-1):
+        binsize = bins[i+1] - bins[i]
+        mean += binsize - cdf[i] * binsize
     return mean
 
 def max_action_times(total_f_node_data):
