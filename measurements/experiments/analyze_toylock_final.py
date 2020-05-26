@@ -10,6 +10,8 @@ from scipy import signal
 import seaborn as sns
 import pickle
 
+from conv import *
+
 # Plotting constants
 from plot_constants import *
 
@@ -139,35 +141,6 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
 
-def get_mean(pdf, bins):
-    sum = 0
-    for i in range(len(pdf)):
-        sum += pdf[i] * float(bins[i])
-    return sum
-
-def get_percentile(cdf, bins, percentile):
-    assert percentile >= 0 and percentile <= 100
-    for i in range(len(cdf)):
-        if cdf[i] > percentile/100.0:
-            return bins[i]
-    return bins[-1]
-
-def raw_data_to_cdf(data):
-    binsize = 1e-4
-    pdf, bins = raw_data_to_pdf(data, binsize)
-    cdf, bins = pdf_to_cdf(pdf), bins.tolist()
-    return [0] + cdf, [bins[0]] + bins
-
-def raw_data_to_pdf(data, binsize):
-    bincount = int((max(data) - min(data))/binsize)
-    bins = np.linspace(min(data), max(data), bincount)
-    pdf, bins = np.histogram(data, bins=bins)
-    return pdf, bins
-
-def pdf_to_cdf(pdf):
-    cdf = np.cumsum(pdf/pdf.sum()).tolist()
-    return cdf
-
 def compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies):
     initial_binsize = 1e-4
     grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, initial_binsize)
@@ -190,20 +163,6 @@ def compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_acce
     # should be plotted at the point 1
     conv_bins = np.linspace(newstart + newbinsize, newstart + binrange, len(total_sum_pdf))
     return total_sum_pdf, conv_bins
-
-def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
-    """
-    pdf{j} should be a seq of numbers representing the histogram for the jth
-    distribution. Assumes that the numbers in the sequence pdf{j} sum to 1
-    start{j} is the starting of pmf1
-    """
-    conv_pdf = signal.fftconvolve(pdf1,pdf2,'full')
-    conv_pdf = conv_pdf/float(conv_pdf.sum()) # This should be unnecessary, but
-                                              # keeping it just in case pdf1 and pdf2 don't have a sum of 1
-    binsize_out = binsize1 # + binsize2
-    start_out = start1 + start2
-    return conv_pdf, start_out, binsize_out
-
 
 
 def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
