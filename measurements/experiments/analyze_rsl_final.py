@@ -16,7 +16,7 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-F_VALUES = [1, 2]
+F_VALUES = [1, 2, 3, 4, 5]
 
 
 METHODS = {0: "LReplicaNextProcessPacket",
@@ -81,10 +81,14 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     x_vals_f = sorted(list(total_node_data.keys()))
     y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
-
+    y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
+    
+    print("Computing predictions")
     y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[f], f) for f in x_vals_f]
     y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
+    y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[f], f) for f in x_vals_f]
 
+    print("Drawing graphs")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw plot
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
@@ -95,6 +99,9 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
 
         this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
         this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
+
+        this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='x', color='green', linestyle='dashed')
 
         this_ax.legend()
         this_ax.set_xlabel("f")
@@ -114,6 +121,11 @@ def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
     actions_times = percentile_action_times(total_f_node_data, percentile)
     network_delays = compute_actual_network(total_network_data)
     return sum_from_action_times(actions_times, f, np.percentile(network_delays, 99.9))
+
+def predict_f_mean(total_network_data, total_f_node_data, f):
+    actions_times = mean_action_times(total_f_node_data)
+    network_delays = compute_actual_network(total_network_data)
+    return sum_from_action_times(actions_times, f, np.mean(network_delays))
 
 def max_action_times(total_f_node_data):
     """
@@ -143,6 +155,23 @@ def percentile_action_times(total_f_node_data, percentile):
         for node in total_f_node_data.keys():
             aggregate_method_times.extend(total_f_node_data[node][name])
         res[method_id] = np.percentile(aggregate_method_times, percentile)
+    return res
+
+def mean_action_times(total_f_node_data):
+    """
+    Returns a dictionary mapping action id to the percentile completion time
+    total_f_node_data[node_id][method_name] = list of durations
+    """
+    method_ids = list(range(0, 10))
+    res = dict()
+    for method_id in method_ids:
+        name = METHODS[method_id]
+        sum_times = 0
+        count = 0
+        for node in total_f_node_data.keys():
+            sum_times += np.sum(total_f_node_data[node][name])
+            count += len(total_f_node_data[node][name])
+        res[method_id] = sum_times/float(count)
     return res
 
 def sum_from_action_times(actions_times, f, delay):
@@ -193,6 +222,16 @@ def get_f_999(total_f_client_data):
     for durs in total_f_client_data.values():
         aggregate.extend(durs)
     return np.percentile(aggregate, 99.9)
+
+def get_f_mean(total_f_client_data):
+    """Get the mean lantecy observed
+    Arguments:
+        total_f_client_data -- total_f_client_data[i] = list of client durations for trial i
+    """
+    aggregate = []
+    for durs in total_f_client_data.values():
+        aggregate.extend(durs)
+    return np.mean(aggregate)
 
 
 if __name__ == "__main__":
