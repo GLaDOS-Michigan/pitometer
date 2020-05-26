@@ -210,6 +210,15 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		_1762_host__state = _out112
 		{
 		}
+		if nodeGrantCounter.GetCount() == numRounds {
+			nodeAcceptLog.PopStartEvent()
+			nodeGrantLog.PopStartEvent()
+			// Dump the event log
+			nodeGrantLog.PrintLog()
+			nodeAcceptLog.PrintLog()
+			time.Sleep(1 * time.Second)
+			os.Exit(0)
+		}
 		switch status {
 		case "accept ok":
 			nodeAcceptLog.LogEndEvent("NodeNextAccept")
@@ -222,13 +231,6 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 			nodeAcceptLog.PopStartEvent()
 		default:
 			fmt.Printf("Error: unexpected main loop result")
-		}
-		if nodeGrantCounter.GetCount() == numRounds {
-			// Dump the event log
-			nodeGrantLog.PrintLog()
-			nodeAcceptLog.PrintLog()
-			time.Sleep(1 * time.Second)
-			os.Exit(0)
 		}
 	}
 	return exitCode
