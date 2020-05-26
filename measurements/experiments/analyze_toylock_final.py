@@ -15,6 +15,9 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
+TRAIN_SETS = ["training_set_1", "training_set_2"]
+TEST_SETS = ["test_set_1", "test_set_2"]
+
 
 DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
 
@@ -23,24 +26,48 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
+    print("Collecting data")
+    total_grant_data = dict()
+    total_accept_data = dict()
+    total_round_data = dict()
+
     # each toylock data is dict of (size -> delay -> node -> [ durs ])
-    with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'rb') as handle:
-        total_grant_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'rb') as handle:
-        total_accept_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'rb') as handle:
-        total_round_data = pickle.load(handle)
-    # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
+    for train_set in TRAIN_SETS:
+        with open("%s/%s/%s" %(exp_dir, train_set, 'total_grant_data.pickle'), 'rb') as handle:
+            train_grant_data = pickle.load(handle)
+            merge_maps(total_grant_data, train_grant_data)
+        with open("%s/%s/%s" %(exp_dir, train_set, 'total_accept_data.pickle'), 'rb') as handle:
+            train_accept_data = pickle.load(handle)
+            merge_maps(total_accept_data, train_accept_data)
+    for test_set in TEST_SETS:
+        with open("%s/%s/%s" %(exp_dir, test_set, 'total_round_data.pickle'), 'rb') as handle:
+            test_round_data = pickle.load(handle)
+            merge_maps(total_round_data, test_round_data)
+
+    with open("%s/../network/run1/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
 
-    print("\nPlotting graphs for experiment %s" %exp_dir)
+    print("\nComputing graphs")
 
     # Plot Rounds
     plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
+def merge_maps(map1, map2):
+    """ Copy and merge map2 into map1, each map is of the form 
+    (size -> delay -> node -> [ durs ])
+    """
+    for size in map2.keys():
+        if size not in map1:
+            map1[size] = dict()
+        for delay in map2[size].keys():
+            if delay not in map1[size]:
+                map1[size][delay] = dict()
+            for node in map2[size][delay].keys():
+                if node not in map1[size][delay]:
+                    map1[size][delay][node] = []
+                map1[size][delay][node].extend(map2[size][delay][node])
 
 def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
     """ Plot a figure where each subfigure is from an element in total_data
@@ -97,11 +124,11 @@ def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring
     """
     aggregate_grant_latencies = []
     aggregate_accept_latencies = []
-    for r in total_grant_data.keys():
-        for node in total_grant_data[r][delay].keys():
-            aggregate_grant_latencies.extend(total_grant_data[r][delay][node])
-        for node in total_accept_data[r][delay].keys():
-            aggregate_accept_latencies.extend(total_accept_data[r][delay][node])
+    # TONY: Use size only 2 for training data
+    for node in total_grant_data[2][delay].keys():  
+        aggregate_grant_latencies.extend(total_grant_data[2][delay][node])
+    for node in total_accept_data[2][delay].keys():
+        aggregate_accept_latencies.extend(total_accept_data[2][delay][node])
     return aggregate_grant_latencies, aggregate_accept_latencies
 
 
