@@ -10,23 +10,25 @@ from scipy import signal
 import seaborn as sns
 import pickle
 
+from conv import *
+
 # Plotting constants
 from plot_constants import *
 
 
-# DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
-DELAYS = [0, 200, 1_000]  # units of microseconds
+DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
+
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
     # each toylock data is dict of (size -> delay -> node -> [ durs ])
-    with open("%s/%s" %(exp_dir, 'total_grant_data_test.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'rb') as handle:
         total_grant_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_accept_data_test.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'rb') as handle:
         total_accept_data = pickle.load(handle)
-    with open("%s/%s" %(exp_dir, 'total_round_data_test.pickle'), 'rb') as handle:
+    with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'rb') as handle:
         total_round_data = pickle.load(handle)
     # total_network_data[i][j] is the timings for node i to node j
     with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
@@ -35,8 +37,8 @@ def main(exp_dir):
     print("\nPlotting graphs for experiment %s" %exp_dir)
 
     # Plot Rounds
-    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data)
+    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 
@@ -73,17 +75,17 @@ def compute_actual_network(participants, total_network_data):
     """
     # participants.sort()
     aggregate_network_latencies = []
-    # for k in total_network_data.keys():
-    #     for j in total_network_data.keys():
-    #         if k != j: 
-    #             aggregate_network_latencies.extend(total_network_data[j][k])
-    # return [x/2.0 for x in aggregate_network_latencies]
-
-    for i in range(len(participants)):
-        this = participants[i]
-        succ = participants[(i+1)%len(participants)]
-        aggregate_network_latencies.extend(total_network_data[this][succ])
+    for k in total_network_data.keys():
+        for j in total_network_data.keys():
+            if k != j: 
+                aggregate_network_latencies.extend(total_network_data[j][k])
     return [x/2.0 for x in aggregate_network_latencies]
+
+    # for i in range(len(participants)):
+    #     this = participants[i]
+    #     succ = participants[(i+1)%len(participants)]
+    #     aggregate_network_latencies.extend(total_network_data[this][succ])
+    # return [x/2.0 for x in aggregate_network_latencies]
 
 
 def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size):
@@ -139,35 +141,6 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
 
-def get_mean(pdf, bins):
-    sum = 0
-    for i in range(len(pdf)):
-        sum += pdf[i] * float(bins[i])
-    return sum
-
-def get_percentile(cdf, bins, percentile):
-    assert percentile >= 0 and percentile <= 100
-    for i in range(len(cdf)):
-        if cdf[i] > percentile/100.0:
-            return bins[i]
-    return bins[-1]
-
-def raw_data_to_cdf(data):
-    binsize = 1e-4
-    pdf, bins = raw_data_to_pdf(data, binsize)
-    cdf, bins = pdf_to_cdf(pdf), bins.tolist()
-    return [0] + cdf, [bins[0]] + bins
-
-def raw_data_to_pdf(data, binsize):
-    bincount = int((max(data) - min(data))/binsize)
-    bins = np.linspace(min(data), max(data), bincount)
-    pdf, bins = np.histogram(data, bins=bins)
-    return pdf, bins
-
-def pdf_to_cdf(pdf):
-    cdf = np.cumsum(pdf/pdf.sum()).tolist()
-    return cdf
-
 def compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies):
     initial_binsize = 1e-4
     grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, initial_binsize)
@@ -191,22 +164,8 @@ def compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_acce
     conv_bins = np.linspace(newstart + newbinsize, newstart + binrange, len(total_sum_pdf))
     return total_sum_pdf, conv_bins
 
-def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
-    """
-    pdf{j} should be a seq of numbers representing the histogram for the jth
-    distribution. Assumes that the numbers in the sequence pdf{j} sum to 1
-    start{j} is the starting of pmf1
-    """
-    conv_pdf = signal.fftconvolve(pdf1,pdf2,'full')
-    conv_pdf = conv_pdf/float(conv_pdf.sum()) # This should be unnecessary, but
-                                              # keeping it just in case pdf1 and pdf2 don't have a sum of 1
-    binsize_out = binsize1 # + binsize2
-    start_out = start1 + start2
-    return conv_pdf, start_out, binsize_out
 
-
-
-def plot_micro_2_size_fidelity(name, root, total_round_data):
+def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Arguments:
         name -- name of this figure
@@ -217,17 +176,38 @@ def plot_micro_2_size_fidelity(name, root, total_round_data):
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for delay in DELAYS:
             x_vals_ring_size = sorted(list(total_round_data.keys()))
-            y_vals_max = []
-            y_vals_ninety_nine_point_nine_percentiles = []
-            y_vals_fifty_percentiles = []
+            y_vals_observed_max = []
+            y_vals_observed_ninety_nine_point_nine_percentiles = []
+            y_vals_observed_mean = []
+            y_vals_predicted_mean = []
+            y_vals_predicted_ninety_nine_point_nine_percentiles = []
+            y_vals_predicted_max = []
             for ring_size in x_vals_ring_size:
-                leader_node = sorted(list(total_round_data[ring_size][delay].keys()))[0]
-                y_vals_ninety_nine_point_nine_percentiles.append(np.percentile(total_round_data[ring_size][delay][leader_node], 99.9))
-                y_vals_fifty_percentiles.append(np.percentile(total_round_data[ring_size][delay][leader_node], 50))
-                y_vals_max.append(np.max(total_round_data[ring_size][delay][leader_node]))
+                participants = sorted(list(total_round_data[ring_size][delay].keys()))
+                leader_node = participants[0]
+
+                actual_round_latencies = total_round_data[ring_size][delay][leader_node]
+                actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
+                actual_network_latencies = compute_actual_network(participants, total_network_data)
+                y_vals_observed_ninety_nine_point_nine_percentiles.append(np.percentile(actual_round_latencies, 99.9))
+                y_vals_observed_mean.append(np.mean(actual_round_latencies))
+                y_vals_observed_max.append(max(actual_round_latencies))
+
+                predict_pdf, predict_bins = compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+                predict_cdf = pdf_to_cdf(predict_pdf)
+                y_vals_predicted_mean.append(get_mean(predict_pdf, predict_bins))
+                y_vals_predicted_ninety_nine_point_nine_percentiles.append(get_percentile(predict_cdf, predict_bins, 99.9))
+                y_vals_predicted_max.append(get_percentile(predict_cdf, predict_bins, 100))
+
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
-            plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, y_vals_fifty_percentiles, y_vals_ninety_nine_point_nine_percentiles, y_vals_max)
+            plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, 
+                y_vals_observed_mean,
+                y_vals_observed_ninety_nine_point_nine_percentiles, 
+                y_vals_observed_max,
+                y_vals_predicted_mean,
+                y_vals_predicted_ninety_nine_point_nine_percentiles,
+                y_vals_predicted_max)
             pp.savefig(fig)
             plt.close(fig)
 
@@ -235,15 +215,21 @@ def plot_micro_2_size_fidelity_ax(
     this_ax, 
     title, 
     x_vals_ring_size, 
-    y_vals_fifty_percentiles,
-    y_vals_ninety_nine_point_nine_percentiles,
-    y_vals_max):
+    y_vals_observed_mean,
+    y_vals_observed_ninety_nine_point_nine_percentiles,
+    y_vals_observed_max,
+    y_vals_predicted_mean,
+    y_vals_predicted_ninety_nine_point_nine_percentiles,
+    y_vals_predicted_max):
     this_ax.set_title(title)
     this_ax.set_xlabel("ring size")
     this_ax.set_ylabel("latency (ms)")
-    this_ax.plot(x_vals_ring_size, y_vals_fifty_percentiles, label='observed 50 percentile', marker='x', color='blue')
-    this_ax.plot(x_vals_ring_size, y_vals_ninety_nine_point_nine_percentiles, label='observed 99.9 percentile', marker='x', color='red')
-    this_ax.plot(x_vals_ring_size, y_vals_max, label='observed max', marker='x', color='orange')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_mean, label='observed mean', marker='v', color='green')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_mean, label='predicted mean', marker='v', color='green', linestyle='dashed')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_ninety_nine_point_nine_percentiles, label='observed 99.9 percentile', marker='o', color='blue')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_ninety_nine_point_nine_percentiles, label='predicted 99.9 percentile', marker='x', color='blue', linestyle='dashed')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_max, label='observed max', marker='o', color='red')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_max, label='predicted max', marker='x', color='red', linestyle='dashed')
     this_ax.legend()
 
 
