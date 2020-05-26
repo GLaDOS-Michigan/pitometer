@@ -29,4 +29,4 @@ plt.rcParams['ytick.direction'] = 'in'
 
 # Figure size
 fig_width = 3
-fig_height = 2.5
+fig_height = 2.2
