@@ -31,13 +31,13 @@ def main(exp_dir):
     with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'rb') as handle:
         total_round_data = pickle.load(handle)
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
+    with open("%s/../../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
 
     print("\nPlotting graphs for experiment %s" %exp_dir)
 
     # Plot Rounds
-    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
@@ -62,7 +62,6 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 actual_network_latencies = compute_actual_network(participants, total_network_data)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
                 fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
-                print('delay ' + str(delay))
                 plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
@@ -137,12 +136,12 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.set_title(name)
     # this_ax.set_ylim(min(actual_round_latencies), max(actual_round_latencies)+1)
     this_ax.set_xlim(0, 1)
-    # this_ax.set_yscale("log")
+    this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
 
 def compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies):
-    initial_binsize = 1e-4
+    initial_binsize = 1e-3
     grant_pdf, _ = raw_data_to_pdf(actual_grant_latencies, initial_binsize)
     accept_pdf, _ = raw_data_to_pdf(actual_accept_latencies, initial_binsize)
     network_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
