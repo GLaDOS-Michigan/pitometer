@@ -88,8 +88,8 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
                 actual_network_latencies = compute_actual_network(participants, total_network_data)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
-                plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "ring size %.d" %(ring_size), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+                fig.subplots_adjust(left=0.12, right=0.96, top=0.91, bottom=0.13 )
+                plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
 
@@ -161,9 +161,9 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
-    # this_ax.set_ylim(min(actual_round_latencies), max(actual_round_latencies)+1)
+    this_ax.set_ylim(max(0, min(actual_round_latencies)-1), np.percentile(actual_round_latencies, 99.9)+1.5)
     this_ax.set_xlim(0, 1)
-    this_ax.set_yscale("log")
+    # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
 
@@ -226,7 +226,7 @@ def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, t
                 y_vals_predicted_max.append(get_percentile(predict_cdf, predict_bins, 100))
 
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
+            fig.subplots_adjust(left=0.12, right=0.96, top=0.91, bottom=0.13 )
             plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, 
                 y_vals_observed_mean,
                 y_vals_observed_ninety_nine_point_nine_percentiles, 
