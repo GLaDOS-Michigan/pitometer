@@ -10,10 +10,11 @@ fi
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
 GIT_BRANCH="measurements"
 
-NUM_ROUNDS=100
-ITERATIONS=40
+NUM_ROUNDS=200
+# ITERATIONS=40
+ITERATIONS=100
 DELAYS=("0" "200" "1000" "5000" "25000")   # delays are in microseconds
-RING_SIZES=("2" "4" "6" "8" "10" "12" "14")
+RING_SIZES=("2")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new Toylock experiment at time $TIMESTAMP"
@@ -40,7 +41,7 @@ do
         for ((trial=0;trial<$ITERATIONS;trial++))
         do
             time=$(date +"%d-%b-%H%M")
-            time_limit=$(( $ring_size * 1 * $NUM_ROUNDS / 2 ))
+            time_limit=$(( $ring_size * 1 * $NUM_ROUNDS / 3 ))
             echo "Starting trial $trial for ring-size $ring_size and delay $delay at time $time, time limit is $time_limit s"
 
             trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay/trial$trial"
