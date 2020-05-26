@@ -41,7 +41,7 @@ do
         for ((trial=0;trial<$ITERATIONS;trial++))
         do
             time=$(date +"%d-%b-%H%M")
-            time_limit=$(( $ring_size * 1 * $NUM_ROUNDS / 3 ))
+            time_limit=$(( $ring_size * 1 * $NUM_ROUNDS / 4 ))
             echo "Starting trial $trial for ring-size $ring_size and delay $delay at time $time, time limit is $time_limit s"
 
             trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay/trial$trial"
