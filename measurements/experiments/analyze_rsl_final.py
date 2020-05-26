@@ -79,14 +79,15 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
 
     # Compute data points
     x_vals_f = sorted(list(total_node_data.keys()))
-    y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
-    y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
+    # y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
+    # y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
     
     print("Computing predictions")
-    y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[f], f) for f in x_vals_f]
-    y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
+    # y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[f], f) for f in x_vals_f]
+    # y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
     y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[f], f) for f in x_vals_f]
+    y_vals_predict_mean_bad = [predict_f_mean_bad(total_network_data, total_node_data[f], f) for f in x_vals_f]
 
     print("Drawing graphs")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
@@ -94,14 +95,15 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
         fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
 
-        this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
+        # this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
+        # this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
 
-        this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
-        this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
+        # this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
+        # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
 
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='x', color='green', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_predict_mean_bad, label='predicted mean_bad', marker='v', color='green', linestyle='dashed')
 
         this_ax.legend()
         this_ax.set_xlabel("f")
@@ -126,6 +128,11 @@ def predict_f_mean(total_network_data, total_f_node_data, f):
     actions_times = mean_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
     return sum_from_action_times(actions_times, f, mean_network_delay(network_delays, f))
+
+def predict_f_mean_bad(total_network_data, total_f_node_data, f):
+    actions_times = mean_action_times(total_f_node_data)
+    network_delays = compute_actual_network(total_network_data)
+    return sum_from_action_times(actions_times, f, np.mean(network_delays))
 
 
 def mean_network_delay(network_delays, f):
