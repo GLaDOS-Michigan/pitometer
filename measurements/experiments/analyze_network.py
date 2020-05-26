@@ -11,7 +11,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 NODES = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ,20]
-PAYLOADS = [4, 16, 32, 128, 512]
+# PAYLOADS = [4, 16, 32, 128, 512]
+PAYLOADS = [16]
 NODES.sort()
 PAYLOADS.sort()
 THROWAWAY = 10 # Number of starting readings to throw away
