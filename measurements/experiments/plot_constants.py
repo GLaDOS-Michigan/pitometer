@@ -14,7 +14,7 @@ plt.rc('legend', fontsize=base_size)       # legend fontsize
 
 # Graphics
 plt.rc('lines', linewidth=0.5)
-plt.rc('lines', markersize=2)
+plt.rc('lines', markersize=2.1)
 plt.rc('legend', frameon=False)        # No frame around legend
 plt.rc('axes', linewidth=0.5)
 # plt.rcParams['xtick.major.size'] = 2
