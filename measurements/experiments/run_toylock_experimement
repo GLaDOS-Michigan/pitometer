@@ -15,7 +15,7 @@ NUM_ROUNDS=100
 # ITERATIONS=40
 ITERATIONS=10
 DELAYS=("0" "200" "1000" "5000" "25000")   # delays are in microseconds
-RING_SIZES=("2" "4" "6")
+RING_SIZES=("2")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new Toylock experiment at time $TIMESTAMP"

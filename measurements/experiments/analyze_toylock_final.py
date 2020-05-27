@@ -15,8 +15,8 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-TRAIN_SETS = ["training_set_3"]
-TEST_SETS = ["test_set_1", "test_set_2"]
+TRAIN_SETS = ["emergency_train"]
+TEST_SETS = ["emergency_test"]
 
 
 DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
@@ -125,6 +125,11 @@ def compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring
     aggregate_grant_latencies = []
     aggregate_accept_latencies = []
     # TONY: Use size only 2 for training data
+    # for r in total_grant_data.keys():
+    #     for node in total_grant_data[r][delay].keys():  
+    #         aggregate_grant_latencies.extend(total_grant_data[r][delay][node])
+    #     for node in total_accept_data[r][delay].keys():
+    #         aggregate_accept_latencies.extend(total_accept_data[r][delay][node])
     for node in total_grant_data[2][delay].keys():  
         aggregate_grant_latencies.extend(total_grant_data[2][delay][node])
     for node in total_accept_data[2][delay].keys():
