@@ -18,6 +18,10 @@ from plot_constants import *
 
 F_VALUES = [1, 2, 3]
 
+TRAIN_SET = "emergency_train"
+TEST_SET = "emergency_train"
+
+
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            2: "LReplicaNextSpontaneousMaybeEnterPhase2",
@@ -31,6 +35,7 @@ WORK_METHODS = {0: "LReplicaNextProcessPacket",
 }
 
 NOOP_METHODS = {
+           0: "LReplicaNextProcessPacket",  # this is the same as in WORK_METHODS
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop",
            2: "LReplicaNextSpontaneousMaybeEnterPhase2Noop",
            3: "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop",
@@ -60,15 +65,15 @@ def main(exp_dir):
         total_f_client_data[i] = list of client durations for trial i
         total_f_client_start_end[i] = (start, end) time of trial i, defined from start of first request to end of last request
         """
-        with open("%s/total_f%d_node_data.pickle" %(exp_dir, f), 'rb') as handle:
+        with open("%s/%s/total_f%d_node_data.pickle" %(exp_dir, TRAIN_SET, f), 'rb') as handle:
             total_node_data[f] = pickle.load(handle)
-        with open("%s/total_f%d_client_data.pickle" %(exp_dir, f), 'rb') as handle:
+        with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TRAIN_SET, f), 'rb') as handle:
             total_client_data[f] = pickle.load(handle)
-        with open("%s/total_f%d_client_start_end.pickle" %(exp_dir, f), 'rb') as handle:
+        with open("%s/%s/total_f%d_client_start_end.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
             total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../../network/run1/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
+    with open("%s/../network/run1/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
 
     # Plot graphs
@@ -90,15 +95,15 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
 
     # Compute data points
     x_vals_f = sorted(list(total_node_data.keys()))
-    # y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
     # y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
     
     print("Computing predictions")
-    # y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[f], f) for f in x_vals_f]
+    # TONY: Always use total_node_data[1] to make predictions
+    y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[f], f) for f in x_vals_f]
     # y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
     y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[f], f) for f in x_vals_f]
-    y_vals_predict_mean_bad = [predict_f_mean_bad(total_network_data, total_node_data[f], f) for f in x_vals_f]
 
     print("Drawing graphs")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
@@ -114,20 +119,19 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
 
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='x', color='green', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_predict_mean_bad, label='predicted mean_bad', marker='v', color='green', linestyle='dashed')
 
         this_ax.legend()
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("latency (ms)")
-        this_ax.set_yscale("log")
+        # this_ax.set_yscale("log")
         pp.savefig(fig)
         plt.close(fig)
 
 
 def predict_f_max(total_network_data, total_f_node_data, f):
-    actions_times = max_action_times(total_f_node_data)
+    work_actions_times, noop_action_times = max_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(actions_times, f, max(network_delays))
+    return sum_from_action_times(work_actions_times, noop_action_times, f, max(network_delays))
 
 
 def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
@@ -136,9 +140,9 @@ def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
     return sum_from_action_times(actions_times, f, np.percentile(network_delays, 99.9))
 
 def predict_f_mean(total_network_data, total_f_node_data, f):
-    actions_times = mean_action_times(total_f_node_data)
+    work_actions_times, noop_action_times = mean_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(actions_times, f, mean_network_delay(network_delays, f))
+    return sum_from_action_times(work_actions_times, noop_action_times, f, mean_network_delay(network_delays, f))
 
 def predict_f_mean_bad(total_network_data, total_f_node_data, f):
     actions_times = mean_action_times(total_f_node_data)
@@ -161,17 +165,21 @@ def mean_network_delay(network_delays, f):
 def max_action_times(total_f_node_data):
     """
     Returns a dictionary mapping action id to the max completion time
+    One dictionary for real and noop
     total_f_node_data[node_id][method_name] = list of durations
     """
-    method_ids = list(range(0, 10))
-    res = dict()
-    for method_id in method_ids:
-        name = METHODS[method_id]
+    work_res, noop_res = dict(), dict()
+    for work_method_id, work_name in WORK_METHODS.items():
         max_time = 0
         for node in total_f_node_data.keys():
-            max_time = max(max_time, max(total_f_node_data[node][name]))
-        res[method_id] = max_time
-    return res
+            max_time = max(max_time, max([0] + total_f_node_data[node][work_name]))
+        work_res[work_method_id] = max_time
+    for noop_method_id, noop_name in NOOP_METHODS.items():
+        max_time = 0
+        for node in total_f_node_data.keys():
+            max_time = max(max_time, max([0] + total_f_node_data[node][noop_name]))
+        noop_res[noop_method_id] = max_time
+    return work_res, noop_res
 
 def percentile_action_times(total_f_node_data, percentile):
     """
@@ -193,31 +201,57 @@ def mean_action_times(total_f_node_data):
     Returns a dictionary mapping action id to the percentile completion time
     total_f_node_data[node_id][method_name] = list of durations
     """
-    method_ids = list(range(0, 10))
-    res = dict()
-    for method_id in method_ids:
-        name = METHODS[method_id]
+    work_res, noop_res = dict(), dict()
+    for method_id, name in WORK_METHODS.items():
+        # if method_id == 0:
+        #     aggregate = []
+        #     for node in total_f_node_data.keys():
+        #         aggregate.extend(total_f_node_data[node][name])
+        #     work_res[method_id] = np.percentile(aggregate, 99.9)
+        # else:
         sum_times = 0
         count = 0
         for node in total_f_node_data.keys():
             sum_times += np.sum(total_f_node_data[node][name])
             count += len(total_f_node_data[node][name])
-        res[method_id] = sum_times/float(count)
-    return res
+        if count > 0:
+            work_res[method_id] = sum_times/float(count)
+        else:
+            work_res[method_id] = 0.0
+    for method_id, name in NOOP_METHODS.items():
+        sum_times = 0
+        count = 0
+        for node in total_f_node_data.keys():
+            sum_times += np.sum(total_f_node_data[node][name])
+            count += len(total_f_node_data[node][name])
+        noop_res[method_id] = sum_times/float(count)
+    print(work_res)
+    print(noop_res)
+    print()
+    return work_res, noop_res
 
-def sum_from_action_times(actions_times, f, delay):
+def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     """
     Computes the predicted RSL using actions_times
-    reply_delivery_time == (f + 5) * AllActionsTime + ProcessPacket + ActionsUpTo(4) + ActionsUpTo(8) + D + D + D + D
+    // Bound with full vs no-op versions:
+    // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
+    
+    // ReplyBound = TB2b + (f + 3) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull + NoOps(1, 6) + ExecuteFull
+
+    // TB2b = TB2a + ProcessPacketFull(2a) + NoOps(0, 10) + D
+    // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D
     Arguments:
         actions_times -- Map from each action id to the time it uses
     """
-    return (f + 5) * actions_up_to(actions_times, 10) + actions_times[0] + actions_up_to(actions_times, 4) + actions_up_to(actions_times, 8) + 4 * delay
+    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay
+    TB2b = TB2a + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
+    res = TB2b + (f+3) * (work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 10)) + work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6]
+    return res
 
-def actions_up_to(actions_times, i):
+def noop_actions_up_to(noop_actions_times, i, j):
     res = 0
-    for j in range(i):
-        res += actions_times[j]
+    for x in range(i, j):
+        res += noop_actions_times[x]
     return res
 
 def compute_actual_network(total_network_data):
