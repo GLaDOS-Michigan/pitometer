@@ -16,10 +16,9 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-F_VALUES = [1, 2, 3, 4, 5]
+F_VALUES = [1, 2, 3]
 
-
-METHODS = {0: "LReplicaNextProcessPacket",
+WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            2: "LReplicaNextSpontaneousMaybeEnterPhase2",
            3: "LReplicaNextReadClockMaybeNominateValueAndSend2a",
@@ -29,6 +28,18 @@ METHODS = {0: "LReplicaNextProcessPacket",
            7: "LReplicaNextReadClockCheckForViewTimeout",
            8: "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
            9: "LReplicaNextReadClockMaybeSendHeartbeat"
+}
+
+NOOP_METHODS = {
+           1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop",
+           2: "LReplicaNextSpontaneousMaybeEnterPhase2Noop",
+           3: "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop",
+           4: "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop",
+           5: "LReplicaNextSpontaneousMaybeMakeDecisionNoop",
+           6: "LReplicaNextSpontaneousMaybeExecuteNoop",
+           7: "LReplicaNextReadClockCheckForViewTimeoutNoop",
+           8: "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop",
+           9: "LReplicaNextReadClockMaybeSendHeartbeatNoop"
 }
 
 
