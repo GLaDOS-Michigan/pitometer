@@ -15,11 +15,11 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-TRAIN_SETS = ["emergency_test"]
-TEST_SETS = ["emergency_test"]
+TRAIN_SETS = ["final_train_1"]
+TEST_SETS = ["final_test_1", "final_test_2"]
 
 
-DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
+DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
 
 
 def main(exp_dir):
@@ -51,7 +51,7 @@ def main(exp_dir):
 
     # Plot Rounds
     # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
-    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
