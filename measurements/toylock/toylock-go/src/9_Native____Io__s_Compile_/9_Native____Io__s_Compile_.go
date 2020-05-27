@@ -630,7 +630,7 @@ func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 // TONY : DONE
 func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_dafny.Array) {
 	// Note that in Toylock, this is only ever called with timeout 0
-	var packet, err = client.receive_queue.Dequeue()
+	var packet, err = client.receive_queue.DequeueOrWaitForNextElement() // TONY: Do a blocking receive!
 	if err != nil {
 		// receive queue is empty
 		// fmt.Printf("TONY DEBUG: receive_queue empty\n")
