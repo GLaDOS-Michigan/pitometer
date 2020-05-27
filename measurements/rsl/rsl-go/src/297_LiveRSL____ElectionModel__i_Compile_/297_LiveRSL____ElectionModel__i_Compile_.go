@@ -627,7 +627,7 @@ func (_this *CompanionStruct_Default___) ElectionCheckForViewTimeout(ces _251_Li
 		_out153 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4787_end__time = _out153
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ElectionCheckForViewTimeout_timeout"), _4767_start__time, _4787_end__time)
-		noop = true
+		noop = false
 	}
 	{
 	}

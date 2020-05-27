@@ -508,9 +508,10 @@ TAIL_CALL_START:
 	packets__sent = _217_LiveRSL____CMessage__i_Compile.OutboundPackets{_217_LiveRSL____CMessage__i_Compile.OutboundPackets_Broadcast{_5177_packets}}
 	return replica_k, packets__sent
 }
-func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__MaybeSendHeartbeat(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, clock _283_LiveRSL____CClockReading__i_Compile.CClockReading) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
+func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__MaybeSendHeartbeat(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, clock _283_LiveRSL____CClockReading__i_Compile.CClockReading) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
+	var noop bool
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
 	var _ = replica_k
 	var packets__sent _217_LiveRSL____CMessage__i_Compile.OutboundPackets = _217_LiveRSL____CMessage__i_Compile.Type_OutboundPackets_().Default().(_217_LiveRSL____CMessage__i_Compile.OutboundPackets)
@@ -536,6 +537,7 @@ TAIL_CALL_START:
 		_out354 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_5179_end__time = _out354
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_ReadClock_MaybeSendHeartbeat_work"), _5178_start__time, _5179_end__time)
+		noop = false
 	} else {
 		var _out355 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState
 		var _ = _out355
@@ -551,8 +553,9 @@ TAIL_CALL_START:
 		_out357 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_5180_end__time = _out357
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_ReadClock_MaybeSendHeartbeat_nada"), _5178_start__time, _5180_end__time)
+		noop = true
 	}
-	return replica_k, packets__sent
+	return replica_k, packets__sent, noop
 }
 func (_this *CompanionStruct_Default___) ReplicaNextSpontaneousMaybeMakeDecisionSkip(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
