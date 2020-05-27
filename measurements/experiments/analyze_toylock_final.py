@@ -51,7 +51,7 @@ def main(exp_dir):
 
     # Plot Rounds
     # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
-    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
@@ -283,6 +283,11 @@ def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, t
                 y_vals_predicted_ninety_nine_point_nine_percentiles.append(get_percentile(predict_cdf, predict_bins, 99.9))
                 y_vals_predicted_max.append(get_percentile(predict_cdf, predict_bins, 100))
 
+                print("Delay %.1f, size %d" %(delay, ring_size))
+                print("\tobserved max: %.3f" %max(actual_round_latencies))
+                print("\tpredicted max: %.3f" %get_percentile(predict_cdf, predict_bins, 100))
+                print()
+
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.12, right=0.96, top=0.91, bottom=0.13 )
             plot_micro_2_size_fidelity_ax(this_ax, "delay %.1f" %(delay/1000.0), x_vals_ring_size, 
@@ -349,9 +354,11 @@ def plot_micro_2_size_fidelity_ratio_ax(
     mean_ratio = [y_vals_predicted_mean[i]/y_vals_observed_mean[i] for i in range(len(y_vals_predicted_mean))]
     ninety_nine_nine_percentile_ratio = [y_vals_predicted_ninety_nine_point_nine_percentiles[i]/y_vals_observed_ninety_nine_point_nine_percentiles[i] for i in range(len(y_vals_predicted_mean))]
     max_ratio =  [y_vals_predicted_max[i]/y_vals_observed_max[i] for i in range(len(y_vals_predicted_mean))]
+    this_ax.set_yticks(range(-1,int(max(max_ratio))+2, 1))
     this_ax.plot(x_vals_ring_size, max_ratio, label='max', marker='x', color='firebrick')
     this_ax.plot(x_vals_ring_size, ninety_nine_nine_percentile_ratio, label='99.9 percentile', marker='v', color='navy')
     this_ax.plot(x_vals_ring_size, mean_ratio, label='mean', marker='o', color='forestgreen')
+    this_ax.set_ylim(-1, int(max(max_ratio))+2)
     this_ax.legend()
 
 
