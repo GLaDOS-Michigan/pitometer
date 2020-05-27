@@ -237,7 +237,7 @@ func (_this *NodeImpl) NodeNextGrant(delay int, nodeGrantCounter *clock.Counter)
 	}
 	return ok
 }
-func (_this *NodeImpl) NodeNextAccept(delay int) (bool, string) {
+func (_this *NodeImpl) NodeNextAccept(delay int, nodeAcceptLog *clock.Stopwatch) (bool, string) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -261,6 +261,7 @@ TAIL_CALL_START:
 		}
 		return ok, "accept fail"
 	} else {
+		nodeAcceptLog.LogStartEvent("NodeNextAccept")
 		ok = true
 		var _1692_locked__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
 		var _ = _1692_locked__packet
@@ -286,7 +287,7 @@ TAIL_CALL_START:
 		return ok, "accept ok"
 	}
 }
-func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter) (bool, string) {
+func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter, nodeAcceptLog *clock.Stopwatch) (bool, string) {
 	var ok bool = false
 	var _ = ok
 	if (_this.Node).Dtor_held() {
@@ -299,7 +300,7 @@ func (_this *NodeImpl) HostNextMain(delay int, nodeGrantCounter *clock.Counter) 
 		var _out92 bool
 		var _ = _out92
 		var accept_status string
-		_out92, accept_status = (_this).NodeNextAccept(delay)
+		_out92, accept_status = (_this).NodeNextAccept(delay, nodeAcceptLog)
 		ok = _out92
 		return ok, accept_status
 	}

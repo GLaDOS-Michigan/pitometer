@@ -193,7 +193,6 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 	var nodeGrantCounter = clock.NewCounter("NodeGrant counter")
 	for _1761_ok {
 		nodeGrantLog.LogStartEvent("NodeNextGrant")
-		nodeAcceptLog.LogStartEvent("NodeNextAccept")
 		{
 		}
 		{
@@ -205,7 +204,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		var _out112 _131_Host__i_Compile.CScheduler
 		var _ = _out112
 		var status string
-		_out111, _out112, status = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, delay, nodeGrantCounter)
+		_out111, _out112, status = _131_Host__i_Compile.Companion_Default___.HostNextImpl(_1762_host__state, delay, nodeGrantCounter, nodeAcceptLog)
 		_1761_ok = _out111
 		_1762_host__state = _out112
 		{
@@ -224,11 +223,11 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 			nodeAcceptLog.LogEndEvent("NodeNextAccept")
 			nodeGrantLog.PopStartEvent()
 		case "accept fail":
-			nodeAcceptLog.PopStartEvent()
+			// nodeAcceptLog.PopStartEvent()
 			nodeGrantLog.PopStartEvent()
 		case "grant ok":
 			nodeGrantLog.LogEndEvent("NodeNextGrant")
-			nodeAcceptLog.PopStartEvent()
+			// nodeAcceptLog.PopStartEvent()
 		default:
 			fmt.Printf("Error: unexpected main loop result")
 		}
