@@ -1431,9 +1431,10 @@ TAIL_CALL_START:
 	}(proposer)
 	return proposer_k, noop
 }
-func (_this *CompanionStruct_Default___) ProposerCheckForQuorumOfViewSuspicions(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
+func (_this *CompanionStruct_Default___) ProposerCheckForQuorumOfViewSuspicions(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
+	var noop bool
 	var proposer_k _254_LiveRSL____ProposerState__i_Compile.ProposerState = _254_LiveRSL____ProposerState__i_Compile.Type_ProposerState_().Default().(_254_LiveRSL____ProposerState__i_Compile.ProposerState)
 	var _ = proposer_k
 	var _4927_start__time uint64
@@ -1492,10 +1493,12 @@ TAIL_CALL_START:
 	_4936_end__time = _out211
 	if _4931_lt {
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerCheckForQuorumOfViewSuspicions_changed"), _4927_start__time, _4936_end__time)
+		noop = false
 	} else {
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerCheckForQuorumOfViewSuspicions_nada"), _4927_start__time, _4936_end__time)
+		noop = true
 	}
-	return proposer_k
+	return proposer_k, noop
 }
 func (_this *CompanionStruct_Default___) ProposerResetViewTimerDueToExecution(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, val _dafny.Seq, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
 	goto TAIL_CALL_START

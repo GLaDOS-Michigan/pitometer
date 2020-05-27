@@ -394,8 +394,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForVi
 	return ok
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForQuorumOfViewSuspicions(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForQuorumOfViewSuspicions(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog *clock.Stopwatch, LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoopLog *clock.Stopwatch) bool {
 	LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.LogStartEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+	LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoopLog.LogStartEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -414,7 +416,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForQu
 	var _ = _out501
 	var _out502 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out502
-	_out501, _out502 = _347_LiveRSL____ReplicaModel__Part4__i_Compile.Companion_Default___.Replica__Next__ReadClock__CheckForQuorumOfViewSuspicions(r.Replica, _5274_clock, r.Cur__req__set, r.Prev__req__set)
+	_out501, _out502, noop = _347_LiveRSL____ReplicaModel__Part4__i_Compile.Companion_Default___.Replica__Next__ReadClock__CheckForQuorumOfViewSuspicions(r.Replica, _5274_clock, r.Cur__req__set, r.Prev__req__set)
 	(r).Replica = _out501
 	_5275_sent__packets = _out502
 	{
@@ -430,7 +432,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForQu
 	_out503 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5275_sent__packets)
 	ok = _out503
 	if !(ok) {
-		LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.LogEndEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+		if noop {
+			LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoopLog.LogEndEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop")
+			LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.PopStartEvent()
+		} else {
+			LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.LogEndEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+			LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -445,7 +453,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForQu
 	}
 	{
 	}
-	LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.LogEndEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+	if noop {
+		LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoopLog.LogEndEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop")
+		LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.PopStartEvent()
+	} else {
+		LReplicaNextReadClockCheckForQuorumOfViewSuspicionsLog.LogEndEvent("LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+		LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoopLog.PopStartEvent()
+	}
 	return ok
 }
 
@@ -522,7 +536,7 @@ TAIL_CALL_START:
 	} else if (r.NextActionIndex) == (uint64(8)) {
 		var _out510 bool
 		var _ = _out510
-		_out510 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForQuorumOfViewSuspicions(r, logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"])
+		_out510 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForQuorumOfViewSuspicions(r, logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"], logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"])
 		ok = _out510
 	} else if (r.NextActionIndex) == (uint64(9)) {
 		var _out511 bool

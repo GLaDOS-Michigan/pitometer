@@ -332,7 +332,7 @@ func main() {
 	logs["LReplicaNextReadClockCheckForViewTimeout"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForViewTimeout") // Done
 	logs["LReplicaNextReadClockCheckForViewTimeoutNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForViewTimeoutNoop")
 
-	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForQuorumOfViewSuspicions")
+	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForQuorumOfViewSuspicions") // Done
 	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop")
 
 	logs["LReplicaNextReadClockMaybeSendHeartbeat"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockMaybeSendHeartbeat")
