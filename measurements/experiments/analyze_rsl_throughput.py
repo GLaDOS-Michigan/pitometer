@@ -7,8 +7,11 @@ import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
+import pickle
 
-BATCH_SIZES = [1, 32]
+from plot_constants import *
+
+BATCH_SIZES = [32]
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
@@ -16,6 +19,13 @@ def main(exp_dir):
     for batch_size in BATCH_SIZES:
         # total_data is dict (f -> threads -> trials -> [ (start, end, client_id)... ]
         total_batch_data = parse_batch_files(exp_dir, batch_size)
+
+        with open("%s/tp_client_data.pickle" %(exp_dir), 'wb') as handle:
+            pickle.dump(total_batch_data, handle)
+
+        with open("%s/tp_client_data.pickle" %(exp_dir), 'rb') as handle:
+            total_batch_data = pickle.load(handle)
+
         name = "batch_%d_latency_throughput" %batch_size
         gen_latency_throughput_graphs(name, exp_dir, total_batch_data)
 
@@ -60,7 +70,8 @@ def gen_latency_throughput_graphs(name, root, total_batch_data):
         total_batch_data {dict} -- (f -> threads -> trials -> [ (start, end, client_id)... ]
     """
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        fig, axes = plt.subplots(len(total_batch_data), 1, figsize=(8.5, 11), sharex=True)
+        fig, axes = plt.subplots(len(total_batch_data), 1, figsize=(fig_width, fig_height), sharex=True)
+        fig.subplots_adjust(left=0.14, right=0.95, top=0.9, bottom=0.15 )
         row = 0
         for f in sorted(list(total_batch_data.keys())):
             latencies = compute_average_latencies(total_batch_data[f])
@@ -70,7 +81,7 @@ def gen_latency_throughput_graphs(name, root, total_batch_data):
                 ax = axes
             else:
                 ax = axes[row]
-            plot_latency_throughput(ax, "f = %d" %(f), latencies, throughputs)
+            plot_latency_throughput(ax, "IronRSL latency and throughput", latencies, throughputs)
             row += 1
         pp.savefig(fig)
         plt.close(fig)
@@ -80,8 +91,8 @@ def gen_latency_throughput_graphs(name, root, total_batch_data):
 def plot_latency_throughput(this_ax, title, latencies, throughputs):
     this_ax.set_title(title)
     this_ax.set_xlabel("throughput (reqs/sec)")
-    this_ax.set_ylabel("latency (ms)")
-    this_ax.grid()
+    this_ax.set_ylabel("request latency (ms)")
+    # this_ax.grid()
     stats = AnchoredText(
             generate_statistics(latencies, throughputs), 
             loc='upper right',  
@@ -89,8 +100,11 @@ def plot_latency_throughput(this_ax, title, latencies, throughputs):
             bbox_to_anchor=(1.1, 1),
             bbox_transform=this_ax.transAxes
             )
-    this_ax.add_artist(stats)
-    this_ax.plot(throughputs, latencies, marker='x')
+    # this_ax.add_artist(stats)
+    this_ax.plot(throughputs, latencies, marker='x',  label="observed performance", color='navy')
+    this_ax.plot(throughputs, [12.60282847837942 for i in throughputs],  label="predicted mean latency", color='firebrick', linestyle='dashed')
+    this_ax.legend()
+    
 
 
 def generate_statistics(latencies, throughputs):
