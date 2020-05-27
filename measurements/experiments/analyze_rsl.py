@@ -149,14 +149,16 @@ def analyze_node_csv(filepath):
     durations_nano = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
+        prev_event = 'End'
         for row in csvreader:
             if len(row) > 2 and int(row[0]) >= 0:
                 event_type = row[1]
                 if event_type == 'Start':
                     prevStart = int(row[3])
-                if event_type == 'End':
+                if event_type == 'End' and prev_event == 'Start':
                     dur = int(row[3]) - prevStart  # duration in nanoseconds
                     durations_nano.append(dur)
+                prev_event = event_type
     durations_milli = list(map(lambda x: x/1_000_000.0, durations_nano))
     return durations_milli
 

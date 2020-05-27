@@ -236,7 +236,7 @@ def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     // Bound with full vs no-op versions:
     // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
     
-    // ReplyBound = TB2b + (f + 3) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull + NoOps(1, 6) + ExecuteFull
+    // ReplyBound = TB2b + (f + 3) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2a) + NoOps(1, 6) + ExecuteFull
 
     // TB2b = TB2a + ProcessPacketFull(2a) + NoOps(0, 10) + D
     // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D
