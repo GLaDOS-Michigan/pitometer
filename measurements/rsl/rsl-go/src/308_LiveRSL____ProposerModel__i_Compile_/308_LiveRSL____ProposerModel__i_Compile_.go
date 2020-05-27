@@ -1408,16 +1408,17 @@ TAIL_CALL_START:
 	}(proposer)
 	return proposer_k
 }
-func (_this *CompanionStruct_Default___) ProposerCheckForViewTimeout(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
+func (_this *CompanionStruct_Default___) ProposerCheckForViewTimeout(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
+	var noop bool
 	var proposer_k _254_LiveRSL____ProposerState__i_Compile.ProposerState = _254_LiveRSL____ProposerState__i_Compile.Type_ProposerState_().Default().(_254_LiveRSL____ProposerState__i_Compile.ProposerState)
 	var _ = proposer_k
 	var _4924_election__state_k _251_LiveRSL____ElectionState__i_Compile.CElectionState
 	var _ = _4924_election__state_k
 	var _out207 _251_LiveRSL____ElectionState__i_Compile.CElectionState
 	var _ = _out207
-	_out207 = _297_LiveRSL____ElectionModel__i_Compile.Companion_Default___.ElectionCheckForViewTimeout((proposer).Dtor_election__state(), clock, cur__req__set, prev__req__set)
+	_out207, noop = _297_LiveRSL____ElectionModel__i_Compile.Companion_Default___.ElectionCheckForViewTimeout((proposer).Dtor_election__state(), clock, cur__req__set, prev__req__set)
 	_4924_election__state_k = _out207
 	proposer_k = func(_pat_let64_0 _254_LiveRSL____ProposerState__i_Compile.ProposerState) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
 		return func(_4925_dt__update__tmp_h0 _254_LiveRSL____ProposerState__i_Compile.ProposerState) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
@@ -1428,7 +1429,7 @@ TAIL_CALL_START:
 			}(_4924_election__state_k)
 		}(_pat_let64_0)
 	}(proposer)
-	return proposer_k
+	return proposer_k, noop
 }
 func (_this *CompanionStruct_Default___) ProposerCheckForQuorumOfViewSuspicions(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
 	goto TAIL_CALL_START

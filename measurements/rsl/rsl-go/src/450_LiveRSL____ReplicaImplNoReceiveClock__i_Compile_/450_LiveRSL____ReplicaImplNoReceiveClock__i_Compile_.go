@@ -325,8 +325,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNomin
 	return ok
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForViewTimeout(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockCheckForViewTimeoutLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForViewTimeout(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockCheckForViewTimeoutLog *clock.Stopwatch, LReplicaNextReadClockCheckForViewTimeoutNoopLog *clock.Stopwatch) bool {
 	LReplicaNextReadClockCheckForViewTimeoutLog.LogStartEvent("LReplicaNextReadClockCheckForViewTimeout")
+	LReplicaNextReadClockCheckForViewTimeoutNoopLog.LogStartEvent("LReplicaNextReadClockCheckForViewTimeoutNoop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -345,7 +347,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForVi
 	var _ = _out497
 	var _out498 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out498
-	_out497, _out498 = _347_LiveRSL____ReplicaModel__Part4__i_Compile.Companion_Default___.Replica__Next__ReadClock__CheckForViewTimeout(r.Replica, _5272_clock, r.Cur__req__set, r.Prev__req__set)
+	_out497, _out498, noop = _347_LiveRSL____ReplicaModel__Part4__i_Compile.Companion_Default___.Replica__Next__ReadClock__CheckForViewTimeout(r.Replica, _5272_clock, r.Cur__req__set, r.Prev__req__set)
 	(r).Replica = _out497
 	_5273_sent__packets = _out498
 	{
@@ -361,7 +363,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForVi
 	_out499 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5273_sent__packets)
 	ok = _out499
 	if !(ok) {
-		LReplicaNextReadClockCheckForViewTimeoutLog.LogEndEvent("LReplicaNextReadClockCheckForViewTimeout")
+		if noop {
+			LReplicaNextReadClockCheckForViewTimeoutNoopLog.LogEndEvent("LReplicaNextReadClockCheckForViewTimeoutNoop")
+			LReplicaNextReadClockCheckForViewTimeoutLog.PopStartEvent()
+		} else {
+			LReplicaNextReadClockCheckForViewTimeoutLog.LogEndEvent("LReplicaNextReadClockCheckForViewTimeout")
+			LReplicaNextReadClockCheckForViewTimeoutNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -376,7 +384,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForVi
 	}
 	{
 	}
-	LReplicaNextReadClockCheckForViewTimeoutLog.LogEndEvent("LReplicaNextReadClockCheckForViewTimeout")
+	if noop {
+		LReplicaNextReadClockCheckForViewTimeoutNoopLog.LogEndEvent("LReplicaNextReadClockCheckForViewTimeoutNoop")
+		LReplicaNextReadClockCheckForViewTimeoutLog.PopStartEvent()
+	} else {
+		LReplicaNextReadClockCheckForViewTimeoutLog.LogEndEvent("LReplicaNextReadClockCheckForViewTimeout")
+		LReplicaNextReadClockCheckForViewTimeoutNoopLog.PopStartEvent()
+	}
 	return ok
 }
 
@@ -503,7 +517,7 @@ TAIL_CALL_START:
 	} else if (r.NextActionIndex) == (uint64(7)) {
 		var _out509 bool
 		var _ = _out509
-		_out509 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForViewTimeout(r, logs["LReplicaNextReadClockCheckForViewTimeout"])
+		_out509 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForViewTimeout(r, logs["LReplicaNextReadClockCheckForViewTimeout"], logs["LReplicaNextReadClockCheckForViewTimeoutNoop"])
 		ok = _out509
 	} else if (r.NextActionIndex) == (uint64(8)) {
 		var _out510 bool
