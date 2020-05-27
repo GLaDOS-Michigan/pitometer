@@ -1,0 +1,1 @@
+Has the first 40/100 rounds removed for starting effects
