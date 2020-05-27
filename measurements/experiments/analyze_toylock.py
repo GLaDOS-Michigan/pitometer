@@ -11,7 +11,7 @@ import pickle
 
 
 NODES = list(range(1, 21))
-DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
+DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
 
 
 def main(exp_dir):
