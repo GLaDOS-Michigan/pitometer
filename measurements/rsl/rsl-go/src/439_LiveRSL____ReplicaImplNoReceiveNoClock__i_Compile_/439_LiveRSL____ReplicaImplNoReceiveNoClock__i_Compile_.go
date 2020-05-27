@@ -364,8 +364,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	return ok
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousTruncateLogBasedOnCheckpoints(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousTruncateLogBasedOnCheckpoints(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog *clock.Stopwatch, LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoopLog *clock.Stopwatch) bool {
 	LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.LogStartEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+	LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoopLog.LogStartEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -376,7 +378,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousT
 	var _ = _out478
 	var _out479 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out479
-	_out478, _out479 = _355_LiveRSL____ReplicaModel__Part5__i_Compile.Companion_Default___.Replica__Next__Spontaneous__TruncateLogBasedOnCheckpoints(r.Replica)
+	_out478, _out479, noop = _355_LiveRSL____ReplicaModel__Part5__i_Compile.Companion_Default___.Replica__Next__Spontaneous__TruncateLogBasedOnCheckpoints(r.Replica)
 	(r).Replica = _out478
 	_5267_sent__packets = _out479
 	{
@@ -386,7 +388,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousT
 	_out480 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5267_sent__packets)
 	ok = _out480
 	if !(ok) {
-		LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.LogEndEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+		if noop {
+			LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoopLog.LogEndEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
+			LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.PopStartEvent()
+		} else {
+			LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.LogEndEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+			LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -401,7 +409,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousT
 	}
 	{
 	}
-	LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.LogEndEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+	if noop {
+		LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoopLog.LogEndEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
+		LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.PopStartEvent()
+	} else {
+		LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsLog.LogEndEvent("LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+		LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoopLog.PopStartEvent()
+	}
 	return ok
 }
 func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeMakeDecision(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeMakeDecisionLog *clock.Stopwatch) bool {
@@ -502,7 +516,7 @@ TAIL_CALL_START:
 	} else if (r.NextActionIndex) == (uint64(4)) {
 		var _out489 bool
 		var _ = _out489
-		_out489 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousTruncateLogBasedOnCheckpoints(r, logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"])
+		_out489 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousTruncateLogBasedOnCheckpoints(r, logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"], logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"])
 		ok = _out489
 	} else if (r.NextActionIndex) == (uint64(5)) {
 		var _out490 bool
