@@ -349,8 +349,8 @@ def plot_micro_2_size_fidelity_ratio_ax(
     mean_ratio = [y_vals_predicted_mean[i]/y_vals_observed_mean[i] for i in range(len(y_vals_predicted_mean))]
     ninety_nine_nine_percentile_ratio = [y_vals_predicted_ninety_nine_point_nine_percentiles[i]/y_vals_observed_ninety_nine_point_nine_percentiles[i] for i in range(len(y_vals_predicted_mean))]
     max_ratio =  [y_vals_predicted_max[i]/y_vals_observed_max[i] for i in range(len(y_vals_predicted_mean))]
-    this_ax.plot(x_vals_ring_size, max_ratio, label='max', marker='o', color='firebrick')
-    this_ax.plot(x_vals_ring_size, ninety_nine_nine_percentile_ratio, label='99.9 percentile', marker='o', color='navy')
+    this_ax.plot(x_vals_ring_size, max_ratio, label='max', marker='x', color='firebrick')
+    this_ax.plot(x_vals_ring_size, ninety_nine_nine_percentile_ratio, label='99.9 percentile', marker='v', color='navy')
     this_ax.plot(x_vals_ring_size, mean_ratio, label='mean', marker='o', color='forestgreen')
     this_ax.legend()
 
