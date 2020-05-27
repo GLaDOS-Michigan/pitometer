@@ -280,7 +280,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__Process__2b(replica _285
 	_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_Process_2b"), _5106_start__time, _5112_end__time)
 	return replica_k, packets__sent
 }
-func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeEnterNewViewAndSend1a(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
+func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeEnterNewViewAndSend1a(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
@@ -301,7 +301,8 @@ TAIL_CALL_START:
 	var _ = _out304
 	var _out305 _217_LiveRSL____CMessage__i_Compile.CBroadcast
 	var _ = _out305
-	_out304, _out305 = _308_LiveRSL____ProposerModel__i_Compile.Companion_Default___.ProposerMaybeEnterNewViewAndSend1a((replica).Dtor_proposer())
+	var noop bool
+	_out304, _out305, noop = _308_LiveRSL____ProposerModel__i_Compile.Companion_Default___.ProposerMaybeEnterNewViewAndSend1a((replica).Dtor_proposer())
 	_5114_newProposer = _out304
 	_5115_packets = _out305
 	replica_k = func(_pat_let128_0 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) _285_LiveRSL____ReplicaState__i_Compile.ReplicaState {
@@ -321,7 +322,7 @@ TAIL_CALL_START:
 	_out306 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 	_5118_end__time = _out306
 	_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_Spontaneous_MaybeEnterNewViewAndSend1a"), _5113_start__time, _5118_end__time)
-	return replica_k, packets__sent
+	return replica_k, packets__sent, noop
 }
 func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeEnterPhase2(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
 	goto TAIL_CALL_START
