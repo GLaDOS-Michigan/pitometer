@@ -12,15 +12,24 @@ import seaborn as sns
 F_VALUES = [1, 2, 3, 4, 5]
 THROWAWAY = 1000  # How many initial executions to ignore
 METHODS = ["LReplicaNextProcessPacket",
-           "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
-           "LReplicaNextSpontaneousMaybeEnterPhase2",
-           "LReplicaNextReadClockMaybeNominateValueAndSend2a",
-           "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints",
-           "LReplicaNextSpontaneousMaybeMakeDecision",
-           "LReplicaNextSpontaneousMaybeExecute",
-           "LReplicaNextReadClockCheckForViewTimeout",
-           "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
-           "LReplicaNextReadClockMaybeSendHeartbeat"
+            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
+            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop",
+            "LReplicaNextSpontaneousMaybeEnterPhase2",
+            "LReplicaNextSpontaneousMaybeEnterPhase2Noop",
+            "LReplicaNextReadClockMaybeNominateValueAndSend2a",
+            "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop",
+            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints",
+            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop",
+            "LReplicaNextSpontaneousMaybeMakeDecision",
+            "LReplicaNextSpontaneousMaybeMakeDecisionNoop",
+            "LReplicaNextSpontaneousMaybeExecute",
+            "LReplicaNextSpontaneousMaybeExecuteNoop",
+            "LReplicaNextReadClockCheckForViewTimeout",
+            "LReplicaNextReadClockCheckForViewTimeoutNoop",
+            "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
+            "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop",
+            "LReplicaNextReadClockMaybeSendHeartbeat",
+            "LReplicaNextReadClockMaybeSendHeartbeatNoop"
            ]
 
 plt.rc('xtick', labelsize=8)    # fontsize of the tick labels
