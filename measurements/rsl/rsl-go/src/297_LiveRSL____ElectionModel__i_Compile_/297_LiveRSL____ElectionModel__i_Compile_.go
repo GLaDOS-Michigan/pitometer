@@ -486,7 +486,8 @@ func (_this *CompanionStruct_Default___) ElectionProcessHeartbeat(ces _251_LiveR
 	}
 	return ces_k
 }
-func (_this *CompanionStruct_Default___) ElectionCheckForViewTimeout(ces _251_LiveRSL____ElectionState__i_Compile.CElectionState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _251_LiveRSL____ElectionState__i_Compile.CElectionState {
+func (_this *CompanionStruct_Default___) ElectionCheckForViewTimeout(ces _251_LiveRSL____ElectionState__i_Compile.CElectionState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) (_251_LiveRSL____ElectionState__i_Compile.CElectionState, bool) {
+	var noop bool
 	var ces_k _251_LiveRSL____ElectionState__i_Compile.CElectionState = _251_LiveRSL____ElectionState__i_Compile.Type_CElectionState_().Default().(_251_LiveRSL____ElectionState__i_Compile.CElectionState)
 	var _ = ces_k
 	var _4767_start__time uint64
@@ -512,6 +513,7 @@ func (_this *CompanionStruct_Default___) ElectionCheckForViewTimeout(ces _251_Li
 		_out149 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4768_end__time = _out149
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ElectionCheckForViewTimeout_nada"), _4767_start__time, _4768_end__time)
+		noop = true
 		{
 		}
 	} else if (((ces).Dtor_requests__received__prev__epochs()).Cardinality()).Cmp(_dafny.Zero) == 0 {
@@ -559,6 +561,7 @@ func (_this *CompanionStruct_Default___) ElectionCheckForViewTimeout(ces _251_Li
 		_out151 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4776_end__time = _out151
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ElectionCheckForViewTimeout_noprev"), _4767_start__time, _4776_end__time)
+		noop = false
 	} else {
 		{
 		}
@@ -624,10 +627,11 @@ func (_this *CompanionStruct_Default___) ElectionCheckForViewTimeout(ces _251_Li
 		_out153 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4787_end__time = _out153
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ElectionCheckForViewTimeout_timeout"), _4767_start__time, _4787_end__time)
+		noop = true
 	}
 	{
 	}
-	return ces_k
+	return ces_k, noop
 }
 func (_this *CompanionStruct_Default___) ElectionCheckForQuorumOfViewSuspicions(ces _251_LiveRSL____ElectionState__i_Compile.CElectionState, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _251_LiveRSL____ElectionState__i_Compile.CElectionState {
 	var ces_k _251_LiveRSL____ElectionState__i_Compile.CElectionState = _251_LiveRSL____ElectionState__i_Compile.Type_CElectionState_().Default().(_251_LiveRSL____ElectionState__i_Compile.CElectionState)
