@@ -18,7 +18,7 @@ from plot_constants import *
 
 F_VALUES = [1, 2, 3, 4, 5]
 
-THROW=100  # Ignore the first 100 requests in computing client latencies
+THROW=200  # Ignore the first 100 requests in computing client latencies
 
 TRAIN_SET = "final_test"
 TEST_SET = "final_test"
@@ -127,9 +127,13 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         this_ax.set_ylabel("request latency (ms)")
         this_ax.xaxis.set_ticks(x_vals_f)
         this_ax.set_yscale("log")
-        this_ax.set_ylim(bottom=0)
+        this_ax.set_ylim(bottom=0.1)
         pp.savefig(fig)
         plt.close(fig)
+
+        print("Predicted max for each f:" + str(y_vals_predict_max) )
+        print("Predict mean  :" + str(y_vals_predict_mean) )
+        print("Real mean     :" + str(y_vals_actual_mean) )
 
 
 def predict_f_max(total_network_data, total_f_node_data, f):
@@ -207,21 +211,21 @@ def mean_action_times(total_f_node_data):
     """
     work_res, noop_res = dict(), dict()
     for method_id, name in WORK_METHODS.items():
-        # if method_id == 0:
-        #     aggregate = []
-        #     for node in total_f_node_data.keys():
-        #         aggregate.extend(total_f_node_data[node][name])
-        #     work_res[method_id] = np.percentile(aggregate, 99.9)
-        # else:
-        sum_times = 0
-        count = 0
-        for node in total_f_node_data.keys():
-            sum_times += np.sum(total_f_node_data[node][name])
-            count += len(total_f_node_data[node][name])
-        if count > 0:
-            work_res[method_id] = sum_times/float(count)
+        if method_id == 0:
+            aggregate = []
+            for node in total_f_node_data.keys():
+                aggregate.extend(total_f_node_data[node][name])
+            work_res[method_id] = np.mean(aggregate) * 10
         else:
-            work_res[method_id] = 0.0
+            sum_times = 0
+            count = 0
+            for node in total_f_node_data.keys():
+                sum_times += np.sum(total_f_node_data[node][name])
+                count += len(total_f_node_data[node][name])
+            if count > 0:
+                work_res[method_id] = sum_times/float(count)
+            else:
+                work_res[method_id] = 0.0
     for method_id, name in NOOP_METHODS.items():
         sum_times = 0
         count = 0
