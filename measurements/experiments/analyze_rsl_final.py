@@ -111,8 +111,9 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw plot
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-        fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
-
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
+        this_ax.set_title("Predictions of IronRSL performance")
+    
         this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
         this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
 
@@ -121,12 +122,12 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
 
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='x', color='green', linestyle='dashed')
-
-        this_ax.legend()
+        this_ax.legend(loc='upper right', bbox_to_anchor=(0.97, 0.9))
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
         this_ax.xaxis.set_ticks(x_vals_f)
         this_ax.set_yscale("log")
+        this_ax.set_ylim(bottom=0)
         pp.savefig(fig)
         plt.close(fig)
 
