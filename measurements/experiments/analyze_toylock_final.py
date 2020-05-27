@@ -50,9 +50,9 @@ def main(exp_dir):
     print("\nComputing graphs")
 
     # Plot Rounds
-    plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
+    # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -211,8 +211,8 @@ def plot_micro_1_distr_fidelity_ax(
     print('Pred average '+  str(np.average(predict_bins, weights=predict_pdf)))
     print('Real average ' + str(sum(actual_round_latencies)/ len(actual_round_latencies)))
     print()
-    plt.plot(round_cdf, round_bins[:-1], label='actual round', linewidth=0.7)
-    plt.plot(predict_cdf, predict_bins, label='predicted')
+    plt.plot(round_cdf, round_bins[:-1], label='actual round', color='navy')
+    plt.plot(predict_cdf, predict_bins, label='predicted', color='firebrick', linestyle='dashed')
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
@@ -295,6 +295,19 @@ def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, t
             pp.savefig(fig)
             plt.close(fig)
 
+            # Also, plot their ratios
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig.subplots_adjust(left=0.12, right=0.96, top=0.91, bottom=0.13 )
+            plot_micro_2_size_fidelity_ratio_ax(this_ax, "workload %.1f ms " %(delay/1000.0), x_vals_ring_size, 
+                y_vals_observed_mean,
+                y_vals_observed_ninety_nine_point_nine_percentiles, 
+                y_vals_observed_max,
+                y_vals_predicted_mean,
+                y_vals_predicted_ninety_nine_point_nine_percentiles,
+                y_vals_predicted_max)
+            pp.savefig(fig)
+            plt.close(fig)
+
 def plot_micro_2_size_fidelity_ax(
     this_ax, 
     title, 
@@ -307,13 +320,38 @@ def plot_micro_2_size_fidelity_ax(
     y_vals_predicted_max):
     this_ax.set_title(title)
     this_ax.set_xlabel("ring size")
+    this_ax.set_xticks(x_vals_ring_size)
     this_ax.set_ylabel("latency (ms)")
-    this_ax.plot(x_vals_ring_size, y_vals_observed_mean, label='observed mean', marker='v', color='green')
-    this_ax.plot(x_vals_ring_size, y_vals_predicted_mean, label='predicted mean', marker='v', color='green', linestyle='dashed')
-    this_ax.plot(x_vals_ring_size, y_vals_observed_ninety_nine_point_nine_percentiles, label='observed 99.9 percentile', marker='o', color='blue')
-    this_ax.plot(x_vals_ring_size, y_vals_predicted_ninety_nine_point_nine_percentiles, label='predicted 99.9 percentile', marker='x', color='blue', linestyle='dashed')
-    this_ax.plot(x_vals_ring_size, y_vals_observed_max, label='observed max', marker='o', color='red')
-    this_ax.plot(x_vals_ring_size, y_vals_predicted_max, label='predicted max', marker='x', color='red', linestyle='dashed')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_mean, label='observed mean', marker='o', color='forestgreen')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_mean, label='predicted mean', marker='v', color='forestgreen', linestyle='dashed')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_ninety_nine_point_nine_percentiles, label='observed 99.9 percentile', marker='o', color='navy')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_ninety_nine_point_nine_percentiles, label='predicted 99.9 percentile', marker='v', color='navy', linestyle='dashed')
+    this_ax.plot(x_vals_ring_size, y_vals_observed_max, label='observed max', marker='o', color='firebrick')
+    this_ax.plot(x_vals_ring_size, y_vals_predicted_max, label='predicted max', marker='v', color='firebrick', linestyle='dashed')
+    this_ax.set_yscale("log")
+    this_ax.legend()
+
+def plot_micro_2_size_fidelity_ratio_ax(
+    this_ax, 
+    title, 
+    x_vals_ring_size, 
+    y_vals_observed_mean,
+    y_vals_observed_ninety_nine_point_nine_percentiles,
+    y_vals_observed_max,
+    y_vals_predicted_mean,
+    y_vals_predicted_ninety_nine_point_nine_percentiles,
+    y_vals_predicted_max):
+    this_ax.set_title(title)
+    this_ax.set_xticks(x_vals_ring_size)
+    this_ax.set_xlabel("ring size")
+    this_ax.set_ylabel("predicted/observed")
+
+    mean_ratio = [y_vals_predicted_mean[i]/y_vals_observed_mean[i] for i in range(len(y_vals_predicted_mean))]
+    ninety_nine_nine_percentile_ratio = [y_vals_predicted_ninety_nine_point_nine_percentiles[i]/y_vals_observed_ninety_nine_point_nine_percentiles[i] for i in range(len(y_vals_predicted_mean))]
+    max_ratio =  [y_vals_predicted_max[i]/y_vals_observed_max[i] for i in range(len(y_vals_predicted_mean))]
+    this_ax.plot(x_vals_ring_size, max_ratio, label='max', marker='o', color='firebrick')
+    this_ax.plot(x_vals_ring_size, ninety_nine_nine_percentile_ratio, label='99.9 percentile', marker='o', color='navy')
+    this_ax.plot(x_vals_ring_size, mean_ratio, label='mean', marker='o', color='forestgreen')
     this_ax.legend()
 
 

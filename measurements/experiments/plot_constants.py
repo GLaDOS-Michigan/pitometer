@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 # Global plotting params
 # Fonts
-base_size = 6
+base_size = 7
 plt.rc('font', family='sans-serif') 
 plt.rc('font', size=base_size)              # controls default text sizes
 plt.rc('axes', titlesize=base_size)        # fontsize of the axes title
