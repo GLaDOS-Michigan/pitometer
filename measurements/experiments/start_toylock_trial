@@ -92,8 +92,9 @@ do
     fi
 done
 # Rest a little after each trial
-echo "sleep ${#HOST_ID_LIST[@]}s"
-sleep ${#HOST_ID_LIST[@]} 
+sleep_time=(( ${#HOST_ID_LIST[@]} + 2 ))
+echo "sleep $sleep_time s"
+sleep $sleep_time
 echo "Run completed"
 
 # Finally, grab results from each node to local machine
