@@ -15,7 +15,7 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-TRAIN_SETS = ["training_set_1", "training_set_2"]
+TRAIN_SETS = ["training_set_3"]
 TEST_SETS = ["test_set_1", "test_set_2"]
 
 
