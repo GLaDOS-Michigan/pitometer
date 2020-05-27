@@ -348,7 +348,7 @@ func (_this *CompanionStruct_Default___) ProposerProcessRequest(proposer _254_Li
 	}
 	return proposer_k
 }
-func (_this *CompanionStruct_Default___) ProposerMaybeEnterNewViewAndSend1a(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast) {
+func (_this *CompanionStruct_Default___) ProposerMaybeEnterNewViewAndSend1a(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast, bool) {
 	var proposer_k _254_LiveRSL____ProposerState__i_Compile.ProposerState = _254_LiveRSL____ProposerState__i_Compile.Type_ProposerState_().Default().(_254_LiveRSL____ProposerState__i_Compile.ProposerState)
 	var _ = proposer_k
 	var sent__packets _217_LiveRSL____CMessage__i_Compile.CBroadcast = _217_LiveRSL____CMessage__i_Compile.Type_CBroadcast_().Default().(_217_LiveRSL____CMessage__i_Compile.CBroadcast)
@@ -367,6 +367,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterNewViewAndSend1a(prop
 	var _ = _out168
 	_out168 = _214_LiveRSL____CTypes__i_Compile.Companion_Default___.CBalLt((proposer).Dtor_max__ballot__i__sent__1a(), ((proposer).Dtor_election__state()).Dtor_current__view())
 	_4833_lt = _out168
+	var noop = false
 	if (((((proposer).Dtor_election__state()).Dtor_current__view()).Dtor_proposer__id()) == (((proposer).Dtor_constants()).Dtor_my__index())) && (_4833_lt) {
 		{
 		}
@@ -438,6 +439,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterNewViewAndSend1a(prop
 		_out170 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4842_end__time = _out170
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerMaybeEnterNewViewAndSend1a_work"), _4832_start__time, _4842_end__time)
+		noop = false
 	} else {
 		proposer_k = proposer
 		sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}
@@ -448,8 +450,9 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterNewViewAndSend1a(prop
 		_out171 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4843_end__time = _out171
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerMaybeEnterNewViewAndSend1a_nada"), _4832_start__time, _4843_end__time)
+		noop = true
 	}
-	return proposer_k, sent__packets
+	return proposer_k, sent__packets, noop
 }
 func (_this *CompanionStruct_Default___) ProposerProcess1b(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, packet _217_LiveRSL____CMessage__i_Compile.CPacket) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
 	var proposer_k _254_LiveRSL____ProposerState__i_Compile.ProposerState = _254_LiveRSL____ProposerState__i_Compile.Type_ProposerState_().Default().(_254_LiveRSL____ProposerState__i_Compile.ProposerState)

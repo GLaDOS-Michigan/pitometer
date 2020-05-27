@@ -254,8 +254,9 @@ func (_this type_Default___) String() string {
 	return "_439_LiveRSL____ReplicaImplNoReceiveNoClock__i_Compile.Default__"
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterNewViewAndSend1a(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterNewViewAndSend1a(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog *clock.Stopwatch, LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoopLog *clock.Stopwatch) bool {
 	LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.LogStartEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+	LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoopLog.LogStartEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop")
 	var ok bool = false
 	var _ = ok
 	{
@@ -266,7 +267,8 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	var _ = _out472
 	var _out473 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out473
-	_out472, _out473 = _339_LiveRSL____ReplicaModel__Part3__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeEnterNewViewAndSend1a(r.Replica)
+	var noop bool
+	_out472, _out473, noop = _339_LiveRSL____ReplicaModel__Part3__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeEnterNewViewAndSend1a(r.Replica)
 	(r).Replica = _out472
 	_5265_sent__packets = _out473
 	{
@@ -276,7 +278,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	_out474 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5265_sent__packets)
 	ok = _out474
 	if !(ok) {
-		LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+		if noop {
+			LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoopLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop")
+			LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.PopStartEvent()
+		} else {
+			LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+			LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -291,7 +299,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	}
 	{
 	}
-	LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+	if noop {
+		LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoopLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop")
+		LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.PopStartEvent()
+	} else {
+		LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+		LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoopLog.PopStartEvent()
+	}
 	return ok
 }
 
@@ -464,7 +478,7 @@ TAIL_CALL_START:
 	if (r.NextActionIndex) == (uint64(1)) {
 		var _out487 bool
 		var _ = _out487
-		_out487 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterNewViewAndSend1a(r, logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"])
+		_out487 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterNewViewAndSend1a(r, logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"], logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"])
 		ok = _out487
 	} else if (r.NextActionIndex) == (uint64(2)) {
 		var _out488 bool
