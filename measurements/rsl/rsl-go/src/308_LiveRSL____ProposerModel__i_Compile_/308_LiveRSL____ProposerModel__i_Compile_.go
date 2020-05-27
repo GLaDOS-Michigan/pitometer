@@ -699,7 +699,8 @@ func (_this *CompanionStruct_Default___) GetMaxLogTruncationPoint(s _dafny.Set) 
 	}
 	return maxLogTruncationPoint
 }
-func (_this *CompanionStruct_Default___) ProposerMaybeEnterPhase2(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, log__truncation__point _214_LiveRSL____CTypes__i_Compile.COperationNumber) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast) {
+func (_this *CompanionStruct_Default___) ProposerMaybeEnterPhase2(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, log__truncation__point _214_LiveRSL____CTypes__i_Compile.COperationNumber) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast, bool) {
+	var noop bool
 	var proposer_k _254_LiveRSL____ProposerState__i_Compile.ProposerState = _254_LiveRSL____ProposerState__i_Compile.Type_ProposerState_().Default().(_254_LiveRSL____ProposerState__i_Compile.ProposerState)
 	var _ = proposer_k
 	var sent__packets _217_LiveRSL____CMessage__i_Compile.CBroadcast = _217_LiveRSL____CMessage__i_Compile.Type_CBroadcast_().Default().(_217_LiveRSL____CMessage__i_Compile.CBroadcast)
@@ -792,6 +793,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterPhase2(proposer _254_
 		_out184 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4873_end__time = _out184
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerMaybeEnterPhase2_work"), _4862_start__time, _4873_end__time)
+		noop = false
 	} else {
 		proposer_k = proposer
 		sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}
@@ -804,12 +806,13 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterPhase2(proposer _254_
 		_out185 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4874_end__time = _out185
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerMaybeEnterPhase2_nada"), _4862_start__time, _4874_end__time)
+		noop = true
 	}
 	{
 	}
 	{
 	}
-	return proposer_k, sent__packets
+	return proposer_k, sent__packets, noop
 }
 func (_this *CompanionStruct_Default___) ProposerNominateNewValueAndSend2a(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, log__truncation__point _214_LiveRSL____CTypes__i_Compile.COperationNumber) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast) {
 	// fmt.Printf("TONY DEBUG: ProposerNominateNewValueAndSend2a\n")

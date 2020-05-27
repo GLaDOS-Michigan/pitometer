@@ -324,9 +324,10 @@ TAIL_CALL_START:
 	_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_Spontaneous_MaybeEnterNewViewAndSend1a"), _5113_start__time, _5118_end__time)
 	return replica_k, packets__sent, noop
 }
-func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeEnterPhase2(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
+func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeEnterPhase2(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
+	var noop bool
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
 	var _ = replica_k
 	var packets__sent _217_LiveRSL____CMessage__i_Compile.OutboundPackets = _217_LiveRSL____CMessage__i_Compile.Type_OutboundPackets_().Default().(_217_LiveRSL____CMessage__i_Compile.OutboundPackets)
@@ -345,7 +346,7 @@ TAIL_CALL_START:
 	var _ = _out308
 	var _out309 _217_LiveRSL____CMessage__i_Compile.CBroadcast
 	var _ = _out309
-	_out308, _out309 = _308_LiveRSL____ProposerModel__i_Compile.Companion_Default___.ProposerMaybeEnterPhase2((replica).Dtor_proposer(), ((replica).Dtor_acceptor()).Dtor_log__truncation__point())
+	_out308, _out309, noop = _308_LiveRSL____ProposerModel__i_Compile.Companion_Default___.ProposerMaybeEnterPhase2((replica).Dtor_proposer(), ((replica).Dtor_acceptor()).Dtor_log__truncation__point())
 	_5120_newProposer = _out308
 	_5121_packets = _out309
 	replica_k = func(_pat_let130_0 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) _285_LiveRSL____ReplicaState__i_Compile.ReplicaState {
@@ -365,7 +366,7 @@ TAIL_CALL_START:
 	_out310 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 	_5124_end__time = _out310
 	_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_Spontaneous_MaybeEnterPhase2"), _5119_start__time, _5124_end__time)
-	return replica_k, packets__sent
+	return replica_k, packets__sent, noop
 }
 func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeNominateValueAndSend2a(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, clock _283_LiveRSL____CClockReading__i_Compile.CClockReading) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
 	goto TAIL_CALL_START
