@@ -344,6 +344,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_L
 		LReplicaNextProcessPacketLog.PopStartEvent()
 		ok = true
 		Companion_Default___.ReplicaNextProcessPacketTimeout(r)
+		return ok
 	} else {
 		var _5264_marshallable bool
 		var _ = _5264_marshallable
