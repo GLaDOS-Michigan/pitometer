@@ -15,8 +15,8 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-TRAIN_SETS = ["test_set_2"]
-TEST_SETS = ["test_set_2"]
+TRAIN_SETS = ["emergency_test"]
+TEST_SETS = ["emergency_test"]
 
 
 DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
@@ -85,7 +85,7 @@ def plot_convolution(name, root, total_grant_data, total_accept_data):
             for ring_size in x_vals_ring_size:
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                fig.subplots_adjust(left=0.16, right=0.96, top=0.91, bottom=0.13 )
+                fig.subplots_adjust(left=0.14, right=0.96, top=0.91, bottom=0.13 )
                 plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
@@ -117,7 +117,7 @@ def plot_convolution_ax(
     this_ax.set_title(name)
     # this_ax.set_ylim(max(0, min(actual_round_latencies)-1), np.percentile(actual_round_latencies, 99.9)+1.5)
     this_ax.set_xlim(0, 1)
-    this_ax.set_yscale("log")
+    # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
     this_ax.legend()
 
