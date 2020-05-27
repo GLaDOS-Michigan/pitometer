@@ -92,7 +92,8 @@ do
     fi
 done
 # Rest a little after each trial
-sleep_time=$(( ${#HOST_ID_LIST[@]} + 0 ))
+# sleep_time=$(( ${#HOST_ID_LIST[@]} + 0 ))
+sleep_time=2
 echo "sleep $sleep_time s"
 sleep $sleep_time
 echo "Run completed"
