@@ -81,7 +81,7 @@ func (el *Stopwatch) PopStartEvent() {
 		os.Exit(1)
 	}
 	if (*el.log)[l-1].event != Start {
-		fmt.Printf("Error: Expected start event\n")
+		fmt.Printf("Error: %v Expected start event\n", el.name)
 		os.Exit(1)
 	}
 	var newLog = (*el.log)[:l-1]

@@ -210,7 +210,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		{
 		}
 		if nodeGrantCounter.GetCount() == numRounds {
-			nodeAcceptLog.PopStartEvent()
+			// nodeAcceptLog.PopStartEvent()
 			nodeGrantLog.PopStartEvent()
 			// Dump the event log
 			nodeGrantLog.PrintLog()
