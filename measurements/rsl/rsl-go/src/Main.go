@@ -311,16 +311,16 @@ func main() {
 	var logs = make(map[string]*clock.Stopwatch)
 	logs["LReplicaNextProcessPacket"] = clock.NewStopwatch(initialSize, "LReplicaNextProcessPacket")
 
-	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a")
+	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a") // Done
 	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop")
 
-	logs["LReplicaNextSpontaneousMaybeEnterPhase2"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterPhase2")
+	logs["LReplicaNextSpontaneousMaybeEnterPhase2"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterPhase2") // Done
 	logs["LReplicaNextSpontaneousMaybeEnterPhase2Noop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeEnterPhase2Noop")
 
-	logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockMaybeNominateValueAndSend2a")
+	logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockMaybeNominateValueAndSend2a") // Done
 	logs["LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
 
-	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints")
+	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints") // Done
 	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
 
 	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecision")

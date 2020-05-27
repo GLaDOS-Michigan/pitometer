@@ -256,8 +256,10 @@ func (_this type_Default___) String() string {
 	return "_450_LiveRSL____ReplicaImplNoReceiveClock__i_Compile.Default__"
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockMaybeNominateValueAndSend2aLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockMaybeNominateValueAndSend2aLog *clock.Stopwatch, LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog *clock.Stopwatch) bool {
 	LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogStartEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
+	LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.LogStartEvent("LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -276,7 +278,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNomin
 	var _ = _out493
 	var _out494 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out494
-	_out493, _out494 = _339_LiveRSL____ReplicaModel__Part3__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeNominateValueAndSend2a(r.Replica, _5270_clock)
+	_out493, _out494, noop = _339_LiveRSL____ReplicaModel__Part3__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeNominateValueAndSend2a(r.Replica, _5270_clock)
 	(r).Replica = _out493
 	_5271_sent__packets = _out494
 	{
@@ -292,7 +294,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNomin
 	_out495 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5271_sent__packets)
 	ok = _out495
 	if !(ok) {
-		LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
+		if noop {
+			LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
+			LReplicaNextReadClockMaybeNominateValueAndSend2aLog.PopStartEvent()
+		} else {
+			LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
+			LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -307,7 +315,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNomin
 	}
 	{
 	}
-	LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
+	if noop {
+		LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
+		LReplicaNextReadClockMaybeNominateValueAndSend2aLog.PopStartEvent()
+	} else {
+		LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
+		LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.PopStartEvent()
+	}
 	return ok
 }
 
@@ -484,7 +498,7 @@ TAIL_CALL_START:
 	if (r.NextActionIndex) == (uint64(3)) {
 		var _out508 bool
 		var _ = _out508
-		_out508 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r, logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"])
+		_out508 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r, logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"], logs["LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"])
 		ok = _out508
 	} else if (r.NextActionIndex) == (uint64(7)) {
 		var _out509 bool
