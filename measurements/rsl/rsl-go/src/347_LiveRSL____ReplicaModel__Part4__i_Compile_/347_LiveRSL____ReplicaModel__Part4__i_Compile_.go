@@ -394,7 +394,8 @@ func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__CheckForViewT
 	}
 	return replica_k, packets__sent, noop
 }
-func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__CheckForQuorumOfViewSuspicions(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, clock _283_LiveRSL____CClockReading__i_Compile.CClockReading, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
+func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__CheckForQuorumOfViewSuspicions(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, clock _283_LiveRSL____CClockReading__i_Compile.CClockReading, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets, bool) {
+	var noop bool
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
 	var _ = replica_k
 	var packets__sent _217_LiveRSL____CMessage__i_Compile.OutboundPackets = _217_LiveRSL____CMessage__i_Compile.Type_OutboundPackets_().Default().(_217_LiveRSL____CMessage__i_Compile.OutboundPackets)
@@ -409,7 +410,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__CheckForQuoru
 	var _ = _5150_newProposer
 	var _out327 _254_LiveRSL____ProposerState__i_Compile.ProposerState
 	var _ = _out327
-	_out327 = _308_LiveRSL____ProposerModel__i_Compile.Companion_Default___.ProposerCheckForQuorumOfViewSuspicions((replica).Dtor_proposer(), (clock).Dtor_t(), cur__req__set, prev__req__set)
+	_out327, noop = _308_LiveRSL____ProposerModel__i_Compile.Companion_Default___.ProposerCheckForQuorumOfViewSuspicions((replica).Dtor_proposer(), (clock).Dtor_t(), cur__req__set, prev__req__set)
 	_5150_newProposer = _out327
 	replica_k = func(_pat_let141_0 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) _285_LiveRSL____ReplicaState__i_Compile.ReplicaState {
 		return func(_5151_dt__update__tmp_h0 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) _285_LiveRSL____ReplicaState__i_Compile.ReplicaState {
@@ -442,7 +443,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__ReadClock__CheckForQuoru
 	}
 	{
 	}
-	return replica_k, packets__sent
+	return replica_k, packets__sent, noop
 }
 
 // End of class Default__
