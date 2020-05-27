@@ -1242,8 +1242,9 @@ func (_this *CompanionStruct_Default___) DidSomeAcceptorHaveProposal(proposer _2
 	}
 	return b
 }
-func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, log__truncation__point _214_LiveRSL____CTypes__i_Compile.COperationNumber) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast) {
+func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, clock uint64, log__truncation__point _214_LiveRSL____CTypes__i_Compile.COperationNumber) (_254_LiveRSL____ProposerState__i_Compile.ProposerState, _217_LiveRSL____CMessage__i_Compile.CBroadcast, bool) {
 	// fmt.Printf("\nTONY DEBUG: ProposerMaybeNominateValueAndSend2a\n")
+	var noop bool
 	var proposer_k _254_LiveRSL____ProposerState__i_Compile.ProposerState = _254_LiveRSL____ProposerState__i_Compile.Type_ProposerState_().Default().(_254_LiveRSL____ProposerState__i_Compile.ProposerState)
 	var _ = proposer_k
 	var sent__packets _217_LiveRSL____CMessage__i_Compile.CBroadcast = _217_LiveRSL____CMessage__i_Compile.Type_CBroadcast_().Default().(_217_LiveRSL____CMessage__i_Compile.CBroadcast)
@@ -1258,6 +1259,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(pro
 		// fmt.Printf("TONY DEBUG: I can't nominate\n")
 		proposer_k = proposer
 		sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}
+		noop = true
 	} else {
 		if ((((proposer).Dtor_next__operation__number__to__propose()) >= (((proposer).Dtor_maxOpnWithProposal()).Dtor_n())) && ((((proposer).Dtor_request__queue()).Cardinality()).Cmp(_dafny.Zero) == 0)) && ((((proposer).Dtor_maxOpnWithProposal()).Dtor_n()) < (uint64(18446744073709551615))) {
 			{
@@ -1267,6 +1269,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(pro
 			proposer_k = proposer
 			// fmt.Printf("TONY DEBUG: The happily ever after branch\n")
 			sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}
+			noop = true
 		} else {
 			var _4910_noProposal bool
 			var _ = _4910_noProposal
@@ -1284,6 +1287,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(pro
 				sent__packets = _out200
 				{
 				}
+				noop = false
 			} else {
 				var _4911_queueSize _dafny.Int
 				var _ = _4911_queueSize
@@ -1322,6 +1326,7 @@ func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(pro
 					sent__packets = _out203
 					{
 					}
+					noop = false
 				} else {
 					if ((_4911_queueSize).Cmp(_dafny.Zero) > 0) && (((proposer).Dtor_incomplete__batch__timer()).Is_CIncompleteBatchTimerOff()) {
 						// fmt.Printf("TONY DEBUG: Batch timer is off; turn on the batch timer\n")
@@ -1341,16 +1346,18 @@ func (_this *CompanionStruct_Default___) ProposerMaybeNominateValueAndSend2a(pro
 							}(_pat_let58_0)
 						}(proposer)
 						sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}
+						noop = false
 					} else {
 						// fmt.Printf("TONY DEBUG: Give up and not do anything\n")
 						proposer_k = proposer
 						sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}
+						noop = true
 					}
 				}
 			}
 		}
 	}
-	return proposer_k, sent__packets
+	return proposer_k, sent__packets, noop
 }
 func (_this *CompanionStruct_Default___) ProposerProcessHeartbeat(proposer _254_LiveRSL____ProposerState__i_Compile.ProposerState, packet _217_LiveRSL____CMessage__i_Compile.CPacket, clock uint64, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet) _254_LiveRSL____ProposerState__i_Compile.ProposerState {
 	goto TAIL_CALL_START
