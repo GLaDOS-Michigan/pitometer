@@ -463,8 +463,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextCheckForQu
 	return ok
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendHeartbat(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockMaybeSendHeartbeatLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendHeartbat(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockMaybeSendHeartbeatLog *clock.Stopwatch, LReplicaNextReadClockMaybeSendHeartbeatNoopLog *clock.Stopwatch) bool {
 	LReplicaNextReadClockMaybeSendHeartbeatLog.LogStartEvent("LReplicaNextReadClockMaybeSendHeartbeat")
+	LReplicaNextReadClockMaybeSendHeartbeatNoopLog.LogStartEvent("LReplicaNextReadClockMaybeSendHeartbeatNoop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -483,7 +485,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendH
 	var _ = _out505
 	var _out506 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out506
-	_out505, _out506 = _355_LiveRSL____ReplicaModel__Part5__i_Compile.Companion_Default___.Replica__Next__ReadClock__MaybeSendHeartbeat(r.Replica, _5276_clock)
+	_out505, _out506, noop = _355_LiveRSL____ReplicaModel__Part5__i_Compile.Companion_Default___.Replica__Next__ReadClock__MaybeSendHeartbeat(r.Replica, _5276_clock)
 	(r).Replica = _out505
 	_5277_sent__packets = _out506
 	{
@@ -499,7 +501,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendH
 	_out507 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5277_sent__packets)
 	ok = _out507
 	if !(ok) {
-		LReplicaNextReadClockMaybeSendHeartbeatLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeat")
+		if noop {
+			LReplicaNextReadClockMaybeSendHeartbeatNoopLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeatNoop")
+			LReplicaNextReadClockMaybeSendHeartbeatLog.PopStartEvent()
+		} else {
+			LReplicaNextReadClockMaybeSendHeartbeatLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeat")
+			LReplicaNextReadClockMaybeSendHeartbeatNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -514,7 +522,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendH
 	}
 	{
 	}
-	LReplicaNextReadClockMaybeSendHeartbeatLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeat")
+	if noop {
+		LReplicaNextReadClockMaybeSendHeartbeatNoopLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeatNoop")
+		LReplicaNextReadClockMaybeSendHeartbeatLog.PopStartEvent()
+	} else {
+		LReplicaNextReadClockMaybeSendHeartbeatLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeat")
+		LReplicaNextReadClockMaybeSendHeartbeatNoopLog.PopStartEvent()
+	}
 	return ok
 }
 
@@ -541,7 +555,7 @@ TAIL_CALL_START:
 	} else if (r.NextActionIndex) == (uint64(9)) {
 		var _out511 bool
 		var _ = _out511
-		_out511 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeSendHeartbat(r, logs["LReplicaNextReadClockMaybeSendHeartbeat"])
+		_out511 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeSendHeartbat(r, logs["LReplicaNextReadClockMaybeSendHeartbeat"], logs["LReplicaNextReadClockMaybeSendHeartbeatNoop"])
 		ok = _out511
 	}
 	return ok
