@@ -472,8 +472,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	}
 	return ok
 }
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeExecute(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeExecuteLog *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeExecute(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeExecuteLog *clock.Stopwatch, LReplicaNextSpontaneousMaybeExecuteNoopLog *clock.Stopwatch) bool {
 	LReplicaNextSpontaneousMaybeExecuteLog.LogStartEvent("LReplicaNextSpontaneousMaybeExecute")
+	LReplicaNextSpontaneousMaybeExecuteNoopLog.LogStartEvent("LReplicaNextSpontaneousMaybeExecuteNoop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -484,7 +486,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	var _ = _out484
 	var _out485 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out485
-	_out484, _out485 = _355_LiveRSL____ReplicaModel__Part5__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeExecute(r.Replica, r.Cur__req__set, r.Prev__req__set, r.Reply__cache__mutable)
+	_out484, _out485, noop = _355_LiveRSL____ReplicaModel__Part5__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeExecute(r.Replica, r.Cur__req__set, r.Prev__req__set, r.Reply__cache__mutable)
 	(r).Replica = _out484
 	_5269_sent__packets = _out485
 	{
@@ -494,7 +496,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	_out486 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5269_sent__packets)
 	ok = _out486
 	if !(ok) {
-		LReplicaNextSpontaneousMaybeExecuteLog.LogEndEvent("LReplicaNextSpontaneousMaybeExecute")
+		if noop {
+			LReplicaNextSpontaneousMaybeExecuteNoopLog.LogEndEvent("LReplicaNextSpontaneousMaybeExecuteNoop")
+			LReplicaNextSpontaneousMaybeExecuteLog.PopStartEvent()
+		} else {
+			LReplicaNextSpontaneousMaybeExecuteLog.LogEndEvent("LReplicaNextSpontaneousMaybeExecute")
+			LReplicaNextSpontaneousMaybeExecuteNoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -509,7 +517,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	}
 	{
 	}
-	LReplicaNextSpontaneousMaybeExecuteLog.LogEndEvent("LReplicaNextSpontaneousMaybeExecute")
+	if noop {
+		LReplicaNextSpontaneousMaybeExecuteNoopLog.LogEndEvent("LReplicaNextSpontaneousMaybeExecuteNoop")
+		LReplicaNextSpontaneousMaybeExecuteLog.PopStartEvent()
+	} else {
+		LReplicaNextSpontaneousMaybeExecuteLog.LogEndEvent("LReplicaNextSpontaneousMaybeExecute")
+		LReplicaNextSpontaneousMaybeExecuteNoopLog.PopStartEvent()
+	}
 	return ok
 }
 func (_this *CompanionStruct_Default___) Replica__NoReceive__NoClock__Next(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
@@ -540,7 +554,7 @@ TAIL_CALL_START:
 	} else if (r.NextActionIndex) == (uint64(6)) {
 		var _out491 bool
 		var _ = _out491
-		_out491 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeExecute(r, logs["LReplicaNextSpontaneousMaybeExecute"])
+		_out491 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeExecute(r, logs["LReplicaNextSpontaneousMaybeExecute"], logs["LReplicaNextSpontaneousMaybeExecuteNoop"])
 		ok = _out491
 	}
 	return ok
