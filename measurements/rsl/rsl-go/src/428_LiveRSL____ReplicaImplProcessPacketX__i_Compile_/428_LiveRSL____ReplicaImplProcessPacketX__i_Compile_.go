@@ -341,6 +341,7 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketX(r *_383_L
 		LReplicaNextProcessPacketLog.PopStartEvent()
 		return ok
 	} else if (_5263_rr).Is_RRTimeout() {
+		LReplicaNextProcessPacketLog.PopStartEvent()
 		ok = true
 		Companion_Default___.ReplicaNextProcessPacketTimeout(r)
 	} else {
