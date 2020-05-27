@@ -16,6 +16,7 @@ from conv import *
 from plot_constants import *
 
 TRAIN_SETS = ["final_train_1"]
+# TRAIN_SETS = ["final_test_1", "final_test_2"]
 TEST_SETS = ["final_test_1", "final_test_2"]
 
 
@@ -51,7 +52,7 @@ def main(exp_dir):
 
     # Plot Rounds
     # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
-    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
@@ -85,8 +86,9 @@ def plot_convolution(name, root, total_grant_data, total_accept_data):
             for ring_size in x_vals_ring_size:
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                fig.subplots_adjust(left=0.14, right=0.96, top=0.91, bottom=0.13 )
-                plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
+                fig.subplots_adjust(left=0.13, right=0.96, top=0.91, bottom=0.15 )
+                # plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
+                plot_convolution_ax(delay, ring_size, this_ax, "Convolution of two CDFs", actual_grant_latencies, actual_accept_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
         
@@ -141,8 +143,8 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
                 actual_network_latencies = compute_actual_network(participants, total_network_data)
                 fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                fig.subplots_adjust(left=0.12, right=0.96, top=0.91, bottom=0.13 )
-                plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+                fig.subplots_adjust(left=0.15, right=0.96, top=0.91, bottom=0.14 )
+                plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "Ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
                 pp.savefig(fig)
                 plt.close(fig)
 
@@ -211,13 +213,13 @@ def plot_micro_1_distr_fidelity_ax(
     print('Pred average '+  str(np.average(predict_bins, weights=predict_pdf)))
     print('Real average ' + str(sum(actual_round_latencies)/ len(actual_round_latencies)))
     print()
-    plt.plot(round_cdf, round_bins[:-1], label='actual round', color='navy')
-    plt.plot(predict_cdf, predict_bins, label='predicted', color='firebrick', linestyle='dashed')
+    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
+    plt.plot(round_cdf, round_bins[:-1], label='actual performance', color='navy')
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
     this_ax.set_xlabel('cumulative probability')
-    this_ax.set_ylabel('latency (ms)')
+    this_ax.set_ylabel('round latency (ms)')
     this_ax.set_title(name)
     this_ax.set_ylim(max(0, min(actual_round_latencies)-1), np.percentile(actual_round_latencies, 99.9)+1.5)
     this_ax.set_xlim(0, 1)
@@ -303,7 +305,7 @@ def plot_micro_2_size_fidelity(name, root, total_round_data, total_grant_data, t
             # Also, plot their ratios
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.12, right=0.96, top=0.91, bottom=0.13 )
-            plot_micro_2_size_fidelity_ratio_ax(this_ax, "workload %.1f ms " %(delay/1000.0), x_vals_ring_size, 
+            plot_micro_2_size_fidelity_ratio_ax(this_ax, "Ratio of predicted latency over observed latency", x_vals_ring_size, 
                 y_vals_observed_mean,
                 y_vals_observed_ninety_nine_point_nine_percentiles, 
                 y_vals_observed_max,
@@ -349,7 +351,7 @@ def plot_micro_2_size_fidelity_ratio_ax(
     this_ax.set_title(title)
     this_ax.set_xticks(x_vals_ring_size)
     this_ax.set_xlabel("ring size")
-    this_ax.set_ylabel("predicted/observed")
+    this_ax.set_ylabel("ratio of predicted/observed")
 
     mean_ratio = [y_vals_predicted_mean[i]/y_vals_observed_mean[i] for i in range(len(y_vals_predicted_mean))]
     ninety_nine_nine_percentile_ratio = [y_vals_predicted_ninety_nine_point_nine_percentiles[i]/y_vals_observed_ninety_nine_point_nine_percentiles[i] for i in range(len(y_vals_predicted_mean))]
