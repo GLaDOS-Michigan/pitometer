@@ -7,24 +7,24 @@
 
 ROOT_DIR=$1
 
-METHODS=(   "LReplicaNextProcessPacket",
-            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
-            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop",
-            "LReplicaNextSpontaneousMaybeEnterPhase2",
-            "LReplicaNextSpontaneousMaybeEnterPhase2Noop",
-            "LReplicaNextReadClockMaybeNominateValueAndSend2a",
-            "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop",
-            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints",
-            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop",
-            "LReplicaNextSpontaneousMaybeMakeDecision",
-            "LReplicaNextSpontaneousMaybeMakeDecisionNoop",
-            "LReplicaNextSpontaneousMaybeExecute",
-            "LReplicaNextSpontaneousMaybeExecuteNoop",
-            "LReplicaNextReadClockCheckForViewTimeout",
-            "LReplicaNextReadClockCheckForViewTimeoutNoop",
-            "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
-            "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop",
-            "LReplicaNextReadClockMaybeSendHeartbeat",
+METHODS=(   "LReplicaNextProcessPacket"
+            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"
+            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"
+            "LReplicaNextSpontaneousMaybeEnterPhase2"
+            "LReplicaNextSpontaneousMaybeEnterPhase2Noop"
+            "LReplicaNextReadClockMaybeNominateValueAndSend2a"
+            "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"
+            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"
+            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"
+            "LReplicaNextSpontaneousMaybeMakeDecision"
+            "LReplicaNextSpontaneousMaybeMakeDecisionNoop"
+            "LReplicaNextSpontaneousMaybeExecute"
+            "LReplicaNextSpontaneousMaybeExecuteNoop"
+            "LReplicaNextReadClockCheckForViewTimeout"
+            "LReplicaNextReadClockCheckForViewTimeoutNoop"
+            "LReplicaNextReadClockCheckForQuorumOfViewSuspicions"
+            "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"
+            "LReplicaNextReadClockMaybeSendHeartbeat"
             "LReplicaNextReadClockMaybeSendHeartbeatNoop"
         )
 
@@ -51,7 +51,7 @@ do :
 
     for m in ${METHODS[@]}
     do
-        cat $lf | grep "$m" > $dir/"$name"_$m.csv
+        cat $lf | grep "$m," > $dir/"$name"_$m.csv
     done
 done
 
