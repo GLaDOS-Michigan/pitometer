@@ -13,7 +13,7 @@ plt.rc('legend', fontsize=base_size)       # legend fontsize
 # plt.rc('figure', titlesize=12)      # fontsize of the figure title
 
 # Graphics
-plt.rc('lines', linewidth=0.5)
+plt.rc('lines', linewidth=0.7)
 plt.rc('lines', markersize=2.1)
 plt.rc('legend', frameon=False)        # No frame around legend
 plt.rc('axes', linewidth=0.5)
