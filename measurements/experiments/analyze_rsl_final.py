@@ -16,10 +16,12 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-F_VALUES = [1, 2, 3]
+F_VALUES = [1, 2, 3, 4, 5]
 
-TRAIN_SET = "emergency_train"
-TEST_SET = "emergency_train"
+THROW=100  # Ignore the first 100 requests in computing client latencies
+
+TRAIN_SET = "final_test"
+TEST_SET = "final_test"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -101,29 +103,31 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     
     print("Computing predictions")
     # TONY: Always use total_node_data[1] to make predictions
-    y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[f], f) for f in x_vals_f]
+    y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[1], f) for f in x_vals_f]
     # y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
-    y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[f], f) for f in x_vals_f]
+    y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[1], f) for f in x_vals_f]
 
     print("Drawing graphs")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw plot
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-        fig.subplots_adjust(left=0.17, right=0.95, top=0.9, bottom=0.16 )
-
-        # this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
-        # this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
+        this_ax.set_title("Predictions of IronRSL performance")
+    
+        this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
 
         # this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
         # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
 
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='x', color='green', linestyle='dashed')
-
-        this_ax.legend()
+        this_ax.legend(loc='upper right', bbox_to_anchor=(0.97, 0.9))
         this_ax.set_xlabel("f")
-        this_ax.set_ylabel("latency (ms)")
-        # this_ax.set_yscale("log")
+        this_ax.set_ylabel("request latency (ms)")
+        this_ax.xaxis.set_ticks(x_vals_f)
+        this_ax.set_yscale("log")
+        this_ax.set_ylim(bottom=0)
         pp.savefig(fig)
         plt.close(fig)
 
@@ -275,7 +279,7 @@ def get_f_max(total_f_client_data):
     """
     res = 0
     for durs in total_f_client_data.values():
-        res = max(res, max(durs))
+        res = max(res, max(durs[THROW:])) # Ignore the first 100 requests
     return res
 
 def get_f_999(total_f_client_data):
@@ -285,7 +289,7 @@ def get_f_999(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs)
+        aggregate.extend(durs[THROW:]) # Ignore the first 100 requests
     return np.percentile(aggregate, 99.9)
 
 def get_f_mean(total_f_client_data):
@@ -295,7 +299,7 @@ def get_f_mean(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs)
+        aggregate.extend(durs[THROW:])
     return np.mean(aggregate)
 
 

@@ -8,14 +8,14 @@ then
 fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
-GIT_BRANCH="measurements"
+GIT_BRANCH="wawa"
 
 CLIENT_ID=20         # node to use as client
 TRIAL_DURATION=5     # duration of each trial
 ITERATIONS=5         # repeats of each trial
 CLIENT_THREADS=("1" "2" "4" "8" "16" "32" "64" "128")
-F_VALUES=("1" "2" "3")
-BATCH_SIZES=("1" "32")
+F_VALUES=("1")
+BATCH_SIZES=("32")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new RSL latency-throughput experiment at time $TIMESTAMP"
