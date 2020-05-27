@@ -309,8 +309,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	return ok
 }
 
-func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterPhase2(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeEnterPhase2Log *clock.Stopwatch) bool {
+func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterPhase2(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextSpontaneousMaybeEnterPhase2Log *clock.Stopwatch, LReplicaNextSpontaneousMaybeEnterPhase2NoopLog *clock.Stopwatch) bool {
 	LReplicaNextSpontaneousMaybeEnterPhase2Log.LogStartEvent("LReplicaNextSpontaneousMaybeEnterPhase2")
+	LReplicaNextSpontaneousMaybeEnterPhase2NoopLog.LogStartEvent("LReplicaNextSpontaneousMaybeEnterPhase2Noop")
+	var noop bool
 	var ok bool = false
 	var _ = ok
 	{
@@ -321,7 +323,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	var _ = _out475
 	var _out476 _217_LiveRSL____CMessage__i_Compile.OutboundPackets
 	var _ = _out476
-	_out475, _out476 = _339_LiveRSL____ReplicaModel__Part3__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeEnterPhase2(r.Replica)
+	_out475, _out476, noop = _339_LiveRSL____ReplicaModel__Part3__i_Compile.Companion_Default___.Replica__Next__Spontaneous__MaybeEnterPhase2(r.Replica)
 	(r).Replica = _out475
 	_5266_sent__packets = _out476
 	{
@@ -331,7 +333,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	_out477 = _405_LiveRSL____ReplicaImplDelivery__i_Compile.Companion_Default___.DeliverOutboundPackets(r, _5266_sent__packets)
 	ok = _out477
 	if !(ok) {
-		LReplicaNextSpontaneousMaybeEnterPhase2Log.LogEndEvent("LReplicaNextSpontaneousMaybeEnterPhase2")
+		if noop {
+			LReplicaNextSpontaneousMaybeEnterPhase2NoopLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterPhase2Noop")
+			LReplicaNextSpontaneousMaybeEnterPhase2Log.PopStartEvent()
+		} else {
+			LReplicaNextSpontaneousMaybeEnterPhase2Log.LogEndEvent("LReplicaNextSpontaneousMaybeEnterPhase2Log")
+			LReplicaNextSpontaneousMaybeEnterPhase2NoopLog.PopStartEvent()
+		}
 		return ok
 	}
 	{
@@ -346,7 +354,13 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	}
 	{
 	}
-	LReplicaNextSpontaneousMaybeEnterPhase2Log.LogEndEvent("LReplicaNextSpontaneousMaybeEnterPhase2")
+	if noop {
+		LReplicaNextSpontaneousMaybeEnterPhase2NoopLog.LogEndEvent("LReplicaNextSpontaneousMaybeEnterPhase2Noop")
+		LReplicaNextSpontaneousMaybeEnterPhase2Log.PopStartEvent()
+	} else {
+		LReplicaNextSpontaneousMaybeEnterPhase2Log.LogEndEvent("LReplicaNextSpontaneousMaybeEnterPhase2Log")
+		LReplicaNextSpontaneousMaybeEnterPhase2NoopLog.PopStartEvent()
+	}
 	return ok
 }
 
@@ -483,7 +497,7 @@ TAIL_CALL_START:
 	} else if (r.NextActionIndex) == (uint64(2)) {
 		var _out488 bool
 		var _ = _out488
-		_out488 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterPhase2(r, logs["LReplicaNextSpontaneousMaybeEnterPhase2"])
+		_out488 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterPhase2(r, logs["LReplicaNextSpontaneousMaybeEnterPhase2"], logs["LReplicaNextSpontaneousMaybeEnterPhase2Noop"])
 		ok = _out488
 	} else if (r.NextActionIndex) == (uint64(4)) {
 		var _out489 bool
