@@ -623,9 +623,10 @@ func (_this *CompanionStruct_Default___) ReplicaNextSpontaneousMaybeMakeDecision
 	}
 	return replica_k, packets__sent
 }
-func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeMakeDecision(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
+func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeMakeDecision(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
+	var noop bool
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
 	var _ = replica_k
 	var packets__sent _217_LiveRSL____CMessage__i_Compile.OutboundPackets = _217_LiveRSL____CMessage__i_Compile.Type_OutboundPackets_().Default().(_217_LiveRSL____CMessage__i_Compile.OutboundPackets)
@@ -660,6 +661,7 @@ TAIL_CALL_START:
 		_out363 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_5189_end__time = _out363
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_Spontaneous_MaybeMakeDecision_work"), _5186_start__time, _5189_end__time)
+		noop = false
 	} else {
 		var _out364 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState
 		var _ = _out364
@@ -675,8 +677,9 @@ TAIL_CALL_START:
 		_out366 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_5190_end__time = _out366
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("Replica_Next_Spontaneous_MaybeMakeDecision_nada"), _5186_start__time, _5190_end__time)
+		noop = true
 	}
-	return replica_k, packets__sent
+	return replica_k, packets__sent, noop
 }
 func (_this *CompanionStruct_Default___) ReplicaNextSpontaneousTruncateLogBasedOnCheckpointsSkip(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, newLogTruncationPoint _214_LiveRSL____CTypes__i_Compile.COperationNumber) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
 	goto TAIL_CALL_START
