@@ -323,7 +323,7 @@ func main() {
 	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints") // Done
 	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
 
-	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecision")
+	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecision") // Done
 	logs["LReplicaNextSpontaneousMaybeMakeDecisionNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecisionNoop")
 
 	logs["LReplicaNextSpontaneousMaybeExecute"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeExecute")
