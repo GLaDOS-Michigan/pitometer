@@ -10,7 +10,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
 F_VALUES = [1, 2, 3, 4, 5]
-THROWAWAY = 1000  # How many initial executions to ignore
+
 METHODS = ["LReplicaNextProcessPacket",
             "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
             "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop",
@@ -150,7 +150,7 @@ def analyze_node_csv(filepath):
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
         for row in csvreader:
-            if len(row) > 2 and int(row[0]) > THROWAWAY:
+            if len(row) > 2 and int(row[0]) >= 0:
                 event_type = row[1]
                 if event_type == 'Start':
                     prevStart = int(row[3])
