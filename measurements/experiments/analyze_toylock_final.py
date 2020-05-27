@@ -53,7 +53,7 @@ def main(exp_dir):
     # Plot Rounds
     # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -221,7 +221,8 @@ def plot_micro_1_distr_fidelity_ax(
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('round latency (ms)')
     this_ax.set_title(name)
-    this_ax.set_ylim(max(0, min(actual_round_latencies)-1), np.percentile(actual_round_latencies, 99.9)+1.5)
+    # this_ax.set_ylim(0, np.percentile(list(actual_round_latencies) + list(predict_bins), 99.9))
+    this_ax.set_ylim(0, np.percentile(list(actual_round_latencies), 100)+30)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
