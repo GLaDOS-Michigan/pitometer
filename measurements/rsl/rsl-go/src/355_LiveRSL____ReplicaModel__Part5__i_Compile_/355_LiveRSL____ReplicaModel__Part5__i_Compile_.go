@@ -429,9 +429,10 @@ func (_this *CompanionStruct_Default___) ReplicaNextSpontaneousMaybeExecuteActua
 	}
 	return replica_k, packets__sent
 }
-func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeExecute(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet, reply__cache__mutable *_9_Native____Io__s_Compile.MutableMap) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
+func (_this *CompanionStruct_Default___) Replica__Next__Spontaneous__MaybeExecute(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet, reply__cache__mutable *_9_Native____Io__s_Compile.MutableMap) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets, bool) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
+	var noop bool
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
 	var _ = replica_k
 	var packets__sent _217_LiveRSL____CMessage__i_Compile.OutboundPackets = _217_LiveRSL____CMessage__i_Compile.Type_OutboundPackets_().Default().(_217_LiveRSL____CMessage__i_Compile.OutboundPackets)
@@ -444,6 +445,7 @@ TAIL_CALL_START:
 		_out345, _out346 = Companion_Default___.ReplicaNextSpontaneousMaybeExecuteActual(replica, cur__req__set, prev__req__set, reply__cache__mutable)
 		replica_k = _out345
 		packets__sent = _out346
+		noop = false
 	} else {
 		var _out347 _285_LiveRSL____ReplicaState__i_Compile.ReplicaState
 		var _ = _out347
@@ -452,8 +454,9 @@ TAIL_CALL_START:
 		_out347, _out348 = Companion_Default___.ReplicaNextSpontaneousMaybeExecuteIgnore(replica)
 		replica_k = _out347
 		packets__sent = _out348
+		noop = true
 	}
-	return replica_k, packets__sent
+	return replica_k, packets__sent, noop
 }
 func (_this *CompanionStruct_Default___) ReplicaNextReadClockMaybeSendHeartbeatSkip(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, clock _283_LiveRSL____CClockReading__i_Compile.CClockReading) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
 	goto TAIL_CALL_START

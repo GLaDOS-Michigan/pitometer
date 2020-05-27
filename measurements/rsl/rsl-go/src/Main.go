@@ -326,7 +326,7 @@ func main() {
 	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecision") // Done
 	logs["LReplicaNextSpontaneousMaybeMakeDecisionNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeMakeDecisionNoop")
 
-	logs["LReplicaNextSpontaneousMaybeExecute"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeExecute")
+	logs["LReplicaNextSpontaneousMaybeExecute"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeExecute") // Done
 	logs["LReplicaNextSpontaneousMaybeExecuteNoop"] = clock.NewStopwatch(initialSize, "LReplicaNextSpontaneousMaybeExecuteNoop")
 
 	logs["LReplicaNextReadClockCheckForViewTimeout"] = clock.NewStopwatch(initialSize, "LReplicaNextReadClockCheckForViewTimeout")
