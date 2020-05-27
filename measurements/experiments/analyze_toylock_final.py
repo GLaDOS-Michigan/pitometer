@@ -15,8 +15,8 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-TRAIN_SETS = ["emergency_train"]
-TEST_SETS = ["emergency_test"]
+TRAIN_SETS = ["test_set_2"]
+TEST_SETS = ["test_set_2"]
 
 
 DELAYS = [0, 200, 1_000, 5_000, 25_000]  # units of microseconds
@@ -50,8 +50,9 @@ def main(exp_dir):
     print("\nComputing graphs")
 
     # Plot Rounds
-    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
+    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -68,6 +69,58 @@ def merge_maps(map1, map2):
                 if node not in map1[size][delay]:
                     map1[size][delay][node] = []
                 map1[size][delay][node].extend(map2[size][delay][node])
+
+
+def plot_convolution(name, root, total_grant_data, total_accept_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data -- dict of (size -> delay -> node -> [ durs ])
+    """
+    print("Plotting convolutions")
+    for delay in DELAYS:
+        with PdfPages("%s/%s_%d.pdf" %(root, name, delay)) as pp:
+            x_vals_ring_size = sorted(list(total_grant_data.keys()))
+            for ring_size in x_vals_ring_size:
+                actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
+                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+                fig.subplots_adjust(left=0.16, right=0.96, top=0.91, bottom=0.13 )
+                plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
+                pp.savefig(fig)
+                plt.close(fig)
+        
+def plot_convolution_ax(    
+    delay,
+    ring_size, 
+    this_ax, 
+    name, 
+    actual_grant_latencies, 
+    actual_accept_latencies):
+    binsize = 1e-4
+    grant_pdf, grant_bins = raw_data_to_pdf(actual_grant_latencies, binsize)
+    accept_pdf, accept_bins = raw_data_to_pdf(actual_accept_latencies, binsize)
+    sum_pdf, newstart, newbinsize = add_histograms(grant_pdf, accept_pdf, min(actual_grant_latencies), min(actual_accept_latencies), binsize, binsize)
+    max_data = max(actual_grant_latencies) + max(actual_accept_latencies)
+    grant_cdf = pdf_to_cdf(grant_pdf)
+    accept_cdf = pdf_to_cdf(accept_pdf)
+    sum_cdf = pdf_to_cdf(sum_pdf)
+    bincount = int((max_data - newstart)/newbinsize)
+    binrange = newbinsize * len(sum_pdf)
+    sum_bins = np.linspace(newstart + newbinsize, newstart + binrange, len(sum_pdf))
+    
+    this_ax.plot(sum_cdf, sum_bins, color='navy', label="Convolution")
+    this_ax.plot(grant_cdf, grant_bins[:-1], color='darkgreen',label="NodeGrant",linestyle='dotted')
+    this_ax.plot(accept_cdf, accept_bins[:-1], color='maroon',label="NodeAccept",linestyle='dashed')
+    this_ax.set_xlabel('cumulative probability')
+    this_ax.set_ylabel('latency (ms)')
+    this_ax.set_title(name)
+    # this_ax.set_ylim(max(0, min(actual_round_latencies)-1), np.percentile(actual_round_latencies, 99.9)+1.5)
+    this_ax.set_xlim(0, 1)
+    this_ax.set_yscale("log")
+    this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
+    this_ax.legend()
+
 
 def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
     """ Plot a figure where each subfigure is from an element in total_data
