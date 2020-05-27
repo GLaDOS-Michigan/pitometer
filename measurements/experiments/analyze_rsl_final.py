@@ -116,7 +116,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
         this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
 
-        this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
+        # this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
         # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
 
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
