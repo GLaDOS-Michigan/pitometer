@@ -102,7 +102,7 @@ def plot_latency_throughput(this_ax, title, latencies, throughputs):
             )
     # this_ax.add_artist(stats)
     this_ax.plot(throughputs, latencies, marker='x',  label="observed performance", color='navy')
-    this_ax.plot(throughputs, [12.60282847837942 for i in throughputs],  label="predicted mean latency", color='firebrick', linestyle='dashed')
+    this_ax.plot(throughputs, [12.60282847837942 for i in throughputs],  label="predicted mean latency", color='forestgreen', linestyle='dashed')
     this_ax.legend()
     
 
