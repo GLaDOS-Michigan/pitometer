@@ -6,22 +6,30 @@ entire experiments
 
 - data/
     * Directory that stores experimental results
-- analyze_toylock.py
-    * Python script to plot results from a toylock experiment
-- analyze_rsl.py
-    * Python script to plot results from a rsl experiment
 - analyze_network.py
     * Python script to plot results from a network experiment
+- analyze_rsl.py
+    * Python script to plot results from a rsl experiment
+- analyze_rsl_throughput.py
+    * Python script to plot results from a rsl latency-throughput experiment
+- analyze_toylock.py
+    * Python script to plot results from a toylock experiment
+- backup    
+    * Back up experiment data to the pito-data repository, and other remote machines
 - build_to_hosts
     * Script that builds rsl and toylock locally, and then copies the executables to the specified hosts
 - clean_builds
     * Cleaning script that deletes executables and miscellaneous temp files.
+- conv.py
+    * Python library for adding probability distributions
 - git_pull_all_hosts
     * Script that does a 'git pull' on all hosts for a specified branch for
 - hosts.csv
     * A map from Skynode machine ID to their IP address
 - kill_all_experiments
     * Kills all experiments running on all hosts using `kill -9`
+- plot_cosntants.py
+    * Python library containing constants for drawing graphs
 - **process_network_results**
     * Converts network log file into separate csv files for each network client. It places each resulting csv in the directory of its corresponding log file.
     * Then, it calls analyze_network.py to generate graphs
