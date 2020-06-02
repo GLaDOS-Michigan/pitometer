@@ -388,7 +388,8 @@ def generate_statistics(input):
     res = []
     res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
-    res.append("σ = %.4f" %statistics.stdev(input))
+    if len(input) > 1:
+        res.append("σ = %.4f" %statistics.stdev(input))
     res.append("99.9%% = %.3f" %np.percentile(input, 99.9))
     res.append("")
     res.append("max = %.3f" %np.max(input))
