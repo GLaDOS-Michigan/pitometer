@@ -113,16 +113,15 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
         this_ax.set_title("Predictions of IronRSL performance")
-    
-        this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='red')
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='x', color='red', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='v', color='navy', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='navy')
+        
 
         # this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
         # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
-
-        this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='green')
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='x', color='green', linestyle='dashed')
-        this_ax.legend(loc='upper right', bbox_to_anchor=(0.97, 0.9))
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='v', color='forestgreen', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='forestgreen')
+        this_ax.legend(loc='upper right', bbox_to_anchor=(0.98, 0.45))
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
         this_ax.xaxis.set_ticks(x_vals_f)
@@ -134,6 +133,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         print("Predicted max for each f:" + str(y_vals_predict_max) )
         print("Predict mean  :" + str(y_vals_predict_mean) )
         print("Real mean     :" + str(y_vals_actual_mean) )
+        print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
 
 
 def predict_f_max(total_network_data, total_f_node_data, f):
