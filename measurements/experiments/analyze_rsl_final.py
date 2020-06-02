@@ -104,6 +104,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
     # y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
     
     print("Computing predictions")
     # TONY: Always use total_node_data[1] to make predictions
@@ -125,6 +126,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='v', color='forestgreen', linestyle='dashed')
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='forestgreen')
+        this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
         this_ax.legend(loc='upper right', bbox_to_anchor=(0.98, 0.45))
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
@@ -309,6 +311,16 @@ def get_f_mean(total_f_client_data):
     for durs in total_f_client_data.values():
         aggregate.extend(durs[THROW:])
     return np.mean(aggregate)
+
+def get_f_error(total_f_client_data):
+    """Get the stdev
+    Arguments:
+        total_f_client_data -- total_f_client_data[i] = list of client durations for trial i
+    """
+    aggregate = []
+    for durs in total_f_client_data.values():
+        aggregate.extend(durs[THROW:])
+    return statistics.stdev(aggregate)
 
 
 if __name__ == "__main__":
