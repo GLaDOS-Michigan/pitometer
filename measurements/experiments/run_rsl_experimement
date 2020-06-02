@@ -8,15 +8,13 @@ then
 fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
-# GIT_BRANCH="measurements"
-GIT_BRANCH="wawa"
+GIT_BRANCH="measurements"
 
 CLIENT_ID=20                # node to use as client
 CLIENT_THREADS=1            # number of clients
 BASE_TRIAL_DURATION=3       # minimum duration
-ITERATIONS=20               # repeats of each trial
+ITERATIONS=10               # repeats of each trial
 BATCH_SIZE=1                # paxos batch size      
-# F_VALUES=("1" "2" "3" "4" "5")
 F_VALUES=("1" "2" "3" "4" "5")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
