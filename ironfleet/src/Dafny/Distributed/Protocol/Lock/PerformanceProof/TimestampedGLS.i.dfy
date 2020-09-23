@@ -10,6 +10,8 @@ import opened LockTimestampedDistributedSystem_i
 import opened PerformanceProof__Definitions_i
 
 type TimestampedNode = TimestampedType<Node>
+
+/* GLS + Timestamps */
   
 datatype TimestampedLS_State = TimestampedLS_State(
   config:ConcreteConfiguration,
@@ -33,6 +35,8 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
       UntagLEnvironment(tds.t_environment),
       UntagLSServers(tds.t_servers))
   }
+
+  /* LS + Timestamps */
 
   predicate TLS_Init(tls: TimestampedLS_State, config:Config)
     reads *
@@ -71,6 +75,7 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
         tls'.t_servers == tls.t_servers
 
         && (if tls.t_environment.nextStep.LEnvStepHostIos? then
+          // Any irrelevant packets are given a default Zero.
             && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == TimeZero())
             else
             true)
