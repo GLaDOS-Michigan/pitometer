@@ -29,11 +29,13 @@ predicate SingleGLSPerformanceAssumption(tgls:TimestampedGLS_State)
 
 }
 
+/* Assumption */
 predicate GLSPerformanceAssumption(tglb:seq<TimestampedGLS_State>)
 {
   forall tgls :: tgls in tglb ==> SingleGLSPerformanceAssumption(tgls)
 }
 
+/* What we want to prove */
 predicate SingleGLSPerformanceGuarantee(gls:TimestampedGLS_State)
 {
   |gls.tls.config| > 1 ==> 

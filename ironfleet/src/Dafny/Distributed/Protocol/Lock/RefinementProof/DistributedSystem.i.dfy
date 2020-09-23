@@ -34,7 +34,7 @@ module DistributedSystem_i {
            id in s'.servers
         && NodeNext(s.servers[id], s'.servers[id], ios)
         && var ns := s.servers[id]; var ns' := s'.servers[id];
-        match lstep
+        match lstep  // Comes from the environment
         {
             case GrantStep => NodeGrant(ns, ns', ios)
             case AcceptStep => NodeAccept(ns, ns', ios)

@@ -9,6 +9,8 @@ abstract module Timestamp_s {
 
   type Timestamp = i : int | 0 <= i
 
+  /* Timestamp datatype def */
+
   function {:axiom} TimeMax(p1:Timestamp, p2:Timestamp) : Timestamp
     // ensures TimeMax(p1, p2) >= p1 && TimeMax(p1, p2) >= p2
     // ensures TimeMax(p1, p2) == p1 || TimeMax(p1, p2) == p2
