@@ -37,7 +37,9 @@ predicate GLSPerformanceAssumption(tglb:seq<TimestampedGLS_State>)
 
 predicate SingleGLSPerformanceGuarantee(gls:TimestampedGLS_State)
     requires |gls.tls.config| > 1;
-{
+{   
+    /* We know that all packets in the ether are valid packets because we assume in 
+    * SingleGLSPerformanceAssumption that nodes that take I/O steps must be in the config */
     forall pkt  
         | && pkt in gls.tls.t_environment.sentPackets 
           && pkt.msg.v == Transfer(|gls.tls.config|) 

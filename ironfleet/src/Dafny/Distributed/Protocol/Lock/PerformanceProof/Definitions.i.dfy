@@ -42,7 +42,7 @@ function PerfBoundLockInNetwork(epoch: int) : Timestamp
   requires 0 < epoch
   ensures PerfBoundLockInNetwork(epoch) >= 0
 {
-  if epoch == 1 then
+  if epoch == 1 then  // note that a valid Transfer packet never has epoch 0
     0
   else
     (epoch - 1) * G + (epoch - 2) * A + (epoch - 2) * D
