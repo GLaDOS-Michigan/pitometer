@@ -2,17 +2,54 @@ include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
 include "TimestampedGLS.i.dfy"
 include "Definitions.i.dfy"
 include "../../../../Libraries/Math/mod_auto.i.dfy"
+include "Invariants.i.dfy"
+
+
 module PerformanceProof_i {
-import opened LockTimestampedDistributedSystem_i
-import opened TimestampedGLS_i
-import opened PerformanceProof__Definitions_i
-import opened Math__mod_auto_i
+    import opened LockTimestampedDistributedSystem_i
+    import opened TimestampedGLS_i
+    import opened PerformanceProof__Definitions_i
+    import opened Math__mod_auto_i
+    import opened Invariants_i
 
 
 /*****************************************************************************************
-*                                 Performance Predicates                                 *
+*                                 Performance Invariants                                 *
 *****************************************************************************************/
 
+predicate PerformanceInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
+    requires |tgls.history| > 0;
+    requires forall ep :: ep in tgls.tls.t_servers <==> ep in config;
+    requires forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config;
+{
+    && ConfigInvariant(config, tgls)
+    && HistoryLengthInvariant(config, tgls)
+    && TransferInvariant(tgls)
+    && LockedInvariant(tgls)
+}
+
+predicate TransferInvariant(tgls:TimestampedGLS_State) {
+    forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.msg.v.Transfer?
+        :: && pkt.msg.v.transfer_epoch > 0
+           &&TimeEq(pkt.msg.ts, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch))
+} 
+
+
+predicate LockedInvariant(tgls:TimestampedGLS_State) {
+    forall ep 
+        | && ep in tgls.tls.t_servers
+          && tgls.tls.t_servers[ep].v.held
+        :: && tgls.tls.t_servers[ep].v.epoch > 0
+           && TimeEq(tgls.tls.t_servers[ep].ts, PerfBoundLockHeld(tgls.tls.t_servers[ep].v.epoch))
+} 
+
+
+
+/*****************************************************************************************
+*                                 Performance Theorem                                    *
+*****************************************************************************************/
 
 predicate SingleGLSPerformanceAssumption(tgls:TimestampedGLS_State)
 {
@@ -53,12 +90,6 @@ predicate GLSPerformanceGuarantee(tglb:seq<TimestampedGLS_State>)
     && (forall tgls | tgls in tglb :: SingleGLSPerformanceGuarantee(tgls))
 }
 
-
-/*****************************************************************************************
-*                                 Performance Theorem                                    *
-*****************************************************************************************/
-
-
 /* Main Performance Theorem */
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     requires |config| > 1;
@@ -66,6 +97,10 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     requires GLSPerformanceAssumption(tglb)
     ensures GLSPerformanceGuarantee(tglb);
 {
-    assume false;
+    assume false;  // TONY TODO
+    assert ConfigInvariant(config, tglb[0]);
+    assert HistoryLengthInvariant(config, tglb[0]);
+    assert TransferInvariant(tglb[0]);
+    assert LockedInvariant(tglb[0]);
 }
 }
