@@ -112,47 +112,49 @@ predicate SomeLockHolderImpliesHolderIsLastInHistory(config:ConcreteConfiguratio
     forall ep | ep in config && gls.tls.t_servers[ep].v.held :: gls.history[|gls.history|-1] == ep
 }
 
-// lemma lemma_History_Length_Invariant(config:ConcreteConfiguration, glb:seq<GLS_State>)
-//     requires |glb| > 0;
-//     requires  GLS_Init(glb[0], config);
-//     requires forall i {:trigger TGLS_Next(glb[i], glb[i+1])} :: 0 <= i < |glb| - 1 ==>  TGLS_Next(glb[i], glb[i+1]);
-//     requires forall i | 0 <= i < |glb| :: (forall ep :: ep in glb[i].ls.servers <==> ep in config);
-//     requires forall i | 0 <= i < |glb| :: (forall ep | ep in glb[i].ls.servers :: glb[i].ls.servers[ep].config == config);
-//     ensures forall i | 0 <= i < |glb| :: SomeLockHolderImpliesEpochIsHistoryLength(config, glb[i]);
-//     ensures forall i | 0 <= i < |glb| :: |glb[i].history| > 0;
-//     ensures forall i | 0 <= i < |glb| :: HistoryLengthInvariant(config, glb[i]);
-// {
-//     // Base Case
-//     assert glb[0].history == [config[0]];
-//     assert glb[0].ls.servers[config[0]].epoch == 1;
-//     assert HistoryLengthInvariant(config, glb[0]);
 
-//     // Inductive Case
-//     var i := 1;
-//     while i < |glb| 
-//         decreases |glb| - i;
-//         invariant 1 <= i <= |glb|;
-//         invariant forall k | 0 <= k < |glb|-1 :: TGLS_Next(glb[k], glb[k+1]);
-//         invariant forall k | 0 <= k < i :: |glb[k].history| > 0;
-//         invariant forall k | 0 <= k < i :: HistoryLengthInvariant(config, glb[k]);
-//     {
-//         var k := i-1;
-//         var gls, gls' := glb[k], glb[k+1];
-//         assert HistoryLengthInvariant(config, gls);
+/* Proof of HistoryLengthInvariant */
+lemma lemma_History_Length_Invariant(config:ConcreteConfiguration, tglb:seq<TimestampedGLS_State>)
+    requires |tglb| > 0;
+    requires  TGLS_Init(tglb[0], config);
+    requires forall i {:trigger TGLS_Next(tglb[i], tglb[i+1])} :: 0 <= i < |tglb| - 1 ==>  TGLS_Next(tglb[i], tglb[i+1]);
+    requires forall i | 0 <= i < |tglb| :: (forall ep :: ep in tglb[i].tls.t_servers <==> ep in config);
+    requires forall i | 0 <= i < |tglb| :: (forall ep | ep in tglb[i].tls.t_servers :: tglb[i].tls.t_servers[ep].v.config == config);
+    ensures forall i | 0 <= i < |tglb| :: SomeLockHolderImpliesEpochIsHistoryLength(config, tglb[i]);
+    ensures forall i | 0 <= i < |tglb| :: |tglb[i].history| > 0;
+    ensures forall i | 0 <= i < |tglb| :: HistoryLengthInvariant(config, tglb[i]);
+{
+    // Base Case
+    assert tglb[0].history == [config[0]];
+    assert tglb[0].tls.t_servers[config[0]].v.epoch == 1;
+    assert HistoryLengthInvariant(config, tglb[0]);
 
-//         if !NoLockHolder(config, gls) {
-//             // If someone holds the lock in state gls. 
-//             // Then I know that there are no Transfer messages in flight in gls
-//             lemma_History_Length_Invariant_Induction_A(config, gls, gls');
-//         } else {
-//             // If no one holds the lock in state gls. 
-//             // Then I know that there is only one Transfer message in flight in gls
-//             assert NoLockHolder(config, gls);
-//             lemma_History_Length_Invariant_Induction_B(config, gls, gls');
-//         }
-//         i := i + 1; 
-//     }
-// }
+    // Inductive Case
+    var i := 1;
+    while i < |tglb| 
+        decreases |tglb| - i;
+        invariant 1 <= i <= |tglb|;
+        invariant forall k | 0 <= k < |tglb|-1 :: TGLS_Next(tglb[k], tglb[k+1]);
+        invariant forall k | 0 <= k < i :: |tglb[k].history| > 0;
+        invariant forall k | 0 <= k < i :: HistoryLengthInvariant(config, tglb[k]);
+    {
+        var k := i-1;
+        var tgls, tgls' := tglb[k], tglb[k+1];
+        assert HistoryLengthInvariant(config, tgls);
+
+        if !NoLockHolder(config, tgls) {
+            // If someone holds the lock in state gls. 
+            // Then I know that there are no Transfer messages in flight in gls
+            lemma_History_Length_Invariant_Induction_A(config, tgls, tgls');
+        } else {
+            // If no one holds the lock in state gls. 
+            // Then I know that there is only one Transfer message in flight in gls
+            assert NoLockHolder(config, tgls);
+            lemma_History_Length_Invariant_Induction_B(config, tgls, tgls');
+        }
+        i := i + 1; 
+    }
+}
 
 /* First branch of lemma_History_Length_Invariant proof, 
 * where !NoLockHolder(config, gls); */
