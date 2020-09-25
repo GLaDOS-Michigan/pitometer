@@ -23,11 +23,14 @@ datatype TimestampedLS_State = TimestampedLS_State(
     )
 
 function UntagLSServers(t_servers: map<EndPoint, TimestampedNode>) : map<EndPoint, Node>
+    ensures forall id :: id in t_servers <==> id in UntagLSServers(t_servers);
+    ensures forall id | id in t_servers :: UntagLSServers(t_servers)[id] == t_servers[id].v;
 {
     map id | id in t_servers :: t_servers[id].v
 }
 
 function UntagLS_State(tds:TimestampedLS_State) : LS_State
+    ensures UntagLS_State(tds).servers == UntagLSServers(tds.t_servers);
 {
     LS_State(
         UntagLEnvironment(tds.t_environment),
@@ -89,11 +92,12 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
 
 
 function UntagGLS_State(tgls:TimestampedGLS_State) : GLS_State
+    ensures UntagGLS_State(tgls).ls == UntagLS_State(tgls.tls);
 {
-    GLS_State(LS_State(
-                UntagLEnvironment(tgls.tls.t_environment),
-                UntagLSServers(tgls.tls.t_servers)),
-        tgls.history)
+    GLS_State(
+        UntagLS_State(tgls.tls),
+        tgls.history
+    )
 }
 
 predicate TGLS_Init(tgls:TimestampedGLS_State, config:Config)
