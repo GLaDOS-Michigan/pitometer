@@ -49,7 +49,8 @@ predicate SingleGLSPerformanceGuarantee(gls:TimestampedGLS_State)
 
 predicate GLSPerformanceGuarantee(tglb:seq<TimestampedGLS_State>)
 {
-    forall tgls | tgls in tglb :: SingleGLSPerformanceGuarantee(tgls)
+    && (forall tgls | tgls in tglb :: |tgls.tls.config| > 1)
+    && (forall tgls | tgls in tglb :: SingleGLSPerformanceGuarantee(tgls))
 }
 
 
@@ -63,7 +64,7 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     requires |config| > 1;
     requires ValidTimestampedGLSBehavior(tglb, config)
     requires GLSPerformanceAssumption(tglb)
-    ensures GLSPerformanceGuarantee(tglb)
+    ensures GLSPerformanceGuarantee(tglb);
 {
     assume false;
 }

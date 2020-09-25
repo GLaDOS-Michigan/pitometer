@@ -39,7 +39,7 @@ abstract module Timestamp_s {
   function {:axiom} StepTime(hstep:HostStep) : imap<nat, Timestamp>
     ensures imaptotal(StepTime(hstep))
 
-  function Timeout(): Timestamp
+  function {:axiom} Timeout(): Timestamp
     ensures Timeout() >= 0
 
   function TimeAdd2(p1:Timestamp, p2:Timestamp) : Timestamp
