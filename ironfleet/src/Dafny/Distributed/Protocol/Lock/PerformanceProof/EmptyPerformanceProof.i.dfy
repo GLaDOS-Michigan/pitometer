@@ -4,9 +4,9 @@ include "Definitions.i.dfy"
 include "../../../../Libraries/Math/mod_auto.i.dfy"
 module PerformanceProof_i {
 import opened LockTimestampedDistributedSystem_i
-    import opened TimestampedGLS_i
-    import opened PerformanceProof__Definitions_i
-    import opened Math__mod_auto_i
+import opened TimestampedGLS_i
+import opened PerformanceProof__Definitions_i
+import opened Math__mod_auto_i
 
 
 /*****************************************************************************************

@@ -1,5 +1,5 @@
 include "../Node.i.dfy"
-  include "../RefinementProof/DistributedSystem.i.dfy"
+include "../RefinementProof/DistributedSystem.i.dfy"
 include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
 include "Definitions.i.dfy"
 
