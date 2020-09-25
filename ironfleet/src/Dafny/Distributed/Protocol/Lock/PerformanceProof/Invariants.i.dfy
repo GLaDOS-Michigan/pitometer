@@ -154,70 +154,71 @@ predicate SomeLockHolderImpliesHolderIsLastInHistory(config:ConcreteConfiguratio
 //     }
 // }
 
-// /* First branch of lemma_History_Length_Invariant proof, 
-// * where !NoLockHolder(config, gls); */
-// lemma lemma_History_Length_Invariant_Induction_A(config:ConcreteConfiguration, gls:TimestampedGLS_State, gls':TimestampedGLS_State)
-//     requires forall ep :: ep in gls.ls.servers <==> ep in config;
-//     requires forall ep | ep in gls.ls.servers :: gls.ls.servers[ep].config == config;
-//     requires TGLS_Next(gls, gls');
-//     requires |gls.history| > 0
-//     requires HistoryLengthInvariant(config, gls);
-//     requires !NoLockHolder(config, gls);
-//     ensures |gls'.history| > 0
-//     ensures HistoryLengthInvariant(config, gls');
-// {
-//     assert ZeroTransferMessageIsInFlight(config, gls);
-//     assert LS_Next(gls.ls, gls'.ls);
+/* First branch of lemma_History_Length_Invariant proof, 
+* where !NoLockHolder(config, gls); */
+lemma lemma_History_Length_Invariant_Induction_A(config:ConcreteConfiguration, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
+    requires forall ep :: ep in tgls.tls.t_servers <==> ep in config;
+    requires forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config;
+    requires TGLS_Next(tgls, tgls');
+    requires |tgls.history| > 0
+    requires HistoryLengthInvariant(config, tgls);
+    requires !NoLockHolder(config, tgls);
+    ensures |tgls'.history| > 0
+    ensures HistoryLengthInvariant(config, tgls');
+{
+    assert ZeroTransferMessageIsInFlight(config, tgls);
+    var gls, gls' := UntagGLS_State(tgls), UntagGLS_State(tgls');
+    assert LS_Next(gls.ls, gls'.ls);
 
-//     if (&& gls.ls.environment.nextStep.LEnvStepHostIos? 
-//         && gls.ls.environment.nextStep.actor in gls.ls.servers) {
-//         // If gls->gls' is a node Grant or Accept step
-//         var id, ios := gls.ls.environment.nextStep.actor, gls.ls.environment.nextStep.ios;
-//         assert NodeNext(gls.ls.servers[id], gls'.ls.servers[id], ios);
+    if (&& gls.ls.environment.nextStep.LEnvStepHostIos? 
+        && gls.ls.environment.nextStep.actor in gls.ls.servers) {
+        // If gls->gls' is a node Grant or Accept step
+        var id, ios := gls.ls.environment.nextStep.actor, gls.ls.environment.nextStep.ios;
+        assert NodeNext(gls.ls.servers[id], gls'.ls.servers[id], ios);
 
-//         if NodeGrant(gls.ls.servers[id], gls'.ls.servers[id], ios) {
-//             assert HistoryLengthInvariant(config, gls');  // Dafny magic!
-//         } else {
-//             assert NodeAccept(gls.ls.servers[id], gls'.ls.servers[id], ios);
-//             if ios[0].LIoOpTimeoutReceive? {
-//                 assert gls'.ls.servers == gls.ls.servers;
-//                 assert gls'.ls.environment.sentPackets == gls.ls.environment.sentPackets;
-//             } else {
-//                 if (&& !gls.ls.servers[id].held
-//                     && ios[0].r.src in gls.ls.servers[id].config
-//                     && ios[0].r.msg.Transfer? 
-//                     && ios[0].r.msg.transfer_epoch > gls.ls.servers[id].epoch
-//                 ) {
-//                     assert ios[0].LIoOpReceive?;
-//                     assert IsValidLIoOp(ios[0], id, gls.ls.environment);
-//                     var m := ios[0].r;
-//                     assert m in gls.ls.environment.sentPackets;
-//                     assert m.dst == id; 
-//                     assert false; // contradicts ZeroTransferMessageIsInFlight(config, gls)
-//                 } else {
-//                     assert gls'.ls.servers == gls.ls.servers;
-//                     assert gls'.ls.environment.sentPackets == gls.ls.environment.sentPackets;
-//                 }
-//             }
-//         }
-//         assert HistoryLengthInvariant(config, gls');
-//     } else {
-//         // If gls->gls' is purely an environment step
-//         assert gls.ls.servers == gls'.ls.servers && gls.history == gls'.history;
-//         if !gls.ls.environment.nextStep.LEnvStepHostIos? {
-//             match gls.ls.environment.nextStep {
-//                 case LEnvStepHostIos(actor, ios, nodestep) => assert false;
-//                 case LEnvStepDeliverPacket(p) => assert LEnvironment_Stutter(gls.ls.environment, gls'.ls.environment);
-//                 case LEnvStepAdvanceTime => assert LEnvironment_AdvanceTime(gls.ls.environment, gls'.ls.environment);
-//                 case LEnvStepStutter => assert LEnvironment_Stutter(gls.ls.environment, gls'.ls.environment);
-//             }
-//             assert gls'.ls.environment.sentPackets == gls.ls.environment.sentPackets;
-//         } else {
-//             assert gls.ls.environment.nextStep.actor !in gls.ls.servers;
-//         }
-//         assert HistoryLengthInvariant(config, gls');
-//     }
-// }
+        if NodeGrant(gls.ls.servers[id], gls'.ls.servers[id], ios) {
+            assert HistoryLengthInvariant(config, tgls');  // Dafny magic!
+        } else {
+            assert NodeAccept(gls.ls.servers[id], gls'.ls.servers[id], ios);
+            if ios[0].LIoOpTimeoutReceive? {
+                assert gls'.ls.servers == gls.ls.servers;
+                assert gls'.ls.environment.sentPackets == gls.ls.environment.sentPackets;
+            } else {
+                if (&& !gls.ls.servers[id].held
+                    && ios[0].r.src in gls.ls.servers[id].config
+                    && ios[0].r.msg.Transfer? 
+                    && ios[0].r.msg.transfer_epoch > gls.ls.servers[id].epoch
+                ) {
+                    assert ios[0].LIoOpReceive?;
+                    assert IsValidLIoOp(ios[0], id, gls.ls.environment);
+                    var m := ios[0].r;
+                    assert m in gls.ls.environment.sentPackets;
+                    assert m.dst == id; 
+                    assert false; // contradicts ZeroTransferMessageIsInFlight(config, gls)
+                } else {
+                    assert gls'.ls.servers == gls.ls.servers;
+                    assert gls'.ls.environment.sentPackets == gls.ls.environment.sentPackets;
+                }
+            }
+        }
+        assert HistoryLengthInvariant(config, tgls');
+    } else {
+        // If gls->gls' is purely an environment step
+        assert gls.ls.servers == gls'.ls.servers && gls.history == gls'.history;
+        if !gls.ls.environment.nextStep.LEnvStepHostIos? {
+            match gls.ls.environment.nextStep {
+                case LEnvStepHostIos(actor, ios, nodestep) => assert false;
+                case LEnvStepDeliverPacket(p) => assert LEnvironment_Stutter(gls.ls.environment, gls'.ls.environment);
+                case LEnvStepAdvanceTime => assert LEnvironment_AdvanceTime(gls.ls.environment, gls'.ls.environment);
+                case LEnvStepStutter => assert LEnvironment_Stutter(gls.ls.environment, gls'.ls.environment);
+            }
+            assert gls'.ls.environment.sentPackets == gls.ls.environment.sentPackets;
+        } else {
+            assert gls.ls.environment.nextStep.actor !in gls.ls.servers;
+        }
+        assert HistoryLengthInvariant(config, tgls');
+    }
+}
 
 
 /* Second branch of lemma_History_Length_Invariant proof, 
