@@ -6,23 +6,60 @@ module Invariants_i {
     import opened Environment_s
 
 
+
+/*****************************************************************************************
+/                                 ConfigurationInvariant                                 *
+*****************************************************************************************/
+
+
+/* Invariants about servers in gls and the config */
+predicate ConfigInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State) 
+{
+    && (forall ep :: ep in tgls.tls.t_servers <==> ep in config)
+    && (forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config)
+}
+
+lemma lemma_ConfigInvariant(config:ConcreteConfiguration, tglb:seq<TimestampedGLS_State>) 
+    requires |config| > 1;
+    requires ValidTimestampedGLSBehavior(tglb, config)
+    ensures forall i | 0 <= i < |tglb| :: ConfigInvariant(config, tglb[i]);
+{
+    var ls := UntagLS_State(tglb[0].tls);
+    assert LS_Init(ls, config);
+    assert forall e :: e in config <==> e in ls.servers;
+    assert forall ep | ep in ls.servers :: ls.servers[ep].config == config;
+    assert ConfigInvariant(config, tglb[0]);
+
+    var i := 0;
+    while i < |tglb| - 1
+        decreases |tglb| - i;
+        invariant 0 <= i < |tglb|;
+        invariant forall k | 0 <= k <= i :: ConfigInvariant(config, tglb[k]);
+    {
+        var tgls, tgls' := tglb[i], tglb[i+1];
+        assert ConfigInvariant(config, tgls');
+        i := i + 1;    
+    }
+}
+
+
 /*****************************************************************************************
 /                                 HistoryLengthInvariant                                 *
 *****************************************************************************************/
 
 
-predicate HistoryLengthInvariant(config:ConcreteConfiguration, gls:TimestampedGLS_State)
-    requires |gls.history| > 0;
-    requires forall ep :: ep in gls.tls.t_servers <==> ep in config;
-    requires forall ep | ep in gls.tls.t_servers :: gls.tls.t_servers[ep].v.config == config;
+predicate HistoryLengthInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
+    requires |tgls.history| > 0;
+    requires forall ep :: ep in tgls.tls.t_servers <==> ep in config;
+    requires forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config;
 {
-    && AtMostOneLockHolder(config, gls)
-    && NoLockHolderImpliesOneTransferMessageInFlight(config, gls)
-    && AllTransferMessageInFlightHaveDstLastInHistory(config, gls)
-    && AllTransferMessageInFlightHaveEpochEqualsHistoryLength(config, gls)
-    && SomeLockHolderImpliesNoTransferMessageInFlight(config, gls)
-    && SomeLockHolderImpliesHolderIsLastInHistory(config, gls)
-    && SomeLockHolderImpliesEpochIsHistoryLength(config, gls)
+    && AtMostOneLockHolder(config, tgls)
+    && NoLockHolderImpliesOneTransferMessageInFlight(config, tgls)
+    && AllTransferMessageInFlightHaveDstLastInHistory(config, tgls)
+    && AllTransferMessageInFlightHaveEpochEqualsHistoryLength(config, tgls)
+    && SomeLockHolderImpliesNoTransferMessageInFlight(config, tgls)
+    && SomeLockHolderImpliesHolderIsLastInHistory(config, tgls)
+    && SomeLockHolderImpliesEpochIsHistoryLength(config, tgls)
 }
 
 
