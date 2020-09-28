@@ -31,15 +31,21 @@ datatype TimestampedDS_State = TimestampedDS_State(
     num_steps:NumSteps
 )
         
-function UntagTimestampedType<T>(t_t: TimestampedType<T>) : T {
+function UntagTimestampedType<T>(t_t: TimestampedType<T>) : T 
+    ensures UntagTimestampedType(t_t) == t_t.v;
+{
     t_t.v
 }
 
-function UntagLPacket<I,M>(pkt: TimestampedLPacket<I,M>) : LPacket<I,M> {
+function UntagLPacket<I,M>(pkt: TimestampedLPacket<I,M>) : LPacket<I,M>
+    ensures UntagLPacket(pkt) == LPacket(pkt.dst, pkt.src, pkt.msg.v);
+{
     LPacket(pkt.dst, pkt.src, pkt.msg.v)
 }
 
-function UntagSentPkts<I,M>(t_sentPkts : set<TimestampedLPacket<I,M>>) : set<LPacket<I,M>> {
+function UntagSentPkts<I,M>(t_sentPkts : set<TimestampedLPacket<I,M>>) : set<LPacket<I,M>> 
+    ensures UntagSentPkts(t_sentPkts) == (set pkt | pkt in t_sentPkts :: UntagLPacket(pkt));
+{
     set pkt | pkt in t_sentPkts :: UntagLPacket(pkt)
 }
 
@@ -53,11 +59,15 @@ function UntagLEnvStep(t_nextStep : TimestampedLEnvStep) : LEnvStep {
     }
 }
 
-function UntagHostInfo(t_hi: TimestampedLHostInfo) : LHostInfo {
+function UntagHostInfo(t_hi: TimestampedLHostInfo) : LHostInfo 
+    ensures UntagHostInfo(t_hi) == LHostInfo(MapSeqToSeq(t_hi.queue, UntagLPacket));
+{
     LHostInfo(MapSeqToSeq(t_hi.queue, UntagLPacket))
 }
 
-function UntagHostInfoMap<I,M>(t_hostInfo:map<I, LHostInfo<I,TimestampedType<M>>>) : map<I,LHostInfo<I,M>> {
+function UntagHostInfoMap<I,M>(t_hostInfo:map<I, LHostInfo<I,TimestampedType<M>>>) : map<I,LHostInfo<I,M>> 
+    ensures UntagHostInfoMap(t_hostInfo) == (map id | id in t_hostInfo :: UntagHostInfo(t_hostInfo[id]));
+{
     map id | id in t_hostInfo :: UntagHostInfo(t_hostInfo[id])
 }
 
@@ -68,7 +78,10 @@ function UntagLEnvironment<I,M,S>(t_env: TimestampedLEnvironment<I,M,S>) : LEnvi
         UntagLEnvStep(t_env.nextStep))
 }
 
-function UntagServers(t_servers: map<EndPoint, TimestampedHostState>) : map<EndPoint, HostState> {
+function UntagServers(t_servers: map<EndPoint, TimestampedHostState>) : map<EndPoint, HostState> 
+    ensures forall id :: id in t_servers <==> id in UntagServers(t_servers);
+    ensures forall id | id in UntagServers(t_servers) :: UntagServers(t_servers)[id] == t_servers[id].v;
+{
     map id | id in t_servers :: t_servers[id].v
 }
 
@@ -89,7 +102,7 @@ function UntagLIoOp(t_io : TimestampedLIoOp) : LIoOp {
     }
 }
 
-function {:opaque} UntagLIoOpSeq(t_ios: seq<TimestampedLIoOp>) : seq<LIoOp>
+function UntagLIoOpSeq(t_ios: seq<TimestampedLIoOp>) : seq<LIoOp>
     ensures |UntagLIoOpSeq(t_ios)| == |t_ios|
     ensures forall i :: 0 <= i < |UntagLIoOpSeq(t_ios)| ==> UntagLIoOpSeq(t_ios)[i] == UntagLIoOp(t_ios[i])
 {

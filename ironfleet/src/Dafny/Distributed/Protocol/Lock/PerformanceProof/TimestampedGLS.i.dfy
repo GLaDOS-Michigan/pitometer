@@ -31,6 +31,7 @@ function UntagLSServers(t_servers: map<EndPoint, TimestampedNode>) : map<EndPoin
 
 function UntagLS_State(tds:TimestampedLS_State) : LS_State
     ensures UntagLS_State(tds).servers == UntagLSServers(tds.t_servers);
+    ensures UntagLS_State(tds).environment == UntagLEnvironment(tds.t_environment);
 {
     LS_State(
         UntagLEnvironment(tds.t_environment),
@@ -93,6 +94,7 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
 
 function UntagGLS_State(tgls:TimestampedGLS_State) : GLS_State
     ensures UntagGLS_State(tgls).ls == UntagLS_State(tgls.tls);
+    ensures UntagGLS_State(tgls).history == tgls.history;
 {
     GLS_State(
         UntagLS_State(tgls.tls),
