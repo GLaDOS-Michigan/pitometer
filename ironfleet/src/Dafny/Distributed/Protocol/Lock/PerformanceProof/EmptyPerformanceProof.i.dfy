@@ -97,10 +97,35 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     requires GLSPerformanceAssumption(tglb)
     ensures GLSPerformanceGuarantee(tglb);
 {
-    assume false;  // TONY TODO
-    assert ConfigInvariant(config, tglb[0]);
-    assert HistoryLengthInvariant(config, tglb[0]);
-    assert TransferInvariant(tglb[0]);
-    assert LockedInvariant(tglb[0]);
+    lemma_ValidBehavior(config, tglb);
+    lemma_ConfigInvariant(config, tglb);
+    lemma_History_Length_Invariant(config, tglb);
+    
+    var i := 1;
+    while i < |tglb| 
+        decreases |tglb| - i;
+        invariant 0 <= i <= |tglb|;
+        invariant forall h | 0 <= h < i :: TransferInvariant(tglb[h]);
+        invariant forall h | 0 <= h < i :: LockedInvariant(tglb[h]);
+    {
+        assume false;
+        i := i + 1;
+    }
 }
+
+
+lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>) 
+    requires |config| > 1;
+    requires ValidTimestampedGLSBehavior(tglb, config);
+    ensures forall i | 0 <= i < |tglb| - 1 :: TGLS_Next(tglb[i], tglb[i+1]);
+{
+    forall i | 0 <= i < |tglb| - 1
+    ensures TGLS_Next(tglb[i], tglb[i+1]) {
+        var h' := i + 1;
+        var h := h' - 1;
+        assert 0 <= h < h' < |tglb|;
+        assert TGLS_Next(tglb[h], tglb[h']);
+    }
+}
+
 }
