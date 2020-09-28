@@ -7,6 +7,23 @@ module Invariants_i {
 
 
 
+
+lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>) 
+    requires |config| > 1;
+    requires ValidTimestampedGLSBehavior(tglb, config);
+    ensures forall i | 0 <= i < |tglb| - 1 :: TGLS_Next(tglb[i], tglb[i+1]);
+{
+    forall i | 0 <= i < |tglb| - 1
+    ensures TGLS_Next(tglb[i], tglb[i+1]) {
+        var h' := i + 1;
+        var h := h' - 1;
+        assert 0 <= h < h' < |tglb|;
+        assert TGLS_Next(tglb[h], tglb[h']);
+    }
+}
+
+
+
 /*****************************************************************************************
 /                                 ConfigurationInvariant                                 *
 *****************************************************************************************/
@@ -24,6 +41,7 @@ lemma lemma_ConfigInvariant(config:ConcreteConfiguration, tglb:seq<TimestampedGL
     requires ValidTimestampedGLSBehavior(tglb, config)
     ensures forall i | 0 <= i < |tglb| :: ConfigInvariant(config, tglb[i]);
 {
+    lemma_ValidBehavior(config, tglb);
     var ls := UntagLS_State(tglb[0].tls);
     assert LS_Init(ls, config);
     assert forall e :: e in config <==> e in ls.servers;
@@ -37,6 +55,9 @@ lemma lemma_ConfigInvariant(config:ConcreteConfiguration, tglb:seq<TimestampedGL
         invariant forall k | 0 <= k <= i :: ConfigInvariant(config, tglb[k]);
     {
         var tgls, tgls' := tglb[i], tglb[i+1];
+        assert TGLS_Next(tgls, tgls');
+        assert forall ep :: ep in tgls'.tls.t_servers <==> ep in config;
+        assert forall ep | ep in tgls'.tls.t_servers :: tgls'.tls.t_servers[ep].v.config == config;
         assert ConfigInvariant(config, tgls');
         i := i + 1;    
     }
@@ -189,6 +210,10 @@ lemma lemma_History_Length_Invariant(config:ConcreteConfiguration, tglb:seq<Time
             assert NoLockHolder(config, tgls);
             lemma_History_Length_Invariant_Induction_B(config, tgls, tgls');
         }
+        assert HistoryLengthInvariant(config, tgls');
+        forall k | 0 <= k <= i 
+        ensures HistoryLengthInvariant(config, tglb[k])
+        {}
         i := i + 1; 
     }
 }

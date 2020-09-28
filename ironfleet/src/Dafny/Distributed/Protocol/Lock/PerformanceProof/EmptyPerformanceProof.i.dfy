@@ -113,19 +113,4 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     }
 }
 
-
-lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>) 
-    requires |config| > 1;
-    requires ValidTimestampedGLSBehavior(tglb, config);
-    ensures forall i | 0 <= i < |tglb| - 1 :: TGLS_Next(tglb[i], tglb[i+1]);
-{
-    forall i | 0 <= i < |tglb| - 1
-    ensures TGLS_Next(tglb[i], tglb[i+1]) {
-        var h' := i + 1;
-        var h := h' - 1;
-        assert 0 <= h < h' < |tglb|;
-        assert TGLS_Next(tglb[h], tglb[h']);
-    }
-}
-
 }
