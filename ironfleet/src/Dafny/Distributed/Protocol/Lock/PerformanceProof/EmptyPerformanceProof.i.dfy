@@ -182,11 +182,14 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
     var tls, tls' := tgls.tls, tgls'.tls;
     var e, e' := tls.t_environment, tls'.t_environment;
     var id, ios, hstep := e.nextStep.actor, e.nextStep.ios, e.nextStep.nodeStep;
-    assert TLS_NextOneServer(tls, tls', id, ios, hstep);
-
-    assert tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hstep);
-    assert hstep == AcceptStep;
     var ls, ls', untagged_ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(ios);
+
+    reveal_EpochInvariant();
+    assert ios[0].r in e.sentPackets;
+    assert IsValidLIoOp(ios[0], id, e);
+    assert untagged_ios[0].r.dst == id;
+
+    assert hstep == AcceptStep;
     assert NodeAccept(ls.servers[id], ls'.servers[id], untagged_ios);
     if !ls.servers[id].held 
         && untagged_ios[0].r.src in ls.servers[id].config
@@ -211,7 +214,18 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
         * must be in flight, so contradiction (EpochInvariant). 
         * I could also be receiving a Locked message. In this case my epoch cannot 
         * be 0 (EpochInvariant), so contradiction again. */
-        assume false;
+        assert !ls.servers[id].held && !ls'.servers[id].held;
+        if ls.servers[id].epoch == 0 {
+            if untagged_ios[0].r.msg.Transfer? {
+                assert untagged_ios[0].r.msg.transfer_epoch <= ls.servers[id].epoch == 0;
+                assert EpochInvariant(config, tgls);
+                assert false;
+            } else {
+                assert untagged_ios[0].r.msg.Locked?;
+                assert EpochInvariant(config, tgls);
+                assert false;
+            }
+        }
     }
 }
 
@@ -244,19 +258,15 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Grant(config:Config, tgls:Times
         assert e'.sentPackets == e.sentPackets + {ios[0].s};
         if ls.servers[id].epoch <= |tgls.tls.config| {
             assert ls'.servers[id].epoch == ls.servers[id].epoch == |tgls.history| > 0;
-            assert NeverHeldInvariant(tgls');
             var node_pr := PerfBoundLockHeld(tls.t_servers[id].v.epoch);
             assert tls.t_servers[id].ts == node_pr;
             var node_pr_next := TimeAdd2(node_pr, StepToTimeDelta(hstep));
             Grant_j_helper();
             assert TimeEq(node_pr_next, PerfBoundLockInNetwork(tls.t_servers[id].v.epoch+1));
             assert ios[0].s.msg.ts == node_pr_next;
-            assert TransferInvariant(tgls');
         } else {
             assert ls'.servers[id].epoch > 0;
             assert ios[0].s.msg.v.transfer_epoch > |tgls.tls.config|;
-            assert NeverHeldInvariant(tgls');
-            assert TransferInvariant(tgls');
         }
     } else {
         /* I must be holding the lock, as stipulated by SingleGLSPerformanceAssumption. 
