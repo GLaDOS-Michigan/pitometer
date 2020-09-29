@@ -17,11 +17,17 @@ module PerformanceProof_i {
 *                                 Performance Invariants                                 *
 *****************************************************************************************/
 
-predicate PerformanceInductiveInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
+predicate CommonInvariants(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
     requires |tgls.history| > 0;
 {
     && ConfigInvariant(config, tgls)
     && HistoryLengthInvariant(config, tgls)
+    && EpochInvariant(config, tgls)
+}
+
+predicate PerformanceInductiveInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
+    requires |tgls.history| > 0;
+{
     && TransferInvariant(tgls)
     && LockedInvariant(tgls)
     && NeverHeldInvariant(tgls)
@@ -53,7 +59,7 @@ predicate NeverHeldInvariant(tgls:TimestampedGLS_State) {
         | && ep in tgls.tls.t_servers
           && tgls.tls.t_servers[ep].v.epoch == 0 
         ::
-          TimeEq(tgls.tls.t_servers[ep].ts, TimeZero());
+          TimeEq(tgls.tls.t_servers[ep].ts, TimeZero())
 }
 
 
@@ -111,6 +117,7 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     lemma_ValidBehavior(config, tglb);
     lemma_ConfigInvariant(config, tglb);
     lemma_History_Length_Invariant(config, tglb);
+    lemma_EpochInvariant(config, tglb);
     
     var i := 1;
     while i < |tglb|
@@ -136,9 +143,8 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
 lemma PerformanceGuaranteeHolds_Induction_IOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
     // Standard pre-conditions
     requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires CommonInvariants(config, tgls) && CommonInvariants(config, tgls');
     requires PerformanceInductiveInvariant(config, tgls);
-    requires ConfigInvariant(config, tgls');
-    requires HistoryLengthInvariant(config, tgls');
     requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
     requires TGLS_Next(tgls, tgls');
     // Branch condition
@@ -163,14 +169,13 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep(config:Config, tgls:Timestamped
 lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
     // Standard pre-conditions
     requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires CommonInvariants(config, tgls) && CommonInvariants(config, tgls');
     requires PerformanceInductiveInvariant(config, tgls);
-    requires ConfigInvariant(config, tgls');
-    requires HistoryLengthInvariant(config, tgls');
     requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
     requires TGLS_Next(tgls, tgls');
     // Branch condition
     requires tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers;
-    requires |tls.t_environment.nextStep.ios| > 0 && tls.t_environment.nextStep.ios[0].LIoOpReceive?
+    requires |tgls.tls.t_environment.nextStep.ios| > 0 && tgls.tls.t_environment.nextStep.ios[0].LIoOpReceive?
     // Post-conditions
     ensures PerformanceInductiveInvariant(config, tgls');
 {
@@ -203,9 +208,9 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
         * am tasked with satisfying NeverHeldInvariant in the next step.
         * If my ep != 0, invariant is trivially satisfied.
         * Else, if receiving a Transfer message, any Transfer message destined for me 
-        * must be in flight, so contradiction (LEMMA). I could also be receiving a 
-        * Locked message. In this case my epoch cannot be 0 (LEMMA), 
-        * so contradiction again. */
+        * must be in flight, so contradiction (EpochInvariant). 
+        * I could also be receiving a Locked message. In this case my epoch cannot 
+        * be 0 (EpochInvariant), so contradiction again. */
         assume false;
     }
 }
@@ -214,14 +219,13 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
 lemma PerformanceGuaranteeHolds_Induction_IOStep_Grant(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
     // Standard pre-conditions
     requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires CommonInvariants(config, tgls) && CommonInvariants(config, tgls');
     requires PerformanceInductiveInvariant(config, tgls);
-    requires ConfigInvariant(config, tgls');
-    requires HistoryLengthInvariant(config, tgls');
     requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
     requires TGLS_Next(tgls, tgls');
     // Branch condition
     requires tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers;
-    requires !(|tls.t_environment.nextStep.ios| > 0 && tls.t_environment.nextStep.ios[0].LIoOpReceive?)
+    requires !(|tgls.tls.t_environment.nextStep.ios| > 0 && tgls.tls.t_environment.nextStep.ios[0].LIoOpReceive?)
     // Post-conditions
     ensures PerformanceInductiveInvariant(config, tgls');
 {
@@ -237,13 +241,23 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Grant(config:Config, tgls:Times
     if ls.servers[id].held && ls.servers[id].epoch < 0xFFFF_FFFF_FFFF_FFFF {
         /* Locked invariant easily implies Transfer invariant in the next step.
         * ep != 0, so NeverHeldInvariant trivially satisfied. */
-        assert ls'.servers[id].epoch == ls.servers[id].epoch == |tgls.history| > 0;
-        assert NeverHeldInvariant(tgls');
-        var localTimeAfterGrant = TimeAdd2(PerfBoundLockHeld(tls.t_servers[ep].v.epoch), StepToTimeDelta(hstep));
-        assert TimeEq(localTimeAfterGrant, PerfBoundLockInNetwork(tls.t_servers[ep].v.epoch+1));
         assert e'.sentPackets == e.sentPackets + {ios[0].s};
-        assert ios[0].s.msg.ts == localTimeAfterGrant;
-        assert TransferInvariant(tgls');
+        if ls.servers[id].epoch <= |tgls.tls.config| {
+            assert ls'.servers[id].epoch == ls.servers[id].epoch == |tgls.history| > 0;
+            assert NeverHeldInvariant(tgls');
+            var node_pr := PerfBoundLockHeld(tls.t_servers[id].v.epoch);
+            assert tls.t_servers[id].ts == node_pr;
+            var node_pr_next := TimeAdd2(node_pr, StepToTimeDelta(hstep));
+            Grant_j_helper();
+            assert TimeEq(node_pr_next, PerfBoundLockInNetwork(tls.t_servers[id].v.epoch+1));
+            assert ios[0].s.msg.ts == node_pr_next;
+            assert TransferInvariant(tgls');
+        } else {
+            assert ls'.servers[id].epoch > 0;
+            assert ios[0].s.msg.v.transfer_epoch > |tgls.tls.config|;
+            assert NeverHeldInvariant(tgls');
+            assert TransferInvariant(tgls');
+        }
     } else {
         /* I must be holding the lock, as stipulated by SingleGLSPerformanceAssumption. 
         * Hence, my epoch >= 0xFFFF_FFFF_FFFF_FFFF. By HistoryLengthInvariant, |history|
@@ -259,9 +273,8 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Grant(config:Config, tgls:Times
 lemma PerformanceGuaranteeHolds_Induction_NonIOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
     // Standard pre-conditions
     requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires CommonInvariants(config, tgls) && CommonInvariants(config, tgls');
     requires PerformanceInductiveInvariant(config, tgls);
-    requires ConfigInvariant(config, tgls');
-    requires HistoryLengthInvariant(config, tgls');
     requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
     requires TGLS_Next(tgls, tgls');
     // Branch condition
