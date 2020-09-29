@@ -57,7 +57,7 @@ predicate TLS_NextOneServer(tls: TimestampedLS_State, tls': TimestampedLS_State,
             tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hstep)
         else
             tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hstep)
-            )
+        )
 
         && (forall t_io :: t_io in ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == tls'.t_servers[id].ts)
         && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]

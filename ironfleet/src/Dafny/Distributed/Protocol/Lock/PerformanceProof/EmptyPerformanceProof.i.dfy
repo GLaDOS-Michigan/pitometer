@@ -100,19 +100,19 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     lemma_ConfigInvariant(config, tglb);
     lemma_History_Length_Invariant(config, tglb);
     
-    var i := 0;
-    while i < |tglb| - 1
+    var i := 1;
+    while i < |tglb|
         decreases |tglb| - i;
-        invariant 0 <= i < |tglb|;
-        invariant forall h | 0 <= h <= i :: PerformanceInductiveInvariant(config, tglb[h]);
+        invariant 0 <= i <= |tglb|;
+        invariant forall h | 0 <= h < i :: PerformanceInductiveInvariant(config, tglb[h]);
     {
-        var tls, tls' := tglb[i].tls, tglb[i+1].tls;
+        var tls, tls' := tglb[i-1].tls, tglb[i].tls;
         if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers {
-            PerformanceGuaranteeHolds_Induction_IOStep(config, tglb[i], tglb[i+1]);
+            PerformanceGuaranteeHolds_Induction_IOStep(config, tglb[i-1], tglb[i]);
         } else {
-            PerformanceGuaranteeHolds_Induction_NonIOStep(config, tglb[i], tglb[i+1]);
+            PerformanceGuaranteeHolds_Induction_NonIOStep(config, tglb[i-1], tglb[i]);
         }
-        forall h | 0 <= h <= i+1 
+        forall h | 0 <= h <= i 
         ensures PerformanceInductiveInvariant(config, tglb[h])
         {}
         i := i + 1;
@@ -136,7 +136,19 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep(config:Config, tgls:Timestamped
 {
     var tls, tls' := tgls.tls, tgls'.tls;
     var e, e' := tls.t_environment, tls'.t_environment;
+    var id, ios, hstep := e.nextStep.actor, e.nextStep.ios, e.nextStep.nodeStep;
+
+    assert TLS_NextOneServer(tls, tls', id, ios, hstep);
+    if |ios| > 0 && ios[0].LIoOpReceive? {
+        assert tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hstep);
+    } else {
+        assert tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hstep);
+    }
+
+
     assert LEnvironment_Next(e, e');
+
+
     
     assume false;
     assert TransferInvariant(tgls');
