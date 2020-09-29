@@ -41,8 +41,9 @@ predicate LockedInvariant(tgls:TimestampedGLS_State) {
     forall ep 
         | && ep in tgls.tls.t_servers
           && tgls.tls.t_servers[ep].v.held
-        :: && tgls.tls.t_servers[ep].v.epoch > 0
-           && TimeEq(tgls.tls.t_servers[ep].ts, PerfBoundLockHeld(tgls.tls.t_servers[ep].v.epoch))
+        :: 0 < tgls.tls.t_servers[ep].v.epoch <= |tgls.tls.config|
+           ==> 
+           TimeEq(tgls.tls.t_servers[ep].ts, PerfBoundLockHeld(tgls.tls.t_servers[ep].v.epoch))
 } 
 
 
