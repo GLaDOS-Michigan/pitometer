@@ -35,6 +35,12 @@ predicate {:opaque} EpochInvariant(config:Config, tgls:TimestampedGLS_State)
 {   && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
     && (forall pkt  
         | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.src in config
+          && pkt.dst in config
+          :: 
+            pkt.msg.v.Locked? || pkt.msg.v.Transfer?)
+    && (forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
           && pkt.msg.v.Transfer?
           && pkt.src in config
           && pkt.dst in config
