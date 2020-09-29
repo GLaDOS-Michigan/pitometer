@@ -31,8 +31,9 @@ predicate TransferInvariant(tgls:TimestampedGLS_State) {
     forall pkt  
         | && pkt in tgls.tls.t_environment.sentPackets 
           && pkt.msg.v.Transfer?
-        :: && pkt.msg.v.transfer_epoch > 0
-           &&TimeEq(pkt.msg.ts, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch))
+        :: 0 < pkt.msg.v.transfer_epoch <= |tgls.tls.config|
+           ==> 
+           TimeEq(pkt.msg.ts, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch))
 } 
 
 
@@ -140,17 +141,30 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep(config:Config, tgls:Timestamped
 
     assert TLS_NextOneServer(tls, tls', id, ios, hstep);
     if |ios| > 0 && ios[0].LIoOpReceive? {
+        // NodeAccept branch
         assert tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hstep);
+        assert hstep == AcceptStep;
+        var ls, ls', untagged_ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(ios);
+        assert NodeAccept(ls.servers[id], ls'.servers[id], untagged_ios);
+        if !ls.servers[id].held 
+           && untagged_ios[0].r.src in ls.servers[id].config
+           && untagged_ios[0].r.msg.Transfer? 
+           && untagged_ios[0].r.msg.transfer_epoch > ls.servers[id].epoch 
+        {
+            // TODO
+            assume false;
+        } else {
+            /* This branch cannot occur, because it means that the node is either 
+            * processing a locked message, or a non-in-flight transfer message. Both can
+            * only occur after the node has received the lock for the first time */
+
+            assume false;
+        }
     } else {
+        // NodeGrant branch
         assert tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hstep);
+        assume false;
     }
-
-
-    assert LEnvironment_Next(e, e');
-
-
-    
-    assume false;
     assert TransferInvariant(tgls');
     assert LockedInvariant(tgls');
 }
