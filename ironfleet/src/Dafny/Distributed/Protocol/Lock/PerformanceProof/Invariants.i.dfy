@@ -6,7 +6,9 @@ module Invariants_i {
     import opened Environment_s
 
 
-
+/*****************************************************************************************
+/                           ValidBehavior translation lemma                              *
+*****************************************************************************************/
 
 lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>) 
     requires |config| > 1;
@@ -20,6 +22,43 @@ lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>)
         assert 0 <= h < h' < |tglb|;
         assert TGLS_Next(tglb[h], tglb[h']);
     }
+}
+
+
+/*****************************************************************************************
+/                                      EpochInvariant                                    *
+*****************************************************************************************/
+
+
+predicate {:opaque} EpochInvariant(config:Config, tgls:TimestampedGLS_State) 
+    requires ConfigInvariant(config, tgls);
+{   && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
+    && (forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.msg.v.Transfer?
+          && pkt.src in config
+          && pkt.dst in config
+        :: 
+             pkt.msg.v.transfer_epoch > 0
+        )
+    && (forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.msg.v.Locked?
+          && pkt.src in config
+          && pkt.dst in config
+        :: 
+            tgls.tls.t_servers[pkt.dst].v.epoch > 0)
+}
+
+
+lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>) 
+    requires |config| > 1;
+    requires ValidTimestampedGLSBehavior(tglb, config);
+    requires forall i | 0 <= i < |tglb| :: ConfigInvariant(config, tglb[i]);
+    ensures forall i | 0 <= i < |tglb| :: EpochInvariant(config, tglb[i]);
+{
+    // TONY TODO
+    assume false;
 }
 
 
@@ -213,6 +252,9 @@ lemma lemma_History_Length_Invariant(config:ConcreteConfiguration, tglb:seq<Time
         assert HistoryLengthInvariant(config, tgls');
         forall k | 0 <= k <= i 
         ensures HistoryLengthInvariant(config, tglb[k])
+        {}
+        forall k | 0 <= k <= i 
+        ensures |tglb[k].history| > 0
         {}
         i := i + 1; 
     }
