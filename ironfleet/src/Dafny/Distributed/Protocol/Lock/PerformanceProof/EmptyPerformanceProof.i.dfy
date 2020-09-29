@@ -17,16 +17,15 @@ module PerformanceProof_i {
 *                                 Performance Invariants                                 *
 *****************************************************************************************/
 
-predicate PerformanceInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
+predicate PerformanceInductiveInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
     requires |tgls.history| > 0;
-    requires forall ep :: ep in tgls.tls.t_servers <==> ep in config;
-    requires forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config;
 {
     && ConfigInvariant(config, tgls)
     && HistoryLengthInvariant(config, tgls)
     && TransferInvariant(tgls)
     && LockedInvariant(tgls)
 }
+
 
 predicate TransferInvariant(tgls:TimestampedGLS_State) {
     forall pkt  
@@ -101,16 +100,69 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     lemma_ConfigInvariant(config, tglb);
     lemma_History_Length_Invariant(config, tglb);
     
-    var i := 1;
-    while i < |tglb| 
+    var i := 0;
+    while i < |tglb| - 1
         decreases |tglb| - i;
-        invariant 0 <= i <= |tglb|;
-        invariant forall h | 0 <= h < i :: TransferInvariant(tglb[h]);
-        invariant forall h | 0 <= h < i :: LockedInvariant(tglb[h]);
+        invariant 0 <= i < |tglb|;
+        invariant forall h | 0 <= h <= i :: PerformanceInductiveInvariant(config, tglb[h]);
     {
-        assume false;
+        var tls, tls' := tglb[i].tls, tglb[i+1].tls;
+        if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers {
+            assume false;
+        } else {
+            PerformanceGuaranteeHolds_Induction_NonIOStep(config, tglb[i], tglb[i+1]);
+        }
+        assert forall h | 0 <= h <= i+1 :: PerformanceInductiveInvariant(config, tglb[h]);
         i := i + 1;
     }
+    PerformanceInductiveInvariant_Implies_GLSPerformanceGuarantee(config, tglb);
 }
 
+
+lemma PerformanceGuaranteeHolds_Induction_NonIOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
+    // Standard pre-conditions
+    requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires PerformanceInductiveInvariant(config, tgls);
+    requires ConfigInvariant(config, tgls');
+    requires HistoryLengthInvariant(config, tgls');
+    requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
+    requires TGLS_Next(tgls, tgls');
+    // Branch condition
+    requires !(tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers);
+    // Post-conditions
+    ensures PerformanceInductiveInvariant(config, tgls');
+{
+    var tls, tls' := tgls.tls, tgls'.tls;
+    var e, e' := tls.t_environment, tls'.t_environment;
+    assert LEnvironment_Next(e, e');
+    if e.nextStep.LEnvStepHostIos? {
+        assert SingleGLSPerformanceAssumption(tgls);
+        assert e.nextStep.actor in tls.t_servers;  // by assumption
+        assert false;
+    }
+    assert !e.nextStep.LEnvStepHostIos?;
+    match e.nextStep {
+        case LEnvStepHostIos(actor, ios, nodeStep) => assert false;
+        case LEnvStepDeliverPacket(p) => assert e'.sentPackets == e.sentPackets;
+        case LEnvStepAdvanceTime => assert e'.sentPackets == e.sentPackets;
+        case LEnvStepStutter => assert e'.sentPackets == e.sentPackets;
+    }
+    assert tls'.t_servers == tls.t_servers;
+    assert e'.sentPackets == e.sentPackets;
+    assert TransferInvariant(tgls');
+    assert LockedInvariant(tgls');
+}
+
+
+lemma PerformanceInductiveInvariant_Implies_GLSPerformanceGuarantee(config:Config, tglb:seq<TimestampedGLS_State>)
+    requires |config| > 1;
+    requires forall i | 0 <= i < |tglb| :: |tglb[i].history| > 0;
+    requires ValidTimestampedGLSBehavior(tglb, config);
+    requires GLSPerformanceAssumption(tglb);
+    requires forall i | 0 <= i < |tglb| :: PerformanceInductiveInvariant(config, tglb[i]);
+    ensures GLSPerformanceGuarantee(tglb);
+{
+    // TODO TONY
+    assume false;
+}
 }

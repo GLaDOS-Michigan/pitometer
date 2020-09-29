@@ -69,17 +69,19 @@ predicate TLS_Next(tls:TimestampedLS_State, tls': TimestampedLS_State)
     tls.config == tls'.config
     && LS_Next(UntagLS_State(tls), UntagLS_State(tls'))
     && LEnvironment_Next(tls.t_environment, tls'.t_environment)
-    && if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers then
-                    TLS_NextOneServer(tls, tls', tls.t_environment.nextStep.actor, tls.t_environment.nextStep.ios, tls.t_environment.nextStep.nodeStep)
-            else
-            tls'.t_servers == tls.t_servers
-
+    && (if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers 
+        then
+            TLS_NextOneServer(tls, tls', tls.t_environment.nextStep.actor, tls.t_environment.nextStep.ios, tls.t_environment.nextStep.nodeStep)
+        else
+            && tls'.t_servers == tls.t_servers
             && (if tls.t_environment.nextStep.LEnvStepHostIos? then
-                // Any irrelevant packets are given a default Zero.
-                    && (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == TimeZero())
-                    else
-                    true)
-    }
+                    // Any irrelevant packets are given a default Zero.
+                    (forall t_io :: t_io in tls.t_environment.nextStep.ios && t_io.LIoOpSend? ==> t_io.s.msg.ts == TimeZero())
+                else
+                    true
+                )
+    )
+}
 
 
 /*****************************************************************************************
