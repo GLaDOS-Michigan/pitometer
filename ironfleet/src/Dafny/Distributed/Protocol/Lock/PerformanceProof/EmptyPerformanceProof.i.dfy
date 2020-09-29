@@ -237,12 +237,21 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Grant(config:Config, tgls:Times
     if ls.servers[id].held && ls.servers[id].epoch < 0xFFFF_FFFF_FFFF_FFFF {
         /* Locked invariant easily implies Transfer invariant in the next step.
         * ep != 0, so NeverHeldInvariant trivially satisfied. */
-        assume false;
+        assert ls'.servers[id].epoch == ls.servers[id].epoch == |tgls.history| > 0;
+        assert NeverHeldInvariant(tgls');
+        var localTimeAfterGrant = TimeAdd2(PerfBoundLockHeld(tls.t_servers[ep].v.epoch), StepToTimeDelta(hstep));
+        assert TimeEq(localTimeAfterGrant, PerfBoundLockInNetwork(tls.t_servers[ep].v.epoch+1));
+        assert e'.sentPackets == e.sentPackets + {ios[0].s};
+        assert ios[0].s.msg.ts == localTimeAfterGrant;
+        assert TransferInvariant(tgls');
     } else {
-        /* If my epoch >= 0xFFFF_FFFF_FFFF_FFFF, by HistoryLengthInvariant, |history|
-        * >= 0xFFFF_FFFF_FFFF_FFFF, violating SingleGLSPerformanceAssumption.
-        * Else, I don't hold lock. This violates SingleGLSPerformanceAssumption. */
-        assume false;
+        /* I must be holding the lock, as stipulated by SingleGLSPerformanceAssumption. 
+        * Hence, my epoch >= 0xFFFF_FFFF_FFFF_FFFF. By HistoryLengthInvariant, |history|
+        * >= 0xFFFF_FFFF_FFFF_FFFF, violating SingleGLSPerformanceAssumption. */
+        assert ls.servers[id].held;
+        assert ls.servers[id].epoch >= 0xFFFF_FFFF_FFFF_FFFF;
+        assert |tgls.history| >= 0xFFFF_FFFF_FFFF_FFFF;
+        assert false;
     }
 }
 
