@@ -33,6 +33,7 @@ lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>)
 predicate {:opaque} EpochInvariant(config:Config, tgls:TimestampedGLS_State) 
     requires ConfigInvariant(config, tgls);
 {   && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
+    && (forall pkt | pkt in tgls.tls.t_environment.sentPackets :: pkt.src in config)
     && (forall pkt  
         | && pkt in tgls.tls.t_environment.sentPackets 
           && pkt.src in config
