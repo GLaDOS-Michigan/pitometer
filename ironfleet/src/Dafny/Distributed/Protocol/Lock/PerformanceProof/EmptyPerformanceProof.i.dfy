@@ -108,14 +108,39 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     {
         var tls, tls' := tglb[i].tls, tglb[i+1].tls;
         if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers {
-            assume false;
+            PerformanceGuaranteeHolds_Induction_IOStep(config, tglb[i], tglb[i+1]);
         } else {
             PerformanceGuaranteeHolds_Induction_NonIOStep(config, tglb[i], tglb[i+1]);
         }
-        assert forall h | 0 <= h <= i+1 :: PerformanceInductiveInvariant(config, tglb[h]);
+        forall h | 0 <= h <= i+1 
+        ensures PerformanceInductiveInvariant(config, tglb[h])
+        {}
         i := i + 1;
     }
     PerformanceInductiveInvariant_Implies_GLSPerformanceGuarantee(config, tglb);
+}
+
+
+lemma PerformanceGuaranteeHolds_Induction_IOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State)
+    // Standard pre-conditions
+    requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires PerformanceInductiveInvariant(config, tgls);
+    requires ConfigInvariant(config, tgls');
+    requires HistoryLengthInvariant(config, tgls');
+    requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
+    requires TGLS_Next(tgls, tgls');
+    // Branch condition
+    requires tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers;
+    // Post-conditions
+    ensures PerformanceInductiveInvariant(config, tgls');
+{
+    var tls, tls' := tgls.tls, tgls'.tls;
+    var e, e' := tls.t_environment, tls'.t_environment;
+    assert LEnvironment_Next(e, e');
+    
+    assume false;
+    assert TransferInvariant(tgls');
+    assert LockedInvariant(tgls');
 }
 
 
@@ -135,14 +160,12 @@ lemma PerformanceGuaranteeHolds_Induction_NonIOStep(config:Config, tgls:Timestam
     var tls, tls' := tgls.tls, tgls'.tls;
     var e, e' := tls.t_environment, tls'.t_environment;
     assert LEnvironment_Next(e, e');
-    if e.nextStep.LEnvStepHostIos? {
-        assert SingleGLSPerformanceAssumption(tgls);
-        assert e.nextStep.actor in tls.t_servers;  // by assumption
-        assert false;
-    }
-    assert !e.nextStep.LEnvStepHostIos?;
     match e.nextStep {
-        case LEnvStepHostIos(actor, ios, nodeStep) => assert false;
+        case LEnvStepHostIos(actor, ios, nodeStep) => {
+            assert SingleGLSPerformanceAssumption(tgls);
+            assert e.nextStep.actor in tls.t_servers;  // by assumption
+            assert false;
+        }
         case LEnvStepDeliverPacket(p) => assert e'.sentPackets == e.sentPackets;
         case LEnvStepAdvanceTime => assert e'.sentPackets == e.sentPackets;
         case LEnvStepStutter => assert e'.sentPackets == e.sentPackets;
