@@ -13,6 +13,126 @@ module PerformanceProof_i {
     import opened Invariants_i
 
 
+
+/*****************************************************************************************
+/                                      EpochInvariant                                    *
+*****************************************************************************************/
+
+
+predicate EpochInvariant(config:Config, tgls:TimestampedGLS_State) 
+    requires ConfigInvariant(config, tgls);
+{  
+    reveal_ConfigInvariant();
+    // All packets have valid source 
+    && (forall pkt | pkt in tgls.tls.t_environment.sentPackets :: pkt.src in config)
+    // All valid packets cannot have Invalid message
+    && (forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.src in config
+          && pkt.dst in config
+          :: 
+            pkt.msg.v.Locked? || pkt.msg.v.Transfer?)
+    // All valid transfer packets have epoch > 1 and epoch congurent to dest index mod |config|
+    && (forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.msg.v.Transfer?
+          && pkt.src in config
+          && pkt.dst in config
+        :: 
+          && pkt.msg.v.transfer_epoch > 1
+          && CongrentModM(tgls.tls.t_servers[pkt.dst].v.my_index+1, pkt.msg.v.transfer_epoch, |config|)
+        )
+    // All valid lock packets have epoch > 0.
+    && (forall pkt  
+        | && pkt in tgls.tls.t_environment.sentPackets 
+          && pkt.msg.v.Locked?
+          && pkt.src in config
+          && pkt.dst in config
+        :: 
+          tgls.tls.t_servers[pkt.dst].v.epoch > 0)
+    // All nodes have non-negative epoch 0 or epoch congurent to index mod |config|
+    && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
+    && (forall ep | ep in config && tgls.tls.t_servers[ep].v.epoch != 0 :: CongrentModM(tgls.tls.t_servers[ep].v.my_index+1, tgls.tls.t_servers[ep].v.epoch, |config|))
+}
+
+predicate CongrentModM(a:int, b:int, m:int) 
+    requires m > 0;
+{
+    && b >= a 
+    && a == b % m
+}
+
+
+lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>) 
+    requires |config| > 1;
+    requires ValidTimestampedGLSBehavior(tglb, config);
+    requires GLSPerformanceAssumption(tglb);
+    requires forall i | 0 <= i < |tglb| :: ConfigInvariant(config, tglb[i]);
+    ensures forall k | 0 <= k < |tglb| :: EpochInvariant(config, tglb[k]);
+{
+    lemma_mod_auto(|config|);
+    forall ep | ep in config && tglb[0].tls.t_servers[ep].v.epoch != 0 
+    ensures CongrentModM(tglb[0].tls.t_servers[ep].v.my_index + 1, tglb[0].tls.t_servers[ep].v.epoch, |config|)
+    {
+        var index := tglb[0].tls.t_servers[ep].v.my_index;
+        if index == 0 {
+            assert tglb[0].tls.t_servers[ep].v.epoch == 1;
+            assert CongrentModM(1, 1, |config|);
+        } else {
+            assert tglb[0].tls.t_servers[ep].v.epoch == 0;
+        }
+    }
+    
+    var i := 0;
+    while i < |tglb| - 1
+        decreases |tglb| - i;
+        invariant 0 <= i < |tglb|;
+        invariant forall k | 0 <= k <= i :: EpochInvariant(config, tglb[k]);
+    {   
+        var tls, tls' := tglb[i].tls, tglb[i+1].tls;
+        var ls, ls' := UntagGLS_State(tglb[i]).ls, UntagGLS_State(tglb[i+1]).ls;
+        assert LS_Next(ls, ls');
+
+        assume false;
+
+        assert (forall pkt | pkt in ls'.environment.sentPackets :: pkt.src in config);
+        // All valid packets cannot have Invalid message
+        assert (forall pkt  
+            | && pkt in ls'.environment.sentPackets 
+            && pkt.src in config
+            && pkt.dst in config
+            :: 
+                pkt.msg.Locked? || pkt.msg.Transfer?);
+        // All valid transfer packets have epoch > 1 and epoch congurent to dest index mod |config|
+        assert (forall pkt  
+            | && pkt in ls'.environment.sentPackets 
+            && pkt.msg.Transfer?
+            && pkt.src in config
+            && pkt.dst in config
+            :: 
+            && pkt.msg.transfer_epoch > 1
+            && CongrentModM(ls'.servers[pkt.dst].my_index+1, pkt.msg.transfer_epoch, |config|)
+        );
+        // All valid lock packets have epoch > 0.
+        assert (forall pkt  
+            | && pkt in ls'.environment.sentPackets 
+            && pkt.msg.Locked?
+            && pkt.src in config
+            && pkt.dst in config
+            :: 
+            ls'.servers[pkt.dst].epoch > 0);
+        // All nodes have non-negative epoch 0 or epoch congurent to index mod |config|
+        assert (forall ep | ep in config :: ls'.servers[ep].epoch >= 0);
+        // assert (forall ep | ep in config && tgls'.tls.t_servers[ep].v.epoch != 0 :: CongrentModM(tgls'.tls.t_servers[ep].v.my_index+1, tgls'.tls.t_servers[ep].v.epoch, |config|));
+
+
+        assert EpochInvariant(config, tglb[i+1]);
+        i := i + 1;
+    }
+}
+
+
+
 /*****************************************************************************************
 *                                 Performance Invariants                                 *
 *****************************************************************************************/
@@ -20,6 +140,7 @@ module PerformanceProof_i {
 predicate CommonInvariants(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
     requires |tgls.history| > 0;
 {
+    reveal_ConfigInvariant();
     && ConfigInvariant(config, tgls)
     && HistoryLengthInvariant(config, tgls)
     && EpochInvariant(config, tgls)
@@ -114,6 +235,7 @@ lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     requires GLSPerformanceAssumption(tglb)
     ensures GLSPerformanceGuarantee(tglb);
 {
+    reveal_ConfigInvariant();
     lemma_ValidBehavior(config, tglb);
     lemma_ConfigInvariant(config, tglb);
     lemma_History_Length_Invariant(config, tglb);
@@ -184,8 +306,6 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
     var id, ios, hstep := e.nextStep.actor, e.nextStep.ios, e.nextStep.nodeStep;
     var ls, ls', untagged_ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(ios);
 
-    reveal_EpochInvariant();
-    reveal_CongrentModM();
     assert ios[0].r in e.sentPackets;
     assert IsValidLIoOp(ios[0], id, e);
     assert untagged_ios[0].r.dst == id;
