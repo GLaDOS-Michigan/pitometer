@@ -333,10 +333,14 @@ lemma PerformanceInductiveInvariant_Implies_GLSPerformanceGuarantee(config:Confi
     requires forall i | 0 <= i < |tglb| :: |tglb[i].history| > 0;
     requires ValidTimestampedGLSBehavior(tglb, config);
     requires GLSPerformanceAssumption(tglb);
+    requires forall i | 0 <= i < |tglb| :: CommonInvariants(config, tglb[i]);
     requires forall i | 0 <= i < |tglb| :: PerformanceInductiveInvariant(config, tglb[i]);
     ensures GLSPerformanceGuarantee(tglb);
 {
-    // TODO TONY
-    assume false;
+    forall i | 0 <= i < |tglb| 
+    ensures SingleGLSPerformanceGuarantee(tglb[i])
+    {
+        assert TransferInvariant(tglb[i]);
+    }
 }
 }
