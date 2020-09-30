@@ -32,29 +32,37 @@ lemma lemma_ValidBehavior(config:Config, tglb:seq<TimestampedGLS_State>)
 
 predicate {:opaque} EpochInvariant(config:Config, tgls:TimestampedGLS_State) 
     requires ConfigInvariant(config, tgls);
-{   && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
+{  
+    // All packets have valid source 
     && (forall pkt | pkt in tgls.tls.t_environment.sentPackets :: pkt.src in config)
+    // All valid packets cannot have Invalid message
     && (forall pkt  
         | && pkt in tgls.tls.t_environment.sentPackets 
           && pkt.src in config
           && pkt.dst in config
           :: 
             pkt.msg.v.Locked? || pkt.msg.v.Transfer?)
+    // All valid transfer packets have epoch > 1 and epoch congurent to dest index mod |config|
     && (forall pkt  
         | && pkt in tgls.tls.t_environment.sentPackets 
           && pkt.msg.v.Transfer?
           && pkt.src in config
           && pkt.dst in config
         :: 
-             pkt.msg.v.transfer_epoch > 0
+          && pkt.msg.v.transfer_epoch > 1
+          && pkt.msg.v.transfer_epoch == tgls.tls.t_servers[pkt.dst].v.my_index % |config|
         )
+    // All valid lock packets have epoch > 0.
     && (forall pkt  
         | && pkt in tgls.tls.t_environment.sentPackets 
           && pkt.msg.v.Locked?
           && pkt.src in config
           && pkt.dst in config
         :: 
-            tgls.tls.t_servers[pkt.dst].v.epoch > 0)
+          tgls.tls.t_servers[pkt.dst].v.epoch > 0)
+    // All nodes have non-negative epoch 0 or epoch congurent to index mod |config|
+    && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
+    && (forall ep | ep in config && tgls.tls.t_servers[ep].v.epoch != 0 :: tgls.tls.t_servers[ep].v.epoch == tgls.tls.t_servers[ep].v.my_index % |config|)
 }
 
 
@@ -65,6 +73,7 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
     ensures forall i | 0 <= i < |tglb| :: EpochInvariant(config, tglb[i]);
 {
     // TONY TODO
+    reveal_EpochInvariant();
     assume false;
 }
 
@@ -78,6 +87,7 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
 /* Invariants about servers in gls and the config */
 predicate ConfigInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_State) 
 {
+    && tgls.tls.config == config
     && (forall ep :: ep in tgls.tls.t_servers <==> ep in config)
     && (forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config)
 }

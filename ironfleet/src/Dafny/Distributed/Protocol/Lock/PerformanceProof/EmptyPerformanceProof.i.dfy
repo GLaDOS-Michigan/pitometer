@@ -48,7 +48,7 @@ predicate LockedInvariant(tgls:TimestampedGLS_State) {
     forall ep 
         | && ep in tgls.tls.t_servers
           && tgls.tls.t_servers[ep].v.held
-          && 0 < tgls.tls.t_servers[ep].v.epoch <= |tgls.tls.config|  // first round
+          && 0 < tgls.tls.t_servers[ep].v.epoch < |tgls.tls.config|  // first round
         ::
           TimeEq(tgls.tls.t_servers[ep].ts, PerfBoundLockHeld(tgls.tls.t_servers[ep].v.epoch))
 } 
@@ -196,14 +196,30 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
         && untagged_ios[0].r.msg.Transfer? 
         && untagged_ios[0].r.msg.transfer_epoch > ls.servers[id].epoch 
     {
-        /* I do not hold the lock. Hence, the updated counter is the max of the 
-        * message counter and my local counter. The message counter has the desired 
-        * counter by TransferInvariant. If my local epoch is 0, then my local counter
-        * is 0 by NeverHeldInvariant, and I get the desired local update that 
-        * satisfies LockedInvariant.
-        * If my local epoch is x != 0, Then my epoch must by x + n|config| for n >= 0. 
-        * (LEMMA) Then LockedInvariant is trivially satisfied. */ 
-        assume false;
+        var pkt := ios[0].r;
+        if 0 < pkt.msg.v.transfer_epoch <= |tgls.tls.config| {
+            /* I do not hold the lock. Hence, the updated counter is the max of the 
+            * message counter and my local counter. The message counter has the desired 
+            * counter by TransferInvariant. If my local epoch is 0, then my local counter
+            * is 0 by NeverHeldInvariant, and I get the desired local update that 
+            * satisfies LockedInvariant.
+            * If my local epoch != 0, Then my epoch must be >= my_index. Since transfer_epoch
+            * > my epoch, transfer_epoch >= my_index + |config| (EpochInvariant).
+            * Then LockedInvariant is trivially satisfied. */ 
+            if ls.servers[id].epoch == 0 {
+                assert tls.t_servers[id].ts == TimeZero();
+                assert TimeEq(pkt.msg.ts, PerfBoundLockInNetwork(pkt.msg.v.transfer_epoch));
+                Accept_j_helper();
+                assert TimeEq(tls'.t_servers[id].ts, PerfBoundLockHeld(tls'.t_servers[id].v.epoch));
+            } else {
+                assert pkt.msg.v.transfer_epoch > ls.servers[id].my_index;
+                assert pkt.msg.v.transfer_epoch >= ls.servers[id].my_index + |config|;
+                assert tls'.t_servers[id].v.epoch == pkt.msg.v.transfer_epoch > |config|;
+            }
+        } else {
+            assert tls'.t_servers[id].v.epoch == pkt.msg.v.transfer_epoch > |config|;
+        }
+        assert LockedInvariant(tgls');
     } else {
         /* By assumption, I do not hold lock. Hence, TransferInvariant and 
         * LockedInvariant are trivially satisfied for the next step because I am not 
@@ -256,7 +272,7 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Grant(config:Config, tgls:Times
         /* Locked invariant easily implies Transfer invariant in the next step.
         * ep != 0, so NeverHeldInvariant trivially satisfied. */
         assert e'.sentPackets == e.sentPackets + {ios[0].s};
-        if ls.servers[id].epoch <= |tgls.tls.config| {
+        if ls.servers[id].epoch < |tgls.tls.config| {
             assert ls'.servers[id].epoch == ls.servers[id].epoch == |tgls.history| > 0;
             var node_pr := PerfBoundLockHeld(tls.t_servers[id].v.epoch);
             assert tls.t_servers[id].ts == node_pr;
