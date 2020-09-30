@@ -185,6 +185,7 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
     var ls, ls', untagged_ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(ios);
 
     reveal_EpochInvariant();
+    reveal_CongrentModM();
     assert ios[0].r in e.sentPackets;
     assert IsValidLIoOp(ios[0], id, e);
     assert untagged_ios[0].r.dst == id;
@@ -212,6 +213,7 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
                 Accept_j_helper();
                 assert TimeEq(tls'.t_servers[id].ts, PerfBoundLockHeld(tls'.t_servers[id].v.epoch));
             } else {
+                lemma_mod_auto(|config|);
                 assert pkt.msg.v.transfer_epoch > ls.servers[id].my_index;
                 assert pkt.msg.v.transfer_epoch >= ls.servers[id].my_index + |config|;
                 assert tls'.t_servers[id].v.epoch == pkt.msg.v.transfer_epoch > |config|;

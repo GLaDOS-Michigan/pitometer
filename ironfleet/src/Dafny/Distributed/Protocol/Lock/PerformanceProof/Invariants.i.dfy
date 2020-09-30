@@ -50,7 +50,7 @@ predicate {:opaque} EpochInvariant(config:Config, tgls:TimestampedGLS_State)
           && pkt.dst in config
         :: 
           && pkt.msg.v.transfer_epoch > 1
-          && pkt.msg.v.transfer_epoch == tgls.tls.t_servers[pkt.dst].v.my_index % |config|
+          && CongrentModM(tgls.tls.t_servers[pkt.dst].v.my_index+1, pkt.msg.v.transfer_epoch, |config|)
         )
     // All valid lock packets have epoch > 0.
     && (forall pkt  
@@ -62,7 +62,14 @@ predicate {:opaque} EpochInvariant(config:Config, tgls:TimestampedGLS_State)
           tgls.tls.t_servers[pkt.dst].v.epoch > 0)
     // All nodes have non-negative epoch 0 or epoch congurent to index mod |config|
     && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
-    && (forall ep | ep in config && tgls.tls.t_servers[ep].v.epoch != 0 :: tgls.tls.t_servers[ep].v.epoch == tgls.tls.t_servers[ep].v.my_index % |config|)
+    && (forall ep | ep in config && tgls.tls.t_servers[ep].v.epoch != 0 :: CongrentModM(tgls.tls.t_servers[ep].v.my_index+1, tgls.tls.t_servers[ep].v.epoch, |config|))
+}
+
+predicate {:opaque} CongrentModM(a:int, b:int, m:int) 
+    requires m > 0;
+{
+    && b >= a 
+    && a == b % m
 }
 
 
@@ -72,8 +79,21 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
     requires forall i | 0 <= i < |tglb| :: ConfigInvariant(config, tglb[i]);
     ensures forall i | 0 <= i < |tglb| :: EpochInvariant(config, tglb[i]);
 {
-    // TONY TODO
     reveal_EpochInvariant();
+    reveal_CongrentModM();
+    lemma_mod_auto(|config|);
+    forall ep | ep in config && tglb[0].tls.t_servers[ep].v.epoch != 0 
+    ensures CongrentModM(tglb[0].tls.t_servers[ep].v.my_index + 1, tglb[0].tls.t_servers[ep].v.epoch, |config|)
+    {
+        var index := tglb[0].tls.t_servers[ep].v.my_index;
+        if index == 0 {
+            assert tglb[0].tls.t_servers[ep].v.epoch == 1;
+            assert CongrentModM(1, 1, |config|);
+        } else {
+            assert tglb[0].tls.t_servers[ep].v.epoch == 0;
+        }
+    }
+    assert EpochInvariant(config, tglb[0]);
     assume false;
 }
 
