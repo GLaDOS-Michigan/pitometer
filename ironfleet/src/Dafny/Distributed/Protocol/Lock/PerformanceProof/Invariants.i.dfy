@@ -90,6 +90,8 @@ predicate ConfigInvariant(config:ConcreteConfiguration, tgls:TimestampedGLS_Stat
     && tgls.tls.config == config
     && (forall ep :: ep in tgls.tls.t_servers <==> ep in config)
     && (forall ep | ep in tgls.tls.t_servers :: tgls.tls.t_servers[ep].v.config == config)
+    && (forall ep | ep in tgls.tls.t_servers :: 0 <= tgls.tls.t_servers[ep].v.my_index < |config|)
+    && (forall ep | ep in tgls.tls.t_servers :: ep == config[tgls.tls.t_servers[ep].v.my_index])
 }
 
 lemma lemma_ConfigInvariant(config:ConcreteConfiguration, tglb:seq<TimestampedGLS_State>) 
@@ -112,9 +114,10 @@ lemma lemma_ConfigInvariant(config:ConcreteConfiguration, tglb:seq<TimestampedGL
     {
         var tgls, tgls' := tglb[i], tglb[i+1];
         assert TGLS_Next(tgls, tgls');
-        assert forall ep :: ep in tgls'.tls.t_servers <==> ep in config;
-        assert forall ep | ep in tgls'.tls.t_servers :: tgls'.tls.t_servers[ep].v.config == config;
-        assert ConfigInvariant(config, tgls');
+        assert forall ep :: ep in tgls'.tls.t_servers <==> ep in tgls.tls.t_servers;
+        assert forall ep | ep in tgls'.tls.t_servers :: tgls'.tls.t_servers[ep].v.config == tgls.tls.t_servers[ep].v.config;
+        assert forall ep | ep in tgls'.tls.t_servers :: tgls'.tls.t_servers[ep].v.my_index == tgls.tls.t_servers[ep].v.my_index;
+        assert ConfigInvariant(config, tglb[i+1]);
         i := i + 1;    
     }
 }
