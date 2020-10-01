@@ -13,13 +13,18 @@ module PerformanceProof_i {
     import opened Invariants_i
 
 
-
 /*****************************************************************************************
 /                                      EpochInvariant                                    *
 *****************************************************************************************/
 
-
 predicate EpochInvariant(config:Config, tgls:TimestampedGLS_State) 
+    requires ConfigInvariant(config, tgls);
+{  
+    && EpochInvariant_Packets(config, tgls)
+    && EpochInvariant_Nodes(config, tgls)
+}
+
+predicate EpochInvariant_Packets(config:Config, tgls:TimestampedGLS_State) 
     requires ConfigInvariant(config, tgls);
 {  
     reveal_ConfigInvariant();
@@ -50,12 +55,18 @@ predicate EpochInvariant(config:Config, tgls:TimestampedGLS_State)
           && pkt.dst in config
         :: 
           tgls.tls.t_servers[pkt.dst].v.epoch > 0)
+}
+
+predicate EpochInvariant_Nodes(config:Config, tgls:TimestampedGLS_State) 
+    requires ConfigInvariant(config, tgls);
+{  
+    reveal_ConfigInvariant();
     // All nodes have non-negative epoch 0 or epoch congurent to index mod |config|
     && (forall ep | ep in config :: tgls.tls.t_servers[ep].v.epoch >= 0)
     && (forall ep | ep in config && tgls.tls.t_servers[ep].v.epoch != 0 :: CongrentModM(tgls.tls.t_servers[ep].v.my_index+1, tgls.tls.t_servers[ep].v.epoch, |config|))
 }
 
-predicate CongrentModM(a:int, b:int, m:int) 
+predicate {:opaque} CongrentModM(a:int, b:int, m:int) 
     requires m > 0;
 {
     && b >= a 
@@ -67,10 +78,13 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
     requires |config| > 1;
     requires ValidTimestampedGLSBehavior(tglb, config);
     requires GLSPerformanceAssumption(tglb);
-    requires forall i | 0 <= i < |tglb| :: ConfigInvariant(config, tglb[i]);
+    requires forall k | 0 <= k < |tglb| :: ConfigInvariant(config, tglb[k]);
     ensures forall k | 0 <= k < |tglb| :: EpochInvariant(config, tglb[k]);
 {
     lemma_mod_auto(|config|);
+    lemma_ValidBehavior(config, tglb);
+    reveal_ConfigInvariant();
+    reveal_CongrentModM();
     forall ep | ep in config && tglb[0].tls.t_servers[ep].v.epoch != 0 
     ensures CongrentModM(tglb[0].tls.t_servers[ep].v.my_index + 1, tglb[0].tls.t_servers[ep].v.epoch, |config|)
     {
@@ -82,55 +96,77 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
             assert tglb[0].tls.t_servers[ep].v.epoch == 0;
         }
     }
-    
-    var i := 0;
-    while i < |tglb| - 1
+
+    var i := 1;
+    while i < |tglb| 
         decreases |tglb| - i;
-        invariant 0 <= i < |tglb|;
-        invariant forall k | 0 <= k <= i :: EpochInvariant(config, tglb[k]);
+        invariant 0 <= i <= |tglb|;
+        invariant forall k | 0 <= k < i :: EpochInvariant(config, tglb[k]);
     {   
-        var tls, tls' := tglb[i].tls, tglb[i+1].tls;
-        var ls, ls' := UntagGLS_State(tglb[i]).ls, UntagGLS_State(tglb[i+1]).ls;
-        assert LS_Next(ls, ls');
+        var tgls, tgls' := tglb[i-1], tglb[i];
 
-        assume false;
-
-        assert (forall pkt | pkt in ls'.environment.sentPackets :: pkt.src in config);
-        // All valid packets cannot have Invalid message
-        assert (forall pkt  
-            | && pkt in ls'.environment.sentPackets 
-            && pkt.src in config
-            && pkt.dst in config
-            :: 
-                pkt.msg.Locked? || pkt.msg.Transfer?);
-        // All valid transfer packets have epoch > 1 and epoch congurent to dest index mod |config|
-        assert (forall pkt  
-            | && pkt in ls'.environment.sentPackets 
-            && pkt.msg.Transfer?
-            && pkt.src in config
-            && pkt.dst in config
-            :: 
-            && pkt.msg.transfer_epoch > 1
-            && CongrentModM(ls'.servers[pkt.dst].my_index+1, pkt.msg.transfer_epoch, |config|)
-        );
-        // All valid lock packets have epoch > 0.
-        assert (forall pkt  
-            | && pkt in ls'.environment.sentPackets 
-            && pkt.msg.Locked?
-            && pkt.src in config
-            && pkt.dst in config
-            :: 
-            ls'.servers[pkt.dst].epoch > 0);
-        // All nodes have non-negative epoch 0 or epoch congurent to index mod |config|
-        assert (forall ep | ep in config :: ls'.servers[ep].epoch >= 0);
-        // assert (forall ep | ep in config && tgls'.tls.t_servers[ep].v.epoch != 0 :: CongrentModM(tgls'.tls.t_servers[ep].v.my_index+1, tgls'.tls.t_servers[ep].v.epoch, |config|));
-
-
-        assert EpochInvariant(config, tglb[i+1]);
+        if tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers {
+            lemma_EpochInvariant_IOStep(config, tgls, tgls');
+        } else {
+            lemma_EpochInvariant_NonIOStep(config, tgls, tgls');
+        }
+        assert EpochInvariant(config, tglb[i]);
+        forall k | 0 <= k <= i 
+        ensures EpochInvariant(config, tglb[k]) 
+        {}
         i := i + 1;
     }
 }
 
+
+lemma lemma_EpochInvariant_IOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State) 
+    // Standard pre-conditions
+    requires ConfigInvariant(config, tgls) && ConfigInvariant(config, tgls');
+    requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
+    requires TGLS_Next(tgls, tgls');
+    requires EpochInvariant(config, tgls);
+    // Branch condition
+    requires tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers;
+    // Post-conditions
+    ensures EpochInvariant(config, tgls');
+{
+    reveal_ConfigInvariant();
+    var tls, tls' := tgls.tls, tgls'.tls;
+    var ls, ls' := UntagLS_State(tls), UntagLS_State(tls');
+    var e, e' := ls.environment, ls'.environment;
+
+    assume false;
+}
+
+
+lemma lemma_EpochInvariant_NonIOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State) 
+    // Standard pre-conditions
+    requires ConfigInvariant(config, tgls) && ConfigInvariant(config, tgls');
+    requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
+    requires TGLS_Next(tgls, tgls');
+    requires EpochInvariant(config, tgls);
+    // Branch condition
+    requires !(tgls.tls.t_environment.nextStep.LEnvStepHostIos? && tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers);
+    // Post-conditions
+    ensures EpochInvariant(config, tgls');
+{
+    reveal_ConfigInvariant();
+    var tls, tls' := tgls.tls, tgls'.tls;
+    var ls, ls' := UntagLS_State(tls), UntagLS_State(tls');
+    var e, e' := ls.environment, ls'.environment;
+
+    match e.nextStep {
+        case LEnvStepHostIos(actor, ios, nodeStep) => {
+            assert SingleGLSPerformanceAssumption(tgls);
+            assert e.nextStep.actor in tls.t_servers;  // by assumption
+            assert false;
+        }
+        case LEnvStepDeliverPacket(p) => assert e'.sentPackets == e.sentPackets;
+        case LEnvStepAdvanceTime => assert e'.sentPackets == e.sentPackets;
+        case LEnvStepStutter => assert e'.sentPackets == e.sentPackets;
+    }
+    assert forall ep | ep in config :: ls'.servers[ep].epoch == ls'.servers[ep].epoch;
+}
 
 
 /*****************************************************************************************
@@ -192,21 +228,26 @@ predicate NeverHeldInvariant(tgls:TimestampedGLS_State) {
 predicate SingleGLSPerformanceAssumption(tgls:TimestampedGLS_State)
 {
     // The only nodes that take steps are in the ring
-    && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? ==> tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers)
+    && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? 
+        ==> 
+        tgls.tls.t_environment.nextStep.actor in tgls.tls.t_servers)
     // The size of the history/epochs never reaches UINT64_MAX
     && (|tgls.history| < 0xFFFF_FFFF_FFFF_FFFF)
     // No timeouts. This means that NodeAccept never takes the LIoOpTimeoutReceive branch
-    && (var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? ==>
-    (forall io :: io in nextStep.ios ==> !io.LIoOpTimeoutReceive?))
+    && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? 
+        ==>
+        (forall io | io in tgls.tls.t_environment.nextStep.ios :: !io.LIoOpTimeoutReceive?))
     // TODO: This should be part of the state machine definition, and not an assumption
     // The only nodes that can do NodeGrant() currently hold the lock
-    && (var nextStep := tgls.tls.t_environment.nextStep; nextStep.LEnvStepHostIos? ==> (nextStep.nodeStep == GrantStep <==> tgls.tls.t_servers[nextStep.actor].v.held))
+    && (tgls.tls.t_environment.nextStep.LEnvStepHostIos? 
+        ==> 
+        (tgls.tls.t_environment.nextStep.nodeStep == GrantStep <==> tgls.tls.t_servers[tgls.tls.t_environment.nextStep.actor].v.held))
 }
 
 
 predicate GLSPerformanceAssumption(tglb:seq<TimestampedGLS_State>)
 {
-    forall tgls | tgls in tglb :: SingleGLSPerformanceAssumption(tgls)
+    forall i | 0 <= i < |tglb| :: SingleGLSPerformanceAssumption(tglb[i])
 }
 
 
@@ -227,6 +268,7 @@ predicate GLSPerformanceGuarantee(tglb:seq<TimestampedGLS_State>)
     && (forall tgls | tgls in tglb :: |tgls.tls.config| > 1)
     && (forall tgls | tgls in tglb :: SingleGLSPerformanceGuarantee(tgls))
 }
+
 
 /* Main Performance Theorem */
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
@@ -334,6 +376,7 @@ lemma PerformanceGuaranteeHolds_Induction_IOStep_Accept(config:Config, tgls:Time
                 assert TimeEq(tls'.t_servers[id].ts, PerfBoundLockHeld(tls'.t_servers[id].v.epoch));
             } else {
                 lemma_mod_auto(|config|);
+                reveal_CongrentModM();
                 assert pkt.msg.v.transfer_epoch > ls.servers[id].my_index;
                 assert pkt.msg.v.transfer_epoch >= ls.servers[id].my_index + |config|;
                 assert tls'.t_servers[id].v.epoch == pkt.msg.v.transfer_epoch > |config|;
