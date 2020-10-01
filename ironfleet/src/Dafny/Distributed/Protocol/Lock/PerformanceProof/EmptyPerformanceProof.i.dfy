@@ -49,7 +49,7 @@ predicate EpochInvariant_Packets(config:Config, tgls:TimestampedGLS_State)
         )
     // All in-flight packets have epoch == source epoch
     && (forall pkt | IsInFlightTransferMessage(config, tgls, pkt) 
-           :: pkt.msg.transfer_epoch == tgls.tls.t_servers[pkt.dst].v.epoch
+           :: pkt.msg.transfer_epoch == tgls.tls.t_servers[pkt.src].v.epoch + 1
     )
     // All valid lock packets have dest epoch > 0.
     && (forall pkt  
@@ -71,13 +71,39 @@ predicate EpochInvariant_Nodes(config:Config, tgls:TimestampedGLS_State)
 predicate {:opaque} CongrentModM(a:int, b:int, m:int) 
     requires m > 0;
 {
-    && b >= a 
-    && a == b % m
+    (a % m) == (b % m)
+}
+
+lemma lemma_CongrentModM(a:int, b:int, m:int) 
+    requires m > 0;
+    requires CongrentModM(a, b, m);
+    ensures CongrentModM(a%m + 1, b + 1, m);
+{
+    reveal_CongrentModM();
+    lemma_mod_auto(m);
+    assert ((a%m) + 1)%m == (b+1)%m;
+    assert CongrentModM(a%m + 1, b + 1, m);
+}
+
+lemma lemma_SeqIsUnique<X>(s:seq<X>)
+    requires SeqIsUnique(s)
+    ensures forall a, b | 0 <= a <|s| && 0 <= b < |s| && a != b :: s[a] != s[b];
+{
+    reveal_SeqIsUnique();
+    forall a, b | 0 <= a <|s| && 0 <= b < |s| && a != b
+    ensures s[a] != s[b] 
+    {
+        if s[a] == s[b] {
+            assert a == b;
+            assert false;
+        }
+    }
 }
 
 
 lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>) 
     requires |config| > 1;
+    requires SeqIsUnique(config);
     requires ValidTimestampedGLSBehavior(tglb, config);
     requires GLSPerformanceAssumption(tglb);
     requires forall k | 0 <= k < |tglb| :: ConfigInvariant(config, tglb[k]);
@@ -86,6 +112,7 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
     lemma_mod_auto(|config|);
     lemma_ValidBehavior(config, tglb);
     reveal_ConfigInvariant();
+    lemma_History_Length_Invariant(config, tglb);
     reveal_CongrentModM();
     forall ep | ep in config && tglb[0].tls.t_servers[ep].v.epoch != 0 
     ensures CongrentModM(tglb[0].tls.t_servers[ep].v.my_index + 1, tglb[0].tls.t_servers[ep].v.epoch, |config|)
@@ -120,10 +147,21 @@ lemma lemma_EpochInvariant(config:Config, tglb:seq<TimestampedGLS_State>)
     }
 }
 
+predicate ConfigAndHistoryInvariants(config:ConcreteConfiguration, tgls:TimestampedGLS_State)
+    requires |tgls.history| > 0;
+{
+    reveal_ConfigInvariant();
+    && ConfigInvariant(config, tgls)
+    && HistoryLengthInvariant(config, tgls)
+}
+
+
 
 lemma lemma_EpochInvariant_IOStep(config:Config, tgls:TimestampedGLS_State, tgls':TimestampedGLS_State) 
     // Standard pre-conditions
-    requires ConfigInvariant(config, tgls) && ConfigInvariant(config, tgls');
+    requires SeqIsUnique(config);
+    requires |tgls.history| > 0 && |tgls'.history| > 0;
+    requires ConfigAndHistoryInvariants(config, tgls) && ConfigAndHistoryInvariants(config, tgls');
     requires SingleGLSPerformanceAssumption(tgls) && SingleGLSPerformanceAssumption(tgls');
     requires TGLS_Next(tgls, tgls');
     requires EpochInvariant(config, tgls);
@@ -142,7 +180,34 @@ lemma lemma_EpochInvariant_IOStep(config:Config, tgls:TimestampedGLS_State, tgls
     assert LS_NextOneServer(ls, ls', id, ios, step);
     if NodeGrant(ls.servers[id], ls'.servers[id], ios) {
         /* Node Grant step */
-        assume false;
+        if ls.servers[id].held && ls.servers[id].epoch < 0xFFFF_FFFF_FFFF_FFFF {
+            lemma_mod_auto(|config|);
+            var pkt := ios[0].s;
+
+            var granter_index := ls.servers[id].my_index;
+            var next_index := (granter_index + 1) % |config|;
+            var next_ep := config[next_index];
+            assert pkt.dst == next_ep;
+            assert CongrentModM(granter_index + 1, ls.servers[id].epoch, |config|);
+
+            assert next_ep == config[next_index];
+
+            if ls.servers[pkt.dst].my_index != next_index {
+                lemma_SeqIsUnique(config);
+                assert config[ls.servers[pkt.dst].my_index] != pkt.dst;
+                assert false;
+            }
+            assert ls.servers[pkt.dst].my_index == next_index;
+            lemma_CongrentModM(granter_index + 1, ls.servers[id].epoch, |config|);
+            assert CongrentModM(ls.servers[pkt.dst].my_index+1, pkt.msg.transfer_epoch, |config|);
+            assert pkt.src == id;
+            // assert pkt.msg.transfer_epoch == ls.servers[id].epoch + 1;
+            assert e'.sentPackets == e.sentPackets + {pkt};
+            assert forall ep | ep in config :: ls'.servers[ep].epoch == ls.servers[ep].epoch;
+        } else {
+            assert e'.sentPackets == e.sentPackets;
+            assert ls'.servers == ls.servers;
+        }
     } else {
         /* Node Accept step */
         if !ls.servers[id].held 
@@ -151,6 +216,8 @@ lemma lemma_EpochInvariant_IOStep(config:Config, tgls:TimestampedGLS_State, tgls
            && ios[0].r.msg.transfer_epoch > ls.servers[id].epoch 
         {
             var pkt := ios[0].r;
+            assert pkt.src in config;
+            assert IsValidLIoOp(ios[0], id, e);
             assert CongrentModM(ls.servers[pkt.dst].my_index+1, pkt.msg.transfer_epoch, |config|);
             assert ios[1].s.msg.locked_epoch == pkt.msg.transfer_epoch > 0;
             assert e'.sentPackets == e.sentPackets + {ios[1].s};
@@ -296,6 +363,7 @@ predicate GLSPerformanceGuarantee(tglb:seq<TimestampedGLS_State>)
 /* Main Performance Theorem */
 lemma PerformanceGuaranteeHolds(config:Config, tglb:seq<TimestampedGLS_State>)
     requires |config| > 1;
+    requires SeqIsUnique(config);
     requires ValidTimestampedGLSBehavior(tglb, config)
     requires GLSPerformanceAssumption(tglb)
     ensures GLSPerformanceGuarantee(tglb);
