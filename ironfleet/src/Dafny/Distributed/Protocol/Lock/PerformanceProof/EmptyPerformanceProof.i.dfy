@@ -24,6 +24,12 @@ predicate EpochInvariant(config:Config, tgls:TimestampedGLS_State)
     && EpochInvariant_Nodes(config, tgls)
 }
 
+predicate IsValidPacket(config:Config, tgls:TimestampedGLS_State, pkt:LPacket<EndPoint, LockMessage>) {
+    && pkt in UntagSentPkts(tgls.tls.t_environment.sentPackets)
+    && pkt.src in config
+    && pkt.dst in config
+}
+
 predicate EpochInvariant_Packets(config:Config, tgls:TimestampedGLS_State) 
     requires ConfigInvariant(config, tgls);
 {  
@@ -31,28 +37,24 @@ predicate EpochInvariant_Packets(config:Config, tgls:TimestampedGLS_State)
     // All packets have valid source 
     && (forall pkt | pkt in tgls.tls.t_environment.sentPackets :: pkt.src in config)
     // All valid packets cannot have Invalid message
-    && (forall pkt  
-        | && pkt in tgls.tls.t_environment.sentPackets 
-          && pkt.src in config
-          && pkt.dst in config
-          :: 
-            pkt.msg.v.Locked? || pkt.msg.v.Transfer?)
+    && (forall pkt  | IsValidPacket(config, tgls, pkt)
+          :: pkt.msg.Locked? || pkt.msg.Transfer?)
     // All valid transfer packets have epoch > 1 and epoch congurent to dest index mod |config|
     && (forall pkt  
-        | && pkt in tgls.tls.t_environment.sentPackets 
-          && pkt.msg.v.Transfer?
-          && pkt.src in config
-          && pkt.dst in config
+        | && IsValidPacket(config, tgls, pkt)
+          && pkt.msg.Transfer?
         :: 
-          && pkt.msg.v.transfer_epoch > 1
-          && CongrentModM(tgls.tls.t_servers[pkt.dst].v.my_index+1, pkt.msg.v.transfer_epoch, |config|)
+          && pkt.msg.transfer_epoch > 1
+          && CongrentModM(tgls.tls.t_servers[pkt.dst].v.my_index+1, pkt.msg.transfer_epoch, |config|)
         )
-    // All valid lock packets have epoch > 0.
+    // All in-flight packets have epoch == source epoch
+    && (forall pkt | IsInFlightTransferMessage(config, tgls, pkt) 
+           :: pkt.msg.transfer_epoch == tgls.tls.t_servers[pkt.dst].v.epoch
+    )
+    // All valid lock packets have dest epoch > 0.
     && (forall pkt  
-        | && pkt in tgls.tls.t_environment.sentPackets 
-          && pkt.msg.v.Locked?
-          && pkt.src in config
-          && pkt.dst in config
+        | && IsValidPacket(config, tgls, pkt)
+          && pkt.msg.Locked?
         :: 
           tgls.tls.t_servers[pkt.dst].v.epoch > 0)
 }
@@ -131,11 +133,32 @@ lemma lemma_EpochInvariant_IOStep(config:Config, tgls:TimestampedGLS_State, tgls
     ensures EpochInvariant(config, tgls');
 {
     reveal_ConfigInvariant();
+    reveal_CongrentModM();
     var tls, tls' := tgls.tls, tgls'.tls;
     var ls, ls' := UntagLS_State(tls), UntagLS_State(tls');
     var e, e' := ls.environment, ls'.environment;
-
-    assume false;
+    
+    var id, ios, step := e.nextStep.actor, e.nextStep.ios, e.nextStep.nodeStep;
+    assert LS_NextOneServer(ls, ls', id, ios, step);
+    if NodeGrant(ls.servers[id], ls'.servers[id], ios) {
+        /* Node Grant step */
+        assume false;
+    } else {
+        /* Node Accept step */
+        if !ls.servers[id].held 
+           && ios[0].r.src in ls.servers[id].config
+           && ios[0].r.msg.Transfer? 
+           && ios[0].r.msg.transfer_epoch > ls.servers[id].epoch 
+        {
+            var pkt := ios[0].r;
+            assert CongrentModM(ls.servers[pkt.dst].my_index+1, pkt.msg.transfer_epoch, |config|);
+            assert ios[1].s.msg.locked_epoch == pkt.msg.transfer_epoch > 0;
+            assert e'.sentPackets == e.sentPackets + {ios[1].s};
+        } else {
+            assert e'.sentPackets == e.sentPackets;
+            assert ls'.servers == ls.servers;
+        }
+    }
 }
 
 
