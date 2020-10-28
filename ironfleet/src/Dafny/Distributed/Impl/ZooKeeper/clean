@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rm -f *.dll*
+rm -f *.exe*
+rm -f fileiotest.cs

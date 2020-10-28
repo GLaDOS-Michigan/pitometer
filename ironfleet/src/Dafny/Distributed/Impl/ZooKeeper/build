@@ -1,0 +1,3 @@
+#!/bin/bash
+
+dafnyc fileiotest.dfy fileionative.cs
