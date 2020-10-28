@@ -1,4 +1,4 @@
-include "../../Common/Native/IoWithFile.dfy"
+include "../../Common/Native/IoWithFile.s.dfy"
 
 module File_IO_Test {
 import opened Native__NativeTypes_s
