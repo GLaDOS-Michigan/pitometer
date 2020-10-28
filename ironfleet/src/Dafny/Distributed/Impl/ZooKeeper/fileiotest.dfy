@@ -1,4 +1,8 @@
-include "fileionative.dfy"
+include "../../Common/Native/IoWithFile.dfy"
+
+module File_IO_Test {
+import opened Native__NativeTypes_s
+import opened Native__Io_s
 
 // Useful to convert Dafny strings into arrays of characters.
 method ArrayFromSeq<A>(s: seq<A>) returns (a: array<A>)
@@ -26,4 +30,5 @@ method {:main} Main(ghost env: HostEnvironment)
     ok := f.Write(0, data, 0, data.Length as int32);
 
     print "done!\n";
+}
 }

@@ -3,3 +3,4 @@
 rm -f *.dll*
 rm -f *.exe*
 rm -f fileiotest.cs
+rm -f foo.txt
