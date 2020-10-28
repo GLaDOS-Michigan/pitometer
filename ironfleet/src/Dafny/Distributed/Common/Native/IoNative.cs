@@ -9,7 +9,7 @@ using UClient = System.Net.Sockets.UdpClient;
 using IEndPoint = System.Net.IPEndPoint;
 
 
-namespace @_Native____Io__s {
+namespace @_10_Native____Io__s_Compile {
 
 public partial class HostConstants
 {
@@ -313,7 +313,7 @@ public partial class Time
     public static void RecordTiming(char[] name, ulong time)
     {
         var str = new string(name);
-        Common.Profiler.Record(str, (long)time);
+        // Common.Profiler.Record(str, (long)time);
     }
 }
 
