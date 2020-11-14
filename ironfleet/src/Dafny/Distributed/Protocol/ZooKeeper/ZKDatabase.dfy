@@ -35,6 +35,13 @@ datatype ZKDatabase = ZKDatabase(
     commitLog:seq<Zxid>
 )
 
+
+function getLastLoggedZxid(db:ZKDatabase) : Zxid {
+    if |db.commitLog| == 0 then NullZxid
+    else db.commitLog[|db.commitLog| - 1]
+}
+
+
 predicate isInitializedZKDatabase(db:ZKDatabase) {
     db.initialized == true
 }
