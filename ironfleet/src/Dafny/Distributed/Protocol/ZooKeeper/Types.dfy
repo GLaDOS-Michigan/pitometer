@@ -24,7 +24,9 @@ type ZKIo = LIoOp<EndPoint, ZKMessage>
 *                                         ZXID                                           *
 *****************************************************************************************/
 
-datatype Zxid = Zxid(epoch:nat, counter:nat);
+datatype Zxid = Zxid(epoch:int, counter:int)
+
+const NullZxid := Zxid(-1, -1);
 
 predicate ZxidLt(z1:Zxid, z2:Zxid) {
     if z1.epoch < z2.epoch then true
