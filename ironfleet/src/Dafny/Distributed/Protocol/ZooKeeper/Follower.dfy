@@ -34,10 +34,14 @@ predicate FollowerInit(s:Follower, my_id:nat, leader_id:nat, config:Config, zkdb
 predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
     match s.state 
         case F_HANDSHAKE_A => SendMyInfo(s, s', ios)
-        case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios) // TODO
-        case F_SYNC => false  // TODO
-        case F_RUNNING => false  // TODO
-        case F_ERROR => s' == s  // TODO
+        case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios) 
+        case F_SYNC => SyncWithLeader(s, s', ios)
+        case F_RUNNING => FollowerStutter(s, s')
+        case F_ERROR => FollowerStutter(s, s')
+}
+
+predicate FollowerStutter(s:Follower, s':Follower) {
+    s' == s
 }
 
 
@@ -60,6 +64,7 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && |ios| >= 1
     && 0 <= s.leader_id < |s.config|
     && ios[0].LIoOpReceive?
+    && ios[0].r.src in s.config
     && ios[0].r.msg.LeaderInfo?
     && ios[0].r.msg.sid == s.leader_id
     && (if ios[0].r.msg.newZxid.epoch <  s.accepted_epoch 
@@ -79,5 +84,35 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
                 else ios[1].s.msg.lastAcceptedEpoch == ios[0].r.msg.newZxid.epoch
         )
     )
+}
+
+
+/* State transition from F_SYNC -> F_RUNNING
+* Note that F_SYNC has cycles */
+predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
+    && |ios| >= 1
+    && ios[0].LIoOpReceive?
+    && ios[0].r.src in s.config
+    && ios[0].r.msg.sid == s.leader_id
+    && match ios[0].r.msg
+        // Ignore these 
+        case FollowerInfo(sid, latestZxid) => FollowerStutter(s, s')
+        case LeaderInfo(sid, newZxid) => FollowerStutter(s, s')
+        case AckEpoch(sid, lastLoggedZxid, lastAcceptedEpoch) => FollowerStutter(s, s')
+        case Ack(sid, ackZxid) => FollowerStutter(s, s')
+
+        // Sync messages
+        case SyncDIFF(sid, lastProcessedZxid) => false // TODO
+        case SyncSNAP(sid, leaderDb, lastProcessedZxid) => false 
+        case SyncTRUNC(sid, lastProcessedZxid) => false // TODO
+
+        // Terminating condition to move to next state
+        case SyncUPTODATE(sid) => 
+            // Send Ack with new epoch, and move to running state
+            && |ios| == 2
+            && ios[1].LIoOpSend?
+            && ios[1].s.dst == ios[0].r.src
+            && ios[1].s.msg == Ack(s.my_id, Zxid(s.accepted_epoch, 0))
+            && s' == s.(state := F_RUNNING)
 }
 }

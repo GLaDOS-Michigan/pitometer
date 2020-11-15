@@ -22,6 +22,8 @@ datatype ZKMessage =
     | SyncDIFF(sid:nat, lastProcessedZxid:Zxid)
     | SyncSNAP(sid:nat, leaderDb: ZKDatabase, lastProcessedZxid:Zxid)
     | SyncTRUNC(sid:nat, lastProcessedZxid:Zxid)
+    | SyncUPTODATE(sid:nat)
+    | Ack(sid:nat, ackZxid:Zxid)
 
 type ZKEnvironment = LEnvironment<EndPoint, ZKMessage>
 type ZKPacket = LPacket<EndPoint, ZKMessage>
