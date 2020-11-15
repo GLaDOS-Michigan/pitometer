@@ -1,10 +1,12 @@
 include "Types.dfy"
 include "ZKDatabase.dfy"
+include "ZKEnvironment.dfy"
 
 
 module ZooKeeper_Follower {
 import opened ZooKeeper_Types
 import opened ZooKeeper_ZKDatabase
+import opened ZooKeeper_Environment
 
 
 // config[my_id] is my own endpoint, config[leader_id] is the leader endpoint
@@ -32,7 +34,7 @@ predicate FollowerInit(s:Follower, my_id:nat, leader_id:nat, config:Config, zkdb
 predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
     match s.state 
         case F_HANDSHAKE_A => SendMyInfo(s, s', ios)
-        case F_HANDSHAKE_B => false // TODO
+        case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios) // TODO
         case F_SYNC => false  // TODO
         case F_RUNNING => false  // TODO
         case F_ERROR => s' == s  // TODO
@@ -47,11 +49,7 @@ predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && ios[0].LIoOpSend?
     && var outbound_packet := ios[0].s;
         && outbound_packet.dst == s.config[s.leader_id]
-        && outbound_packet.msg.FollowerInfo?
-        && outbound_packet.msg.sid == s.my_id
-        && if |s.zkdb.commitLog| == 0 
-            then outbound_packet.msg.latestZxid == NullZxid
-            else outbound_packet.msg.latestZxid == s.zkdb.commitLog[|s.zkdb.commitLog|-1]
+        && outbound_packet.msg == FollowerInfo(s.my_id, getLastLoggedZxid(s.zkdb))
 }
 
 
