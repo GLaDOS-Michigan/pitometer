@@ -107,19 +107,36 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
             && FollowerStutter(s, s')
         case SyncSNAP(sid, leaderDb, lastProcessedZxid) =>
             && |ios| == 1
-            && s' == s.(zkdb := leaderDb)
-        case SyncTRUNC(sid, lastProcessedZxid) => false 
+            && ClearAndLoadDbSnapshot(s, s', leaderDb)
+        case SyncTRUNC(sid, lastProcessedZxid) => 
             && |ios| == 1
             && s' == s.(zkdb := s'.zkdb)
-            && truncDatabase(s'.zkdb, s.zkdb, lastProcessedZxid)
-            
+            && truncDatabase(s.zkdb, s'.zkdb, lastProcessedZxid)
+
+        // Process new transactions
+        case Commit(sid, txn) => 
+            && |ios| == 1
+            && ProcessTxn(s, s', txn)
+
         // Terminating condition to move to next state
-        case SyncUPTODATE(sid) => 
+        case UpToDate(sid) => 
             // Send Ack with new epoch, and move to running state
             && |ios| == 2
             && ios[1].LIoOpSend?
             && ios[1].s.dst == ios[0].r.src
             && ios[1].s.msg == Ack(s.my_id, Zxid(s.accepted_epoch, 0))
             && s' == s.(state := F_RUNNING)
+}
+
+
+predicate ClearAndLoadDbSnapshot(s:Follower, s':Follower, snapshot:ZKDatabase){
+    s' == s.(zkdb := snapshot)
+}
+
+predicate ProcessTxn(s:Follower, s':Follower, txn:Zxid) {
+    // Not what actually happens in ZooKeeper, but I'm simplifying this step to simply
+    // append to the log
+    && s' == s.(zkdb := s'.zkdb)
+    && commitToLog(s.zkdb, s'.zkdb, txn)
 }
 }

@@ -97,5 +97,16 @@ predicate truncDatabase(db:ZKDatabase, db':ZKDatabase, truncZxid:Zxid)  {
     )
 }
 
+/* Append a new ZooKeeper transaction to the log */
+predicate commitToLog(db:ZKDatabase, db':ZKDatabase, txn:Zxid) {
+    && db'.initialized == db.initialized
+    && db'.commitLog == db.commitLog + [txn]
+    && db'.maxCommittedLog == txn
+    && db'.minCommittedLog == (
+        if db.minCommittedLog == NullZxid then txn
+        else db.minCommittedLog
+    )
+}
+
 
 }
