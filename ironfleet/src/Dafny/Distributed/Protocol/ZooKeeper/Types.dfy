@@ -5,23 +5,6 @@ module ZooKeeper_Types {
 import opened Native__NativeTypes_s
 import opened EnvironmentTCP_s
 
-/*****************************************************************************************
-*                                      Networking                                        *
-*****************************************************************************************/
-datatype EndPoint = EndPoint(addr:seq<byte>, port:uint16)
-    // UdpPacket_ctor has silly name to ferret out backwards calls
-
-type Config = seq<EndPoint>
-
-datatype ZKMessage = 
-    | FollowerInfo(sid:nat, latestZxid:Zxid)
-    | LeaderInfo(sid:nat, newZxid:Zxid)
-    | AckEpoch(sid:nat, lastLoggedZxid:Zxid, lastAcceptedEpoch:int)
-
-type ZKEnvironment = LEnvironment<EndPoint, ZKMessage>
-type ZKPacket = LPacket<EndPoint, ZKMessage>
-type ZKIo = LIoOp<EndPoint, ZKMessage>
-
 
 /*****************************************************************************************
 *                                         ZXID                                           *
