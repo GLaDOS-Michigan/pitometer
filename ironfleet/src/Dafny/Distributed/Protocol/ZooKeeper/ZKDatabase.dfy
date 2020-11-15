@@ -82,4 +82,20 @@ predicate loadDatabase(db:ZKDatabase, db':ZKDatabase, minCL:Zxid, maxCL:Zxid, cl
     && db'.commitLog == cl
     && isValidZKDatabase(db')
 }
+
+
+/* Truncate the log to a given Zxid */
+predicate truncDatabase(db:ZKDatabase, db':ZKDatabase, truncZxid:Zxid)  {
+    if truncZxid !in db.commitLog 
+    then db' == db
+    else (
+        var i :| 0 <= i < |db.commitLog| && db.commitLog[i] == truncZxid;
+        && db'.commitLog == db.commitLog[..i+1]  // observe that log never truncates to empty, as it includes truncZxid
+        && db'.initialized == db.initialized
+        && db'.minCommittedLog == (if ZxidLt(db.minCommittedLog, truncZxid) then db.minCommittedLog else NullZxid)
+        && db'.maxCommittedLog == (if ZxidLt(truncZxid, db.minCommittedLog) then NullZxid else truncZxid)
+    )
+}
+
+
 }

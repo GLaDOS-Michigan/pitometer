@@ -102,10 +102,17 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
         case Ack(sid, ackZxid) => FollowerStutter(s, s')
 
         // Sync messages
-        case SyncDIFF(sid, lastProcessedZxid) => false // TODO
-        case SyncSNAP(sid, leaderDb, lastProcessedZxid) => false 
-        case SyncTRUNC(sid, lastProcessedZxid) => false // TODO
-
+        case SyncDIFF(sid, lastProcessedZxid) => 
+            && |ios| == 1
+            && FollowerStutter(s, s')
+        case SyncSNAP(sid, leaderDb, lastProcessedZxid) =>
+            && |ios| == 1
+            && s' == s.(zkdb := leaderDb)
+        case SyncTRUNC(sid, lastProcessedZxid) => false 
+            && |ios| == 1
+            && s' == s.(zkdb := s'.zkdb)
+            && truncDatabase(s'.zkdb, s.zkdb, lastProcessedZxid)
+            
         // Terminating condition to move to next state
         case SyncUPTODATE(sid) => 
             // Send Ack with new epoch, and move to running state
