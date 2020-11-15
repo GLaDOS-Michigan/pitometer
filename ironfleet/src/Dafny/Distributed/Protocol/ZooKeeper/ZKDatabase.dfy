@@ -108,5 +108,8 @@ predicate commitToLog(db:ZKDatabase, db':ZKDatabase, txn:Zxid) {
     )
 }
 
-
+/* Take a snapshot */
+predicate takeSnapshot (db:ZKDatabase, db':ZKDatabase) {
+    db' == db.(minCommittedLog := NullZxid, maxCommittedLog := NullZxid)
+}
 }

@@ -117,6 +117,13 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
         case Commit(sid, txn) => 
             && |ios| == 1
             && ProcessTxn(s, s', txn)
+        case NewLeader(sid, newLeaderZxid) =>
+            && s' == s.(zkdb := s'.zkdb)
+            && takeSnapshot(s.zkdb, s'.zkdb)
+            && |ios| == 2
+            && ios[1].LIoOpSend?
+            && ios[1].s.dst == ios[0].r.src
+            && ios[1].s.msg == Ack(s.my_id, newLeaderZxid)
 
         // Terminating condition to move to next state
         case UpToDate(sid) => 

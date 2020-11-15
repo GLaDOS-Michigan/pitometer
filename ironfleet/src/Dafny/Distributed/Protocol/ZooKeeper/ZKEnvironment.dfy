@@ -23,6 +23,7 @@ datatype ZKMessage =
     | SyncSNAP(sid:nat, leaderDb: ZKDatabase, lastProcessedZxid:Zxid)
     | SyncTRUNC(sid:nat, lastProcessedZxid:Zxid)
     | UpToDate(sid:nat)
+    | NewLeader(sid:nat, newLeaderZxid:Zxid)
     | Commit(sid:nat, txn:Zxid)
     | Ack(sid:nat, ackZxid:Zxid)
 
