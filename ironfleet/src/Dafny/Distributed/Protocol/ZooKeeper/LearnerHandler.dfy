@@ -10,6 +10,8 @@ import opened ZooKeeper_Environment
 
 
 datatype LearnerHandlerState = LH_HANDSHAKE_A | LH_HANDSHAKE_B | LH_DECIDE_SYNC | LH_SYNC | LH_RUNNING | LH_ERROR
+datatype SyncMode = SNAP | DIFF | TRUNC
+
 /*
 * LH_HANDSHAKE_A: Receive FOLLOWERINFO, wait for quorum, then send new epoch
 * LH_HANDSHAKE_B: Wait for a quorum of ACKEPOCH response. This ends the handshake with follower
@@ -27,7 +29,9 @@ datatype LearnerHandler = LearnerHandler(
     globals: LeaderGlobals,
 
     // Local state
-    newEpoch: int
+    newEpoch: int,
+    peerLastZxid: Zxid,
+    syncMode: SyncMode
 )
 
 
@@ -37,7 +41,8 @@ datatype LeaderGlobals = LearnerHandler(
 
     // Handshake globals
     leaderEpoch: int,
-    connectingFollowers: set<nat>
+    connectingFollowers: set<nat>,
+    electingFollowers: set<nat>
 )
 
 
@@ -54,12 +59,14 @@ predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, confi
     && s.globals == globals
 
     && s.newEpoch == -1
+    && s.peerLastZxid == NullZxid
+    && s.syncMode == SNAP  // default to SNAP
 }
 
 predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
     match s.state 
         case LH_HANDSHAKE_A => GetEpochToPropose(s, s', ios)
-        case LH_HANDSHAKE_B => false
+        case LH_HANDSHAKE_B => WaitForEpochAck(s, s', ios)
         case LH_DECIDE_SYNC => false
         case LH_SYNC => false
         case LH_RUNNING => LearnerHandlerStutter(s, s')
@@ -72,8 +79,7 @@ predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler) {
 
 predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
     if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.connectingFollowers) 
-    then (
-        // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
+    then ( // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
         && |ios| == 1
         && s' == s.(state := LH_HANDSHAKE_B, newEpoch := s.globals.leaderEpoch)
         && ios[0].LIoOpSend?
@@ -82,8 +88,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
             && outbound_packet.dst == s.config[s.follower_id]
             && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(s.globals.leaderEpoch, 0))
         )       
-    ) else (
-        // Add sender to my connectingFollowers set, and continue waiting for quorum
+    ) else ( // Add sender to my connectingFollowers set, and continue waiting for quorum
         if |ios| == 0 then LearnerHandlerStutter(s, s')  // Case where follower has not sent anything
         else && |ios| == 1
              && ios[0].LIoOpReceive?
@@ -93,11 +98,37 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
              && s.config[ios[0].r.msg.sid] == ios[0].r.src
              && s' == s.(
                  follower_id := ios[0].r.msg.sid,
+                 peerLastZxid := ios[0].r.msg.latestZxid,
                  globals := s.globals.(
                     leaderEpoch := (if ios[0].r.msg.latestZxid.epoch >= s.globals.leaderEpoch then ios[0].r.msg.latestZxid.epoch + 1 else s.globals.leaderEpoch),
                     connectingFollowers := s.globals.connectingFollowers + {ios[0].r.msg.sid}
                 )
-             )
+            )
+    )
+}
+
+
+predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
+    if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.electingFollowers) 
+    then (
+        // Proceed to state sync
+        && |ios| == 0   
+        && s' == s.(state := LH_DECIDE_SYNC)
+    ) else (
+        // Add sender to my electingFollowers set, store peerLastZxid, and continue waiting for quorum
+        if |ios| == 0 then LearnerHandlerStutter(s, s')  // Case where follower has not sent anything
+        else && |ios| == 1
+             && ios[0].LIoOpReceive?
+             && ios[0].r.src in s.config
+             && ios[0].r.msg.AckEpoch?
+             && 0 <= s.follower_id < |s.config| 
+             && s.config[s.follower_id] == ios[0].r.src
+             && s' == s.(
+                 peerLastZxid := ios[0].r.msg.lastLoggedZxid,
+                 globals := s.globals.(
+                    electingFollowers := s.globals.electingFollowers + {ios[0].r.msg.sid}
+                )
+            )
     )
 }
 
