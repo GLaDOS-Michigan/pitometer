@@ -51,9 +51,10 @@ predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && |ios| == 1
     && 0 <= s.leader_id < |s.config|
     && ios[0].LIoOpSend?
-    && var outbound_packet := ios[0].s;
+    && (var outbound_packet := ios[0].s;
         && outbound_packet.dst == s.config[s.leader_id]
         && outbound_packet.msg == FollowerInfo(s.my_id, getLastLoggedZxid(s.zkdb))
+    )
 }
 
 
