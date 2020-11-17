@@ -33,7 +33,7 @@ datatype LearnerHandler = LearnerHandler(
 
 
 /* Global Leader variables shared by all LearnerHandler threads */
-datatype LeaderGlobals = LearnerHandler(
+datatype LeaderGlobals = LeaderGlobals(
     zkdb: ZKDatabase,
 
     // Synchronization globals
@@ -48,7 +48,7 @@ datatype LeaderGlobals = LearnerHandler(
 *                                      Actions                                           *
 ******************************************************************************************/ 
 
-predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, config:Config, globals: LeaderGlobals) {
+predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, config:Config) {
     && s.my_id == my_id
     && s.follower_id == s.follower_id  // follower id is initially unknown
     && s.config == config
