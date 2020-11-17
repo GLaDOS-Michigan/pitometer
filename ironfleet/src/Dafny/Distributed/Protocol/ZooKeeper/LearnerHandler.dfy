@@ -11,7 +11,7 @@ import opened ZooKeeper_Environment
 
 datatype LearnerHandlerState = 
                 | LH_HANDSHAKE_A | LH_HANDSHAKE_B 
-                | LH_PREP_SYNC | LH_SYNC_SNAP | LH_SYNC_DIFF | LH_SYNC_TRUNC
+                | LH_PREP_SYNC | LH_SYNC
                 | LH_PROCESS_ACK
                 | LH_RUNNING | LH_ERROR
 
@@ -73,9 +73,7 @@ predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
         case LH_HANDSHAKE_A => GetEpochToPropose(s, s', ios)
         case LH_HANDSHAKE_B => WaitForEpochAck(s, s', ios)
         case LH_PREP_SYNC => PrepareSync(s, s', ios)
-        case LH_SYNC_SNAP => false
-        case LH_SYNC_DIFF => false
-        case LH_SYNC_TRUNC => false
+        case LH_SYNC => false
         case LH_PROCESS_ACK => false
         case LH_RUNNING => LearnerHandlerStutter(s, s')
         case LH_ERROR => LearnerHandlerStutter(s, s')
@@ -156,34 +154,34 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
     && if |proposals| > 0 
         then (
             if ZxidLt(s.zkdb.maxCommittedLog, s.peerLastZxid) 
-            then    && s'.state == LH_SYNC_TRUNC
-                    && |s'.queuedPackets| == 0
+            then    && s'.state == LH_SYNC
+                    && s'.queuedPackets == [SyncTRUNC(s.my_id, s.zkdb.maxCommittedLog)]
             else if ZxidLt(s.peerLastZxid, s.zkdb.minCommittedLog) 
-            then && s'.state == LH_SYNC_SNAP
-                 && |s'.queuedPackets| == 0
+            then && s'.state == LH_SYNC
+                 && s'.queuedPackets == [SyncSNAP(s.my_id, s.zkdb, getLastLoggedZxid(s.zkdb))]
             else  // peerLastZxid is in the range of my proposals list
                 if s.peerLastZxid !in proposals then s' == s.(state := LH_ERROR) 
                 else
-                && s'.state == LH_SYNC_DIFF
-                && s'.queuedPackets == PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
+                && s'.state == LH_SYNC
+                && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)] + PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
        ) else (
-            && s'.state == LH_SYNC_DIFF
-            && |s'.queuedPackets| == 0
+            // Sync empty diff
+            && s'.state == LH_SYNC
+            && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)]
        )
 }
 
-
-predicate SyncSnap(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
-    requires s.state == LH_SYNC_SNAP
-{
-    && s' == s.(zkdb := s'.zkdb, state := LH_PROCESS_ACK)
-    && takeSnapshot(s.zkdb, s'.zkdb)
-    && |ios| == 1
-    && ios[0].LIoOpSend?
-    && 0 <= s.follower_id < |s.config| 
-    && ios[0].s.dst == s.config[s.follower_id]
-    && ios[0].s.msg == SyncSNAP(s.my_id, s.zkdb, getLastLoggedZxid(s.zkdb))
-}
+// predicate SyncSnap(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+//     requires s.state == LH_SYNC_SNAP
+// {
+//     && s' == s.(zkdb := s'.zkdb, state := LH_PROCESS_ACK)
+//     && takeSnapshot(s.zkdb, s'.zkdb)
+//     && |ios| == 1
+//     && ios[0].LIoOpSend?
+//     && 0 <= s.follower_id < |s.config| 
+//     && ios[0].s.dst == s.config[s.follower_id]
+//     && ios[0].s.msg == SyncSNAP(s.my_id, s.zkdb, getLastLoggedZxid(s.zkdb))
+// }
 
 
 /*****************************************************************************************
