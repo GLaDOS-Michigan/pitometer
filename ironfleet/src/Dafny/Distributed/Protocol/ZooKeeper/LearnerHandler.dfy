@@ -9,7 +9,12 @@ import opened ZooKeeper_ZKDatabase
 import opened ZooKeeper_Environment
 
 
-datatype LearnerHandlerState = LH_HANDSHAKE_A | LH_HANDSHAKE_B | LH_PREP_SYNC | LH_SYNC | LH_RUNNING | LH_ERROR
+datatype LearnerHandlerState = 
+                | LH_HANDSHAKE_A | LH_HANDSHAKE_B 
+                | LH_PREP_SYNC | LH_SYNC_SNAP | LH_SYNC_DIFF | LH_SYNC_TRUNC
+                | LH_WAIT_FOR_ACK
+                | LH_RUNNING | LH_ERROR
+                
 datatype SyncMode = SNAP | DIFF | TRUNC
 
 /*
@@ -31,8 +36,7 @@ datatype LearnerHandler = LearnerHandler(
     // Local state
     queuedPackets: seq<ZKMessage>,
     newEpoch: int,
-    peerLastZxid: Zxid,
-    syncMode: SyncMode
+    peerLastZxid: Zxid
 )
 
 
@@ -62,15 +66,17 @@ predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, confi
     && s.queuedPackets == []
     && s.newEpoch == -1
     && s.peerLastZxid == NullZxid
-    && s.syncMode == SNAP  // default to SNAP
 }
 
 predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
     match s.state 
         case LH_HANDSHAKE_A => GetEpochToPropose(s, s', ios)
         case LH_HANDSHAKE_B => WaitForEpochAck(s, s', ios)
-        case LH_PREP_SYNC => false
-        case LH_SYNC => false
+        case LH_PREP_SYNC => PrepareSync(s, s', ios)
+        case LH_SYNC_SNAP => false
+        case LH_SYNC_DIFF => false
+        case LH_SYNC_TRUNC => false
+        case LH_WAIT_FOR_ACK => false
         case LH_RUNNING => LearnerHandlerStutter(s, s')
         case LH_ERROR => LearnerHandlerStutter(s, s')
 }
@@ -140,24 +146,22 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
     else
     var proposals := getInMemorySuffix(s.zkdb);
     && |ios| == 0  // no I/O in this step
-    && s' == s.(state := LH_SYNC, 
-        syncMode := s'.syncMode, //syncMode to be modified accordingly
-        queuedPackets := s'.queuedPackets) //queuedPackets to be modified accordingly
+    && s' == s.(state := s'.state)  //syncMode to be modified accordingly
     && if |proposals| > 0 
         then (
             if ZxidLt(s.zkdb.maxCommittedLog, s.peerLastZxid) 
-            then    && s'.syncMode == TRUNC
+            then    && s'.state == LH_SYNC_TRUNC
                     && |s'.queuedPackets| == 0
-            else if ZxidLt(s.peerLastZxid, s.zkdb.maxCommittedLog) 
-            then && s'.syncMode == SNAP
+            else if ZxidLt(s.peerLastZxid, s.zkdb.minCommittedLog) 
+            then && s'.state == LH_SYNC_SNAP
                  && |s'.queuedPackets| == 0
             else  // peerLastZxid is in the range of my proposals list
                 if s.peerLastZxid !in proposals then s' == s.(state := LH_ERROR) 
                 else
-                && s'.syncMode == DIFF
+                && s'.state == LH_SYNC_DIFF
                 && s'.queuedPackets == PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
        ) else (
-            && s'.syncMode == DIFF
+            && s'.state == LH_SYNC_DIFF
             && |s'.queuedPackets| == 0
        )
 }
