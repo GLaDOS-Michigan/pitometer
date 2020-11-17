@@ -176,8 +176,13 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
 predicate SyncSnap(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
     requires s.state == LH_SYNC_SNAP
 {
-    // TODO
-    false
+    && s' == s.(zkdb := s'.zkdb, state := LH_PROCESS_ACK)
+    && takeSnapshot(s.zkdb, s'.zkdb)
+    && |ios| == 1
+    && ios[0].LIoOpSend?
+    && 0 <= s.follower_id < |s.config| 
+    && ios[0].s.dst == s.config[s.follower_id]
+    && ios[0].s.msg == SyncSNAP(s.my_id, s.zkdb, getLastLoggedZxid(s.zkdb))
 }
 
 
