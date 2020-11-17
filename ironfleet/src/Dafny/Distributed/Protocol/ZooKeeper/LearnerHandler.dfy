@@ -29,7 +29,6 @@ datatype LearnerHandler = LearnerHandler(
     my_id: nat,
     follower_id: nat,
     config: Config,
-    zkdb: ZKDatabase,  //This is the leader db, and is not specified by LearnerHandler
     state: LearnerHandlerState,
     globals: LeaderGlobals,
 
@@ -44,7 +43,7 @@ datatype LearnerHandler = LearnerHandler(
 datatype LeaderGlobals = LearnerHandler(
     zkdb: ZKDatabase,
 
-    // Handshake globals
+    // Synchronization globals
     leaderEpoch: int,
     connectingFollowers: set<nat>,
     electingFollowers: set<nat>,
@@ -60,7 +59,6 @@ predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, confi
     && s.my_id == my_id
     && s.follower_id == s.follower_id  // follower id is initially unknown
     && s.config == config
-    && s.zkdb == zkdb
     && s.state == LH_HANDSHAKE_A
     && s.globals == globals  // write access by LearnerHandler, read only access by leader
 
@@ -148,19 +146,19 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
 predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
     requires s.state == LH_PREP_SYNC
 {
-    if ! (s.zkdb.initialized && isValidZKDatabase(s.zkdb)) then |ios| == 0 && s' == s.(state := LH_ERROR)
+    if ! (s.globals.zkdb.initialized && isValidZKDatabase(s.globals.zkdb)) then |ios| == 0 && s' == s.(state := LH_ERROR)
     else
-    var proposals := getInMemorySuffix(s.zkdb);
+    var proposals := getInMemorySuffix(s.globals.zkdb);
     && |ios| == 0  // no I/O in this step
     && s' == s.(state := s'.state)  //syncMode to be modified accordingly
     && if |proposals| > 0 
         then (
-            if ZxidLt(s.zkdb.maxCommittedLog, s.peerLastZxid) 
+            if ZxidLt(s.globals.zkdb.maxCommittedLog, s.peerLastZxid) 
             then    && s'.state == LH_SYNC
-                    && s'.queuedPackets == [SyncTRUNC(s.my_id, s.zkdb.maxCommittedLog)]
-            else if ZxidLt(s.peerLastZxid, s.zkdb.minCommittedLog) 
+                    && s'.queuedPackets == [SyncTRUNC(s.my_id, s.globals.zkdb.maxCommittedLog)]
+            else if ZxidLt(s.peerLastZxid, s.globals.zkdb.minCommittedLog) 
             then && s'.state == LH_SYNC
-                 && s'.queuedPackets == [SyncSNAP(s.my_id, s.zkdb, getLastLoggedZxid(s.zkdb))]
+                 && s'.queuedPackets == [SyncSNAP(s.my_id, s.globals.zkdb, getLastLoggedZxid(s.globals.zkdb))]
             else  // peerLastZxid is in the range of my proposals list
                 if s.peerLastZxid !in proposals then s' == s.(state := LH_ERROR) 
                 else
@@ -184,7 +182,7 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
     && if |s.queuedPackets| == 0 
         then // Done with sync. Send NewLeader msg
             && s' == s.(state := LH_PROCESS_ACK)
-            && ios[0].s.msg == NewLeader(s.my_id, getLastLoggedZxid(s.zkdb))
+            && ios[0].s.msg == NewLeader(s.my_id, getLastLoggedZxid(s.globals.zkdb))
         else // Send next item in queuedPackets. Remain in LH_SYNC state
             && s' == s.(queuedPackets := s.queuedPackets[1..])
             && ios[0].s.msg == s.queuedPackets[0]
