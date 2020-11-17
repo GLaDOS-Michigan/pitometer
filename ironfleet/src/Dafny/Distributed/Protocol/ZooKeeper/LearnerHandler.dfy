@@ -99,7 +99,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
             && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(s.globals.leaderEpoch, 0))
         )       
     ) else ( // Add sender to my connectingFollowers set, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s')  // Case where follower has not sent anything
+        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  // Case where follower has not sent anything
         else && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
@@ -128,7 +128,7 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
         && s' == s.(state := LH_PREP_SYNC)
     ) else (
         // Add sender to my electingFollowers set, store peerLastZxid, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s')  // Case where follower has not sent anything
+        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  // Case where follower has not sent anything
         else && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
@@ -194,8 +194,29 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
 predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
     requires s.state == LH_PROCESS_ACK
 {
-    // TODO
-    false
+    // Leader is in charge of checking AckSet and starting the actual local DB
+    && 0 <= s.follower_id < |s.config| 
+    && if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
+    then (
+        // Proceed to Running state, send UPTODATE to follower
+        && s' == s.(state := LH_RUNNING)
+        && |ios| == 1
+        && ios[0].LIoOpSend?
+        && ios[0].s.dst == s.config[s.follower_id]
+        && ios[0].s.msg == UpToDate(s.my_id)
+    ) else (
+        // Add sender to my ackSet set, store peerLastZxid, and continue waiting for quorum
+        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  // Case where follower has not sent anything
+        else && |ios| == 1
+             && ios[0].LIoOpReceive?
+             && ios[0].r.src in s.config
+             && ios[0].r.msg.Ack?
+             && s.config[s.follower_id] == ios[0].r.src
+             && s' == s.(globals := s.globals.(
+                    ackSet := s.globals.ackSet + {ios[0].r.msg.sid}
+                )
+            )
+    )
 }
 
 
