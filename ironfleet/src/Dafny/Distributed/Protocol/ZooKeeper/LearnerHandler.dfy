@@ -12,9 +12,9 @@ import opened ZooKeeper_Environment
 datatype LearnerHandlerState = 
                 | LH_HANDSHAKE_A | LH_HANDSHAKE_B 
                 | LH_PREP_SYNC | LH_SYNC_SNAP | LH_SYNC_DIFF | LH_SYNC_TRUNC
-                | LH_WAIT_FOR_ACK
+                | LH_PROCESS_ACK
                 | LH_RUNNING | LH_ERROR
-                
+
 datatype SyncMode = SNAP | DIFF | TRUNC
 
 /*
@@ -76,7 +76,7 @@ predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
         case LH_SYNC_SNAP => false
         case LH_SYNC_DIFF => false
         case LH_SYNC_TRUNC => false
-        case LH_WAIT_FOR_ACK => false
+        case LH_PROCESS_ACK => false
         case LH_RUNNING => LearnerHandlerStutter(s, s')
         case LH_ERROR => LearnerHandlerStutter(s, s')
 }
@@ -85,7 +85,9 @@ predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler) {
     s' == s
 }
 
-predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
+predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+    requires s.state == LH_HANDSHAKE_A
+{
     if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.connectingFollowers) 
     then ( // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
         && |ios| == 1
@@ -116,7 +118,9 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
 }
 
 
-predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
+predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+    requires s.state == LH_HANDSHAKE_B
+{
     if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.electingFollowers) 
     then (
         // Proceed to state sync
@@ -141,7 +145,9 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
 }
 
 
-predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
+predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+    requires s.state == LH_PREP_SYNC
+{
     if ! (s.zkdb.initialized && isValidZKDatabase(s.zkdb)) then |ios| == 0 && s' == s.(state := LH_ERROR)
     else
     var proposals := getInMemorySuffix(s.zkdb);
@@ -164,6 +170,14 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
             && s'.state == LH_SYNC_DIFF
             && |s'.queuedPackets| == 0
        )
+}
+
+
+predicate SyncSnap(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+    requires s.state == LH_SYNC_SNAP
+{
+    // TODO
+    false
 }
 
 
