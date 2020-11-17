@@ -41,6 +41,20 @@ function getLastLoggedZxid(db:ZKDatabase) : Zxid {
     else db.commitLog[|db.commitLog| - 1]
 }
 
+function getInMemorySuffix(db:ZKDatabase) : seq<Zxid> 
+    requires db.initialized
+    requires isValidZKDatabase(db)
+{
+    if db.minCommittedLog == NullZxid then []
+    else (
+        var i, j :| 
+            && 0 <= i <= j < |db.commitLog|
+            && db.commitLog[i] == db.minCommittedLog 
+            && db.commitLog[j] == db.maxCommittedLog;
+        db.commitLog[i..j+1]
+    )
+}
+
 
 predicate isInitializedZKDatabase(db:ZKDatabase) {
     db.initialized == true
@@ -55,15 +69,13 @@ predicate isValidZKDatabase(db:ZKDatabase) {
     db.initialized ==> (
         && SeqIsUnique(db.commitLog)
         && isWellOrderedLog(db.commitLog)
-        && db.minCommittedLog in db.commitLog
-        && db.maxCommittedLog in db.commitLog
-        && (if db.minCommittedLog != db.maxCommittedLog 
-            then (&& ZxidLt(db.minCommittedLog, db.maxCommittedLog)
-                && (exists i, j :: 
-                        && 0 <= i < j < |db.commitLog|
-                        && db.commitLog[i] == db.minCommittedLog 
-                        && db.commitLog[j] == db.maxCommittedLog)
-            ) else db.minCommittedLog == db.maxCommittedLog 
+        && (db.minCommittedLog == NullZxid ==> db.maxCommittedLog == NullZxid)
+        && (db.minCommittedLog != NullZxid ==> db.minCommittedLog in db.commitLog && db.maxCommittedLog in db.commitLog)
+        && (db.minCommittedLog != db.maxCommittedLog ==> ZxidLt(db.minCommittedLog, db.maxCommittedLog))
+        && (exists i, j :: 
+            && 0 <= i <= j < |db.commitLog|
+            && db.commitLog[i] == db.minCommittedLog 
+            && db.commitLog[j] == db.maxCommittedLog
         )
     )
 }
