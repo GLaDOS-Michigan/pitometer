@@ -54,11 +54,35 @@ predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
 }
 
 predicate LeaderNext(s:Leader, s':Leader, ios:seq<ZKIo>) {
-    false
+    match s.state
+        case L_STARTING => LeaderStartStep(s, s', ios)
+        case L_RUNNING => LeaderRunStep(s, s', ios)
 }
 
 predicate LeaderStutter(s:Leader, s':Leader, ios:seq<ZKIo>) {
+    s' == s && |ios| == 0
+}
+
+/* Wait for `ackSet` to form a quorum, then start db and transition to Running state */
+predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>) 
+    requires s.state == L_STARTING
+{
     false
+}
+
+/* Leader already running, so db is in running state. Simply 
+* move next handler by one step */
+predicate LeaderRunStep(s:Leader, s':Leader, ios:seq<ZKIo>) 
+    requires s.state == L_RUNNING
+{
+    && 0 <= s.nextHandlerToStep < |s.handlers|
+    && var handler := s.handlers[s.nextHandlerToStep];
+    && s' == s.(globals := s'.globals, handlers := s'.handlers, nextHandlerToStep := IncNextHandlerToStep(s.nextHandlerToStep, |s.handlers|))
+    && |s'.handlers| == |s.handlers|
+    && forall i | 0 <= i < |s.handlers| ::
+        if i == s.nextHandlerToStep 
+        then LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, ios)
+        else s'.handlers[i] == s.handlers[i]
 }
 
 
@@ -71,5 +95,9 @@ predicate LeaderStutter(s:Leader, s':Leader, ios:seq<ZKIo>) {
 predicate InitHandlers(handlers:seq<LearnerHandler>, my_id: nat, config: Config) {
     && |handlers| == |config| - 1
     && forall i | 1 <= i < |config| :: LearnerHandlerInit(handlers[i-1], my_id, i, config)
+}
+
+function IncNextHandlerToStep(i: int, n: int) : int {
+    (i + 1) % n
 }
 }
