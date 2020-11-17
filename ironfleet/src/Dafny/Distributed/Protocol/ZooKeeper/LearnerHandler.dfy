@@ -75,13 +75,14 @@ predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
         case LH_HANDSHAKE_B => WaitForEpochAck(s, s', ios)
         case LH_PREP_SYNC => PrepareSync(s, s', ios)
         case LH_SYNC => DoSync(s, s', ios)
-        case LH_PROCESS_ACK => false
-        case LH_RUNNING => LearnerHandlerStutter(s, s')
-        case LH_ERROR => LearnerHandlerStutter(s, s')
+        case LH_PROCESS_ACK => ProcessAck(s, s', ios)
+        case LH_RUNNING => LearnerHandlerStutter(s, s', ios)
+        case LH_ERROR => LearnerHandlerStutter(s, s', ios)
 }
 
-predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler) {
-    s' == s
+predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
+    && |ios| == 0
+    && s' == s
 }
 
 predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
@@ -189,6 +190,13 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
             && ios[0].s.msg == s.queuedPackets[0]
 }
 
+
+predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+    requires s.state == LH_PROCESS_ACK
+{
+    // TODO
+    false
+}
 
 
 

@@ -36,12 +36,13 @@ predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
         case F_HANDSHAKE_A => SendMyInfo(s, s', ios)
         case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios) 
         case F_SYNC => SyncWithLeader(s, s', ios)
-        case F_RUNNING => FollowerStutter(s, s')
-        case F_ERROR => FollowerStutter(s, s')
+        case F_RUNNING => FollowerStutter(s, s', ios)
+        case F_ERROR => FollowerStutter(s, s', ios)
 }
 
-predicate FollowerStutter(s:Follower, s':Follower) {
-    s' == s
+predicate FollowerStutter(s:Follower, s':Follower, ios:seq<ZKIo>) {
+    && |ios| == 0
+    && s' == s
 }
 
 
