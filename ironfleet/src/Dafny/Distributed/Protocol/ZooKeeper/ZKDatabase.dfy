@@ -32,7 +32,8 @@ datatype ZKDatabase = ZKDatabase(
     initialized:bool,
     minCommittedLog:Zxid,
     maxCommittedLog:Zxid,
-    commitLog:seq<Zxid>
+    commitLog:seq<Zxid>,
+    isRunning:bool
 )
 
 
@@ -82,7 +83,8 @@ predicate isValidZKDatabase(db:ZKDatabase) {
 
 /* ZKDatabaseInit initializes an empty ZKDatabase */
 predicate ZKDatabaseInit(db:ZKDatabase) {
-    db.initialized == false
+    && db.initialized == false
+    && db.isRunning == false
 }
 
 /* Load the database from the disk onto memory and also add the transactions to the 

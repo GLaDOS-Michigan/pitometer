@@ -17,12 +17,6 @@ datatype LearnerHandlerState =
 
 datatype SyncMode = SNAP | DIFF | TRUNC
 
-/*
-* LH_HANDSHAKE_A: Receive FOLLOWERINFO, wait for quorum, then send new epoch
-* LH_HANDSHAKE_B: Wait for a quorum of ACKEPOCH response. This ends the handshake with follower
-* LH_PREP_SYNC: 
-*/
-
 
 // config[my_id] is my own endpoint, config[follower_id] is the follower endpoint
 datatype LearnerHandler = LearnerHandler(
@@ -30,7 +24,6 @@ datatype LearnerHandler = LearnerHandler(
     follower_id: nat,
     config: Config,
     state: LearnerHandlerState,
-    globals: LeaderGlobals,
 
     // Local state
     queuedPackets: seq<ZKMessage>,
@@ -55,27 +48,26 @@ datatype LeaderGlobals = LearnerHandler(
 *                                      Actions                                           *
 ******************************************************************************************/ 
 
-predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, config:Config, zkdb: ZKDatabase, globals: LeaderGlobals) {
+predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, config:Config, globals: LeaderGlobals) {
     && s.my_id == my_id
     && s.follower_id == s.follower_id  // follower id is initially unknown
     && s.config == config
     && s.state == LH_HANDSHAKE_A
-    && s.globals == globals  // write access by LearnerHandler, read only access by leader
 
     && s.queuedPackets == []
     && s.newEpoch == -1
     && s.peerLastZxid == NullZxid
 }
 
-predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
+predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) {
     match s.state 
-        case LH_HANDSHAKE_A => GetEpochToPropose(s, s', ios)
-        case LH_HANDSHAKE_B => WaitForEpochAck(s, s', ios)
-        case LH_PREP_SYNC => PrepareSync(s, s', ios)
-        case LH_SYNC => DoSync(s, s', ios)
-        case LH_PROCESS_ACK => ProcessAck(s, s', ios)
-        case LH_RUNNING => LearnerHandlerStutter(s, s', ios)
-        case LH_ERROR => LearnerHandlerStutter(s, s', ios)
+        case LH_HANDSHAKE_A => GetEpochToPropose(s, s', g, g', ios)
+        case LH_HANDSHAKE_B => WaitForEpochAck(s, s', g, g', ios)
+        case LH_PREP_SYNC => PrepareSync(s, s', g, g', ios)
+        case LH_SYNC => DoSync(s, s', g, g', ios)
+        case LH_PROCESS_ACK => ProcessAck(s, s', g, g', ios)
+        case LH_RUNNING => LearnerHandlerStutter(s, s', ios) && g' == g
+        case LH_ERROR => LearnerHandlerStutter(s, s', ios) && g' == g
 }
 
 predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) {
@@ -83,21 +75,22 @@ predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKI
     && s' == s
 }
 
-predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_A
 {
-    if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.connectingFollowers) 
+    if IsVerifiedQuorum(s.my_id, |s.config|, g.connectingFollowers) 
     then ( // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
+        && g' == g
         && |ios| == 1
-        && s' == s.(state := LH_HANDSHAKE_B, newEpoch := s.globals.leaderEpoch)
+        && s' == s.(state := LH_HANDSHAKE_B, newEpoch := g.leaderEpoch)
         && ios[0].LIoOpSend?
         && (var outbound_packet := ios[0].s;
             && 0 <= s.follower_id < |s.config|
             && outbound_packet.dst == s.config[s.follower_id]
-            && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(s.globals.leaderEpoch, 0))
+            && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(g.leaderEpoch, 0))
         )       
     ) else ( // Add sender to my connectingFollowers set, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  // Case where follower has not sent anything
+        if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g  // Case where follower has not sent anything
         else && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
@@ -106,59 +99,59 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
              && s.config[ios[0].r.msg.sid] == ios[0].r.src
              && s' == s.(
                  follower_id := ios[0].r.msg.sid,
-                 peerLastZxid := ios[0].r.msg.latestZxid,
-                 globals := s.globals.(
-                    leaderEpoch := (if ios[0].r.msg.latestZxid.epoch >= s.globals.leaderEpoch then ios[0].r.msg.latestZxid.epoch + 1 else s.globals.leaderEpoch),
-                    connectingFollowers := s.globals.connectingFollowers + {ios[0].r.msg.sid}
-                )
-            )
+                 peerLastZxid := ios[0].r.msg.latestZxid
+             ) 
+             && g' == g.(
+                    leaderEpoch := (if ios[0].r.msg.latestZxid.epoch >= g.leaderEpoch then ios[0].r.msg.latestZxid.epoch + 1 else g.leaderEpoch),
+                    connectingFollowers := g.connectingFollowers + {ios[0].r.msg.sid}
+                ) 
     )
 }
 
 
-predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_B
 {
-    if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.electingFollowers) 
+    if IsVerifiedQuorum(s.my_id, |s.config|, g.electingFollowers) 
     then (
         // Proceed to state sync
+        && g' == g
         && |ios| == 0   
         && s' == s.(state := LH_PREP_SYNC)
     ) else (
         // Add sender to my electingFollowers set, store peerLastZxid, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  // Case where follower has not sent anything
+        if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g // Case where follower has not sent anything
         else && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
              && ios[0].r.msg.AckEpoch?
              && 0 <= s.follower_id < |s.config| 
              && s.config[s.follower_id] == ios[0].r.src
-             && s' == s.(
-                 peerLastZxid := ios[0].r.msg.lastLoggedZxid,
-                 globals := s.globals.(
-                    electingFollowers := s.globals.electingFollowers + {ios[0].r.msg.sid}
-                )
+             && s' == s.(peerLastZxid := ios[0].r.msg.lastLoggedZxid)
+             && g' == g.(
+                    electingFollowers := g.electingFollowers + {ios[0].r.msg.sid}
             )
     )
 }
 
 
-predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_PREP_SYNC
 {
-    if ! (s.globals.zkdb.initialized && isValidZKDatabase(s.globals.zkdb)) then |ios| == 0 && s' == s.(state := LH_ERROR)
+    if ! (g.zkdb.initialized && isValidZKDatabase(g.zkdb)) then |ios| == 0 && s' == s.(state := LH_ERROR) && g' == g
     else
-    var proposals := getInMemorySuffix(s.globals.zkdb);
+    var proposals := getInMemorySuffix(g.zkdb);
     && |ios| == 0  // no I/O in this step
     && s' == s.(state := s'.state)  //syncMode to be modified accordingly
+    && g' == g
     && if |proposals| > 0 
         then (
-            if ZxidLt(s.globals.zkdb.maxCommittedLog, s.peerLastZxid) 
+            if ZxidLt(g.zkdb.maxCommittedLog, s.peerLastZxid) 
             then    && s'.state == LH_SYNC
-                    && s'.queuedPackets == [SyncTRUNC(s.my_id, s.globals.zkdb.maxCommittedLog)]
-            else if ZxidLt(s.peerLastZxid, s.globals.zkdb.minCommittedLog) 
+                    && s'.queuedPackets == [SyncTRUNC(s.my_id, g.zkdb.maxCommittedLog)]
+            else if ZxidLt(s.peerLastZxid, g.zkdb.minCommittedLog) 
             then && s'.state == LH_SYNC
-                 && s'.queuedPackets == [SyncSNAP(s.my_id, s.globals.zkdb, getLastLoggedZxid(s.globals.zkdb))]
+                 && s'.queuedPackets == [SyncSNAP(s.my_id, g.zkdb, getLastLoggedZxid(g.zkdb))]
             else  // peerLastZxid is in the range of my proposals list
                 if s.peerLastZxid !in proposals then s' == s.(state := LH_ERROR) 
                 else
@@ -172,9 +165,10 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
 }
 
 
-predicate DoSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+predicate DoSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_SYNC
 {
+    && g' == g
     && |ios| == 1 
     && ios[0].LIoOpSend?
     && 0 <= s.follower_id < |s.config| 
@@ -182,38 +176,37 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
     && if |s.queuedPackets| == 0 
         then // Done with sync. Send NewLeader msg
             && s' == s.(state := LH_PROCESS_ACK)
-            && ios[0].s.msg == NewLeader(s.my_id, getLastLoggedZxid(s.globals.zkdb))
+            && ios[0].s.msg == NewLeader(s.my_id, getLastLoggedZxid(g.zkdb))
         else // Send next item in queuedPackets. Remain in LH_SYNC state
             && s' == s.(queuedPackets := s.queuedPackets[1..])
             && ios[0].s.msg == s.queuedPackets[0]
 }
 
 
-predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_PROCESS_ACK
 {
     // Leader is in charge of checking AckSet and starting the actual local DB
     && 0 <= s.follower_id < |s.config| 
-    && if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
+    && if g.zkdb.isRunning  // Leader is in charge of starting db once AckSet is a good quorum
     then (
         // Proceed to Running state, send UPTODATE to follower
         && s' == s.(state := LH_RUNNING)
+        && g' == g
         && |ios| == 1
         && ios[0].LIoOpSend?
         && ios[0].s.dst == s.config[s.follower_id]
         && ios[0].s.msg == UpToDate(s.my_id)
     ) else (
         // Add sender to my ackSet set, store peerLastZxid, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  // Case where follower has not sent anything
+        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  && g' == g // Case where follower has not sent anything
         else && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
              && ios[0].r.msg.Ack?
              && s.config[s.follower_id] == ios[0].r.src
-             && s' == s.(globals := s.globals.(
-                    ackSet := s.globals.ackSet + {ios[0].r.msg.sid}
-                )
-            )
+             && s' == s
+             && g' == g.(ackSet := g.ackSet + {ios[0].r.msg.sid})
     )
 }
 
