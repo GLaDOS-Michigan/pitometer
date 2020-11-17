@@ -78,7 +78,7 @@ predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKI
 predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_A
 {
-    if IsVerifiedQuorum(s.my_id, |s.config|, g.connectingFollowers) 
+    if IsVerifiedQuorum(s.follower_id, |s.config|, g.connectingFollowers) 
     then ( // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
         && g' == g
         && |ios| == 1
@@ -96,6 +96,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
              && ios[0].r.src in s.config
              && ios[0].r.msg.FollowerInfo?
              && 0 <= ios[0].r.msg.sid < |s.config| 
+             && ios[0].r.msg.sid == s.follower_id
              && s.config[ios[0].r.msg.sid] == ios[0].r.src
              && s' == s.(
                  follower_id := ios[0].r.msg.sid,
@@ -112,7 +113,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
 predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_B
 {
-    if IsVerifiedQuorum(s.my_id, |s.config|, g.electingFollowers) 
+    if IsVerifiedQuorum(s.follower_id, |s.config|, g.electingFollowers) 
     then (
         // Proceed to state sync
         && g' == g
@@ -127,6 +128,7 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, 
              && ios[0].r.msg.AckEpoch?
              && 0 <= s.follower_id < |s.config| 
              && s.config[s.follower_id] == ios[0].r.src
+             && ios[0].r.msg.sid == s.follower_id
              && s' == s.(peerLastZxid := ios[0].r.msg.lastLoggedZxid)
              && g' == g.(
                     electingFollowers := g.electingFollowers + {ios[0].r.msg.sid}

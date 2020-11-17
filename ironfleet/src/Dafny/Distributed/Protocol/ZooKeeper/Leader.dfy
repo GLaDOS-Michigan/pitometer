@@ -48,7 +48,7 @@ predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
     && s.my_id == my_id
     && s.config == config
     && s.state == L_STARTING
-    && s.globals == LeaderGlobals(zkdb, -1, {}, {}, {})
+    && s.globals == LeaderGlobals(zkdb, -1, {my_id}, {my_id}, {my_id})  // Leader is defacto part of all quorums
     && InitHandlers(s.handlers, my_id, config)
     && s.nextHandlerToStep == 0
 }
@@ -67,7 +67,14 @@ predicate LeaderStutter(s:Leader, s':Leader, ios:seq<ZKIo>) {
 predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>) 
     requires s.state == L_STARTING
 {
-    false
+    if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
+    then && s' == s.(state := L_RUNNING, globals := s'.globals)
+         && s'.globals == s.globals.(zkdb := s'.globals.zkdb)
+         && s'.globals.zkdb == s.globals.zkdb.(isRunning := true)
+    else 
+        && 0 <= s.nextHandlerToStep < |s.handlers|
+        && s' == s.(globals := s'.globals, handlers := s'.handlers, nextHandlerToStep := IncNextHandlerToStep(s.nextHandlerToStep, |s.handlers|))
+        && StepSingleHandler(s, s', ios)
 }
 
 /* Leader already running, so db is in running state. Simply 
@@ -76,13 +83,8 @@ predicate LeaderRunStep(s:Leader, s':Leader, ios:seq<ZKIo>)
     requires s.state == L_RUNNING
 {
     && 0 <= s.nextHandlerToStep < |s.handlers|
-    && var handler := s.handlers[s.nextHandlerToStep];
     && s' == s.(globals := s'.globals, handlers := s'.handlers, nextHandlerToStep := IncNextHandlerToStep(s.nextHandlerToStep, |s.handlers|))
-    && |s'.handlers| == |s.handlers|
-    && forall i | 0 <= i < |s.handlers| ::
-        if i == s.nextHandlerToStep 
-        then LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, ios)
-        else s'.handlers[i] == s.handlers[i]
+    && StepSingleHandler(s, s', ios)
 }
 
 
@@ -98,6 +100,14 @@ predicate InitHandlers(handlers:seq<LearnerHandler>, my_id: nat, config: Config)
 }
 
 function IncNextHandlerToStep(i: int, n: int) : int {
-    (i + 1) % n
+    if n == 0 then 0 else (i + 1) % n
+}
+
+predicate StepSingleHandler(s:Leader, s':Leader, ios:seq<ZKIo>) {
+    && |s'.handlers| == |s.handlers|
+    && forall i | 0 <= i < |s.handlers| ::
+        if i == s.nextHandlerToStep 
+        then LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, ios)
+        else s'.handlers[i] == s.handlers[i]
 }
 }
