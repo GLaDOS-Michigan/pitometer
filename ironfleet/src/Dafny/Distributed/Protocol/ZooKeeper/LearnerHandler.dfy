@@ -47,7 +47,8 @@ datatype LeaderGlobals = LearnerHandler(
     // Handshake globals
     leaderEpoch: int,
     connectingFollowers: set<nat>,
-    electingFollowers: set<nat>
+    electingFollowers: set<nat>,
+    ackSet: set<nat>
 )
 
 
@@ -73,7 +74,7 @@ predicate LearnerHandlerNext(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
         case LH_HANDSHAKE_A => GetEpochToPropose(s, s', ios)
         case LH_HANDSHAKE_B => WaitForEpochAck(s, s', ios)
         case LH_PREP_SYNC => PrepareSync(s, s', ios)
-        case LH_SYNC => false
+        case LH_SYNC => DoSync(s, s', ios)
         case LH_PROCESS_ACK => false
         case LH_RUNNING => LearnerHandlerStutter(s, s')
         case LH_ERROR => LearnerHandlerStutter(s, s')
@@ -171,17 +172,24 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>)
        )
 }
 
-// predicate SyncSnap(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
-//     requires s.state == LH_SYNC_SNAP
-// {
-//     && s' == s.(zkdb := s'.zkdb, state := LH_PROCESS_ACK)
-//     && takeSnapshot(s.zkdb, s'.zkdb)
-//     && |ios| == 1
-//     && ios[0].LIoOpSend?
-//     && 0 <= s.follower_id < |s.config| 
-//     && ios[0].s.dst == s.config[s.follower_id]
-//     && ios[0].s.msg == SyncSNAP(s.my_id, s.zkdb, getLastLoggedZxid(s.zkdb))
-// }
+
+predicate DoSync(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKIo>) 
+    requires s.state == LH_SYNC
+{
+    && |ios| == 1 
+    && ios[0].LIoOpSend?
+    && 0 <= s.follower_id < |s.config| 
+    && ios[0].s.dst == s.config[s.follower_id]
+    && if |s.queuedPackets| == 0 
+        then // Done with sync. Send NewLeader msg
+            && s' == s.(state := LH_PROCESS_ACK)
+            && ios[0].s.msg == NewLeader(s.my_id, getLastLoggedZxid(s.zkdb))
+        else // Send next item in queuedPackets. Remain in LH_SYNC state
+            && s' == s.(queuedPackets := s.queuedPackets[1..])
+            && ios[0].s.msg == s.queuedPackets[0]
+}
+
+
 
 
 /*****************************************************************************************
