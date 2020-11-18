@@ -70,32 +70,38 @@ predicate isValidZKDatabase(db:ZKDatabase) {
     db.initialized ==> (
         && SeqIsUnique(db.commitLog)
         && isWellOrderedLog(db.commitLog)
-        && (db.minCommittedLog == NullZxid ==> db.maxCommittedLog == NullZxid)
-        && (db.minCommittedLog != NullZxid ==> db.minCommittedLog in db.commitLog && db.maxCommittedLog in db.commitLog)
-        && (db.minCommittedLog != db.maxCommittedLog ==> ZxidLt(db.minCommittedLog, db.maxCommittedLog))
-        && (exists i, j :: 
-            && 0 <= i <= j < |db.commitLog|
-            && db.commitLog[i] == db.minCommittedLog 
-            && db.commitLog[j] == db.maxCommittedLog
-        )
+
+        && if db.minCommittedLog == NullZxid 
+            then db.maxCommittedLog == NullZxid
+            else    && db.maxCommittedLog != NullZxid
+                    && db.minCommittedLog in db.commitLog
+                    && db.maxCommittedLog in db.commitLog
+                    && (db.minCommittedLog != db.maxCommittedLog ==> ZxidLt(db.minCommittedLog, db.maxCommittedLog))
+                    && exists i, j :: (
+                        && 0 <= i <= j < |db.commitLog|
+                        && db.commitLog[i] == db.minCommittedLog 
+                        && db.commitLog[j] == db.maxCommittedLog
+                    )
     )
 }
 
-/* ZKDatabaseInit initializes an empty ZKDatabase */
+/* Valid initial state for a ZKDatabase */
 predicate ZKDatabaseInit(db:ZKDatabase) {
-    && db.initialized == false
+    && db.initialized == true
     && db.isRunning == false
+    && isValidZKDatabase(db)
 }
 
 /* Load the database from the disk onto memory and also add the transactions to the 
 * committedlog in memory. */
-predicate loadDatabase(db:ZKDatabase, db':ZKDatabase, minCL:Zxid, maxCL:Zxid, cl:seq<Zxid>)  {
-    && db'.initialized == true
-    && db'.minCommittedLog == minCL
-    && db'.maxCommittedLog == maxCL
-    && db'.commitLog == cl
-    && isValidZKDatabase(db')
-}
+// Don't actually need this. In ZK, loadDatabase is performed by QuorumPeer, not leader or follower */
+// predicate loadDatabase(db:ZKDatabase, db':ZKDatabase, minCL:Zxid, maxCL:Zxid, cl:seq<Zxid>)  {
+//     && db'.initialized == true
+//     && db'.minCommittedLog == minCL
+//     && db'.maxCommittedLog == maxCL
+//     && db'.commitLog == cl
+//     && isValidZKDatabase(db')
+// }
 
 
 /* Truncate the log to a given Zxid */
