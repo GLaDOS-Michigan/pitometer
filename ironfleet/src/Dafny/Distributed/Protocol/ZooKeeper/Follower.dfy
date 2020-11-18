@@ -98,15 +98,15 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && ios[0].r.msg.sid == s.leader_id
     && match ios[0].r.msg
         // Ignore these 
-        case FollowerInfo(sid, latestZxid) => FollowerStutter(s, s')
-        case LeaderInfo(sid, newZxid) => FollowerStutter(s, s')
-        case AckEpoch(sid, lastLoggedZxid, lastAcceptedEpoch) => FollowerStutter(s, s')
-        case Ack(sid, ackZxid) => FollowerStutter(s, s')
+        case FollowerInfo(sid, latestZxid) => FollowerStutter(s, s', ios)
+        case LeaderInfo(sid, newZxid) => FollowerStutter(s, s', ios)
+        case AckEpoch(sid, lastLoggedZxid, lastAcceptedEpoch) => FollowerStutter(s, s', ios)
+        case Ack(sid, ackZxid) => FollowerStutter(s, s', ios)
 
         // Sync messages
         case SyncDIFF(sid, lastProcessedZxid) => 
             && |ios| == 1
-            && FollowerStutter(s, s')
+            && FollowerStutter(s, s', ios)
         case SyncSNAP(sid, leaderDb, lastProcessedZxid) =>
             && |ios| == 1
             && ClearAndLoadDbSnapshot(s, s', leaderDb)
