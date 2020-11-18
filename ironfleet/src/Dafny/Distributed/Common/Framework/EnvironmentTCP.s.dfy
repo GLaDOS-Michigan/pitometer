@@ -108,7 +108,7 @@ function IosToRcvMap<IdType, MessageType>(ios:seq<LIoOp<IdType, MessageType>>) :
 
 predicate LEnvironment_Init<IdType, MessageType>(
     e:LEnvironment<IdType, MessageType>,
-    hosts: set<IdType>)
+    hosts: seq<IdType>)
 {
     && (forall h | h in hosts :: h in e.channels && e.channels[h] == [])
     && e.time >= 0
