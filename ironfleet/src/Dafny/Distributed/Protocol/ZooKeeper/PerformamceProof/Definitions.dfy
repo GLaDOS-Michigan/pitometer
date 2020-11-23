@@ -3,7 +3,7 @@
 include "../Types.dfy"
 include "../Timestamps/TimestampedType.dfy"
 
-module PerformanceProof__Definitions_i {
+module Zookeeper_Performance_Definitions {
 import opened ZooKeeper_Types
 import opened ZKTimestamp
 

@@ -23,7 +23,7 @@ import opened ZooKeeper_ZKDatabase
 import opened ZooKeeper_Follower
 import opened ZooKeeper_Leader
 import opened ZooKeeper_LearnerHandler
-import opened PerformanceProof__Definitions_i
+import opened Zookeeper_Performance_Definitions
 
 type TQuorumPeer = TimestampedType<QuorumPeer>
 
