@@ -73,7 +73,7 @@ predicate TLS_Next(tls:TLS_State, tls':TLS_State){
 }
 
 
-predicate ValidTLSBehavior(tlb:seq<TLS_State>, config:Config, f: int)  {
+predicate ValidTLSBehavior(config:Config, tlb:seq<TLS_State>, f: int)  {
     && |tlb| > 0
     && TLS_Init(config, tlb[0], f)
     && (forall i :: 0 <= i < |tlb| -1 ==> TLS_Next(tlb[i], tlb[i+1]))

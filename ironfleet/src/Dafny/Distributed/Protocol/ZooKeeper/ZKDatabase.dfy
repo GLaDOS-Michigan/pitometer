@@ -140,7 +140,7 @@ predicate takeSnapshot (db:ZKDatabase, db':ZKDatabase) {
 
 /* Specifies a valid initial, on-disk copy of a zkdb that Zookeeper servers load into mem
 * We first specify the situation where we should send empty diff */
-predicate InitialZkdbState_EmptyDiff(zkdbs: set<ZKDatabase>) {
+predicate InitialZkdbState_EmptyDiff(zkdbs: seq<ZKDatabase>) {
     && (forall db | db in zkdbs :: (
             && ZKDatabaseInit(db)
             && db.minCommittedLog == db.maxCommittedLog == NullZxid  // empty in-mem segment
