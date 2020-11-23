@@ -3,6 +3,7 @@ include "../../../Common/Framework/EnvironmentTCP.s.dfy"
 include "../Types.dfy"
 include "../DistributedSystem.dfy"
 include "../ZKEnvironment.dfy"
+include "../ZKDatabase.dfy"
 include "../Leader.dfy"
 
 
@@ -10,6 +11,7 @@ module ZooKeeper_CorrectnessProof {
     import opened ZooKeeper_Types
     import opened ZooKeeper_DistributedSystem
     import opened ZooKeeper_Environment
+    import opened ZooKeeper_ZKDatabase
     import opened ZooKeeper_Leader
 
 
@@ -56,11 +58,22 @@ predicate LeaderDBConstant(config:Config, ls:LS_State, ls':LS_State, f:int)
 }
 
 
-lemma Main(config:Config, lb:seq<LS_State>, f:int) 
+predicate EmptyDiffAssumption(config:Config, s:LS_State, f:int) 
+    requires LS_Init(config, s, f)
+{
+    var dbs := set ep | ep in config :: 
+        if s.servers[ep].LeaderPeer? then s.servers[ep].leader.globals.zkdb
+        else s.servers[ep].follower.zkdb;
+    InitialZkdbState_EmptyDiff(dbs)
+}
+
+
+lemma Main_EmptyDiff(config:Config, lb:seq<LS_State>, f:int) 
     requires f >= 1
     requires |lb| > 0
     requires |config| == 2*f + 1
     requires LS_Init(config, lb[0], f)
+    requires EmptyDiffAssumption(config, lb[0], f)
     requires forall i {:trigger LS_Next(lb[i], lb[i+1])} :: 0 <= i < |lb| - 1 ==> LS_Next(lb[i], lb[i+1]);
     ensures forall i {:trigger LS_Next(lb[i], lb[i+1])} :: 0 <= i < |lb| ==> Safety(config, lb[i], f);
     ensures forall i :: 0 <= i < |lb| - 1 ==> LeaderDBConstant(config, lb[i], lb[i+1], f)

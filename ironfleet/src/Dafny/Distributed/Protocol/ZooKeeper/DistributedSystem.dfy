@@ -34,7 +34,7 @@ predicate LS_Init(config:Config, s:LS_State, f: int) {
     && LEnvironment_Init(s.environment, config)
     && |config| == |s.initialZkdbState| == 2*f + 1 // we will assign each server in config the corresponding db
     && SeqIsUnique(config)
-    && InitialZkdbState_EmptyDiff(s.initialZkdbState)
+    // && InitialZkdbState_EmptyDiff(s.initialZkdbState)
     && (forall e :: e in config <==> e in s.servers)
         // this is the leader
     && s.servers[config[0]].LeaderPeer?
@@ -69,24 +69,4 @@ predicate LS_Next(s:LS_State, s':LS_State){
     else
             s'.servers == s.servers
 }
-
-
-
-/*****************************************************************************************
-*                             Assorted Initial zkdb States                               *
-*****************************************************************************************/
-
-/* Specifies a valid initial, on-disk copy of a zkdb that Zookeeper servers load into mem
-* We first specify the situation where we should send empty diff */
-predicate InitialZkdbState_EmptyDiff(zkdbs: seq<ZKDatabase>) {
-    && (forall i | 0 <= i < |zkdbs| :: (
-            && ZKDatabaseInit(zkdbs[i])
-            && zkdbs[i].minCommittedLog == zkdbs[i].maxCommittedLog == NullZxid  // empty in-mem segment
-        )
-    ) && (forall i, j | 0 <= i < |zkdbs| && 0 <= j < |zkdbs| :: (
-            zkdbs[i].commitLog == zkdbs[j].commitLog    // commit logs are identical
-        )
-    )
-}
-
 }

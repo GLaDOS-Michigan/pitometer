@@ -132,4 +132,24 @@ predicate commitToLog(db:ZKDatabase, db':ZKDatabase, txn:Zxid) {
 predicate takeSnapshot (db:ZKDatabase, db':ZKDatabase) {
     db' == db.(minCommittedLog := NullZxid, maxCommittedLog := NullZxid)
 }
+
+
+/*****************************************************************************************
+*                             Assorted Initial zkdb States                               *
+*****************************************************************************************/
+
+/* Specifies a valid initial, on-disk copy of a zkdb that Zookeeper servers load into mem
+* We first specify the situation where we should send empty diff */
+predicate InitialZkdbState_EmptyDiff(zkdbs: set<ZKDatabase>) {
+    && (forall db | db in zkdbs :: (
+            && ZKDatabaseInit(db)
+            && db.minCommittedLog == db.maxCommittedLog == NullZxid  // empty in-mem segment
+        )
+    ) && (forall db1, db2 | db1 in zkdbs && db2 in zkdbs :: (
+            db1.commitLog == db1.commitLog    // commit logs are identical
+        )
+    )
+}
+
+
 }
