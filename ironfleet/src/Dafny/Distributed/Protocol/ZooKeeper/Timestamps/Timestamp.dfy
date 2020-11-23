@@ -1,16 +1,14 @@
 include "../../../Common/Framework/EnvironmentTCP.s.dfy"
-// include "../../../Common/Framework/Host.s.dfy"
-// include "../../../Common/Framework/DistributedSystem.s.dfy"
 include "../../../Common/Collections/Seqs.i.dfy"
 include "../../../Common/Collections/Maps2.s.dfy"
+include "../Types.dfy"
 
 abstract module Timestamp_s {
   import opened Collections__Seqs_i
-  // import opened DS_s : DistributedSystem_s
-  // import opened Host_s
   import opened Collections__Maps2_s
+  import opened ZooKeeper_Types
 
-  type HostStep(!new, ==)
+  type HostStep = ZKStep
 
   type Timestamp = i : int | 0 <= i
 

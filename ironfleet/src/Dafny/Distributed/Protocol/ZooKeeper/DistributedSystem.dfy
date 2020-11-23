@@ -22,14 +22,14 @@ import opened ZooKeeper_LearnerHandler
 
 datatype QuorumPeer = LeaderPeer(leader:Leader) | FollowerPeer(follower:Follower)
 
-datatype DS_State = DS_State(
+datatype LS_State = LS_State(
     environment: ZKEnvironment,
     initialZkdbState: seq<ZKDatabase>,
     servers: map<EndPoint, QuorumPeer>
 )
 
 
-predicate DsInit(s:DS_State, config:Config, f: int) {
+predicate LS_Init(s:LS_State, config:Config, f: int) {
     && f >= 1
     && LEnvironment_Init(s.environment, config)
     && |config| == |s.initialZkdbState| == 2*f + 1 // we will assign each server in config the corresponding db
@@ -47,7 +47,7 @@ predicate DsInit(s:DS_State, config:Config, f: int) {
 }
 
 
-predicate DsNextOneServer(s:DS_State, s':DS_State, id:EndPoint, ios:seq<ZKIo>)
+predicate LS_NextOneServer(s:LS_State, s':LS_State, id:EndPoint, ios:seq<ZKIo>)
         requires id in s.servers;
 {
     && id in s'.servers
@@ -62,10 +62,10 @@ predicate DsNextOneServer(s:DS_State, s':DS_State, id:EndPoint, ios:seq<ZKIo>)
 }
 
 
-predicate DsNext(s:DS_State, s':DS_State){
+predicate LS_Next(s:LS_State, s':LS_State){
         LEnvironment_Next(s.environment, s'.environment)
     && if s.environment.nextStep.LEnvStepHostIos? && s.environment.nextStep.actor in s.servers then
-            DsNextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios)
+            LS_NextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios)
     else
             s'.servers == s.servers
 }
