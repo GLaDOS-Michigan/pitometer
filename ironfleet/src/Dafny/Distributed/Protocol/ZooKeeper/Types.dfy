@@ -6,7 +6,19 @@ import opened Native__NativeTypes_s
 import opened EnvironmentTCP_s
 
 
-datatype ZKStep = ZKStep1 | ZKStep2
+/*****************************************************************************************
+*                                       Hoststep                                         *
+*****************************************************************************************/
+
+datatype FollowerStep = 
+    SendFollowerInfo | AcceptNewEpoch | ProcessSync | ProcessSnap
+
+datatype LeaderStep = 
+    GetEpoch | WaitForEpoch | PrepSync | DoSync | DoSyncSNAP | ProcessAck
+
+
+datatype ZKStep = F(fs: FollowerStep) | L(ls:LeaderStep)
+
 
 /*****************************************************************************************
 *                                         ZXID                                           *

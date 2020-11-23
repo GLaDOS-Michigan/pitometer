@@ -90,8 +90,9 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
             && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(g.leaderEpoch, 0))
         )       
     ) else ( // Add sender to my connectingFollowers set, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g  // Case where follower has not sent anything
-        else && |ios| == 1
+        // if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g  // Case where follower has not sent anything
+        // else 
+            && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
              && ios[0].r.msg.FollowerInfo?
@@ -121,8 +122,9 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, 
         && s' == s.(state := LH_PREP_SYNC)
     ) else (
         // Add sender to my electingFollowers set, store peerLastZxid, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g // Case where follower has not sent anything
-        else && |ios| == 1
+        // if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g // Case where follower has not sent anything
+        // else 
+            && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
              && ios[0].r.msg.AckEpoch?
@@ -201,8 +203,9 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
         && ios[0].s.msg == UpToDate(s.my_id)
     ) else (
         // Add sender to my ackSet set, store peerLastZxid, and continue waiting for quorum
-        if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  && g' == g // Case where follower has not sent anything
-        else && |ios| == 1
+        // if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  && g' == g // Case where follower has not sent anything
+        // else 
+            && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in s.config
              && ios[0].r.msg.Ack?
