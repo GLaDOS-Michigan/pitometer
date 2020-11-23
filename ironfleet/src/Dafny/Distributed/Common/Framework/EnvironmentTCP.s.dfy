@@ -24,8 +24,11 @@ datatype LEnvStep<IdType, MessageType(==)> = LEnvStepHostIos(actor:IdType, ios:s
 
 datatype LHostInfo<IdType, MessageType(==)> = LHostInfo(queue:seq<LPacket<IdType, MessageType>>)
 
+// Channel[..i] are the delievered prefix
+datatype HostChannel<IdType, MessageType> = HostChannel(index:int, channel:seq<LPacket<IdType, MessageType>>)
+
 datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(time:int,
-                                                              channels:map<IdType, seq<LPacket<IdType, MessageType>>>,  // effectively the receive queue of each host
+                                                              channels:map<IdType, HostChannel>, 
                                                               hostInfo:map<IdType, LHostInfo<IdType, MessageType>>,
                                                               nextStep:LEnvStep<IdType, MessageType>)
 
@@ -62,15 +65,21 @@ predicate IsPrefix<T>(s1: seq<T>, s2: seq<T>) {
     && s2[0..|s1|] == s2
 }
 
+predicate IsValidReceiveSeq<IdType, MessageType>(rcvSeq:seq<LPacket<IdType, MessageType>>, hc:HostChannel) 
+{
+    && 0 <= hc.index <= |hc.channel|
+    && IsPrefix(rcvSeq, hc.channel[hc.index..])
+}
+
 predicate IsValidLEnvStep<IdType, MessageType>(e:LEnvironment<IdType, MessageType>, step:LEnvStep)
 {
     match step
         case LEnvStepHostIos(actor, ios) =>    
             var rcvMap := IosToRcvMap(ios);
             && (forall io :: io in ios ==> IsValidLIoOp(io, actor, e))
-            && (forall receiver | receiver in rcvMap :: receiver in e.channels ==> IsPrefix(rcvMap[receiver], e.channels[receiver]))
+            && (forall receiver | receiver in rcvMap :: receiver in e.channels ==> IsValidReceiveSeq(rcvMap[receiver], e.channels[receiver]))
             && LIoOpSeqCompatibleWithReduction(ios)
-        case LEnvStepDeliverPacket(p) => p.dst in e.channels && p in e.channels[p.dst]
+        case LEnvStepDeliverPacket(p) => p.dst in e.channels && p in e.channels[p.dst].channel
         case LEnvStepAdvanceTime => true
         case LEnvStepStutter => true
 }
@@ -110,7 +119,7 @@ predicate LEnvironment_Init<IdType, MessageType>(
     e:LEnvironment<IdType, MessageType>,
     hosts: seq<IdType>)
 {
-    && (forall h | h in hosts :: h in e.channels && e.channels[h] == [])
+    && (forall h | h in hosts :: h in e.channels && e.channels[h] == HostChannel(0, []))
     && e.time >= 0
 }
 
@@ -118,19 +127,19 @@ predicate LEnvironment_Init<IdType, MessageType>(
 /* Maps channels to its new state after a sending and receiving a set of ios in sendMap
 * and rcvMap */
 function PerformIos<IdType, MessageType>(
-    channels:map<IdType, seq<LPacket<IdType, MessageType>>>, 
+    channels:map<IdType, HostChannel>, 
     sendMap: map<IdType, seq<LPacket<IdType, MessageType>>>,
     rcvMap: map<IdType, seq<LPacket<IdType, MessageType>>>) :
-    map<IdType, seq<LPacket<IdType, MessageType>>>
+    map<IdType, HostChannel>
 {
     map h | h in channels :: (
-        if h in rcvMap && IsPrefix(rcvMap[h], channels[h]) then (
+        if h in rcvMap then (
             if h in sendMap 
-                then channels[h][|rcvMap[h]|..] + sendMap[h] 
-                else channels[h][|rcvMap[h]|..]
+                then HostChannel(channels[h].index + |rcvMap[h]|, channels[h].channel + sendMap[h])
+                else HostChannel(channels[h].index + |rcvMap[h]|, channels[h].channel)
         ) else (
             if h in sendMap 
-                then channels[h] + sendMap[h]
+                then HostChannel(channels[h].index, channels[h].channel + sendMap[h])
                 else channels[h]
         )
     )
