@@ -46,7 +46,8 @@ predicate FollowerStutter(s:Follower, s':Follower, ios:seq<ZKIo>) {
 }
 
 
-/* State transition from F_HANDSHAKE_A -> F_HANDSHAKE_B */
+/* State transition from F_HANDSHAKE_A -> F_HANDSHAKE_B
+* Send_FI */
 predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && s' == s.(state := F_HANDSHAKE_B)
     && |ios| == 1
@@ -59,7 +60,8 @@ predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
 }
 
 
-/* State transition from F_HANDSHAKE_B -> F_SYNC */
+/* State transition from F_HANDSHAKE_B -> F_SYNC 
+* Process_LI */
 predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
     // state and epoch are the only properties that change in this transition
     && s' == s.(state := s'.state, accepted_epoch := s'.accepted_epoch)  

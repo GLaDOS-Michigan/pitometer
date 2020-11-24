@@ -75,6 +75,7 @@ predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKI
     && s' == s
 }
 
+/* Process_FI */
 predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_A
 {

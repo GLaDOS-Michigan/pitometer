@@ -58,15 +58,23 @@ predicate Performance_Assumption_EmptyDiff(tlb:seq<TLS_State>) {
 *****************************************************************************************/
 
 
-function Performance_Formula_EmptDiff(config: Config) : Timestamp {
-    FSFI + LGE + FANE + LPS + LDS + FPS + LPA
+function Performance_Formula_EmptyDiff(config: Config) : Timestamp {
+    var q := |config| / 2 + 1;
+    SendFI +
+    D + ProcFI * q +
+    D + ProcLI +
+    D + ProcEpAck * q +
+    PreSync +
+    Sync * 2 +
+    D + ProcSync +
+    D + ProcAck * q
 }
 
 
 /* Performance guarantee Empty Diff */
 predicate LS_Performance_Guarantee_EmptyDiff(tls:TLS_State) {   
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? ::
-        tls.t_servers[ep].ts == Performance_Formula_EmptDiff(tls.config)
+        tls.t_servers[ep].ts == Performance_Formula_EmptyDiff(tls.config)
 }
 
 

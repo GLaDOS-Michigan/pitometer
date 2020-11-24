@@ -11,10 +11,10 @@ import opened EnvironmentTCP_s
 *****************************************************************************************/
 
 datatype FollowerStep = 
-    SendFollowerInfo | AcceptNewEpoch | ProcessSync | ProcessSnap
+    SendFollowerInfo | ProcessLeaderInfo | ProcessSync | ProcessSnap
 
 datatype LeaderStep = 
-    GetEpoch | WaitForEpoch | PrepSync | DoSync | DoSyncSNAP | ProcessAck
+    ProcessFollowerInfo | ProcessEpochAck | PrepSync | DoSync | DoSyncSNAP | ProcessAck
 
 
 datatype ZKStep = F(fs: FollowerStep) | L(ls:LeaderStep)

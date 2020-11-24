@@ -90,7 +90,7 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
     requires LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios))
 {
     // TODO
-    L(GetEpoch)
+    L(ProcessFollowerInfo)
 }
 
 
