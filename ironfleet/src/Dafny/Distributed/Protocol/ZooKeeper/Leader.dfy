@@ -106,12 +106,10 @@ function IncNextHandlerToStep(i: int, n: int) : int {
 
 predicate StepSingleHandler(s:Leader, s':Leader, ios:seq<ZKIo>) {
     && |s'.handlers| == |s.handlers|
-    && forall i | 0 <= i < |s.handlers| ::
-        if i == s.nextHandlerToStep 
-        then 
-            var follower_id := s.handlers[i].follower_id;
-            && forall io | io in ios && io.LIoOpReceive? :: io.r.sender_index == follower_id  // received packets are bound for the right thread
-            && LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, ios)
-        else s'.handlers[i] == s.handlers[i]
+    && 0 <= s.nextHandlerToStep < |s.handlers|
+    && var follower_id := s.handlers[s.nextHandlerToStep].follower_id;
+    && (forall io | io in ios && io.LIoOpReceive? :: io.r.sender_index == follower_id)  // received packets are bound for the right thread
+    && LearnerHandlerNext(s.handlers[s.nextHandlerToStep], s'.handlers[s.nextHandlerToStep], s.globals, s'.globals, ios)
+    && (forall i | 0 <= i < |s.handlers| && i != s.nextHandlerToStep :: s'.handlers[i] == s.handlers[i])
 }
 }

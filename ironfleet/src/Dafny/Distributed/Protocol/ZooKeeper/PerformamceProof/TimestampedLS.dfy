@@ -56,7 +56,7 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
     && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
     && var hs := ActionToHostStep(tls, tls', id, ios);
 
-    && (if |ios| > 0 && ios[0].LIoOpReceive? then
+    && (if |ios| > 0 && ios[0].LIoOpReceive? then   // Note that in performal, at most one rcv in each step
             tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hs)
         else
             tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hs)
@@ -65,11 +65,8 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
 
 
 predicate TLS_Next(tls:TLS_State, tls':TLS_State){
-        LEnvironment_Next(tls.t_environment, tls'.t_environment)
-    && if tls.t_environment.nextStep.LEnvStepHostIos? && tls.t_environment.nextStep.actor in tls.t_servers then
-            TLS_NextOneServer(tls, tls', tls.t_environment.nextStep.actor, tls.t_environment.nextStep.ios)
-        else
-            tls'.t_servers == tls.t_servers
+        && LEnvironment_Next(tls.t_environment, tls'.t_environment)
+        && (exists ep, ios :: ep in tls.t_servers && TLS_NextOneServer(tls, tls', ep, ios))
 }
 
 

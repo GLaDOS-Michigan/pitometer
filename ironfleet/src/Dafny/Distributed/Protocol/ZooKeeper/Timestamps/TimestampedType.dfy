@@ -23,9 +23,9 @@ function UntagTimestampedType<T>(t_t: TimestampedType<T>) : T
 }
 
 function UntagLPacket<I,M>(pkt: TimestampedLPacket<I,M>) : LPacket<I,M>
-    ensures UntagLPacket(pkt) == LPacket(pkt.dst, pkt.src, pkt.msg.v);
+    ensures UntagLPacket(pkt) == LPacket(pkt.dst, pkt.src, pkt.sender_index, pkt.msg.v);
 {
-    LPacket(pkt.dst, pkt.src, pkt.msg.v)
+    LPacket(pkt.dst, pkt.src, pkt.sender_index, pkt.msg.v)
 }
 
 function UntagLPacketSeq<I,M>(pkts: seq<TimestampedLPacket<I,M>>) : seq<LPacket<I,M>>
