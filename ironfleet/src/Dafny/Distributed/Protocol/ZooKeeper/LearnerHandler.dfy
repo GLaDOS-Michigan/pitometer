@@ -50,7 +50,7 @@ datatype LeaderGlobals = LeaderGlobals(
 
 predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, config:Config) {
     && s.my_id == my_id
-    && s.follower_id == s.follower_id  // follower id is initially unknown
+    && s.follower_id == follower_id
     && s.config == config
     && s.state == LH_HANDSHAKE_A
 

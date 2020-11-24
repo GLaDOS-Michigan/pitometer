@@ -47,26 +47,24 @@ predicate LS_Init(config:Config, s:LS_State, f: int) {
 }
 
 
-predicate LS_NextOneServer(s:LS_State, s':LS_State, id:EndPoint, ios:seq<ZKIo>)
-        requires id in s.servers;
+predicate LS_NextOneServer(s:LS_State, s':LS_State, actor:EndPoint, ios:seq<ZKIo>)
+    requires actor in s.servers
 {
-    && id in s'.servers
-    && s'.servers == s.servers[id := s'.servers[id]]
-    && match s.servers[id] 
+    && s.environment.nextStep == LEnvStepHostIos(actor, ios)
+    && actor in s'.servers
+    && s'.servers == s.servers[actor := s'.servers[actor]]
+    && match s.servers[actor] 
         case LeaderPeer(leader) => 
-            && s'.servers[id].LeaderPeer?
-            && LeaderNext(leader, s'.servers[id].leader, ios)
+            && s'.servers[actor].LeaderPeer?
+            && LeaderNext(leader, s'.servers[actor].leader, ios)
         case FollowerPeer(follower) => 
-            && s'.servers[id].FollowerPeer?
-            && FollowerNext(follower, s'.servers[id].follower, ios)
+            && s'.servers[actor].FollowerPeer?
+            && FollowerNext(follower, s'.servers[actor].follower, ios)
 }
 
 
 predicate LS_Next(s:LS_State, s':LS_State){
-        LEnvironment_Next(s.environment, s'.environment)
-    && if s.environment.nextStep.LEnvStepHostIos? && s.environment.nextStep.actor in s.servers then
-            LS_NextOneServer(s, s', s.environment.nextStep.actor, s.environment.nextStep.ios)
-    else
-            s'.servers == s.servers
+    && LEnvironment_Next(s.environment, s'.environment)
+    && (exists ep, ios :: ep in s.servers && LS_NextOneServer(s, s', ep, ios))
 }
 }

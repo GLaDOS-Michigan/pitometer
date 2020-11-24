@@ -28,7 +28,7 @@ datatype LHostInfo<IdType, MessageType(==)> = LHostInfo(queue:seq<LPacket<IdType
 datatype HostChannel<IdType, MessageType> = HostChannel(index:int, channel:seq<LPacket<IdType, MessageType>>)
 
 datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(time:int,
-                                                              channels:map<IdType, HostChannel<IdType, MessageType>>, 
+                                                              channels:map<IdType, HostChannel>, 
                                                               hostInfo:map<IdType, LHostInfo<IdType, MessageType>>,
                                                               nextStep:LEnvStep<IdType, MessageType>)
 
@@ -102,7 +102,9 @@ function IosToSendMap<IdType, MessageType>(ios:seq<LIoOp<IdType, MessageType>>) 
         ) else sub_map
 }
 
-/* Transform a seq of IoOps to a map that maps each dst to a sequence of receive ops to that dst*/
+/* Transform a seq of IoOps to a map that maps each dst to a sequence of receive ops to that dst
+* Note that IsValidLIoOp ensures that for a valid ios seq, the resulting map has exactly one
+* key which is the actor */
 function IosToRcvMap<IdType, MessageType>(ios:seq<LIoOp<IdType, MessageType>>) : map<IdType, seq<LPacket<IdType, MessageType>>> {
     if |ios| == 0 then map[]
     else 
