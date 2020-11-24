@@ -89,8 +89,51 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
     requires id in tls.t_servers    
     requires LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios))
 {
-    // TODO
-    L(ProcessFollowerInfo)
+    var ls, ls', zkios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(ios);
+    match ls.servers[id] 
+    case LeaderPeer(leader) => (
+        match leader.state
+        case L_RUNNING => L(LStutter)
+        case L_STARTING => (
+            var s, s' := ls.servers[id].leader, ls'.servers[id].leader;
+            if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
+            then L(LStutter)
+            else (
+                var i := s.nextHandlerToStep;
+                assert StepSingleHandler(s, s', zkios);
+                assert LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, zkios);
+                match s.handlers[i].state
+                case LH_HANDSHAKE_A => L(ProcessFollowerInfo)
+                case LH_HANDSHAKE_B => L(ProcessEpochAck)
+                case LH_PREP_SYNC => L(PrepSync)
+                case LH_SYNC => (
+                    if zkios[0].s.msg.SyncSNAP?
+                    then L(DoSyncSNAP)  // Sending a snapshot is a special event
+                    else L(DoSync)
+                )
+                case LH_PROCESS_ACK => L(ProcessAck)
+                case LH_RUNNING => L(LStutter)
+                case LH_ERROR => L(LStutter)
+            )   
+        )
+    )
+    case FollowerPeer(follower) => (
+        match follower.state 
+        case F_HANDSHAKE_A => F(SendFollowerInfo)
+        case F_HANDSHAKE_B => F(ProcessLeaderInfo)
+        case F_SYNC => (
+            var s, s' := ls.servers[id].follower, ls'.servers[id].follower;
+            assert SyncWithLeader(s, s', zkios);
+            if zkios[0].r.msg.SyncSNAP? 
+                then F(ProcessSnap)   // Processing a snapshot is a special event
+            else if zkios[0].r.msg.FollowerInfo? || zkios[0].r.msg.LeaderInfo? || zkios[0].r.msg.AckEpoch? || zkios[0].r.msg.Ack?
+                then F(FStutter)
+            else
+                F(ProcessSync)
+        )
+        case F_RUNNING => F(FStutter)
+        case F_ERROR => F(FStutter)
+    )
 }
 
 

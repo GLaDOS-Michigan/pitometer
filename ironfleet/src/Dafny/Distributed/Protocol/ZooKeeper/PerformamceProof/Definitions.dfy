@@ -21,6 +21,8 @@ ghost const Sync:Timestamp
 ghost const SyncSnap:Timestamp
 ghost const ProcAck:Timestamp
 
+ghost const NoOp:Timestamp
+
 
 function StepToTimeDelta(hstep:HostStep) : Timestamp {
     match hstep
@@ -30,6 +32,7 @@ function StepToTimeDelta(hstep:HostStep) : Timestamp {
                 case ProcessLeaderInfo => ProcLI
                 case ProcessSync => ProcSync
                 case ProcessSnap => ProcSnap
+                case FStutter => NoOp
         )
         case L(ls) => 
             match ls
@@ -39,6 +42,7 @@ function StepToTimeDelta(hstep:HostStep) : Timestamp {
                 case DoSync => Sync
                 case DoSyncSNAP => SyncSnap
                 case ProcessAck => ProcAck
+                case LStutter => NoOp
 }
 
 function TLS_NoRecvPerfUpdate(node_pr:Timestamp, hstep:HostStep) : Timestamp

@@ -33,10 +33,10 @@ predicate FollowerInit(s:Follower, my_id:nat, leader_id:nat, config:Config, zkdb
 
 predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
     match s.state 
-        case F_HANDSHAKE_A => SendMyInfo(s, s', ios)
-        case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios) 
-        case F_SYNC => SyncWithLeader(s, s', ios)
-        case F_RUNNING => FollowerStutter(s, s', ios)
+        case F_HANDSHAKE_A => SendMyInfo(s, s', ios)        // SendFI
+        case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios)    // ProcLI
+        case F_SYNC => SyncWithLeader(s, s', ios)           // ProcSync
+        case F_RUNNING => FollowerStutter(s, s', ios)       
         case F_ERROR => FollowerStutter(s, s', ios)
 }
 
