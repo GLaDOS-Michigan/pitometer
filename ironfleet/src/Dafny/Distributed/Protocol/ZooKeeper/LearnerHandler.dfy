@@ -88,6 +88,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
         && (var outbound_packet := ios[0].s;
             && 0 <= s.follower_id < |s.config|
             && outbound_packet.dst == s.config[s.follower_id]
+            && outbound_packet.sender_index == s.my_id
             && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(g.leaderEpoch, 0))
         )       
     ) else ( // Add sender to my connectingFollowers set, and continue waiting for quorum
@@ -177,6 +178,7 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Leader
     && |ios| == 1 
     && ios[0].LIoOpSend?
     && 0 <= s.follower_id < |s.config| 
+    && ios[0].s.sender_index == s.my_id
     && ios[0].s.dst == s.config[s.follower_id]
     && if |s.queuedPackets| == 0 
         then // Done with sync. Send NewLeader msg
@@ -201,6 +203,7 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
         && |ios| == 1
         && ios[0].LIoOpSend?
         && ios[0].s.dst == s.config[s.follower_id]
+        && ios[0].s.sender_index == s.my_id
         && ios[0].s.msg == UpToDate(s.my_id)
     ) else (
         // Add sender to my ackSet set, store peerLastZxid, and continue waiting for quorum

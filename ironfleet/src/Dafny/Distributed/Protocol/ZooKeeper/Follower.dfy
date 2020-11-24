@@ -55,6 +55,7 @@ predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && ios[0].LIoOpSend?
     && (var outbound_packet := ios[0].s;
         && outbound_packet.dst == s.config[s.leader_id]
+        && outbound_packet.sender_index == s.my_id
         && outbound_packet.msg == FollowerInfo(s.my_id, getLastLoggedZxid(s.zkdb))
     )
 }
@@ -80,6 +81,7 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
             && |ios| == 2
             && ios[1].LIoOpSend?
             && ios[1].s.dst == s.config[s.leader_id]
+            && ios[1].s.sender_index == s.my_id
             && ios[1].s.msg.AckEpoch?
             && ios[1].s.msg.sid == s.my_id
             && ios[1].s.msg.lastLoggedZxid == getLastLoggedZxid(s.zkdb)
@@ -127,6 +129,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
             && |ios| == 2
             && ios[1].LIoOpSend?
             && ios[1].s.dst == ios[0].r.src
+            && ios[1].s.sender_index == s.my_id
             && ios[1].s.msg == Ack(s.my_id, newLeaderZxid)
 
         // Terminating condition to move to next state
@@ -135,6 +138,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
             && |ios| == 2
             && ios[1].LIoOpSend?
             && ios[1].s.dst == ios[0].r.src
+            && ios[1].s.sender_index == s.my_id
             && ios[1].s.msg == Ack(s.my_id, Zxid(s.accepted_epoch, 0))
             && s' == s.(state := F_RUNNING)
 }

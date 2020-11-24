@@ -68,7 +68,8 @@ predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>)
     requires s.state == L_STARTING
 {
     if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
-    then && s' == s.(state := L_RUNNING, globals := s'.globals)
+    then && |ios| == 0
+         && s' == s.(state := L_RUNNING, globals := s'.globals)
          && s'.globals == s.globals.(zkdb := s'.globals.zkdb)
          && s'.globals.zkdb == s.globals.zkdb.(isRunning := true)
     else 
@@ -107,7 +108,10 @@ predicate StepSingleHandler(s:Leader, s':Leader, ios:seq<ZKIo>) {
     && |s'.handlers| == |s.handlers|
     && forall i | 0 <= i < |s.handlers| ::
         if i == s.nextHandlerToStep 
-        then LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, ios)
+        then 
+            var follower_id := s.handlers[i].follower_id;
+            && forall io | io in ios && io.LIoOpReceive? :: io.r.sender_index == follower_id  // received packets are bound for the right thread
+            && LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, ios)
         else s'.handlers[i] == s.handlers[i]
 }
 }

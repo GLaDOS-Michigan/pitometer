@@ -10,7 +10,7 @@ import opened Temporal__Temporal_s
 *                                        Types                                           *
 ******************************************************************************************/   
 
-datatype LPacket<IdType, MessageType(==)> = LPacket(dst:IdType, src:IdType, msg:MessageType)
+datatype LPacket<IdType, MessageType(==)> = LPacket(dst:IdType, src:IdType, sender_index:int, msg:MessageType)
 
 datatype LIoOp<IdType, MessageType(==)> = LIoOpSend(s:LPacket<IdType, MessageType>)
                                         | LIoOpReceive(r:LPacket<IdType, MessageType>)
