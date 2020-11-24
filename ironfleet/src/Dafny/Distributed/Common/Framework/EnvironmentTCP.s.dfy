@@ -28,7 +28,7 @@ datatype LHostInfo<IdType, MessageType(==)> = LHostInfo(queue:seq<LPacket<IdType
 datatype HostChannel<IdType, MessageType> = HostChannel(index:int, channel:seq<LPacket<IdType, MessageType>>)
 
 datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(time:int,
-                                                              channels:map<IdType, HostChannel>, 
+                                                              channels:map<IdType, HostChannel<IdType, MessageType>>, 
                                                               hostInfo:map<IdType, LHostInfo<IdType, MessageType>>,
                                                               nextStep:LEnvStep<IdType, MessageType>)
 

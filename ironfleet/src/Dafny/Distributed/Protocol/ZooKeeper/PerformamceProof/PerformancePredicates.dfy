@@ -71,10 +71,15 @@ function Performance_Formula_EmptyDiff(config: Config) : Timestamp {
 }
 
 
-/* Performance guarantee Empty Diff */
+/* Performance guarantee Empty Diff 
+* Every leader in the RUNNING state has the specified performance formula */
 predicate LS_Performance_Guarantee_EmptyDiff(tls:TLS_State) {   
-    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? ::
-        tls.t_servers[ep].ts == Performance_Formula_EmptyDiff(tls.config)
+    forall ep | 
+        && ep in tls.t_servers 
+        && tls.t_servers[ep].v.LeaderPeer? 
+        && tls.t_servers[ep].v.leader.state == L_RUNNING 
+    ::
+        tls.t_servers[ep].ts >= Performance_Formula_EmptyDiff(tls.config)
 }
 
 
