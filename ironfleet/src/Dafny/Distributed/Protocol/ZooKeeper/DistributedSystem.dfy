@@ -31,7 +31,7 @@ datatype LS_State = LS_State(
 
 predicate LS_Init(config:Config, s:LS_State, f: int) {
     && f >= 1
-    && LEnvironment_Init(s.environment, config)
+    && LEnvironment_Init(config, s.environment)
     && |config| == |s.initialZkdbState| == 2*f + 1 // we will assign each server in config the corresponding db
     && SeqIsUnique(config)
     // && InitialZkdbState_EmptyDiff(s.initialZkdbState)

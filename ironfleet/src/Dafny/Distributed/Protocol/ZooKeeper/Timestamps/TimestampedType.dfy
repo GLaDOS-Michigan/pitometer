@@ -35,6 +35,12 @@ function UntagLPacketSeq<I,M>(pkts: seq<TimestampedLPacket<I,M>>) : seq<LPacket<
     if |pkts| == 0 then [] else [UntagLPacket(pkts[0])] + UntagLPacketSeq(pkts[1..])
 }
 
+function UntagSentPkts<I,M>(t_sentPkts : set<TimestampedLPacket<I,M>>) : set<LPacket<I,M>> 
+    ensures UntagSentPkts(t_sentPkts) == (set pkt | pkt in t_sentPkts :: UntagLPacket(pkt));
+{
+    set pkt | pkt in t_sentPkts :: UntagLPacket(pkt)
+}
+
 function UntagChannels<I,M>(t_channels : map<I, HostChannel<I, TimestampedType<M>>>) : map<I, HostChannel<I,M>>
     ensures t_channels.Keys == UntagChannels(t_channels).Keys
     ensures forall id | id in t_channels :: UntagChannels(t_channels)[id].index == t_channels[id].index && UntagChannels(t_channels)[id].channel == UntagLPacketSeq(t_channels[id].channel)
@@ -67,7 +73,9 @@ function UntagHostInfoMap<I,M>(t_hostInfo:map<I, LHostInfo<I,TimestampedType<M>>
 
 function UntagLEnvironment<I,M>(t_env: TimestampedLEnvironment<I,M>) : LEnvironment<I,M>{
     LEnvironment(t_env.time,
+        t_env.config,
         UntagChannels(t_env.channels),
+        UntagSentPkts(t_env.sentPackets),
         UntagHostInfoMap(t_env.hostInfo),
         UntagLEnvStep(t_env.nextStep))
 }

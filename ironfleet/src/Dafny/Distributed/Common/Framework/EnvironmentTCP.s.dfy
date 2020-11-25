@@ -28,7 +28,9 @@ datatype LHostInfo<IdType, MessageType(==)> = LHostInfo(queue:seq<LPacket<IdType
 datatype HostChannel<IdType, MessageType> = HostChannel(index:int, channel:seq<LPacket<IdType, MessageType>>)
 
 datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(time:int,
-                                                              channels:map<IdType, HostChannel>, 
+                                                              config:seq<IdType>,
+                                                              channels:map<IdType, HostChannel<IdType, MessageType>>,
+                                                              ghost sentPackets:set<LPacket<IdType, MessageType>>,
                                                               hostInfo:map<IdType, LHostInfo<IdType, MessageType>>,
                                                               nextStep:LEnvStep<IdType, MessageType>)
 
@@ -38,8 +40,8 @@ datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(time:int,
 predicate IsValidLIoOp<IdType, MessageType>(io:LIoOp, actor:IdType, e:LEnvironment<IdType, MessageType>)
 {
     match io
-        case LIoOpSend(s) => s.src == actor
-        case LIoOpReceive(r) => r.dst == actor
+        case LIoOpSend(s) => s.src == actor && s.src in e.config && s.dst in e.config
+        case LIoOpReceive(r) => r.dst == actor && r.src in e.config && r.dst in e.config
         case LIoOpTimeoutReceive => true
         case LIoOpReadClock(t) => true
 }
@@ -77,7 +79,7 @@ predicate IsValidLEnvStep<IdType, MessageType>(e:LEnvironment<IdType, MessageTyp
         case LEnvStepHostIos(actor, ios) =>    
             var rcvMap := IosToRcvMap(ios);
             && (forall io :: io in ios ==> IsValidLIoOp(io, actor, e))
-            && (forall receiver | receiver in rcvMap :: receiver in e.channels ==> IsValidReceiveSeq(rcvMap[receiver], e.channels[receiver]))
+            && (forall receiver | receiver in rcvMap :: receiver in e.channels && IsValidReceiveSeq(rcvMap[receiver], e.channels[receiver]))
             && LIoOpSeqCompatibleWithReduction(ios)
         case LEnvStepDeliverPacket(p) => p.dst in e.channels && p in e.channels[p.dst].channel
         case LEnvStepAdvanceTime => true
@@ -118,10 +120,12 @@ function IosToRcvMap<IdType, MessageType>(ios:seq<LIoOp<IdType, MessageType>>) :
 
 
 predicate LEnvironment_Init<IdType, MessageType>(
-    e:LEnvironment<IdType, MessageType>,
-    hosts: seq<IdType>)
+    config:seq<IdType>,
+    e:LEnvironment<IdType, MessageType>)
 {
-    && (forall h | h in hosts :: h in e.channels && e.channels[h] == HostChannel(0, []))
+    && (forall h | h in config :: h in e.channels && e.channels[h] == HostChannel(0, []))
+    && e.config == config
+    && e.sentPackets == {}
     && e.time >= 0
 }
 
@@ -158,6 +162,7 @@ predicate LEnvironment_PerformIos<IdType, MessageType>(
     var sendMap := IosToSendMap(ios);
     var rcvMap := IosToRcvMap(ios);
     && e'.channels == PerformIos(e.channels, sendMap, rcvMap)
+    && e'.sentPackets == e.sentPackets + (set io | io in ios && io.LIoOpSend? :: io.s)
     && e'.time == e.time
 }
 
@@ -186,11 +191,48 @@ predicate LEnvironment_Next<IdType, MessageType>(
     )
 {
        IsValidLEnvStep(e, e.nextStep)
+    && e'.config == e.config
     && match e.nextStep
            case LEnvStepHostIos(actor, ios) => LEnvironment_PerformIos(e, e', actor, ios)
            case LEnvStepDeliverPacket(p) => LEnvironment_Stutter(e, e') // this is only relevant for synchrony
            case LEnvStepAdvanceTime => LEnvironment_AdvanceTime(e, e')
            case LEnvStepStutter => LEnvironment_Stutter(e, e')
+}
+
+
+
+/*****************************************************************************************
+*                                     Utilities                                          *
+******************************************************************************************/ 
+
+/* Creates a set containing exactly all the messages in channels map */
+function ChannelsToSet<IdType, MessageType>(channels:map<IdType, HostChannel<IdType, MessageType>>) : set<LPacket<IdType, MessageType>> 
+    decreases channels
+    ensures forall ep | ep in channels :: (
+    forall pkt | pkt in channels[ep].channel :: pkt in ChannelsToSet(channels)
+    );
+    ensures forall pkt | pkt in ChannelsToSet(channels) ::
+        exists e :: e in channels && pkt in channels[e].channel
+{
+    if |channels| == 0 then {}
+    else 
+        var ep :| ep in channels;
+        var remaining_channels := map e | e in channels && e != ep :: channels[e];
+        var curr_set := (set pkt | pkt in channels[ep].channel :: pkt);
+        var rem_set := ChannelsToSet(remaining_channels);
+        assert forall e | e in channels :: (
+            forall pkt | pkt in channels[e].channel ::
+                if e == ep then pkt in curr_set else e in remaining_channels && pkt in rem_set
+        );
+        curr_set + rem_set
+}
+
+function IosSeqToSentSet<IdType, MessageType>(ios: seq<LIoOp<IdType, MessageType>>) : set<LPacket<IdType, MessageType>> 
+    decreases ios
+    ensures forall io | io in ios && io.LIoOpSend? :: io.s in IosSeqToSentSet(ios)
+{
+    if |ios| == 0 then {}
+    else if ios[0].LIoOpSend? then {ios[0].s} + IosSeqToSentSet(ios[1..]) else IosSeqToSentSet(ios[1..])
 }
 
 

@@ -43,7 +43,7 @@ datatype TLS_State = TLS_State(
 predicate TLS_Init(config:Config, tls:TLS_State, f: int) {
     && LS_Init(config, UntagLS_State(tls), f)
     && tls.config == config
-    && LEnvironment_Init(tls.t_environment, config)
+    && LEnvironment_Init(config, tls.t_environment)
     && forall id | id in tls.t_servers :: tls.t_servers[id].ts == TimeZero()
 }
 
