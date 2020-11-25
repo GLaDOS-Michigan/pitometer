@@ -227,6 +227,7 @@ function ChannelsToSet<IdType, MessageType>(channels:map<IdType, HostChannel<IdT
         curr_set + rem_set
 }
 
+
 function IosSeqToSentSet<IdType, MessageType>(ios: seq<LIoOp<IdType, MessageType>>) : set<LPacket<IdType, MessageType>> 
     decreases ios
     ensures forall io | io in ios && io.LIoOpSend? :: io.s in IosSeqToSentSet(ios)

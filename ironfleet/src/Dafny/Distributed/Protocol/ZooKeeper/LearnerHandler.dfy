@@ -232,6 +232,8 @@ predicate IsVerifiedQuorum(my_id:nat, n:int, quorum: set<nat>) {
 
 function PrepareDiffCommits(leaderId:nat, proposals:seq<Zxid>, peerLastZxid:Zxid) : seq<ZKMessage> 
     decreases proposals
+    ensures forall msg | msg in PrepareDiffCommits(leaderId, proposals, peerLastZxid) ::
+        msg.Commit?
 {
     if |proposals| == 0 then []
     else if peerLastZxid in proposals then PrepareDiffCommits(leaderId, proposals[1..], peerLastZxid)
