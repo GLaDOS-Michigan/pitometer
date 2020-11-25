@@ -52,15 +52,6 @@ lemma theorem_ZK_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
 *****************************************************************************************/
 
 
-predicate FollowerInit_Invariant(tls:TLS_State){
-    forall ep | ep in tls.t_servers :: (
-        && tls.t_servers[ep].v.FollowerPeer? 
-        && tls.t_servers[ep].v.follower.state == F_HANDSHAKE_A
-        ==> 
-        && tls.t_servers[ep].ts == TimeZero()
-    )
-}
-
 lemma lemma_FollowerInit_Invariant_Induction(config:Config, tls:TLS_State, tls':TLS_State)
     requires TLS_Next(tls, tls')
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
@@ -75,14 +66,6 @@ lemma lemma_FollowerInit_Invariant_Induction(config:Config, tls:TLS_State, tls':
 /*****************************************************************************************
 *                            FollowerInfo_Message_Invariant                              *
 *****************************************************************************************/
-
-
-predicate FollowerInfo_Message_Invariant(tls:TLS_State)
-{
-    var perf_formula := SendFI;
-    forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.FollowerInfo?
-    :: pkt.msg.ts == perf_formula
-}
 
 
 lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_State, tls':TLS_State)

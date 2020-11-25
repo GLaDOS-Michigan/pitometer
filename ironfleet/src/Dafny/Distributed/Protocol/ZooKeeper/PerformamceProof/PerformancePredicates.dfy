@@ -54,7 +54,7 @@ predicate Performance_Assumption_EmptyDiff(tlb:seq<TLS_State>) {
 
 
 /*****************************************************************************************
-*                                      Guarantees                                        *
+*                                     Main Guarantee                                     *
 *****************************************************************************************/
 
 
@@ -85,5 +85,31 @@ predicate LS_Performance_Guarantee_EmptyDiff(tls:TLS_State) {
 
 predicate Performance_Guarantee_EmptyDiff(tlb:seq<TLS_State>){
     forall i | 0 <= i < |tlb| :: LS_Performance_Guarantee_EmptyDiff(tlb[i])
+}
+
+
+/*****************************************************************************************
+*                             Handshake Phase Guarantees                                 *
+*****************************************************************************************/
+
+
+predicate FollowerInit_Invariant(tls:TLS_State){
+    forall ep | ep in tls.t_servers :: (
+        && tls.t_servers[ep].v.FollowerPeer? 
+        && tls.t_servers[ep].v.follower.state == F_HANDSHAKE_A
+        ==> 
+        && tls.t_servers[ep].ts == TimeZero()
+    )
+}
+
+
+function FollowerInfo_Message_Peformance_Formula() : Timestamp {
+    SendFI
+}
+
+
+predicate FollowerInfo_Message_Invariant(tls:TLS_State) {
+    forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.FollowerInfo?
+    :: pkt.msg.ts == FollowerInfo_Message_Peformance_Formula()
 }
 }
