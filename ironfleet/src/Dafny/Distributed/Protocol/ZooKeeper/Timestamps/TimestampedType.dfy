@@ -81,14 +81,19 @@ function UntagLEnvironment<I,M>(t_env: TimestampedLEnvironment<I,M>) : LEnvironm
 }
 
 
-function UntagLIoOp(t_io : TimestampedLIoOp) : LIoOp {
+function UntagLIoOp(t_io : TimestampedLIoOp) : LIoOp 
+    ensures UntagLIoOp(t_io) == 
     match t_io
-    {
-        case LIoOpSend(s) => LIoOpSend(UntagLPacket(s))
-        case LIoOpReceive(r) => LIoOpReceive(UntagLPacket(r))
-        case LIoOpTimeoutReceive() => LIoOpTimeoutReceive()
-        case LIoOpReadClock(t) => LIoOpReadClock(t)
-    }
+    case LIoOpSend(s) => LIoOpSend(UntagLPacket(s))
+    case LIoOpReceive(r) => LIoOpReceive(UntagLPacket(r))
+    case LIoOpTimeoutReceive() => LIoOpTimeoutReceive()
+    case LIoOpReadClock(t) => LIoOpReadClock(t)
+{
+    match t_io
+    case LIoOpSend(s) => LIoOpSend(UntagLPacket(s))
+    case LIoOpReceive(r) => LIoOpReceive(UntagLPacket(r))
+    case LIoOpTimeoutReceive() => LIoOpTimeoutReceive()
+    case LIoOpReadClock(t) => LIoOpReadClock(t)
 }
 
 function UntagLIoOpSeq(t_ios: seq<TimestampedLIoOp>) : seq<LIoOp>

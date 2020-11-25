@@ -123,34 +123,6 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
 
 
 /*****************************************************************************************
-/                               Facts about the environment                              *
-*****************************************************************************************/
-
-
-/* SentPackets set is monotone increasing */
-predicate SentPacketsSet_Monotone(tls:TLS_State, tls':TLS_State, ep:EndPoint, ios:seq<TZKIo>) 
-    requires ep in tls.t_servers
-    requires TLS_NextOneServer(tls, tls', ep, ios)
-    requires LEnvironment_Next(tls.t_environment, tls'.t_environment)
-{
-    var new_sent := IosSeqToSentSet(ios);
-    tls'.t_environment.sentPackets == tls.t_environment.sentPackets + new_sent
-}
-
-
-lemma lemma_SentPacketsSet_Monotone_Induction(config:Config, tls:TLS_State, tls':TLS_State)
-    requires TLS_Next(tls, tls')
-    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
-    ensures forall ep, ios | ep in tls.t_servers && TLS_Next(tls, tls') && TLS_NextOneServer(tls, tls', ep, ios)
-    :: SentPacketsSet_Monotone(tls, tls', ep, ios)
-{
-    // TODO
-    assume false;
-}
-
-
-
-/*****************************************************************************************
 /                                 Facts about the leader                                 *
 *****************************************************************************************/
 
