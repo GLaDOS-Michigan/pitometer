@@ -30,7 +30,8 @@ import opened ZooKeeper_TimestampedDistributedSystem
 
 
 predicate SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
-    requires id in tls.t_servers;
+    requires id in tls.t_servers
+    requires TLS_Next(tls, tls')
     requires TLS_NextOneServer(tls, tls', id, tios)
 {
     tls'.t_environment.sentPackets == 
@@ -39,13 +40,12 @@ predicate SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, ti
 
 
 lemma lemma_SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
-    requires id in tls.t_servers;
+    requires id in tls.t_servers
+    requires TLS_Next(tls, tls')
+    requires TLS_Next(tls, tls')
     requires TLS_NextOneServer(tls, tls', id, tios)
     ensures SentPacketsSet_Property(tls, tls', id, tios)
-{
-    // TODO
-    assume false;
-}
+{}
 
 
 }

@@ -52,6 +52,7 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
         requires id in tls.t_servers;
 {
     && LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios))
+    && tls.t_environment.nextStep == LEnvStepHostIos(id, ios)
     && (forall t_io | t_io in ios && t_io.LIoOpSend? :: t_io.s.msg.ts == tls'.t_servers[id].ts)
     && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
     && var hs := ActionToHostStep(tls, tls', id, ios);
@@ -65,6 +66,8 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
 
 
 predicate TLS_Next(tls:TLS_State, tls':TLS_State){
+        && LS_Next(UntagLS_State(tls), UntagLS_State(tls'))
+        && tls'.config == tls.config
         && LEnvironment_Next(tls.t_environment, tls'.t_environment)
         && (exists ep, ios :: ep in tls.t_servers && TLS_NextOneServer(tls, tls', ep, ios))
 }

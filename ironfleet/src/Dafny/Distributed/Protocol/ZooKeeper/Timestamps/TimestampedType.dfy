@@ -49,14 +49,19 @@ function UntagChannels<I,M>(t_channels : map<I, HostChannel<I, TimestampedType<M
     map id | id in t_channels :: HostChannel(t_channels[id].index, UntagLPacketSeq(t_channels[id].channel))
 }
 
-function UntagLEnvStep<I,M>(t_nextStep : TimestampedLEnvStep<I,M>) : LEnvStep<I,M> {
+function UntagLEnvStep<I,M>(t_nextStep : TimestampedLEnvStep<I,M>) : LEnvStep<I,M> 
+    ensures UntagLEnvStep(t_nextStep) ==
     match t_nextStep
-    {
-        case LEnvStepHostIos(actor, ios) => LEnvStepHostIos(actor, UntagLIoOpSeq(ios))
-        case LEnvStepDeliverPacket(p) => LEnvStepDeliverPacket(UntagLPacket(p))
-        case LEnvStepAdvanceTime() => LEnvStepAdvanceTime
-        case LEnvStepStutter() => LEnvStepStutter
-    }
+    case LEnvStepHostIos(actor, ios) => LEnvStepHostIos(actor, UntagLIoOpSeq(ios))
+    case LEnvStepDeliverPacket(p) => LEnvStepDeliverPacket(UntagLPacket(p))
+    case LEnvStepAdvanceTime() => LEnvStepAdvanceTime
+    case LEnvStepStutter() => LEnvStepStutter
+{
+    match t_nextStep
+    case LEnvStepHostIos(actor, ios) => LEnvStepHostIos(actor, UntagLIoOpSeq(ios))
+    case LEnvStepDeliverPacket(p) => LEnvStepDeliverPacket(UntagLPacket(p))
+    case LEnvStepAdvanceTime() => LEnvStepAdvanceTime
+    case LEnvStepStutter() => LEnvStepStutter
 }
 
 function UntagHostInfo(t_hi: TimestampedLHostInfo) : LHostInfo 
