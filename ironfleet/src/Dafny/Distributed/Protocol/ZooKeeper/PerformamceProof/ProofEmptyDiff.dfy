@@ -128,7 +128,9 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
         assert LeaderNext(s, s', ios);
         if s.state == L_STARTING {
             if |ios| > 0 {
-                var h, h' := s.handlers[s.nextHandlerToStep], s'.handlers[s.nextHandlerToStep];
+                assert StepSingleHandler(s, s', ios);
+                var handlerToStep :| LHNext(s, s', handlerToStep, ios);
+                var h, h' := s.handlers[handlerToStep], s'.handlers[handlerToStep];
                 var g, g' := s.globals, s'.globals;
                 assert LearnerHandlerNext(h, h', g, g', ios);
                 match h.state 

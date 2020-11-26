@@ -99,10 +99,9 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
             if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
             then L(LStutter)
             else (
-                var i := s.nextHandlerToStep;
-                assert StepSingleHandler(s, s', zkios);
-                assert LearnerHandlerNext(s.handlers[i], s'.handlers[i], s.globals, s'.globals, zkios);
-                match s.handlers[i].state
+                assert exists follower_id :: LHNext(s, s', follower_id, zkios);
+                var follower_id :| LHNext(s, s', follower_id, zkios);
+                match s.handlers[follower_id].state
                 case LH_HANDSHAKE_A => L(ProcessFollowerInfo)
                 case LH_HANDSHAKE_B => L(ProcessEpochAck)
                 case LH_PREP_SYNC => L(PrepSync)

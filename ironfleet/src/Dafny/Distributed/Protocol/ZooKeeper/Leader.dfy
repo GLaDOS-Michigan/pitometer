@@ -94,10 +94,8 @@ predicate LeaderRunStep(s:Leader, s':Leader, ios:seq<ZKIo>)
 
 predicate InitHandlers(handlers:map<int,LearnerHandler>, my_id: nat, config: Config) {
     && |handlers| == |config| - 1
-    && (forall i | 0 <= i < |config| && i != my_id :: 
-        && i in handlers
-        && LearnerHandlerInit(handlers[i], my_id, i, config)
-    )
+    && (forall i :: 0 <= i < |config| && i != my_id <==> i in handlers)
+    && (forall i | i in handlers :: LearnerHandlerInit(handlers[i], my_id, i, config))
 }
 
 
@@ -111,16 +109,16 @@ predicate StepSingleHandler_Rcv(s:Leader, s':Leader, ios:seq<ZKIo>) {
     && |ios| >= 1 
     && ios[0].LIoOpReceive?
     && var follower_id := ios[0].r.sender_index;  // received packets are bound for the right thread
-    && LearnerHandlerNext(s, s', follower_id, ios)
+    && LHNext(s, s', follower_id, ios)
 }
 
 /* Spontaneously step any handler that does not receive from network */
 predicate StepSingleHandler_NoRcv(s:Leader, s':Leader, ios:seq<ZKIo>) {
     && (forall io | io in ios :: !io.LIoOpReceive?)
-    && exists follower_id :: LearnerHandlerNext(s, s', follower_id, ios)
+    && exists follower_id :: LHNext(s, s', follower_id, ios)
 }
 
-predicate LearnerHandlerNext(s:Leader, s':Leader, id:int, ios:seq<ZKIo>) {
+predicate LHNext(s:Leader, s':Leader, id:int, ios:seq<ZKIo>) {
     && id in s.handlers
     && s'.handlers.Keys == s.handlers.Keys
     && s'.handlers == s.handlers[id := s'.handlers[id]]

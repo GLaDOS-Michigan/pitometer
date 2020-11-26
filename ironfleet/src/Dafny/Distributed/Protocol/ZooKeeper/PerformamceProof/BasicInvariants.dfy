@@ -97,7 +97,8 @@ predicate ZK_Config_Invariant(config:Config, tls:TLS_State)
     && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.FollowerPeer? :: tls.t_servers[ep].v.follower.leader_id == 0)
     // Each follower has a corresponding learner handler
     && |tls.t_servers[config[0]].v.leader.handlers| == |config| - 1
-    && (forall follower_id | 1 <= follower_id < |config| :: tls.t_servers[config[0]].v.leader.handlers[follower_id-1].follower_id == follower_id)
+    && (forall i :: 1 <= i < |config| <==> i in tls.t_servers[config[0]].v.leader.handlers)
+    && (forall follower_id | 1 <= follower_id < |config| :: tls.t_servers[config[0]].v.leader.handlers[follower_id].follower_id == follower_id)
 }
 
 
@@ -108,6 +109,7 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
     ensures forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
 {
     assert ZK_Config_Invariant(config, tlb[0]);
+    
     var i := 0;
     while i < |tlb| - 1 
         decreases |tlb| - i
@@ -123,7 +125,7 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
 
 
 /*****************************************************************************************
-/                                 Facts about the leader                                 *
+*                                 Facts about the leader                                 *
 *****************************************************************************************/
 
 
@@ -142,11 +144,11 @@ lemma lemma_LearnerHandler_QueuedPackets_Induction(s:LearnerHandler, s':LearnerH
     ensures QueuedPackets_Only_Contains_LeaderMessages(s'.queuedPackets);
 {}
 
-/* QueuedPackets for a LearnerHandler only contains the approriate messages */
+/* QueuedPackets for all LearnerHandlers in all LeaderPeers only contains the approriate messages */
 predicate Leader_QueuedPackets_Invariant(config:Config, tls:TLS_State) {
     forall ep | ep in tls.t_servers ::
         tls.t_servers[ep].v.LeaderPeer? ==> (
-            forall lh | lh in tls.t_servers[ep].v.leader.handlers
+            forall lh | lh in tls.t_servers[ep].v.leader.handlers.Values
             :: QueuedPackets_Only_Contains_LeaderMessages(lh.queuedPackets)
     )
 }
@@ -156,15 +158,6 @@ lemma lemma_Leader_QueuedPackets_Invariant_Proof(config:Config, tlb:seq<TLS_Stat
     requires ValidTLSBehavior(config, tlb, f)
     ensures forall i | 0 <= i < |tlb| :: Leader_QueuedPackets_Invariant(config, tlb[i]) 
 {
-    var handlers := tlb[0].t_servers[config[0]].v.leader.handlers;
-    assert forall i | 1 <= i < |config| :: LearnerHandlerInit(handlers[i-1], 0, i, config);
-    forall i | 0 <= i < |handlers| 
-    ensures LearnerHandlerInit(handlers[i], 0, i+1, config)
-    { 
-        var k := i + 1;
-        assert 1 <= k < |config|;
-        assert LearnerHandlerInit(handlers[k-1], 0, k, config);
-    }
     var i := 0;
     while i < |tlb| - 1 
         decreases |tlb| - i
