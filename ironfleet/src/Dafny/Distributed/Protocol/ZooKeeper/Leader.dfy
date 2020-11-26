@@ -23,8 +23,7 @@ datatype Leader = Leader(
     state: LeaderState,
     globals: LeaderGlobals,
 
-    handlers: seq<LearnerHandler>,
-    nextHandlerToStep: int
+    handlers: map<int,LearnerHandler>
 )
 
 /* Global Leader variables shared by all LearnerHandler threads 
@@ -50,7 +49,6 @@ predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
     && s.state == L_STARTING
     && s.globals == LeaderGlobals(zkdb, -1, {my_id}, {my_id}, {my_id})  // Leader is defacto part of all quorums
     && InitHandlers(s.handlers, my_id, config)
-    && s.nextHandlerToStep == 0
 }
 
 predicate LeaderNext(s:Leader, s':Leader, ios:seq<ZKIo>) {
@@ -72,9 +70,9 @@ predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>)
          && s' == s.(state := L_RUNNING, globals := s'.globals)
          && s'.globals == s.globals.(zkdb := s'.globals.zkdb)
          && s'.globals.zkdb == s.globals.zkdb.(isRunning := true)
+         && s'.handlers ==  s.handlers
     else 
-        && 0 <= s.nextHandlerToStep < |s.handlers|
-        && s' == s.(globals := s'.globals, handlers := s'.handlers, nextHandlerToStep := IncNextHandlerToStep(s.nextHandlerToStep, |s.handlers|))
+        && s' == s.(globals := s'.globals, handlers := s'.handlers)
         && StepSingleHandler(s, s', ios)
 }
 
@@ -83,10 +81,6 @@ predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>)
 predicate LeaderRunStep(s:Leader, s':Leader, ios:seq<ZKIo>) 
     requires s.state == L_RUNNING
 {
-    // && 0 <= s.nextHandlerToStep < |s.handlers|
-    // && s' == s.(globals := s'.globals, handlers := s'.handlers, nextHandlerToStep := IncNextHandlerToStep(s.nextHandlerToStep, |s.handlers|))
-    // && StepSingleHandler(s, s', ios)
-    
     // To make the proof easier, I am making the program halt immediately here
     LeaderStutter(s, s', ios)
 }
@@ -94,25 +88,42 @@ predicate LeaderRunStep(s:Leader, s':Leader, ios:seq<ZKIo>)
 
 
 /*****************************************************************************************
-*                                    Helper defs                                         *
+*                                  Handler Actions                                       *
 ******************************************************************************************/ 
 
 
-predicate InitHandlers(handlers:seq<LearnerHandler>, my_id: nat, config: Config) {
+predicate InitHandlers(handlers:map<int,LearnerHandler>, my_id: nat, config: Config) {
     && |handlers| == |config| - 1
-    && forall i | 1 <= i < |config| :: LearnerHandlerInit(handlers[i-1], my_id, i, config)
+    && (forall i | 0 <= i < |config| && i != my_id :: 
+        && i in handlers
+        && LearnerHandlerInit(handlers[i], my_id, i, config)
+    )
 }
 
-function IncNextHandlerToStep(i: int, n: int) : int {
-    if n == 0 then 0 else (i + 1) % n
-}
 
 predicate StepSingleHandler(s:Leader, s':Leader, ios:seq<ZKIo>) {
-    && |s'.handlers| == |s.handlers|
-    && 0 <= s.nextHandlerToStep < |s.handlers|
-    && var follower_id := s.handlers[s.nextHandlerToStep].follower_id;
-    && (forall io | io in ios && io.LIoOpReceive? :: io.r.sender_index == follower_id)  // received packets are bound for the right thread
-    && LearnerHandlerNext(s.handlers[s.nextHandlerToStep], s'.handlers[s.nextHandlerToStep], s.globals, s'.globals, ios)
-    && (forall i | 0 <= i < |s.handlers| && i != s.nextHandlerToStep :: s'.handlers[i] == s.handlers[i])
+    || StepSingleHandler_Rcv(s, s', ios)
+    || StepSingleHandler_NoRcv(s, s', ios)
+}
+
+/* Step the handler that is receiving io */
+predicate StepSingleHandler_Rcv(s:Leader, s':Leader, ios:seq<ZKIo>) {
+    && |ios| >= 1 
+    && ios[0].LIoOpReceive?
+    && var follower_id := ios[0].r.sender_index;  // received packets are bound for the right thread
+    && LearnerHandlerNext(s, s', follower_id, ios)
+}
+
+/* Spontaneously step any handler that does not receive from network */
+predicate StepSingleHandler_NoRcv(s:Leader, s':Leader, ios:seq<ZKIo>) {
+    && (forall io | io in ios :: !io.LIoOpReceive?)
+    && exists follower_id :: LearnerHandlerNext(s, s', follower_id, ios)
+}
+
+predicate LearnerHandlerNext(s:Leader, s':Leader, id:int, ios:seq<ZKIo>) {
+    && id in s.handlers
+    && s'.handlers.Keys == s.handlers.Keys
+    && s'.handlers == s.handlers[id := s'.handlers[id]]
+    && ZooKeeper_LearnerHandler.LearnerHandlerNext(s.handlers[id], s'.handlers[id], s.globals, s'.globals, ios)
 }
 }
