@@ -56,11 +56,12 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
 predicate DS_Config_Invariant(config:Config, tls:TLS_State) {
     && |config| > 0
     && (forall ep :: ep in config <==> ep in tls.t_servers)
-    && (forall ep | ep in tls.t_servers :: config == if tls.t_servers[ep].v.FollowerPeer? then tls.t_servers[ep].v.follower.config else tls.t_servers[ep].v.leader.config)
+    && (forall ep | ep in tls.t_servers :: config == if tls.t_servers[ep].v.FollowerPeer? then tls.t_servers[ep].v.follower.config else tls.t_servers[ep].v.leader.globals.config)
     && (forall i | 0 <= i < |config| :: 
             i == if tls.t_servers[config[i]].v.FollowerPeer? then tls.t_servers[config[i]].v.follower.my_id else tls.t_servers[config[i]].v.leader.my_id
     )
     && tls.t_environment.config == config
+    && tls.config == config
 }
 
 lemma lemma_DS_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)

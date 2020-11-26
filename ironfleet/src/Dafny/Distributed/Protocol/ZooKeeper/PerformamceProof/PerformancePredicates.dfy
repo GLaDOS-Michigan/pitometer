@@ -102,14 +102,25 @@ predicate FollowerInit_Invariant(tls:TLS_State){
     )
 }
 
-
 function FollowerInfo_Message_Peformance_Formula() : Timestamp {
     SendFI
 }
 
-
+/* Every FollowerInfo packet has ts specified by FollowerInfo_Message_Peformance_Formula */
 predicate FollowerInfo_Message_Invariant(tls:TLS_State) {
     forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.FollowerInfo?
     :: pkt.msg.ts == FollowerInfo_Message_Peformance_Formula()
 }
+
+
+predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State) {
+    var n := |tls.config|;
+    forall ep | ep in tls.t_servers :: (
+        && tls.t_servers[ep].v.LeaderPeer? 
+        && |tls.t_servers[ep].v.leader.globals.connectingFollowers| < (n/2) + 1
+        ==> 
+        && tls.t_servers[ep].ts == TimeZero()
+    )
+}
+
 }

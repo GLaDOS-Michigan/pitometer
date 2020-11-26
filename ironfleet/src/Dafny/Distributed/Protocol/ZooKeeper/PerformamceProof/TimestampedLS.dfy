@@ -96,7 +96,7 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
         case L_RUNNING => L(LStutter)
         case L_STARTING => (
             var s, s' := ls.servers[id].leader, ls'.servers[id].leader;
-            if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
+            if IsVerifiedQuorum(s.my_id, |s.globals.config|, s.globals.ackSet) 
             then L(LStutter)
             else (
                 assert exists follower_id :: LHNext(s, s', follower_id, zkios);

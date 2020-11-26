@@ -19,7 +19,6 @@ datatype LeaderState = L_STARTING | L_RUNNING
 // config[my_id] is my own endpoint, config[follower_id] is the follower endpoint
 datatype Leader = Leader(
     my_id: nat,
-    config: Config,
     state: LeaderState,
     globals: LeaderGlobals,
 
@@ -45,9 +44,8 @@ datatype LeaderGlobals = LearnerHandler(
 
 predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
     && s.my_id == my_id
-    && s.config == config
     && s.state == L_STARTING
-    && s.globals == LeaderGlobals(zkdb, -1, {my_id}, {my_id}, {my_id})  // Leader is defacto part of all quorums
+    && s.globals == LeaderGlobals(zkdb, config, -1, {my_id}, {my_id}, {my_id})  // Leader is defacto part of all quorums
     && InitHandlers(s.handlers, my_id, config)
 }
 
@@ -65,7 +63,7 @@ predicate LeaderStutter(s:Leader, s':Leader, ios:seq<ZKIo>) {
 predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>) 
     requires s.state == L_STARTING
 {
-    if IsVerifiedQuorum(s.my_id, |s.config|, s.globals.ackSet) 
+    if IsVerifiedQuorum(s.my_id, |s.globals.config|, s.globals.ackSet) 
     then && |ios| == 0
          && s' == s.(state := L_RUNNING, globals := s'.globals)
          && s'.globals == s.globals.(zkdb := s'.globals.zkdb)
@@ -95,7 +93,7 @@ predicate LeaderRunStep(s:Leader, s':Leader, ios:seq<ZKIo>)
 predicate InitHandlers(handlers:map<int,LearnerHandler>, my_id: nat, config: Config) {
     && |handlers| == |config| - 1
     && (forall i :: 0 <= i < |config| && i != my_id <==> i in handlers)
-    && (forall i | i in handlers :: LearnerHandlerInit(handlers[i], my_id, i, config))
+    && (forall i | i in handlers :: LearnerHandlerInit(handlers[i], my_id, i))
 }
 
 

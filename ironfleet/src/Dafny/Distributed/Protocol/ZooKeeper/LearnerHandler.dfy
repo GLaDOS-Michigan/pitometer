@@ -18,11 +18,9 @@ datatype LearnerHandlerState =
 datatype SyncMode = SNAP | DIFF | TRUNC
 
 
-// config[my_id] is my own endpoint, config[follower_id] is the follower endpoint
 datatype LearnerHandler = LearnerHandler(
     my_id: nat,
     follower_id: nat,
-    config: Config,
     state: LearnerHandlerState,
 
     // Local state
@@ -35,6 +33,7 @@ datatype LearnerHandler = LearnerHandler(
 /* Global Leader variables shared by all LearnerHandler threads */
 datatype LeaderGlobals = LeaderGlobals(
     zkdb: ZKDatabase,
+    config: Config,
 
     // Synchronization globals
     leaderEpoch: int,
@@ -48,10 +47,9 @@ datatype LeaderGlobals = LeaderGlobals(
 *                                      Actions                                           *
 ******************************************************************************************/ 
 
-predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat, config:Config) {
+predicate LearnerHandlerInit(s:LearnerHandler, my_id:nat, follower_id:nat) {
     && s.my_id == my_id
     && s.follower_id == follower_id
-    && s.config == config
     && s.state == LH_HANDSHAKE_A
 
     && s.queuedPackets == []
@@ -79,15 +77,15 @@ predicate LearnerHandlerStutter(s:LearnerHandler, s':LearnerHandler, ios:seq<ZKI
 predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_A
 {
-    if IsVerifiedQuorum(s.follower_id, |s.config|, g.connectingFollowers) 
+    if IsVerifiedQuorum(s.follower_id, |g.config|, g.connectingFollowers) 
     then ( // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
         && g' == g
         && |ios| == 1
         && s' == s.(state := LH_HANDSHAKE_B, newEpoch := g.leaderEpoch)
         && ios[0].LIoOpSend?
         && (var outbound_packet := ios[0].s;
-            && 0 <= s.follower_id < |s.config|
-            && outbound_packet.dst == s.config[s.follower_id]
+            && 0 <= s.follower_id < |g.config|
+            && outbound_packet.dst == g.config[s.follower_id]
             && outbound_packet.sender_index == s.my_id
             && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(g.leaderEpoch, 0))
         )       
@@ -96,11 +94,11 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
         // else 
             && |ios| == 1
              && ios[0].LIoOpReceive?
-             && ios[0].r.src in s.config
+             && ios[0].r.src in g.config
              && ios[0].r.msg.FollowerInfo?
-             && 0 <= ios[0].r.msg.sid < |s.config| 
+             && 0 <= ios[0].r.msg.sid < |g.config| 
              && ios[0].r.msg.sid == s.follower_id
-             && s.config[ios[0].r.msg.sid] == ios[0].r.src
+             && g.config[ios[0].r.msg.sid] == ios[0].r.src
              && s' == s.(
                  follower_id := ios[0].r.msg.sid,
                  peerLastZxid := ios[0].r.msg.latestZxid
@@ -116,7 +114,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
 predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_HANDSHAKE_B
 {
-    if IsVerifiedQuorum(s.follower_id, |s.config|, g.electingFollowers) 
+    if IsVerifiedQuorum(s.follower_id, |g.config|, g.electingFollowers) 
     then (
         // Proceed to state sync
         && g' == g
@@ -128,10 +126,10 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, 
         // else 
             && |ios| == 1
              && ios[0].LIoOpReceive?
-             && ios[0].r.src in s.config
+             && ios[0].r.src in g.config
              && ios[0].r.msg.AckEpoch?
-             && 0 <= s.follower_id < |s.config| 
-             && s.config[s.follower_id] == ios[0].r.src
+             && 0 <= s.follower_id < |g.config| 
+             && g.config[s.follower_id] == ios[0].r.src
              && ios[0].r.msg.sid == s.follower_id
              && s' == s.(peerLastZxid := ios[0].r.msg.lastLoggedZxid)
              && g' == g.(
@@ -177,9 +175,9 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Leader
     && g' == g
     && |ios| == 1 
     && ios[0].LIoOpSend?
-    && 0 <= s.follower_id < |s.config| 
+    && 0 <= s.follower_id < |g.config| 
     && ios[0].s.sender_index == s.my_id
-    && ios[0].s.dst == s.config[s.follower_id]
+    && ios[0].s.dst == g.config[s.follower_id]
     && if |s.queuedPackets| == 0 
         then // Done with sync. Send NewLeader msg
             && s' == s.(state := LH_PROCESS_ACK)
@@ -194,7 +192,7 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
     requires s.state == LH_PROCESS_ACK
 {
     // Leader is in charge of checking AckSet and starting the actual local DB
-    && 0 <= s.follower_id < |s.config| 
+    && 0 <= s.follower_id < |g.config| 
     && if g.zkdb.isRunning  // Leader is in charge of starting db once AckSet is a good quorum
     then (
         // Proceed to Running state, send UPTODATE to follower
@@ -202,7 +200,7 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
         && g' == g
         && |ios| == 1
         && ios[0].LIoOpSend?
-        && ios[0].s.dst == s.config[s.follower_id]
+        && ios[0].s.dst == g.config[s.follower_id]
         && ios[0].s.sender_index == s.my_id
         && ios[0].s.msg == UpToDate(s.my_id)
     ) else (
@@ -211,9 +209,9 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
         // else 
             && |ios| == 1
              && ios[0].LIoOpReceive?
-             && ios[0].r.src in s.config
+             && ios[0].r.src in g.config
              && ios[0].r.msg.Ack?
-             && s.config[s.follower_id] == ios[0].r.src
+             && g.config[s.follower_id] == ios[0].r.src
              && s' == s
              && g' == g.(ackSet := g.ackSet + {ios[0].r.msg.sid})
     )
