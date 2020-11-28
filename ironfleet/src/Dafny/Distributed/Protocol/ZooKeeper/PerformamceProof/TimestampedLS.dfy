@@ -44,7 +44,7 @@ predicate TLS_Init(config:Config, tls:TLS_State, f: int) {
     && LS_Init(config, UntagLS_State(tls), f)
     && tls.config == config
     && LEnvironment_Init(config, tls.t_environment)
-    && forall id | id in tls.t_servers :: tls.t_servers[id].ts == TimeZero()
+    && forall id | id in tls.t_servers :: tls.t_servers[id].ts == tls.t_servers[id].dts == TimeZero()
 }
 
 
@@ -58,9 +58,13 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
     && var hs := ActionToHostStep(tls, tls', id, ios);
 
     && (if |ios| > 0 && ios[0].LIoOpReceive? then   // Note that in performal, at most one rcv in each step
-            tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hs)
+            && tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hs)
+            && tls'.t_servers[id].dts == ios[0].r.msg.ts
+            && var delivery_time := TimeAdd2(ios[0].r.msg.ts, D);
+            && tls.t_servers[id].dts  <= delivery_time  // (ARRIVAL-TIME) rule
         else
-            tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hs)
+            && tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hs)
+            && tls'.t_servers[id].dts == tls.t_servers[id].dts
     )
 }
 

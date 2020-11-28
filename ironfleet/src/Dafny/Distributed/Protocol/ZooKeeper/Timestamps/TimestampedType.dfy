@@ -4,7 +4,7 @@ include "Timestamp.dfy"
 module ZKTimestamp refines Timestamp_s{
 import opened EnvironmentTCP_s
 
-datatype TimestampedType<Type> = TimestampedType(v:Type, ts:Timestamp)
+datatype TimestampedType<Type> = TimestampedType(v:Type, ts:Timestamp, dts:Timestamp)
 
 type TimestampedLPacket<IdType, MessageType(==)> = LPacket<IdType, TimestampedType<MessageType>>
 
