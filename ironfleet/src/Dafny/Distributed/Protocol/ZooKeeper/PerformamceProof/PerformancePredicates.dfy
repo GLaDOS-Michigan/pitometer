@@ -146,22 +146,56 @@ predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State)
 }
 
 
-function LeaderInfo_Message_PreQuorum_ts_Formula(tls:TLS_State, pkt:TimestampedLPacket<EndPoint, ZKMessage>) : Timestamp 
-    requires pkt.msg.v.LeaderInfo?
+//----------------------------------------------------------------------------------------
+
+
+predicate Follower_HandshakeB_Invariant(tls:TLS_State){
+    forall ep | ep in tls.t_servers :: (
+        && tls.t_servers[ep].v.FollowerPeer? 
+        && tls.t_servers[ep].v.follower.state == F_HANDSHAKE_B
+        ==> 
+        && tls.t_servers[ep].dts == TimeZero()
+        && tls.t_servers[ep].ts == SendFI
+    )
+}
+
+
+/* Invariant for followers in F_SYNC mode */
+predicate Follower_Sync_Invariant(tls:TLS_State){
+    forall ep | ep in tls.t_servers :: (
+        && tls.t_servers[ep].v.FollowerPeer? 
+        && tls.t_servers[ep].v.follower.state == F_SYNC
+        && 0 <= tls.t_servers[ep].v.follower.serialLI < tls.f
+        ==> 
+        && tls.t_servers[ep].dts == LeaderInfo_Message_PreQuorum_ts_Formula(tls, tls.t_servers[ep].v.follower.serialLI)
+        && tls.t_servers[ep].ts == tls.t_servers[ep].dts + ProcLI
+    )
+}
+
+
+function LeaderInfo_Message_PreQuorum_ts_Formula(tls:TLS_State, serial:nat) : Timestamp 
+    requires serial < tls.f
 {
-    if pkt.msg.v.serial == 0 then
+    if serial == 0 then
         // This is the first message sent. 
         SendFI + D 
         + ProcFI * |tls.config| 
         + ProcFI + D
     else 
-        // This is (#serial+1)^th message sent
+        // This is (#serial+1)-th message sent
         // Before this, I may have sent #serial messages and processed their responses in sequence
         SendFI + D 
         + ProcFI * |tls.config| 
-        + (ProcFI + D) * (pkt.msg.v.serial + 1)
-        + ProcLI
-        + (ProcEpAck + D) * pkt.msg.v.serial
+        + (ProcFI + D) * (serial + 1)
+        + (ProcLI + D) * serial
+        + ProcEpAck * serial
+}
+
+
+function AckEpoch_Message_PreQuorum_ts_Formula(tls:TLS_State, serial:nat) : Timestamp 
+    requires serial < tls.f
+{
+    LeaderInfo_Message_PreQuorum_ts_Formula(tls, serial) + ProcLI + ProcEpAck + D
 }
 
 
@@ -179,6 +213,7 @@ function ProcessEpAck_PreQuorum_ts_Formula(tls:TLS_State, l:TQuorumPeer) : Times
 
 function ProcessEpAck_PreQuorum_dts_Formula(tls:TLS_State, l:TQuorumPeer) : Timestamp 
     requires l.v.LeaderPeer?
+    requires tls.f >= 1
     requires |l.v.leader.globals.electingFollowers| <= l.v.leader.globals.nextSerialLI + 1
     requires |l.v.leader.globals.electingFollowers| >= 1
 {
@@ -196,10 +231,13 @@ function ProcessEpAck_PreQuorum_dts_Formula(tls:TLS_State, l:TQuorumPeer) : Time
             // And then for all the EpochAck in electingFollowers, I sent the LI and receive 
             // the EpochAck in sequence
             + ProcFI * (l.v.leader.globals.nextSerialLI - |electingFollowers| + 1)
-            + (ProcFI + D) * (|electingFollowers| - 1)
-            + ProcLI
-            + (ProcEpAck + D) * (|electingFollowers| - 1);
-        lemma_Math_Inequality(|l.v.leader.globals.electingFollowers|, l.v.leader.globals.nextSerialLI);
+            + (ProcFI + D) * tls.f
+            + (ProcLI + D) * tls.f
+            + ProcEpAck * (|electingFollowers|-1);
+        assert ProcFI * (l.v.leader.globals.nextSerialLI - |electingFollowers| + 1) >= 0;
+        assert (ProcFI + D) * tls.f >= 0;
+        assert (ProcLI + D) * tls.f >= 0;
+        assert ProcEpAck * (|electingFollowers|-1) >= 0;
         assert res >= 0;
         res
 }
@@ -220,7 +258,7 @@ predicate ProcessEpAck_PreQuorum_Invariant(tls:TLS_State)
     !IsQuorum(|tls.config|, leaderTQP.v.leader.globals.electingFollowers)
     ==> 
     && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls.f
-    :: pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls, pkt))
+    :: pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls, pkt.msg.v.serial))
     && leaderTQP.ts <= ProcessEpAck_PreQuorum_ts_Formula(tls, leaderTQP)
     && leaderTQP.dts <= ProcessEpAck_PreQuorum_dts_Formula(tls, leaderTQP)
 }

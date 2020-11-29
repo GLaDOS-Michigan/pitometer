@@ -16,7 +16,9 @@ datatype Follower = Follower(
     config: Config,
     zkdb: ZKDatabase,
     accepted_epoch: int,
-    state: FollowerState 
+    state: FollowerState,
+
+    serialLI: int
 )
 
 datatype FollowerState = F_HANDSHAKE_A | F_HANDSHAKE_B | F_SYNC | F_RUNNING | F_ERROR
@@ -29,6 +31,8 @@ predicate FollowerInit(s:Follower, my_id:nat, leader_id:nat, config:Config, zkdb
     && s.zkdb == zkdb
     && s.accepted_epoch == -1
     && s.state == F_HANDSHAKE_A
+
+    && s.serialLI == -1
 }
 
 predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
@@ -76,6 +80,7 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
         then && s'.state == F_ERROR
              && |ios| == 1
         else (
+            && s'.serialLI == ios[0].r.msg.serial
             && s'.state == F_SYNC
             && s'.accepted_epoch == ios[0].r.msg.newZxid.epoch
             && |ios| == 2
@@ -84,6 +89,7 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
             && ios[1].s.sender_index == s.my_id
             && ios[1].s.msg.AckEpoch?
             && ios[1].s.msg.sid == s.my_id
+            && ios[1].s.msg.serial == s'.serialLI
             && ios[1].s.msg.lastLoggedZxid == getLastLoggedZxid(s.zkdb)
             && if ios[0].r.msg.newZxid.epoch ==  s.accepted_epoch
                 then ios[1].s.msg.lastAcceptedEpoch == -1
@@ -102,10 +108,10 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && ios[0].r.msg.sid == s.leader_id
     && match ios[0].r.msg
         // Ignore these 
-        case FollowerInfo(sid, latestZxid) => FollowerStutter(s, s', ios)
-        case LeaderInfo(sid, sn, newZxid) => FollowerStutter(s, s', ios)
-        case AckEpoch(sid, lastLoggedZxid, lastAcceptedEpoch) => FollowerStutter(s, s', ios)
-        case Ack(sid, ackZxid) => FollowerStutter(s, s', ios)
+        case FollowerInfo(sid, latestZxid) => false
+        case LeaderInfo(sid, sn, newZxid) => false
+        case AckEpoch(sid, serial, lastLoggedZxid, lastAcceptedEpoch) => false
+        case Ack(sid, ackZxid) => false
 
         // Sync messages
         case SyncDIFF(sid, lastProcessedZxid) => 

@@ -42,6 +42,8 @@ datatype TLS_State = TLS_State(
 
 
 predicate TLS_Init(config:Config, tls:TLS_State, f: int) {
+    && f >= 1
+    && tls.f == f
     && LS_Init(config, UntagLS_State(tls), f)
     && tls.config == config
     && |config| == f*2 + 1

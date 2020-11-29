@@ -54,14 +54,15 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
 
 /* config has same endpoints as tls.servers and each node's id is its index in config */
 predicate DS_Config_Invariant(config:Config, tls:TLS_State) {
-    && |config| >= 3
+    && tls.f >= 1
+    && tls.config == config
+    && |config| == tls.f*2+1
     && (forall ep :: ep in config <==> ep in tls.t_servers)
     && (forall ep | ep in tls.t_servers :: config == if tls.t_servers[ep].v.FollowerPeer? then tls.t_servers[ep].v.follower.config else tls.t_servers[ep].v.leader.globals.config)
     && (forall i | 0 <= i < |config| :: 
             i == if tls.t_servers[config[i]].v.FollowerPeer? then tls.t_servers[config[i]].v.follower.my_id else tls.t_servers[config[i]].v.leader.my_id
     )
     && tls.t_environment.config == config
-    && tls.config == config
 }
 
 lemma lemma_DS_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
@@ -69,6 +70,8 @@ lemma lemma_DS_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
     requires ValidTLSBehavior(config, tlb, f)
     ensures forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
 {
+    assert tlb[0].f >= 1;
+    assert |config| == tlb[0].f*2+1;
     assert DS_Config_Invariant(config, tlb[0]);
     var i := 0;
     while i < |tlb| - 1 

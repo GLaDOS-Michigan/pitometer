@@ -18,7 +18,7 @@ type Config = seq<EndPoint>
 datatype ZKMessage = 
     | FollowerInfo(sid:nat, latestZxid:Zxid)
     | LeaderInfo(sid:nat, serial:nat, newZxid:Zxid)
-    | AckEpoch(sid:nat, lastLoggedZxid:Zxid, lastAcceptedEpoch:int)
+    | AckEpoch(sid:nat, serial:nat, lastLoggedZxid:Zxid, lastAcceptedEpoch:int)
     | SyncDIFF(sid:nat, lastProcessedZxid:Zxid)
     | SyncSNAP(sid:nat, leaderDb: ZKDatabase, lastProcessedZxid:Zxid)
     | SyncTRUNC(sid:nat, lastProcessedZxid:Zxid)
