@@ -249,19 +249,112 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     // requires ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
     // requires ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
     // Induction hypothesis
-    requires ProcessEpAck_PreQuorum_Invariant(tls)
-    ensures ProcessEpAck_PreQuorum_Invariant(tls')
+    requires HandShake_Messages_Invariant(tls)
+    requires Handshake_Leader_PreQuorum_Invariant(tls)
+    requires Handshake_Follower_Invariant(tls)
+    ensures HandShake_Messages_Invariant(tls')
+    ensures Handshake_Leader_PreQuorum_Invariant(tls')
+    ensures Handshake_Follower_Invariant(tls')
 {
     var l := tls.t_servers[tls.config[0]];
-    if IsQuorum(|config|, l.v.leader.globals.electingFollowers) {
-        assert ProcessEpAck_PreQuorum_Invariant(tls');
-        return;
+
+
+    forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls'.f
+    ensures pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial)
+    {
+        var ps := pkt.msg.v.serial;
+        if pkt in tls.t_environment.sentPackets {
+            assert LeaderInfo_Message_PreQuorum_ts_Formula(tls', ps) == LeaderInfo_Message_PreQuorum_ts_Formula(tls, ps);
+            assert  pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', ps);
+        } else {
+            var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+            assert exists tio : TZKIo :: tio in tios && tio.LIoOpSend? && tio.s == pkt;
+            assert LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), actor, UntagLIoOpSeq(tios));
+            assert tls.t_servers[actor].v.LeaderPeer?;
+            assert actor == config[0];
+            var l, l', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
+            assert LeaderStartStep(l, l', ios);
+            assert !IsVerifiedQuorum(l.my_id, |l.globals.config|, l.globals.ackSet);
+            assert StepSingleHandler(l, l', ios);
+            if StepSingleHandler_Rcv(l, l', ios) {
+                assert false;  // Not possible to send a new LI packet in this step
+            } else {
+                assert StepSingleHandler_NoRcv(l, l', ios);
+                var fid :| LHNext(l, l', fid, ios);
+                var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
+                assert LearnerHandlerNext(h, h', g, g', ios);
+                if h.state == LH_HANDSHAKE_A {
+                    assert GetEpochToPropose(h, h', g, g', ios);
+                    var lts, ldts := tls.t_servers[actor].ts, tls.t_servers[actor].dts;
+                    var n := |config|;
+                    assert lts <= ProcessEpAck_PreQuorum_ts_Formula(tls, tls.t_servers[actor]);
+                    if |g.electingFollowers| <= 1 {
+                        assert !IsQuorum(n, g.electingFollowers);
+                        assert pkt.msg.v.serial == g.nextSerialLI;
+                        if pkt.msg.v.serial == 0 {
+                            // Case pkt.msg.v.serial == 0, so this is the first LI sent
+                            assert lts <= SendFI + D + ProcFI * n;
+                            assert pkt.msg.ts == lts + ProcFI + D;
+                            assert pkt.msg.ts <= SendFI + D + ProcFI * n + ProcFI + D;
+                            assert pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', ps);
+                        } else {
+                            // Case pkt.msg.v.serial > 0, so this is NOT the first LI sent
+                            assert lts <= SendFI + D + ProcFI * n + ProcFI * g.nextSerialLI;
+                            assert pkt.msg.ts <= lts + ProcFI + D;
+                            assert lts + ProcFI + D
+                                <=  SendFI + D 
+                                    + ProcFI * n 
+                                    + ProcFI * (g.nextSerialLI + 1) + D;
+                            assert ProcFI * (g.nextSerialLI + 1) + D <= (ProcFI + D) * (g.nextSerialLI  + 1);
+                            assert pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', ps);
+                        }
+                    } else { 
+                        // Case |g.electingFollowers| > 1
+                        assert ldts <= SendFI + D 
+                                        + ProcFI * n
+                                        + (ProcFI + D) * g.nextSerialLI
+                                        + (ProcLI + D) * g.nextSerialLI
+                                        + ProcEpAck * (|g.electingFollowers|-2);
+                        assert lts <= ldts + ProcEpAck;
+                        assert ProcEpAck * (|g.electingFollowers|-2) + ProcEpAck == ProcEpAck * (|g.electingFollowers|-1);
+                        assert lts <= SendFI + D 
+                                        + ProcFI * n
+                                        + (ProcFI + D) * g.nextSerialLI
+                                        + (ProcLI + D) * g.nextSerialLI
+                                        + ProcEpAck * (|g.electingFollowers|-1);
+                        assert pkt.msg.ts == lts + ProcFI + D;
+                        assert |g.electingFollowers| - 1 <= g.nextSerialLI;
+                        assert pkt.msg.ts  <=
+                            SendFI + D 
+                            + ProcFI * n
+                            + (ProcFI + D) * (g.nextSerialLI + 1)
+                            + (ProcLI + D) * g.nextSerialLI
+                            + ProcEpAck * (|g.electingFollowers|-1);
+                        lemma_Math_Mult();
+                        assert ProcEpAck * (|g.electingFollowers|-1) <= ProcEpAck * g.nextSerialLI;
+                        assert  pkt.msg.ts  <=
+                                SendFI + D 
+                                + ProcFI * n
+                                + (ProcFI + D) * (g.nextSerialLI + 1)
+                                + (ProcLI + D) * g.nextSerialLI
+                                + ProcEpAck * g.nextSerialLI;
+                        assert pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', ps);
+                    }
+                } else {
+                    assert false; // Not possible to send a new LI packet in this step
+                }
+            }
+        }
     }
+    // TODO
+    assume (forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.AckEpoch? && pkt.msg.v.serial < tls'.f
+    :: pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial));
+    assert HandShake_Messages_Invariant(tls');
 
-    
 
-
-    assert ProcessEpAck_PreQuorum_Invariant(tls');
+    // TODO
+    assume Handshake_Leader_PreQuorum_Invariant(tls');
+    assume Handshake_Follower_Invariant(tls');
 }
 
 

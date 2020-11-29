@@ -53,5 +53,10 @@ lemma lemma_Math_Inequality(a:nat, b:nat)
     ensures b-a+1 >= 0
 {}
 
+lemma {:axiom} lemma_Math_Mult()
+    ensures forall x | x >= 0 ::
+        forall a, b | a>=0 && b>= a>= 0 :: x*b >= x*a
+{}
+
 
 }
