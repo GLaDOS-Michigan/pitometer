@@ -234,5 +234,35 @@ lemma lemma_Leader_ProcessFI_PreQuorum_Invariant_Induction(config:Config, tls:TL
 }
 
 
+/*****************************************************************************************
+*                                ProcessEpAck Invariant                                  *
+*****************************************************************************************/
+
+lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls:TLS_State, tls':TLS_State)
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    // Pre-established Invariants
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    requires Leader_NextSerialLI_Invariant(tls) && Leader_NextSerialLI_Invariant(tls')
+    // requires FollowerInfo_Message_ts_Invariant(tls) && FollowerInfo_Message_ts_Invariant(tls')
+    // requires FollowerInit_Invariant(tls);
+    // requires ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
+    // requires ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
+    // Induction hypothesis
+    requires ProcessEpAck_PreQuorum_Invariant(tls)
+    ensures ProcessEpAck_PreQuorum_Invariant(tls')
+{
+    var l := tls.t_servers[tls.config[0]];
+    if IsQuorum(|config|, l.v.leader.globals.electingFollowers) {
+        assert ProcessEpAck_PreQuorum_Invariant(tls');
+        return;
+    }
+
+    
+
+
+    assert ProcessEpAck_PreQuorum_Invariant(tls');
+}
+
 
 }

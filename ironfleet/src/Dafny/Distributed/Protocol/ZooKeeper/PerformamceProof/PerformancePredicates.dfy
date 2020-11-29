@@ -151,7 +151,8 @@ function LeaderInfo_Message_PreQuorum_ts_Formula(tls:TLS_State, pkt:TimestampedL
 {
     if pkt.msg.v.serial == 0 then
         // This is the first message sent. 
-        ProcFI * |tls.config| 
+        SendFI + D 
+        + ProcFI * |tls.config| 
         + ProcFI + D
     else 
         // This is (#serial+1)^th message sent
@@ -212,7 +213,7 @@ function ProcessEpAck_PreQuorum_dts_Formula(tls:TLS_State, l:TQuorumPeer) : Time
 predicate ProcessEpAck_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
-    requires 1 <= |tls.t_servers[tls.config[0]].v.leader.globals.electingFollowers| <= tls.t_servers[tls.config[0]].v.leader.globals.nextSerialLI + 1
+    requires Leader_NextSerialLI_Invariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];

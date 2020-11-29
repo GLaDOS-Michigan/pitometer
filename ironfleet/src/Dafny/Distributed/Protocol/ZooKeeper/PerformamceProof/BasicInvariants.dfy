@@ -238,5 +238,13 @@ lemma lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config:
     assume false;
 }
 
+// TODO: Needs Proof
+predicate Leader_NextSerialLI_Invariant(tls:TLS_State) {
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var l := tls.t_servers[ep].v.leader;
+        1 <= |l.globals.electingFollowers| <= l.globals.nextSerialLI + 1
+    )
+}
+
 
 }
