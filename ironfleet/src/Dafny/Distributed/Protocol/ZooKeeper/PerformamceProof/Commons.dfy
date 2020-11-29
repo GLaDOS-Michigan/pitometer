@@ -48,4 +48,10 @@ lemma lemma_SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, 
 {}
 
 
+lemma lemma_Math_Inequality(a:nat, b:nat)
+    requires a <= b + 1
+    ensures b-a+1 >= 0
+{}
+
+
 }

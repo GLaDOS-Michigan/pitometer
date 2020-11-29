@@ -12,6 +12,7 @@ include "../Follower.dfy"
 include "../Leader.dfy"
 include "../LearnerHandler.dfy"
 include "Definitions.dfy"
+include "Commons.dfy"
 
 
 module Zookeeper_PerformancePredicates {
@@ -28,6 +29,7 @@ import opened ZooKeeper_LearnerHandler
 import opened Zookeeper_Performance_Definitions
 import opened ZooKeeper_TimestampedDistributedSystem
 import opened Zookeeper_BasicInvariants
+import opened Zookeeper_Commons
 
 
 /*****************************************************************************************
@@ -62,6 +64,7 @@ predicate Performance_Assumption_EmptyDiff(tlb:seq<TLS_State>) {
 
 function Performance_Formula_EmptyDiff(config: Config) : Timestamp {
     var q := |config| / 2 + 1;
+    assert q >= 0;
     SendFI +
     D + ProcFI * q +
     D + ProcLI +
@@ -128,6 +131,8 @@ function ProcessFI_PreQuorum_dts_Formula() : Timestamp {
 }
 
 
+/* Before the leader has a complete connectingFollowers quorum, its ts and dts are 
+* specified by the respective formulas */
 predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
@@ -139,4 +144,84 @@ predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State)
     && leaderTQP.ts <= ProcessFI_PreQuorum_ts_Formula(leaderTQP)
     && leaderTQP.dts <= ProcessFI_PreQuorum_dts_Formula()
 }
+
+
+function LeaderInfo_Message_PreQuorum_ts_Formula(tls:TLS_State, pkt:TimestampedLPacket<EndPoint, ZKMessage>) : Timestamp 
+    requires pkt.msg.v.LeaderInfo?
+{
+    if pkt.msg.v.serial == 0 then
+        // This is the first message sent. 
+        ProcFI * |tls.config| 
+        + ProcFI + D
+    else 
+        // This is (#serial+1)^th message sent
+        // Before this, I may have sent #serial messages and processed their responses in sequence
+        SendFI + D 
+        + ProcFI * |tls.config| 
+        + (ProcFI + D) * (pkt.msg.v.serial + 1)
+        + ProcLI
+        + (ProcEpAck + D) * pkt.msg.v.serial
+}
+
+
+function ProcessEpAck_PreQuorum_ts_Formula(tls:TLS_State, l:TQuorumPeer) : Timestamp 
+    requires l.v.LeaderPeer?
+{
+    var electingFollowers := l.v.leader.globals.electingFollowers;
+    if |electingFollowers| <= 1 then 
+        l.dts + ProcFI * (l.v.leader.globals.nextSerialLI)
+    else 
+        l.dts  
+        + (ProcEpAck)  // Add processing time
+}
+
+
+function ProcessEpAck_PreQuorum_dts_Formula(tls:TLS_State, l:TQuorumPeer) : Timestamp 
+    requires l.v.LeaderPeer?
+    requires |l.v.leader.globals.electingFollowers| <= l.v.leader.globals.nextSerialLI + 1
+    requires |l.v.leader.globals.electingFollowers| >= 1
+{
+    var electingFollowers := l.v.leader.globals.electingFollowers;
+    var n := |tls.config|;
+    assert l.v.leader.globals.nextSerialLI - |electingFollowers| + 1 >= 0;
+    if |electingFollowers| <= 1 then 
+        SendFI + D 
+        + ProcFI * n  // Received at most n FI's
+    else 
+        var res := 
+            SendFI + D 
+            + ProcFI * n   // Receiving all of the FI
+            // First sending out the excess LI, 
+            // And then for all the EpochAck in electingFollowers, I sent the LI and receive 
+            // the EpochAck in sequence
+            + ProcFI * (l.v.leader.globals.nextSerialLI - |electingFollowers| + 1)
+            + (ProcFI + D) * (|electingFollowers| - 1)
+            + ProcLI
+            + (ProcEpAck + D) * (|electingFollowers| - 1);
+        lemma_Math_Inequality(|l.v.leader.globals.electingFollowers|, l.v.leader.globals.nextSerialLI);
+        assert res >= 0;
+        res
+}
+
+
+
+/* Every LeaderInfo packet has ts specified by FollowerInfo_Message_Formula.
+* This upper bound comes from the worst case execution where the leader first receives
+* all FI messages. Then it sends one LI and receives one EpAck. Then it sends the next 
+* LI and receives one more EpAck */
+predicate ProcessEpAck_PreQuorum_Invariant(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+    requires 1 <= |tls.t_servers[tls.config[0]].v.leader.globals.electingFollowers| <= tls.t_servers[tls.config[0]].v.leader.globals.nextSerialLI + 1
+{
+    var n := |tls.config|;
+    var leaderTQP := tls.t_servers[tls.config[0]];
+    !IsQuorum(|tls.config|, leaderTQP.v.leader.globals.electingFollowers)
+    ==> 
+    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls.f
+    :: pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls, pkt))
+    && leaderTQP.ts <= ProcessEpAck_PreQuorum_ts_Formula(tls, leaderTQP)
+    && leaderTQP.dts <= ProcessEpAck_PreQuorum_dts_Formula(tls, leaderTQP)
+}
+
 }

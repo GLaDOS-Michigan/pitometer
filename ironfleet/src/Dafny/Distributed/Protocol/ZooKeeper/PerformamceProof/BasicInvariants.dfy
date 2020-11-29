@@ -171,7 +171,9 @@ lemma lemma_Leader_QueuedPackets_Invariant_Proof(config:Config, tlb:seq<TLS_Stat
     }
 }
 
+
 /* If connectingFollowers is not a full quorum, then all future quorums are empty */
+// TODO: Needs Proof
 predicate ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, tls:TLS_State){
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var leader := tls.t_servers[ep].v.leader;
@@ -181,6 +183,19 @@ predicate ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, 
             && leader.globals.electingFollowers == {0}
             && leader.globals.ackSet == {0}
             && leader.globals.nextSerialLI == 0
+            && (forall id | id in leader.handlers :: leader.handlers[id].state == LH_HANDSHAKE_A)
+        )
+    )
+}
+
+/* If electingFollowers is not a full quorum, then all future quorums are empty */
+predicate ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, tls:TLS_State){
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var leader := tls.t_servers[ep].v.leader;
+        && (
+            && !IsQuorum(|config|, leader.globals.electingFollowers)
+            ==> 
+            && leader.globals.ackSet == {0}
             && (forall id | id in leader.handlers :: 
                 if id in leader.globals.connectingFollowers
                 then leader.handlers[id].state == LH_HANDSHAKE_B

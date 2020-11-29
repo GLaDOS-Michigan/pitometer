@@ -33,6 +33,7 @@ type TZKIo = TimestampedLIoOp<EndPoint, ZKMessage>
 
 datatype TLS_State = TLS_State(
     config:Config,
+    f:int,
     t_environment: TZKEnvironment,
     initialZkdbState: seq<ZKDatabase>,
     t_servers: map<EndPoint, TQuorumPeer>
@@ -43,6 +44,7 @@ datatype TLS_State = TLS_State(
 predicate TLS_Init(config:Config, tls:TLS_State, f: int) {
     && LS_Init(config, UntagLS_State(tls), f)
     && tls.config == config
+    && |config| == f*2 + 1
     && LEnvironment_Init(config, tls.t_environment)
     && forall id | id in tls.t_servers :: tls.t_servers[id].ts == tls.t_servers[id].dts == TimeZero()
 }
@@ -72,6 +74,7 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
 predicate TLS_Next(tls:TLS_State, tls':TLS_State){
         && LS_Next(UntagLS_State(tls), UntagLS_State(tls'))
         && tls'.config == tls.config
+        && tls'.f == tls.f
         && LEnvironment_Next(tls.t_environment, tls'.t_environment)
         && (exists ep, ios :: ep in tls.t_servers && TLS_NextOneServer(tls, tls', ep, ios))
 }
