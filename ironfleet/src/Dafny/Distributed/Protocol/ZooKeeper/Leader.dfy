@@ -26,12 +26,14 @@ datatype Leader = Leader(
 )
 
 /* Global Leader variables shared by all LearnerHandler threads 
-datatype LeaderGlobals = LearnerHandler(
+datatype LeaderGlobals = LeaderGlobals(
     zkdb: ZKDatabase,
+    config: Config,
 
     // Synchronization globals
     leaderEpoch: int,
     connectingFollowers: set<nat>,
+    nextSerialLI: int,
     electingFollowers: set<nat>,
     ackSet: set<nat>
 )
@@ -45,7 +47,7 @@ datatype LeaderGlobals = LearnerHandler(
 predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
     && s.my_id == my_id
     && s.state == L_STARTING
-    && s.globals == LeaderGlobals(zkdb, config, -1, {my_id}, {my_id}, {my_id})  // Leader is defacto part of all quorums
+    && s.globals == LeaderGlobals(zkdb, config, -1, {my_id}, 0, {my_id}, {my_id})  // Leader is defacto part of all quorums
     && InitHandlers(s.handlers, my_id, config)
 }
 

@@ -2,6 +2,7 @@ include "../../../Impl/Common/SeqIsUniqueDef.i.dfy"
 include "../../../Common/Framework/EnvironmentTCP.s.dfy"
 include "../Timestamps/TimestampedType.dfy"
 include "TimestampedLS.dfy"
+include "BasicInvariants.dfy"
 
 include "../Types.dfy"
 include "../DistributedSystem.dfy"
@@ -26,6 +27,7 @@ import opened ZooKeeper_Leader
 import opened ZooKeeper_LearnerHandler
 import opened Zookeeper_Performance_Definitions
 import opened ZooKeeper_TimestampedDistributedSystem
+import opened Zookeeper_BasicInvariants
 
 
 /*****************************************************************************************
@@ -98,33 +100,43 @@ predicate FollowerInit_Invariant(tls:TLS_State){
         && tls.t_servers[ep].v.FollowerPeer? 
         && tls.t_servers[ep].v.follower.state == F_HANDSHAKE_A
         ==> 
+        && tls.t_servers[ep].dts == TimeZero()
         && tls.t_servers[ep].ts == TimeZero()
     )
 }
 
-function FollowerInfo_Message_Formula() : Timestamp {
-    SendFI
+function FollowerInfo_Message_ts_Formula() : Timestamp {
+    SendFI + D
 }
 
 /* Every FollowerInfo packet has ts specified by FollowerInfo_Message_Formula */
-predicate FollowerInfo_Message_Invariant(tls:TLS_State) {
+predicate FollowerInfo_Message_ts_Invariant(tls:TLS_State) {
     forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.FollowerInfo?
-    :: pkt.msg.ts == FollowerInfo_Message_Formula()
+    :: pkt.msg.ts == FollowerInfo_Message_ts_Formula()
 }
 
 
-function ProcessFI_PreQuorum_Formula(connectingFollowers:set<nat>) : Timestamp {
-    FollowerInfo_Message_Formula() + D + ProcLI * |connectingFollowers|
+function ProcessFI_PreQuorum_ts_Formula(l:TQuorumPeer) : Timestamp 
+    requires l.v.LeaderPeer?
+{
+    var connectingFollowers := l.v.leader.globals.connectingFollowers;
+    l.dts + ProcFI * |connectingFollowers|
+}
+
+function ProcessFI_PreQuorum_dts_Formula() : Timestamp {
+    FollowerInfo_Message_ts_Formula()
 }
 
 
-predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State) {
+predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+{
     var n := |tls.config|;
-    forall ep | ep in tls.t_servers :: (
-        && tls.t_servers[ep].v.LeaderPeer? 
-        && |tls.t_servers[ep].v.leader.globals.connectingFollowers| < (n/2) + 1
-        ==> 
-        && tls.t_servers[ep].ts == ProcessFI_PreQuorum_Formula(tls.t_servers[ep].v.leader.globals.connectingFollowers)
-    )
+    var leaderTQP := tls.t_servers[tls.config[0]];
+    !IsQuorum(|tls.config|, leaderTQP.v.leader.globals.connectingFollowers)
+    ==> 
+    && leaderTQP.ts <= ProcessFI_PreQuorum_ts_Formula(leaderTQP)
+    && leaderTQP.dts <= ProcessFI_PreQuorum_dts_Formula()
 }
 }

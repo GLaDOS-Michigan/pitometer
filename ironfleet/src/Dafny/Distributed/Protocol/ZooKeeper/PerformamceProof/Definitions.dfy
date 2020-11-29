@@ -21,7 +21,7 @@ ghost const Sync:Timestamp
 ghost const SyncSnap:Timestamp
 ghost const ProcAck:Timestamp
 
-ghost const NoOp:Timestamp
+ghost const NoOp:Timestamp := TimeZero()
 
 
 function StepToTimeDelta(hstep:HostStep) : Timestamp {
@@ -53,8 +53,7 @@ function TLS_NoRecvPerfUpdate(node_pr:Timestamp, hstep:HostStep) : Timestamp
 
 function TLS_RecvPerfUpdate(node_pr:Timestamp, pkt_pr:Timestamp, hstep:HostStep) : Timestamp
 {
-    var deliveryTime := TimeAdd2(pkt_pr, D);    // add D to packet sent time
-    var handlerStartTime := TimeMax(deliveryTime, node_pr);
+    var handlerStartTime := TimeMax(pkt_pr, node_pr);
     var total_time := TimeAdd2(handlerStartTime, StepToTimeDelta(hstep));
     total_time
 }

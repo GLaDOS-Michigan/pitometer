@@ -75,8 +75,8 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
     requires FollowerInit_Invariant(tls);
     // Induction hypothesis
-    requires FollowerInfo_Message_Invariant(tls)
-    ensures FollowerInfo_Message_Invariant(tls')
+    requires FollowerInfo_Message_ts_Invariant(tls)
+    ensures FollowerInfo_Message_ts_Invariant(tls')
 {
     var actor, tios :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
     var ls, ls', ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(tios);
@@ -94,7 +94,7 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
             assert tio.LIoOpSend?;
             var hs := ActionToHostStep(tls, tls', actor, tios);
             assert tls'.t_servers[actor].ts == TLS_NoRecvPerfUpdate(tls.t_servers[actor].ts, hs);
-            assert tio.s.msg.ts == SendFI;
+            assert tio.s.msg.ts == SendFI + D;
             lemma_SentPacketsSet_Property(tls, tls', actor, tios);
         case F_HANDSHAKE_B => 
             assert AcceptNewEpoch(s, s', ios);
@@ -155,7 +155,7 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
                 case LH_ERROR => assert |ios| == 0;
             }
         }
-        assert FollowerInfo_Message_Invariant(tls');  
+        assert FollowerInfo_Message_ts_Invariant(tls');  
     }
 }
 
@@ -164,7 +164,74 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
 *                                 ProcessFI Invariant                                    *
 *****************************************************************************************/
 
+lemma lemma_Leader_ProcessFI_PreQuorum_Invariant_Induction(config:Config, tls:TLS_State, tls':TLS_State)
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    // Pre-established Invariants
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    requires FollowerInfo_Message_ts_Invariant(tls) && FollowerInfo_Message_ts_Invariant(tls')
+    requires FollowerInit_Invariant(tls);
+    requires ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
+    requires ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
+    // Induction hypothesis
+    requires ProcessFI_PreQuorum_Invariant(tls)
+    ensures ProcessFI_PreQuorum_Invariant(tls')
+{
+    var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+    var ls, ls', ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(tios);
+    assert LS_NextOneServer(ls, ls', actor, ios);
+    if ls.servers[actor].FollowerPeer? {
+        // Theorem is vacuosly true
+        assert tls'.t_servers[tls.config[0]] == tls'.t_servers[tls.config[0]];
+        return;
+    } 
+    assert actor == config[0];
+    var l, l' := tls.t_servers[actor], tls'.t_servers[actor];
+    if IsQuorum(|config|, l.v.leader.globals.connectingFollowers) {
+        // Theorem is vacuosly true
+        assert ProcessFI_PreQuorum_Invariant(tls');
+        return;
+    }
 
+    // First prove leaderTQP.dts <= ProcessFI_PreQuorum_dts_Formula();
+    if |tios| > 0 && tios[0].LIoOpReceive? {
+        assert l'.dts == tios[0].r.msg.ts;
+        assert tios[0].r.msg.v.FollowerInfo?;
+        assert tios[0].r in tls.t_environment.sentPackets;
+        assert l'.dts <= ProcessFI_PreQuorum_dts_Formula();
+    } else {
+        assert l'.dts == l.dts;
+    }
+
+    if |tios| > 0 && tios[0].LIoOpReceive? {
+        // TLS_RecvPerfUpdate case
+        assert l'.ts == TLS_RecvPerfUpdate(l.ts, tios[0].r.msg.ts, L(ProcessFollowerInfo));
+        assert tios[0].r.msg.v.FollowerInfo?;
+        assert tios[0].r in tls.t_environment.sentPackets;
+        assert l'.ts <= ProcessFI_PreQuorum_dts_Formula() + ProcFI * |l.v.leader.globals.connectingFollowers| + ProcFI;
+
+        // Prove |l'.v.leader.globals.connectingFollowers| == |l.v.leader.globals.connectingFollowers| + 1;
+        var follower_id := ios[0].r.sender_index;
+        var h, h', g, g' := l.v.leader.handlers[follower_id], l'.v.leader.handlers[follower_id], l.v.leader.globals, l'.v.leader.globals;
+        assert GetEpochToPropose(h, h', g, g', ios);
+        assert !IsVerifiedQuorum(h.follower_id, |config|, g.connectingFollowers); 
+        assert |g'.connectingFollowers| == |g.connectingFollowers| + 1;
+        assert l'.ts <= ProcessFI_PreQuorum_ts_Formula(l');
+    } else {
+        // TLS_NoRecvPerfUpdate case.
+        if l.v.leader.state == L_RUNNING {
+            assert LeaderStutter(l.v.leader, l'.v.leader, ios);
+            assert l'.ts == l.ts + StepToTimeDelta(L(LStutter)) == l.ts;
+        } else {
+            assert StepSingleHandler_NoRcv(l.v.leader, l'.v.leader, ios);
+            var follower_id :| LHNext(l.v.leader, l'.v.leader, follower_id, ios);
+            var h, h', g, g' := l.v.leader.handlers[follower_id], l'.v.leader.handlers[follower_id], l.v.leader.globals, l'.v.leader.globals;
+            assert LearnerHandlerNext(h, h', g, g', ios);
+            assert h.state == LH_HANDSHAKE_A;
+            assert false;
+        }
+    }
+}
 
 
 

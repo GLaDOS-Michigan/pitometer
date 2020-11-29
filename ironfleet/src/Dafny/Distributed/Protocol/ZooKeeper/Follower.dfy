@@ -103,7 +103,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
     && match ios[0].r.msg
         // Ignore these 
         case FollowerInfo(sid, latestZxid) => FollowerStutter(s, s', ios)
-        case LeaderInfo(sid, newZxid) => FollowerStutter(s, s', ios)
+        case LeaderInfo(sid, sn, newZxid) => FollowerStutter(s, s', ios)
         case AckEpoch(sid, lastLoggedZxid, lastAcceptedEpoch) => FollowerStutter(s, s', ios)
         case Ack(sid, ackZxid) => FollowerStutter(s, s', ios)
 

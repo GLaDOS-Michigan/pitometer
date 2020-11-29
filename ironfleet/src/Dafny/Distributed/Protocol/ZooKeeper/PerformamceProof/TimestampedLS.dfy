@@ -53,14 +53,14 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
 {
     && LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), id, UntagLIoOpSeq(ios))
     && tls.t_environment.nextStep == LEnvStepHostIos(id, ios)
-    && (forall t_io | t_io in ios && t_io.LIoOpSend? :: t_io.s.msg.ts == tls'.t_servers[id].ts)
+    && (forall t_io | t_io in ios && t_io.LIoOpSend? :: t_io.s.msg.ts == TimeAdd2(tls'.t_servers[id].ts, D))
     && tls'.t_servers == tls.t_servers[id := tls'.t_servers[id]]
     && var hs := ActionToHostStep(tls, tls', id, ios);
 
     && (if |ios| > 0 && ios[0].LIoOpReceive? then   // Note that in performal, at most one rcv in each step
             && tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hs)
-            && tls'.t_servers[id].dts == ios[0].r.msg.ts
-            && var delivery_time := TimeAdd2(ios[0].r.msg.ts, D);
+            && var delivery_time := ios[0].r.msg.ts;
+            && tls'.t_servers[id].dts == delivery_time
             && tls.t_servers[id].dts  <= delivery_time  // (ARRIVAL-TIME) rule
         else
             && tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hs)

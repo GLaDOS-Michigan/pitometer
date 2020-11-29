@@ -54,7 +54,7 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
 
 /* config has same endpoints as tls.servers and each node's id is its index in config */
 predicate DS_Config_Invariant(config:Config, tls:TLS_State) {
-    && |config| > 0
+    && |config| >= 3
     && (forall ep :: ep in config <==> ep in tls.t_servers)
     && (forall ep | ep in tls.t_servers :: config == if tls.t_servers[ep].v.FollowerPeer? then tls.t_servers[ep].v.follower.config else tls.t_servers[ep].v.leader.globals.config)
     && (forall i | 0 <= i < |config| :: 
@@ -169,6 +169,58 @@ lemma lemma_Leader_QueuedPackets_Invariant_Proof(config:Config, tlb:seq<TLS_Stat
         assert Leader_QueuedPackets_Invariant(config, tls');
         i := i + 1;
     }
+}
+
+/* If connectingFollowers is not a full quorum, then all future quorums are empty */
+predicate ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, tls:TLS_State){
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var leader := tls.t_servers[ep].v.leader;
+        && (
+            && !IsQuorum(|config|, leader.globals.connectingFollowers)
+            ==> 
+            && leader.globals.electingFollowers == {0}
+            && leader.globals.ackSet == {0}
+            && leader.globals.nextSerialLI == 0
+            && (forall id | id in leader.handlers :: 
+                if id in leader.globals.connectingFollowers
+                then leader.handlers[id].state == LH_HANDSHAKE_B
+                else leader.handlers[id].state == LH_HANDSHAKE_A
+            )
+        )
+    )
+}
+
+
+lemma lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, f)
+    ensures forall i | 0 <= i < |tlb| :: ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[i]) 
+{
+    // TODO
+    assume false;
+}
+
+
+/* If connectingFollowers is not a full quorum, the only messages in the network are FollowerInfo messages */
+predicate ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config:Config, tls:TLS_State){
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var leader := tls.t_servers[ep].v.leader;
+        && (
+            && !IsQuorum(|config|, leader.globals.connectingFollowers)
+            ==> 
+            forall pkt | pkt in tls.t_environment.sentPackets ::
+                pkt.msg.v.FollowerInfo?
+        )
+    )
+}
+
+lemma lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, f)
+    ensures forall i | 0 <= i < |tlb| :: ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tlb[i]) 
+{
+    // TODO
+    assume false;
 }
 
 

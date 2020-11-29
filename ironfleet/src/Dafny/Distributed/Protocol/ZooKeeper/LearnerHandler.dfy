@@ -38,6 +38,7 @@ datatype LeaderGlobals = LeaderGlobals(
     // Synchronization globals
     leaderEpoch: int,
     connectingFollowers: set<nat>,
+    nextSerialLI: nat,
     electingFollowers: set<nat>,
     ackSet: set<nat>
 )
@@ -79,7 +80,7 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
 {
     if IsVerifiedQuorum(s.follower_id, |g.config|, g.connectingFollowers) 
     then ( // Send Leader.LEADERINFO message to follower, and proceed to LH_HANDSHAKE_B state
-        && g' == g
+        && g' == g.(nextSerialLI := g.nextSerialLI + 1)
         && |ios| == 1
         && s' == s.(state := LH_HANDSHAKE_B, newEpoch := g.leaderEpoch)
         && ios[0].LIoOpSend?
@@ -87,11 +88,12 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
             && 0 <= s.follower_id < |g.config|
             && outbound_packet.dst == g.config[s.follower_id]
             && outbound_packet.sender_index == s.my_id
-            && outbound_packet.msg == LeaderInfo(s.my_id, Zxid(g.leaderEpoch, 0))
+            && outbound_packet.msg == LeaderInfo(s.my_id, g.nextSerialLI, Zxid(g.leaderEpoch, 0))
         )       
     ) else ( // Add sender to my connectingFollowers set, and continue waiting for quorum
         // if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g  // Case where follower has not sent anything
         // else 
+            && s.follower_id !in g.connectingFollowers
             && |ios| == 1
              && ios[0].LIoOpReceive?
              && ios[0].r.src in g.config
@@ -225,6 +227,10 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
 
 predicate IsVerifiedQuorum(my_id:nat, n:int, quorum: set<nat>) {
     && my_id in quorum
+    && IsQuorum(n, quorum)
+}
+
+predicate IsQuorum(n:int, quorum: set<nat>) {
     && |quorum| >= (n/2) + 1
 }
 

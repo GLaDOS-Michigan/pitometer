@@ -161,6 +161,7 @@ predicate LEnvironment_PerformIos<IdType, MessageType>(
 {
     var sendMap := IosToSendMap(ios);
     var rcvMap := IosToRcvMap(ios);
+    && (forall io :: io in ios && io.LIoOpReceive? ==> io.r in e.sentPackets)
     && e'.channels == PerformIos(e.channels, sendMap, rcvMap)
     && e'.sentPackets == e.sentPackets + (set io | io in ios && io.LIoOpSend? :: io.s)
     && e'.time == e.time
