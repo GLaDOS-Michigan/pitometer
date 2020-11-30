@@ -247,6 +247,7 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
     requires Leader_NextSerialLI_Invariant(tls) && Leader_NextSerialLI_Invariant(tls')
     requires FollowerInit_Invariant(tls);
+    requires ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls) && ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls')
     // requires FollowerInfo_Message_ts_Invariant(tls) && FollowerInfo_Message_ts_Invariant(tls')
     // requires ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
     // requires ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
@@ -272,8 +273,6 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
         }
     }
 
-    // TODO: Invariants on leader after ProcessFI
-    assume Handshake_Leader_PreQuorum_Invariant(tls');
 
     // Invariant on LeaderInfo messages
     forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls'.f
@@ -297,8 +296,40 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     }
 
     // Invariant on AckEpoch messages
+    // TODO
     assume (forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.AckEpoch? && pkt.msg.v.serial < tls'.f
     :: pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial));
+
+
+     // Invariants on leader at syncrhonization barrier at ProcessEpAck -- Handshake_Leader_PreQuorum_Invariant(tls')
+    if !IsQuorum(|tls.config|, tls.t_servers[config[0]].v.leader.globals.electingFollowers) {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if actor == config[0] {
+            var l, l', ios := tls.t_servers[config[0]].v.leader, tls'.t_servers[config[0]].v.leader, UntagLIoOpSeq(tios);
+            if l.state == L_RUNNING {
+                assert tls'.t_servers[actor].dts == tls.t_servers[actor].dts && tls'.t_servers[actor].ts == tls.t_servers[actor].ts;
+            } else {
+                assert StepSingleHandler(l, l', ios);
+                if StepSingleHandler_Rcv(l, l', ios) {
+                    var h , h', g, g' := l.handlers[ios[0].r.sender_index], l'.handlers[ios[0].r.sender_index], l.globals, l'.globals;
+                    assert LearnerHandlerNext(h, h', g, g', ios);
+                    if h.state == LH_HANDSHAKE_B {
+                        assert WaitForEpochAck(h, h', g, g', ios);
+                        assert ios[0].LIoOpReceive?;
+                        assert ios[0].r.msg.AckEpoch?;
+                        var msg := tios[0].r.msg;
+                        assert msg.v.serial < tls.f;
+                        assert msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls, msg.v.serial);
+
+                        // Conclusion
+                        assert tls'.t_servers[actor].ts <= ProcessEpAck_PreQuorum_ts_Formula(tls', tls'.t_servers[actor]);
+                        assert tls'.t_servers[actor].dts <= ProcessEpAck_PreQuorum_dts_Formula(tls', tls'.t_servers[actor]);
+                    } 
+                }
+            }
+        }
+    }
+    assert Handshake_Leader_PreQuorum_Invariant(tls');
 }
 
 
