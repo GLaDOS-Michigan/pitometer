@@ -259,12 +259,6 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     ensures Handshake_Leader_PreQuorum_Invariant(tls')
     ensures Handshake_Follower_Invariant(tls')
 {
-    // Invariant on LeaderInfo messages
-    forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls'.f
-    ensures pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial)
-    {
-        lemma_LeaderInfo_Message_PreQuorum_ts_Formula_Helper(config, tls, tls', pkt);
-    }
 
     // Invariant on followers after SendFI
     forall ep | ep in tls'.t_servers && tls'.t_servers[ep].v.FollowerPeer? && tls'.t_servers[ep].v.follower.state == F_HANDSHAKE_B
@@ -276,6 +270,16 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                 assert f'.state != F_HANDSHAKE_B; assert false;
             } 
         }
+    }
+
+    // TODO: Invariants on leader after ProcessFI
+    assume Handshake_Leader_PreQuorum_Invariant(tls');
+
+    // Invariant on LeaderInfo messages
+    forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls'.f
+    ensures pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial)
+    {
+        lemma_LeaderInfo_Message_PreQuorum_ts_Formula_Helper(config, tls, tls', pkt);
     }
 
     // Invariant on followers after ProcLI
@@ -292,14 +296,9 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
         }
     }
 
-    // TODO
+    // Invariant on AckEpoch messages
     assume (forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.AckEpoch? && pkt.msg.v.serial < tls'.f
     :: pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial));
-    assert HandShake_Messages_Invariant(tls');
-
-
-    // TODO
-    assume Handshake_Leader_PreQuorum_Invariant(tls');
 }
 
 
