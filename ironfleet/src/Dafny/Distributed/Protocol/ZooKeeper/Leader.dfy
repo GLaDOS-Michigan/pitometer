@@ -100,8 +100,9 @@ predicate InitHandlers(handlers:map<int,LearnerHandler>, my_id: nat, config: Con
 
 
 predicate StepSingleHandler(s:Leader, s':Leader, ios:seq<ZKIo>) {
-    || StepSingleHandler_Rcv(s, s', ios)
-    || StepSingleHandler_NoRcv(s, s', ios)
+    if StepSingleHandler_NoRcv(s, s', ios)
+    then StepSingleHandler_NoRcv(s, s', ios)
+    else StepSingleHandler_Rcv(s, s', ios)
 }
 
 /* Step the handler that is receiving io */

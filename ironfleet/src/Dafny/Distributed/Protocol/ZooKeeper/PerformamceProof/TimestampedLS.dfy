@@ -63,9 +63,9 @@ predicate TLS_NextOneServer(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<
 
     && (if |ios| > 0 && ios[0].LIoOpReceive? then   // Note that in performal, at most one rcv in each step
             && tls'.t_servers[id].ts == TLS_RecvPerfUpdate(tls.t_servers[id].ts, ios[0].r.msg.ts, hs)
-            && var delivery_time := ios[0].r.msg.ts;
-            && tls'.t_servers[id].dts == delivery_time
-            && tls.t_servers[id].dts  <= delivery_time  // (ARRIVAL-TIME) rule
+            && tls'.t_servers[id].dts == ios[0].r.msg.ts
+            && tls.t_servers[id].dts <= ios[0].r.msg.ts  // (ARRIVAL-TIME) rule
+            // && tls.t_servers[id].dts <= ios[0].r.msg.ts <= tls.t_servers[id].ts + Timeout() // (ARRIVAL-TIME) rule
         else
             && tls'.t_servers[id].ts == TLS_NoRecvPerfUpdate(tls.t_servers[id].ts, hs)
             && tls'.t_servers[id].dts == tls.t_servers[id].dts
