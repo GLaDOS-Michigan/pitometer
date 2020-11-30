@@ -21,7 +21,7 @@ datatype Follower = Follower(
     serialLI: int
 )
 
-datatype FollowerState = F_HANDSHAKE_A | F_HANDSHAKE_B | F_SYNC | F_RUNNING | F_ERROR
+datatype FollowerState = F_HANDSHAKE_A | F_HANDSHAKE_B | F_PRESYNC | F_SYNC | F_RUNNING | F_ERROR
 
 predicate FollowerInit(s:Follower, my_id:nat, leader_id:nat, config:Config, zkdb: ZKDatabase)
 {
@@ -39,7 +39,8 @@ predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
     match s.state 
         case F_HANDSHAKE_A => SendMyInfo(s, s', ios)        // SendFI
         case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios)    // ProcLI
-        case F_SYNC => SyncWithLeader(s, s', ios)           // ProcSync
+        case F_PRESYNC => PreSyncWithLeader(s, s', ios)        // ProcSync
+        case F_SYNC => SyncWithLeader(s, s', ios)        // ProcSync
         case F_RUNNING => FollowerStutter(s, s', ios)       
         case F_ERROR => FollowerStutter(s, s', ios)
 }
@@ -65,7 +66,7 @@ predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
 }
 
 
-/* State transition from F_HANDSHAKE_B -> F_SYNC 
+/* State transition from F_HANDSHAKE_B -> F_PRESYNC 
 * Process_LI */
 predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
     // state and epoch are the only properties that change in this transition
@@ -81,7 +82,7 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
              && |ios| == 1
         else (
             && s'.serialLI == ios[0].r.msg.serial
-            && s'.state == F_SYNC
+            && s'.state == F_PRESYNC
             && s'.accepted_epoch == ios[0].r.msg.newZxid.epoch
             && |ios| == 2
             && ios[1].LIoOpSend?
@@ -99,9 +100,10 @@ predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
 }
 
 
-/* State transition from F_SYNC -> F_RUNNING
-* Note that F_SYNC has cycles */
-predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
+/* State transition from F_PRESYNC -> F_SYNC */
+predicate PreSyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) 
+    requires s.state == F_PRESYNC
+{
     && |ios| >= 1
     && ios[0].LIoOpReceive?
     && ios[0].r.src in s.config
@@ -112,18 +114,44 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
         case LeaderInfo(sid, sn, newZxid) => false
         case AckEpoch(sid, serial, lastLoggedZxid, lastAcceptedEpoch) => false
         case Ack(sid, ackZxid) => false
+        case Commit(sid, txn) => false
+        case NewLeader(sid, newLeaderZxid) => false
+        case UpToDate(sid) => false
 
         // Sync messages
         case SyncDIFF(sid, lastProcessedZxid) => 
             && |ios| == 1
-            && FollowerStutter(s, s', ios)
+            && s' == s.(state := F_SYNC)
         case SyncSNAP(sid, leaderDb, lastProcessedZxid) =>
             && |ios| == 1
+            && s' == s.(zkdb := s'.zkdb, state := F_SYNC)
             && ClearAndLoadDbSnapshot(s, s', leaderDb)
         case SyncTRUNC(sid, lastProcessedZxid) => 
             && |ios| == 1
-            && s' == s.(zkdb := s'.zkdb)
+            && s' == s.(zkdb := s'.zkdb, state := F_SYNC)
             && truncDatabase(s.zkdb, s'.zkdb, lastProcessedZxid)
+}
+
+
+
+/* State transition from F_SYNC -> F_RUNNING
+* Note that F_SYNC has cycles */
+predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) 
+    requires s.state == F_SYNC
+{
+    && |ios| >= 1
+    && ios[0].LIoOpReceive?
+    && ios[0].r.src in s.config
+    && ios[0].r.msg.sid == s.leader_id
+    && match ios[0].r.msg
+        // Ignore these 
+        case FollowerInfo(sid, latestZxid) => false
+        case LeaderInfo(sid, sn, newZxid) => false
+        case AckEpoch(sid, serial, lastLoggedZxid, lastAcceptedEpoch) => false
+        case Ack(sid, ackZxid) => false
+        case SyncDIFF(sid, lastProcessedZxid) => false
+        case SyncSNAP(sid, leaderDb, lastProcessedZxid) => false
+        case SyncTRUNC(sid, lastProcessedZxid) => false
 
         // Process new transactions
         case Commit(sid, txn) => 
@@ -151,7 +179,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>) {
 
 
 predicate ClearAndLoadDbSnapshot(s:Follower, s':Follower, snapshot:ZKDatabase){
-    s' == s.(zkdb := snapshot)
+    s'.zkdb == snapshot
 }
 
 predicate ProcessTxn(s:Follower, s':Follower, txn:Zxid) {

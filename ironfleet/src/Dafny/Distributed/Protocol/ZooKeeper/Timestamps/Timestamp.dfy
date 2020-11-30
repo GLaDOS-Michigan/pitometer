@@ -15,8 +15,6 @@ abstract module Timestamp_s {
   /* Timestamp datatype def */
 
   function {:axiom} TimeMax(p1:Timestamp, p2:Timestamp) : Timestamp
-    // ensures TimeMax(p1, p2) >= p1 && TimeMax(p1, p2) >= p2
-    // ensures TimeMax(p1, p2) == p1 || TimeMax(p1, p2) == p2
     ensures p1 >= p2 ==> TimeMax(p1, p2) == p1
     ensures p2 >= p1 ==> TimeMax(p1, p2) == p2
   {

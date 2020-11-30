@@ -117,6 +117,8 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
                     }
                 }
             }
+        case F_PRESYNC => 
+            assert PreSyncWithLeader(s, s', ios);
         case F_SYNC => 
             assert SyncWithLeader(s, s', ios);
             assert forall io | io in ios && io.LIoOpSend? :: !io.s.msg.FollowerInfo?;
@@ -244,10 +246,11 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     // Pre-established Invariants
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
     requires Leader_NextSerialLI_Invariant(tls) && Leader_NextSerialLI_Invariant(tls')
+    requires FollowerInit_Invariant(tls);
     // requires FollowerInfo_Message_ts_Invariant(tls) && FollowerInfo_Message_ts_Invariant(tls')
-    // requires FollowerInit_Invariant(tls);
     // requires ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
     // requires ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
+    
     // Induction hypothesis
     requires HandShake_Messages_Invariant(tls)
     requires Handshake_Leader_PreQuorum_Invariant(tls)
@@ -256,12 +259,37 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     ensures Handshake_Leader_PreQuorum_Invariant(tls')
     ensures Handshake_Follower_Invariant(tls')
 {
-    var l := tls.t_servers[tls.config[0]];
-
+    // Invariant on LeaderInfo messages
     forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls'.f
     ensures pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', pkt.msg.v.serial)
     {
         lemma_LeaderInfo_Message_PreQuorum_ts_Formula_Helper(config, tls, tls', pkt);
+    }
+
+    // Invariant on followers after SendFI
+    forall ep | ep in tls'.t_servers && tls'.t_servers[ep].v.FollowerPeer? && tls'.t_servers[ep].v.follower.state == F_HANDSHAKE_B
+    ensures tls'.t_servers[ep].dts == TimeZero() && tls'.t_servers[ep].ts == SendFI {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if ep == actor {
+            var f, f', ios := tls.t_servers[ep].v.follower, tls'.t_servers[ep].v.follower, UntagLIoOpSeq(tios);
+            if f.state != F_HANDSHAKE_A {  // else case is true by HandShake_Messages_Invariant
+                assert f'.state != F_HANDSHAKE_B; assert false;
+            } 
+        }
+    }
+
+    // Invariant on followers after ProcLI
+    forall ep | ep in tls'.t_servers && tls'.t_servers[ep].v.FollowerPeer? && tls'.t_servers[ep].v.follower.state == F_PRESYNC && 0 <= tls'.t_servers[ep].v.follower.serialLI < tls'.f
+    ensures tls'.t_servers[ep].dts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', tls'.t_servers[ep].v.follower.serialLI)
+            && tls'.t_servers[ep].ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', tls'.t_servers[ep].v.follower.serialLI) + ProcLI
+    {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if ep == actor {
+            var f, f', ios := tls.t_servers[ep].v.follower, tls'.t_servers[ep].v.follower, UntagLIoOpSeq(tios);
+            if f.state != F_HANDSHAKE_B { 
+                assert f'.state != F_PRESYNC; assert false;
+            } 
+        }
     }
 
     // TODO
@@ -272,7 +300,6 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
 
     // TODO
     assume Handshake_Leader_PreQuorum_Invariant(tls');
-    assume Handshake_Follower_Invariant(tls');
 }
 
 
@@ -296,8 +323,6 @@ lemma lemma_LeaderInfo_Message_PreQuorum_ts_Formula_Helper(config:Config, tls:TL
         // assert  pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls', ps);
     } else {
         var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
-        // assert exists tio : TZKIo :: tio in tios && tio.LIoOpSend? && tio.s == pkt;
-        assert LS_NextOneServer(UntagLS_State(tls), UntagLS_State(tls'), actor, UntagLIoOpSeq(tios));
         assert tls.t_servers[actor].v.LeaderPeer?;
         assert actor == config[0];
         var l, l', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
@@ -320,8 +345,8 @@ lemma lemma_LeaderInfo_Message_PreQuorum_ts_Formula_Helper(config:Config, tls:TL
                     } else {
                         // Case pkt.msg.v.serial > 0, so this is NOT the first LI sent
                         assert lts <= SendFI + D + ProcFI * n + ProcFI * g.nextSerialLI;
-                        assert pkt.msg.ts <= lts + ProcFI + D;
-                        assert lts + ProcFI + D
+                        assert pkt.msg.ts 
+                            <= lts + ProcFI + D
                             <=  SendFI + D 
                                 + ProcFI * n 
                                 + ProcFI * (g.nextSerialLI + 1) + D;
@@ -330,6 +355,7 @@ lemma lemma_LeaderInfo_Message_PreQuorum_ts_Formula_Helper(config:Config, tls:TL
                     }
                 } else { 
                     assert ProcEpAck * (|g.electingFollowers|-2) + ProcEpAck == ProcEpAck * (|g.electingFollowers|-1);
+                    assert pkt.msg.v.serial == g.nextSerialLI;
                     assert lts <= SendFI + D 
                                     + ProcFI * n
                                     + (ProcFI + D) * g.nextSerialLI

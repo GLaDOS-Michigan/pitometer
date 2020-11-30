@@ -59,4 +59,10 @@ lemma {:axiom} lemma_Math_Mult()
 {}
 
 
+lemma {:axiom} lemma_Math_MaxOfInequalities(a:Timestamp, b:Timestamp, x:Timestamp, y:Timestamp)
+    requires x <= y
+    requires a <= x && b <= y
+    ensures TimeMax(a, b) <= y
+{}
+
 }

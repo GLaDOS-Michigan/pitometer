@@ -69,7 +69,7 @@ function Performance_Formula_EmptyDiff(config: Config) : Timestamp {
     D + ProcFI * q +
     D + ProcLI +
     D + ProcEpAck * q +
-    PreSync +
+    Sync +
     Sync * 2 +
     D + ProcSync +
     D + ProcAck * q
@@ -150,26 +150,24 @@ predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State)
 
 
 predicate Follower_HandshakeB_Invariant(tls:TLS_State){
-    forall ep | ep in tls.t_servers :: (
+    forall ep | 
+        && ep in tls.t_servers 
         && tls.t_servers[ep].v.FollowerPeer? 
         && tls.t_servers[ep].v.follower.state == F_HANDSHAKE_B
-        ==> 
-        && tls.t_servers[ep].dts == TimeZero()
+    ::  && tls.t_servers[ep].dts == TimeZero()
         && tls.t_servers[ep].ts == SendFI
-    )
 }
 
 
-/* Invariant for followers in F_SYNC mode */
-predicate Follower_Sync_Invariant(tls:TLS_State){
-    forall ep | ep in tls.t_servers :: (
+/* Invariant for followers in F_PRESYNC mode */
+predicate Follower_PreSync_Invariant(tls:TLS_State){
+    forall ep | 
+        && ep in tls.t_servers
         && tls.t_servers[ep].v.FollowerPeer? 
-        && tls.t_servers[ep].v.follower.state == F_SYNC
+        && tls.t_servers[ep].v.follower.state == F_PRESYNC
         && 0 <= tls.t_servers[ep].v.follower.serialLI < tls.f
-        ==> 
-        && tls.t_servers[ep].dts == LeaderInfo_Message_PreQuorum_ts_Formula(tls, tls.t_servers[ep].v.follower.serialLI)
-        && tls.t_servers[ep].ts == tls.t_servers[ep].dts + ProcLI
-    )
+    ::  && tls.t_servers[ep].dts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls, tls.t_servers[ep].v.follower.serialLI)
+        && tls.t_servers[ep].ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls, tls.t_servers[ep].v.follower.serialLI) + ProcLI
 }
 
 
@@ -270,7 +268,7 @@ predicate Handshake_Follower_Invariant(tls:TLS_State)
     requires ZK_Config_Invariant(tls.config, tls)
 {
     && Follower_HandshakeB_Invariant(tls)
-    && Follower_Sync_Invariant(tls)
+    && Follower_PreSync_Invariant(tls)
 }
 
 }

@@ -11,7 +11,7 @@ import opened EnvironmentTCP_s
 *****************************************************************************************/
 
 datatype FollowerStep = 
-    SendFollowerInfo | ProcessLeaderInfo | ProcessSync | ProcessSnap | FStutter
+    SendFollowerInfo | ProcessLeaderInfo | ProcessSync | ProcessSyncInfo | ProcessSnap | FStutter
 
 datatype LeaderStep = 
     ProcessFollowerInfo | ProcessEpochAck | PrepSync | DoSync | DoSyncSNAP | ProcessAck | LStutter

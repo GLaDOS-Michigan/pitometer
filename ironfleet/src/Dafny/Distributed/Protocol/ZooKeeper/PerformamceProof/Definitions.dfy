@@ -11,6 +11,7 @@ ghost const D:Timestamp
 
 ghost const SendFI:Timestamp
 ghost const ProcLI:Timestamp
+ghost const ProcSyncI:Timestamp
 ghost const ProcSync:Timestamp
 ghost const ProcSnap:Timestamp
 
@@ -30,6 +31,7 @@ function StepToTimeDelta(hstep:HostStep) : Timestamp {
             match fs
                 case SendFollowerInfo => SendFI
                 case ProcessLeaderInfo => ProcLI
+                case ProcessSyncInfo => ProcSyncI
                 case ProcessSync => ProcSync
                 case ProcessSnap => ProcSnap
                 case FStutter => NoOp

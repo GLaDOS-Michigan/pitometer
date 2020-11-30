@@ -129,15 +129,19 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
         match follower.state 
         case F_HANDSHAKE_A => F(SendFollowerInfo)
         case F_HANDSHAKE_B => F(ProcessLeaderInfo)
+        case F_PRESYNC => (
+            if zkios[0].r.msg.SyncSNAP? 
+                then F(ProcessSnap)   // Processing a snapshot is a special event
+            else if zkios[0].r.msg.SyncDIFF? || zkios[0].r.msg.SyncTRUNC? 
+                then F(ProcessSync)
+            else F(FStutter)
+        )
         case F_SYNC => (
             var s, s' := ls.servers[id].follower, ls'.servers[id].follower;
             assert SyncWithLeader(s, s', zkios);
-            if zkios[0].r.msg.SyncSNAP? 
-                then F(ProcessSnap)   // Processing a snapshot is a special event
-            else if zkios[0].r.msg.FollowerInfo? || zkios[0].r.msg.LeaderInfo? || zkios[0].r.msg.AckEpoch? || zkios[0].r.msg.Ack?
-                then F(FStutter)
-            else
-                F(ProcessSync)
+            if zkios[0].r.msg.Commit? || zkios[0].r.msg.NewLeader? || zkios[0].r.msg.UpToDate?
+                then F(ProcessSync) 
+            else F(FStutter)
         )
         case F_RUNNING => F(FStutter)
         case F_ERROR => F(FStutter)
