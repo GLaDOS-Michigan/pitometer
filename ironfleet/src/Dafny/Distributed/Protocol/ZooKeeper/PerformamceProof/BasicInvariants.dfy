@@ -249,5 +249,15 @@ predicate Leader_NextSerialLI_Invariant(tls:TLS_State) {
     )
 }
 
+// TODO
+predicate NonEmptyQuorumsInvariant(tls:TLS_State) {
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var l := tls.t_servers[ep].v.leader;
+        && l.globals.connectingFollowers >= {l.my_id}
+        && l.globals.electingFollowers >= {l.my_id}
+        && l.globals.ackSet >= {l.my_id}
+    )
+}
+
 
 }
