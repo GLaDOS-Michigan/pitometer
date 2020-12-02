@@ -94,21 +94,23 @@ predicate GetEpochToPropose(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals
         // if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g  // Case where follower has not sent anything
         // else 
             && s.follower_id !in g.connectingFollowers
+            && !IsQuorum(|g.config|, g.connectingFollowers)   // Stop accepting new followers after I have a quorum
+            && s.follower_id !in g.connectingFollowers
             && |ios| == 1
-             && ios[0].LIoOpReceive?
-             && ios[0].r.src in g.config
-             && ios[0].r.msg.FollowerInfo?
-             && 0 <= ios[0].r.msg.sid < |g.config| 
-             && ios[0].r.msg.sid == s.follower_id
-             && g.config[ios[0].r.msg.sid] == ios[0].r.src
-             && s' == s.(
-                 follower_id := ios[0].r.msg.sid,
-                 peerLastZxid := ios[0].r.msg.latestZxid
-             ) 
-             && g' == g.(
-                    leaderEpoch := (if ios[0].r.msg.latestZxid.epoch >= g.leaderEpoch then ios[0].r.msg.latestZxid.epoch + 1 else g.leaderEpoch),
-                    connectingFollowers := g.connectingFollowers + {ios[0].r.msg.sid}
-                ) 
+            && ios[0].LIoOpReceive?
+            && ios[0].r.src in g.config
+            && ios[0].r.msg.FollowerInfo?
+            && 0 <= ios[0].r.msg.sid < |g.config| 
+            && ios[0].r.msg.sid == s.follower_id
+            && g.config[ios[0].r.msg.sid] == ios[0].r.src
+            && s' == s.(
+                follower_id := ios[0].r.msg.sid,
+                peerLastZxid := ios[0].r.msg.latestZxid
+            ) 
+            && g' == g.(
+                leaderEpoch := (if ios[0].r.msg.latestZxid.epoch >= g.leaderEpoch then ios[0].r.msg.latestZxid.epoch + 1 else g.leaderEpoch),
+                connectingFollowers := g.connectingFollowers + {ios[0].r.msg.sid}
+            ) 
     )
 }
 
@@ -127,16 +129,18 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, 
         // if |ios| == 0 then LearnerHandlerStutter(s, s', ios) && g' == g // Case where follower has not sent anything
         // else 
             && |ios| == 1
-             && ios[0].LIoOpReceive?
-             && ios[0].r.src in g.config
-             && ios[0].r.msg.AckEpoch?
-             && 0 <= s.follower_id < |g.config| 
-             && g.config[s.follower_id] == ios[0].r.src
-             && ios[0].r.msg.sid == s.follower_id
-             && s' == s.(peerLastZxid := ios[0].r.msg.lastLoggedZxid)
-             && g' == g.(
-                    electingFollowers := g.electingFollowers + {ios[0].r.msg.sid}
-            )
+            && !IsQuorum(|g.config|, g.electingFollowers)   // Stop accepting new followers after I have a quorum
+            && s.follower_id !in g.electingFollowers
+            && ios[0].LIoOpReceive?
+            && ios[0].r.src in g.config
+            && ios[0].r.msg.AckEpoch?
+            && 0 <= s.follower_id < |g.config| 
+            && g.config[s.follower_id] == ios[0].r.src
+            && ios[0].r.msg.sid == s.follower_id
+            && s' == s.(peerLastZxid := ios[0].r.msg.lastLoggedZxid)
+            && g' == g.(
+                electingFollowers := g.electingFollowers + {ios[0].r.msg.sid}
+        )
     )
 }
 

@@ -137,7 +137,7 @@ function ProcessFI_PreQuorum_dts_Formula() : Timestamp {
 predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
-    requires NonEmptyQuorumsInvariant(tls)
+    requires QuorumsSizeInvariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];
@@ -150,7 +150,7 @@ predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State)
 
 //----------------------------------------------------------------------------------------
 
-
+/* For all followers after sending FollowerInfo messages */
 predicate Follower_HandshakeB_Invariant(tls:TLS_State){
     forall ep | 
         && ep in tls.t_servers 
@@ -162,17 +162,12 @@ predicate Follower_HandshakeB_Invariant(tls:TLS_State){
 
 /* For all LeaderInfo messages sent BEFORE electingFollowers reaches a quorum */
 function LeaderInfo_Message_PreQuorum_ts_Formula(f:int, serial:nat) : Timestamp 
+    requires f >= 1;
 {
-        if serial < f then
-            SendFI + D 
-            + ProcFI * f  // FI's that I have received
-            + ProcFI * (serial + 1)  // I am the (serial + 1)-th LI to be sent out
-            + D
-        else 
-            SendFI + D 
-            + ProcFI * (serial + 1)  // Possibly receive #serial FI's
-            + ProcFI * (serial + 1)  // I am the (serial + 1)-th LI to be sent out
-            + D
+    SendFI + D 
+    + ProcFI * f // Possibly receive at most f FI's
+    + ProcFI * (serial + 1)  // I am the (serial + 1)-th LI to be sent out
+    + D
 }
 
 
@@ -188,31 +183,37 @@ predicate Follower_PreSync_Invariant(tls:TLS_State){
 }
 
 /* For all AckEpoch messages sent BEFORE electingFollowers reaches a quorum */
-function AckEpoch_Message_PreQuorum_ts_Formula(f:int, serial:nat) : Timestamp {
+function AckEpoch_Message_PreQuorum_ts_Formula(f:int, serial:nat) : Timestamp 
+    requires f >= 1;
+{
     LeaderInfo_Message_PreQuorum_ts_Formula(f, serial) + ProcLI + D
 }
 
 
-function ProcessEpAck_PreQuorum_ts_Formula(f:int, l:TQuorumPeer) : Timestamp 
+function ProcessEpAck_PreQuorum_ts_Formula(f:int, n:int, l:TQuorumPeer) : Timestamp 
     requires l.v.LeaderPeer?
     requires f >= 1
+    requires |l.v.leader.globals.electingFollowers| >= 1;
+    requires |l.v.leader.globals.connectingFollowers| >= 1;
+    requires !IsQuorum(n, l.v.leader.globals.electingFollowers)
 {
-    var connectingFollowers, electingFollowers := l.v.leader.globals.electingFollowers, l.v.leader.globals.connectingFollowers;
+    var connectingFollowers, electingFollowers := l.v.leader.globals.connectingFollowers, l.v.leader.globals.electingFollowers;
     if |electingFollowers| <= 1 then 
         // Have not received any AckEpochs. Dts is from last FollowerInfo received
         // ts is from receiving |cf| FI's, and sending out #serial of them
-        l.dts 
-        + ProcFI * |connectingFollowers|
+        FollowerInfo_Message_ts_Formula()
+        + ProcFI * (|connectingFollowers|-1)
         + ProcFI * l.v.leader.globals.nextSerialLI
     else 
-        l.dts  
-        + ProcEpAck * |electingFollowers| // Add processing time
+        AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+        + ProcEpAck * (|electingFollowers|-1) // Add processing time
 }
 
 
-function ProcessEpAck_PreQuorum_dts_Formula(f:int, l:TQuorumPeer) : Timestamp 
+function ProcessEpAck_PreQuorum_dts_Formula(f:int, n:int, l:TQuorumPeer) : Timestamp 
     requires l.v.LeaderPeer?
     requires f >= 1
+    requires !IsQuorum(n, l.v.leader.globals.electingFollowers)
 {
     var electingFollowers := l.v.leader.globals.electingFollowers;
     if |electingFollowers| <= 1 then 
@@ -220,19 +221,20 @@ function ProcessEpAck_PreQuorum_dts_Formula(f:int, l:TQuorumPeer) : Timestamp
         FollowerInfo_Message_ts_Formula()
     else 
         // From the last AckEpoch I received
-        // The largest AckEpoch serial I can get before a electingFollowers quorum is f
-        AckEpoch_Message_PreQuorum_ts_Formula(f, f)
+        // The largest AckEpoch serial I can get is f
+        AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
 }
 
 //----------------------------------------------------------------------------------------
 
 /* Summary of handshake B phase messages */
-predicate HandShake_Messages_Invariant(tls:TLS_State) 
-
-{
-    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.LeaderInfo? && pkt.msg.v.serial < tls.f
+predicate Handshake_Messages_Invariant(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+{   
+    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.LeaderInfo? // && pkt.msg.v.serial < tls.f
     :: pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls.f, pkt.msg.v.serial))
-    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.AckEpoch? && pkt.msg.v.serial < tls.f
+    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.AckEpoch?  // && pkt.msg.v.serial < tls.f
     :: pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls.f, pkt.msg.v.serial))
 }
 
@@ -240,14 +242,15 @@ predicate HandShake_Messages_Invariant(tls:TLS_State)
 predicate Handshake_Leader_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
-    requires Leader_NextSerialLI_Invariant(tls)
+    requires Handshake_Serial_Invariant(tls)
+    requires QuorumsSizeInvariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];
-    !IsQuorum(|tls.config|, leaderTQP.v.leader.globals.electingFollowers)
+    !IsQuorum(n, leaderTQP.v.leader.globals.electingFollowers)
     ==> 
-    && leaderTQP.ts <= ProcessEpAck_PreQuorum_ts_Formula(tls.f, leaderTQP)
-    && leaderTQP.dts <= ProcessEpAck_PreQuorum_dts_Formula(tls.f, leaderTQP)
+    && leaderTQP.ts <= ProcessEpAck_PreQuorum_ts_Formula(tls.f, n, leaderTQP)
+    && leaderTQP.dts <= ProcessEpAck_PreQuorum_dts_Formula(tls.f, n, leaderTQP)
 }
 
 /* Summary of handshake B phase follower */

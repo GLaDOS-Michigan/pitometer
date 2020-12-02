@@ -33,6 +33,11 @@ predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && DS_Config_Invariant(config, tls)
     && ZK_Config_Invariant(config, tls)
     && Leader_QueuedPackets_Invariant(config, tls)
+    && QuorumsSizeInvariant(tls)
+    && ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
+    && ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
+    && ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
+    && Handshake_Serial_Invariant(tls)
 }
 
 
@@ -41,6 +46,8 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
     requires ValidTLSBehavior(config, tlb, f)
     ensures forall i | 0 <= i < |tlb| :: Basic_Invariants(config, tlb[i]) 
 {
+    // TODO
+    assume false;
     lemma_DS_Config_Invariant_Proof(config, tlb, f);
     lemma_ZK_Config_Invariant_Proof(config, tlb, f);
     lemma_Leader_QueuedPackets_Invariant_Proof(config, tlb, f);
@@ -87,8 +94,9 @@ lemma lemma_DS_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
 }
 
 
+
 /*****************************************************************************************
-/                                   ZKConfigInvariant                                    *
+*                                   ZKConfigInvariant                                    *
 *****************************************************************************************/
 
 /* config[0] is the leader and everyone else are followers */
@@ -125,6 +133,38 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
         assert ZK_Config_Invariant(config, tls');
         i := i + 1;
     }
+}
+
+
+/*****************************************************************************************
+*                                   Transition Invariants                                *
+*****************************************************************************************/
+
+predicate SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
+    requires id in tls.t_servers
+    requires TLS_Next(tls, tls')
+    requires TLS_NextOneServer(tls, tls', id, tios)
+{
+    tls'.t_environment.sentPackets == 
+    tls.t_environment.sentPackets + (set tio : TimestampedLIoOp | tio in tios && tio.LIoOpSend? :: tio.s)
+}
+
+
+lemma lemma_SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
+    requires id in tls.t_servers
+    requires TLS_Next(tls, tls')
+    requires TLS_Next(tls, tls')
+    requires TLS_NextOneServer(tls, tls', id, tios)
+    ensures SentPacketsSet_Property(tls, tls', id, tios)
+{}
+
+// TODO: Needs Proof
+predicate QuorumsMonotoneIncreasing_Property(tls:TLS_State, tls':TLS_State)
+    requires TLS_Next(tls, tls')
+    requires Basic_Invariants(tls.config, tls) && Basic_Invariants(tls'.config, tls')
+{
+    && |tls.t_servers[tls.config[0]].v.leader.globals.connectingFollowers| <= |tls'.t_servers[tls'.config[0]].v.leader.globals.connectingFollowers|
+    && |tls.t_servers[tls.config[0]].v.leader.globals.electingFollowers| <= |tls'.t_servers[tls'.config[0]].v.leader.globals.electingFollowers|
 }
 
 
@@ -242,22 +282,36 @@ lemma lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config:
 }
 
 // TODO: Needs Proof
-predicate Leader_NextSerialLI_Invariant(tls:TLS_State) {
-    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+predicate Handshake_Serial_Invariant(tls:TLS_State) {
+    && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var l := tls.t_servers[ep].v.leader;
-        1 <= |l.globals.electingFollowers| <= l.globals.nextSerialLI + 1
-    )
+        // Size of electing followers is bound by the # LeaderInfo's sent
+        && 1 <= |l.globals.electingFollowers| <= l.globals.nextSerialLI + 1
+        // Don't send more than f LeaderInfo's
+        && l.globals.nextSerialLI <= tls.f
+    ))
+    && (forall pkt | pkt in tls.t_environment.sentPackets :: (
+        // LeaderInfo and AckEpoch serial bound by f
+        && (pkt.msg.v.LeaderInfo? ==> pkt.msg.v.serial < tls.f)  // strictly <f bc I send out at most f messages. 1st msg is #0. f-th msg is #(f-1)
+        && (pkt.msg.v.AckEpoch? ==> pkt.msg.v.serial < tls.f)
+    )) // Follower serial bound by f
+    && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.FollowerPeer? :: (
+        && var f := tls.t_servers[ep].v.follower;
+        f.serialLI < tls.f
+    ))
 }
 
-// TODO
-predicate NonEmptyQuorumsInvariant(tls:TLS_State) {
+// TODO: Needs Proof
+predicate QuorumsSizeInvariant(tls:TLS_State) {
+    var n := |tls.config|;
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var l := tls.t_servers[ep].v.leader;
-        && l.globals.connectingFollowers >= {l.my_id}
-        && l.globals.electingFollowers >= {l.my_id}
-        && l.globals.ackSet >= {l.my_id}
+        && {l.my_id} <= l.globals.connectingFollowers
+        && {l.my_id} <= l.globals.electingFollowers
+        && {l.my_id} <= l.globals.ackSet
+        && 1 <= |l.globals.connectingFollowers| <= (n/2) + 1
+        && 1 <= |l.globals.electingFollowers| <= (n/2) + 1
+        && 1 <=|l.globals.ackSet| <= (n/2) + 1
     )
 }
-
-
 }

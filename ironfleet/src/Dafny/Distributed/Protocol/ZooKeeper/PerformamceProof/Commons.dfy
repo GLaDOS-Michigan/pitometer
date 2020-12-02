@@ -29,25 +29,6 @@ import opened Zookeeper_Performance_Definitions
 import opened ZooKeeper_TimestampedDistributedSystem
 
 
-predicate SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
-    requires id in tls.t_servers
-    requires TLS_Next(tls, tls')
-    requires TLS_NextOneServer(tls, tls', id, tios)
-{
-    tls'.t_environment.sentPackets == 
-    tls.t_environment.sentPackets + (set tio : TimestampedLIoOp | tio in tios && tio.LIoOpSend? :: tio.s)
-}
-
-
-lemma lemma_SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
-    requires id in tls.t_servers
-    requires TLS_Next(tls, tls')
-    requires TLS_Next(tls, tls')
-    requires TLS_NextOneServer(tls, tls', id, tios)
-    ensures SentPacketsSet_Property(tls, tls', id, tios)
-{}
-
-
 lemma lemma_Math_Inequality(a:nat, b:nat)
     requires a <= b + 1
     ensures b-a+1 >= 0
@@ -64,5 +45,47 @@ lemma {:axiom} lemma_Math_MaxOfInequalities(a:Timestamp, b:Timestamp, x:Timestam
     requires a <= x && b <= y
     ensures TimeMax(a, b) <= y
 {}
+
+lemma {:axiom} lemma_Math_Inequalities_CommonMult(x:Timestamp, a:Timestamp, b:Timestamp)
+    requires a <= b
+    ensures x * a <= x * b
+{}
+
+
+lemma lemma_Size_of_Supeset<T>(s:set<T>) 
+    ensures forall subset:set<T> | s >= subset :: |s| >= |subset|
+{
+    forall subset:set<T> | s >= subset
+    ensures |s| >= |subset|
+    {
+        if |s| < |subset| {
+            assert |s-subset| > 0;
+        }
+    }
+}
+
+
+lemma lemma_Size_One_Sets<T>(s:set<T>, e:T) 
+    requires s >= {e}
+    requires |s| <= 1
+    ensures s == {e}
+{
+    if s != {e} {
+        if s == {} {
+            assert ! (s >= {e});
+        } else {
+            assert |s| == 1;
+            forall e' | e' in s 
+            ensures e' == e {
+                if e' != e {
+                    assert e' in s && e in s;
+                    assert s >= {e', e};
+                    assert |{e', e}| == 2;
+                    lemma_Size_of_Supeset(s);
+                }
+            }
+        }
+    }
+}
 
 }
