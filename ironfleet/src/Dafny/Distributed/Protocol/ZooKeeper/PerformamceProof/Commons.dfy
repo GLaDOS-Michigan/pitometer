@@ -34,9 +34,19 @@ lemma lemma_Math_Inequality(a:nat, b:nat)
     ensures b-a+1 >= 0
 {}
 
-lemma {:axiom} lemma_Math_Mult()
+lemma lemma_Math_Addition(a:Timestamp)
+    ensures forall x:Timestamp :: x <= x + a
+{}
+
+
+lemma {:axiom} lemma_Math_Mult_a()
     ensures forall x | x >= 0 ::
         forall a, b | a>=0 && b>= a>= 0 :: x*b >= x*a
+{}
+
+lemma lemma_Math_Mult_b()
+    ensures forall x:Timestamp, n:nat ::
+    x * n + x == x * (n+1)
 {}
 
 

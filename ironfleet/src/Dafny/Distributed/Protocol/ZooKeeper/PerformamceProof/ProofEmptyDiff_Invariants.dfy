@@ -298,6 +298,8 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                                 // Next is the ts
                                 assert lt.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) + ProcEpAck * (|g.electingFollowers|-1);
                                 assert tmsg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, tmsg.v.serial);
+                                assert |g.electingFollowers|-1 >= 0;
+                                lemma_Math_Addition(ProcEpAck * (|g.electingFollowers|-1));
                                 assert AckEpoch_Message_PreQuorum_ts_Formula(f, tmsg.v.serial) <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) + ProcEpAck * (|g.electingFollowers|-1);
                                 var handlerStartTime := TimeMax(tmsg.ts, lt.ts);
                                 lemma_Math_MaxOfInequalities(tmsg.ts, lt.ts, AckEpoch_Message_PreQuorum_ts_Formula(f, tmsg.v.serial), AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) + ProcEpAck * (|g.electingFollowers|-1));
@@ -305,6 +307,7 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                                 assert g'.electingFollowers == g.electingFollowers + {tmsg.v.sid};
                                 assert |g'.electingFollowers| == |g.electingFollowers| + 1;
                                 assert lt'.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) + ProcEpAck * (|g.electingFollowers|-1) + ProcEpAck;
+                                lemma_Math_Mult_b();
                                 assert ProcEpAck * (|g.electingFollowers|-1) + ProcEpAck == ProcEpAck * (|g'.electingFollowers|-1);
                                 assert lt'.ts <= ProcessEpAck_PreQuorum_ts_Formula(f, n, tls'.t_servers[actor]);
                             }
@@ -318,5 +321,32 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     assert Handshake_Messages_Invariant(tls');
     assert Handshake_Leader_PreQuorum_Invariant(tls');
 }
+
+
+/*****************************************************************************************
+*                                  ProcessAck Invariant                                  *
+*****************************************************************************************/
+
+
+lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:TLS_State, tls':TLS_State)
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    // requires FollowerInit_Invariant(tls) && FollowerInit_Invariant(tls')
+    // requires QuorumsMonotoneIncreasing_Property(tls, tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls)
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    ensures Sync_Messages_Invariant(tls')
+    ensures Sync_Follower_Invariant(tls')
+    ensures Sync_Leader_PreQuorum_Invariant(tls')
+{
+    assume false;
+    assert Sync_Messages_Invariant(tls');
+    assert Sync_Follower_Invariant(tls');
+    assert Sync_Leader_PreQuorum_Invariant(tls');
+}
+
 
 }
