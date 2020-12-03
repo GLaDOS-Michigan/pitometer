@@ -47,6 +47,7 @@ lemma theorem_ZK_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
     assume false;
 }
 
+
 lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
     requires SeqIsUnique(config);
     requires ValidTLSBehavior(config, tlb, f)
@@ -64,15 +65,23 @@ lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_Stat
         invariant 0 <= i < |tlb|
         invariant forall k | 0 <= k <= i :: FollowerInit_Invariant(tlb[k])
         invariant forall k | 0 <= k <= i :: Handshake_Follower_Invariant(tlb[k])
-        invariant forall k | 0 <= k <= i :: Handshake_Messages_Invariant(tlb[k])
         invariant forall k | 0 <= k <= i :: Handshake_Leader_PreQuorum_Invariant(tlb[k])
+        invariant forall k | 0 <= k <= i :: Handshake_Messages_Invariant(tlb[k])
     {
         var tls, tls' := tlb[i], tlb[i+1];
         assert TLS_Next(tls, tls');
         lemma_FollowerInit_Invariant_Induction(config, tls, tls');
         lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config, tls, tls');
+        assert Handshake_Follower_Invariant(tls');
+        assert Handshake_Messages_Invariant(tls');
         assert Handshake_Leader_PreQuorum_Invariant(tls');
+        assert forall k | 0 <= k <= i+1 :: 
+            && Handshake_Leader_PreQuorum_Invariant(tlb[k])
+            && Handshake_Messages_Invariant(tlb[k])
+            && Handshake_Follower_Invariant(tlb[k]);
         i := i + 1;
+        assert tls' == tlb[i];
     }
 }
+
 }

@@ -18,7 +18,9 @@ datatype Follower = Follower(
     accepted_epoch: int,
     state: FollowerState,
 
-    serialLI: int
+    serialLI: int,
+    serialSync: int,
+    serialNL: int
 )
 
 datatype FollowerState = F_HANDSHAKE_A | F_HANDSHAKE_B | F_PRESYNC | F_SYNC | F_RUNNING | F_ERROR
@@ -33,6 +35,8 @@ predicate FollowerInit(s:Follower, my_id:nat, leader_id:nat, config:Config, zkdb
     && s.state == F_HANDSHAKE_A
 
     && s.serialLI == -1
+    && s.serialSync == -1
+    && s.serialNL == -1
 }
 
 predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
@@ -113,22 +117,22 @@ predicate PreSyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
         case FollowerInfo(sid, latestZxid) => false
         case LeaderInfo(sid, sn, newZxid) => false
         case AckEpoch(sid, serial, lastLoggedZxid, lastAcceptedEpoch) => false
-        case Ack(sid, ackZxid) => false
-        case Commit(sid, txn) => false
-        case NewLeader(sid, newLeaderZxid) => false
+        case Ack(sid, serial, ackZxid) => false
+        case Commit(sid, serial, txn) => false
+        case NewLeader(sid, serial, newLeaderZxid) => false
         case UpToDate(sid) => false
 
         // Sync messages
-        case SyncDIFF(sid, lastProcessedZxid) => 
+        case SyncDIFF(sid, serial, lastProcessedZxid) => 
             && |ios| == 1
-            && s' == s.(state := F_SYNC)
-        case SyncSNAP(sid, leaderDb, lastProcessedZxid) =>
+            && s' == s.(state := F_SYNC, serialSync:= serial)
+        case SyncSNAP(sid, serial, leaderDb, lastProcessedZxid) =>
             && |ios| == 1
-            && s' == s.(zkdb := s'.zkdb, state := F_SYNC)
+            && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
             && ClearAndLoadDbSnapshot(s, s', leaderDb)
-        case SyncTRUNC(sid, lastProcessedZxid) => 
+        case SyncTRUNC(sid, serial, lastProcessedZxid) => 
             && |ios| == 1
-            && s' == s.(zkdb := s'.zkdb, state := F_SYNC)
+            && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
             && truncDatabase(s.zkdb, s'.zkdb, lastProcessedZxid)
 }
 
@@ -148,44 +152,38 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
         case FollowerInfo(sid, latestZxid) => false
         case LeaderInfo(sid, sn, newZxid) => false
         case AckEpoch(sid, serial, lastLoggedZxid, lastAcceptedEpoch) => false
-        case Ack(sid, ackZxid) => false
-        case SyncDIFF(sid, lastProcessedZxid) => false
-        case SyncSNAP(sid, leaderDb, lastProcessedZxid) => false
-        case SyncTRUNC(sid, lastProcessedZxid) => false
+        case Ack(sid, serial, ackZxid) => false
+        case SyncDIFF(sid, serial, lastProcessedZxid) => false
+        case SyncSNAP(sid, serial, leaderDb, lastProcessedZxid) => false
+        case SyncTRUNC(sid, serial, lastProcessedZxid) => false
 
         // Process new transactions
-        case Commit(sid, txn) => 
+        case Commit(sid, serial, txn) => 
             && |ios| == 1
-            && ProcessTxn(s, s', txn)
-        case NewLeader(sid, newLeaderZxid) =>
-            && s' == s.(zkdb := s'.zkdb)
+            && s' == s.(zkdb := s'.zkdb, serialSync:= serial)
+            && commitToLog(s.zkdb, s'.zkdb, txn)
+        case NewLeader(sid, serial, newLeaderZxid) =>
+            && s' == s.(zkdb := s'.zkdb, serialNL:= serial)
             && takeSnapshot(s.zkdb, s'.zkdb)
             && |ios| == 2
             && ios[1].LIoOpSend?
             && ios[1].s.dst == ios[0].r.src
             && ios[1].s.sender_index == s.my_id
-            && ios[1].s.msg == Ack(s.my_id, newLeaderZxid)
+            && ios[1].s.msg == Ack(s.my_id, s'.serialNL, newLeaderZxid)
 
         // Terminating condition to move to next state
         case UpToDate(sid) => 
             // Send Ack with new epoch, and move to running state
-            && |ios| == 2
-            && ios[1].LIoOpSend?
-            && ios[1].s.dst == ios[0].r.src
-            && ios[1].s.sender_index == s.my_id
-            && ios[1].s.msg == Ack(s.my_id, Zxid(s.accepted_epoch, 0))
+            && |ios| == 1
+            // && ios[1].LIoOpSend?
+            // && ios[1].s.dst == ios[0].r.src
+            // && ios[1].s.sender_index == s.my_id
+            // && ios[1].s.msg == Ack(s.my_id, Zxid(s.accepted_epoch, 0))
             && s' == s.(state := F_RUNNING)
 }
 
 
 predicate ClearAndLoadDbSnapshot(s:Follower, s':Follower, snapshot:ZKDatabase){
     s'.zkdb == snapshot
-}
-
-predicate ProcessTxn(s:Follower, s':Follower, txn:Zxid) {
-    // Not what actually happens in ZooKeeper, but I'm simplifying this step to simply
-    // append to the log
-    && s' == s.(zkdb := s'.zkdb)
-    && commitToLog(s.zkdb, s'.zkdb, txn)
 }
 }

@@ -35,6 +35,9 @@ datatype LeaderGlobals = LeaderGlobals(
     connectingFollowers: set<nat>,
     nextSerialLI: int,
     electingFollowers: set<nat>,
+    nextSerialSync: nat,    
+    nextSerialNL: nat,
+    prepCount: nat,
     ackSet: set<nat>
 )
 */
@@ -47,7 +50,7 @@ datatype LeaderGlobals = LeaderGlobals(
 predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
     && s.my_id == my_id
     && s.state == L_STARTING
-    && s.globals == LeaderGlobals(zkdb, config, -1, {my_id}, 0, {my_id}, {my_id})  // Leader is defacto part of all quorums
+    && s.globals == LeaderGlobals(zkdb, config, -1, {my_id}, 0, {my_id}, 0, 0, 0, {my_id})  // Leader is defacto part of all quorums
     && InitHandlers(s.handlers, my_id, config)
 }
 

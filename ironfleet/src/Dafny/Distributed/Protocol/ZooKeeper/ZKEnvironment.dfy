@@ -19,13 +19,13 @@ datatype ZKMessage =
     | FollowerInfo(sid:nat, latestZxid:Zxid)
     | LeaderInfo(sid:nat, serial:nat, newZxid:Zxid)
     | AckEpoch(sid:nat, serial:nat, lastLoggedZxid:Zxid, lastAcceptedEpoch:int)
-    | SyncDIFF(sid:nat, lastProcessedZxid:Zxid)
-    | SyncSNAP(sid:nat, leaderDb: ZKDatabase, lastProcessedZxid:Zxid)
-    | SyncTRUNC(sid:nat, lastProcessedZxid:Zxid)
+    | SyncDIFF(sid:nat, serial:nat, lastProcessedZxid:Zxid)
+    | SyncSNAP(sid:nat, serial:nat, leaderDb: ZKDatabase, lastProcessedZxid:Zxid)
+    | SyncTRUNC(sid:nat, serial:nat, lastProcessedZxid:Zxid)
+    | NewLeader(sid:nat, serial:nat, newLeaderZxid:Zxid)
+    | Commit(sid:nat, serial:nat, txn:Zxid)
+    | Ack(sid:nat, serial:nat, ackZxid:Zxid)
     | UpToDate(sid:nat)
-    | NewLeader(sid:nat, newLeaderZxid:Zxid)
-    | Commit(sid:nat, txn:Zxid)
-    | Ack(sid:nat, ackZxid:Zxid)
 
 type ZKEnvironment = LEnvironment<EndPoint, ZKMessage>
 type ZKPacket = LPacket<EndPoint, ZKMessage>

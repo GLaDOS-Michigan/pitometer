@@ -38,8 +38,11 @@ datatype LeaderGlobals = LeaderGlobals(
     // Synchronization globals
     leaderEpoch: int,
     connectingFollowers: set<nat>,
-    nextSerialLI: nat,
+    nextSerialLI: nat,          // next serial number for LeaderInfo
     electingFollowers: set<nat>,
+    nextSerialSync: nat,        // next serial number for SyncDIFF | SyncSNAP | SyncTRUNC
+    nextSerialNL: nat,          // next serial number for newLeader
+    prepCount: nat,             // how many times PrepSync has been run
     ackSet: set<nat>
 )
 
@@ -153,30 +156,31 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':L
     var proposals := getInMemorySuffix(g.zkdb);
     && |ios| == 0  // no I/O in this step
     && s' == s.(state := s'.state)  //syncMode to be modified accordingly
-    && g' == g
+    && g' == g.(prepCount := g.prepCount + 1)
+    // Initialize all message serial to 0, and only update them to their correct order as I send them out
     && if |proposals| > 0 
         then (
             if ZxidLt(g.zkdb.maxCommittedLog, s.peerLastZxid) 
             then    && s'.state == LH_SYNC
-                    && s'.queuedPackets == [SyncTRUNC(s.my_id, g.zkdb.maxCommittedLog)]
+                    && s'.queuedPackets == [SyncTRUNC(s.my_id, 0, g.zkdb.maxCommittedLog)]
             else if ZxidLt(s.peerLastZxid, g.zkdb.minCommittedLog) 
             then && s'.state == LH_SYNC
-                 && s'.queuedPackets == [SyncSNAP(s.my_id, g.zkdb, getLastLoggedZxid(g.zkdb))]
+                 && s'.queuedPackets == [SyncSNAP(s.my_id, 0, g.zkdb, getLastLoggedZxid(g.zkdb))]
             else  // peerLastZxid is in the range of my proposals list
                 if s.peerLastZxid !in proposals then s' == s.(state := LH_ERROR) 
                 else
                 && s'.state == LH_SYNC
-                && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)] + PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
+                && s'.queuedPackets == [SyncDIFF(s.my_id, 0, s.peerLastZxid)] + PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
        ) else (
             if ZxidEq(g.zkdb.maxCommittedLog, s.peerLastZxid) 
             then 
                 // Sync empty diff
                 && s'.state == LH_SYNC
-                && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)]
+                && s'.queuedPackets == [SyncDIFF(s.my_id, 0, s.peerLastZxid)]
             else 
                 // Default to sync entire snapshot. This is the bug.
                 && s'.state == LH_SYNC
-                && s'.queuedPackets == [SyncSNAP(s.my_id, g.zkdb, getLastLoggedZxid(g.zkdb))]
+                && s'.queuedPackets == [SyncSNAP(s.my_id, 0, g.zkdb, getLastLoggedZxid(g.zkdb))]
        )
 }
 
@@ -184,7 +188,6 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':L
 predicate DoSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':LeaderGlobals, ios:seq<ZKIo>) 
     requires s.state == LH_SYNC
 {
-    && g' == g
     && |ios| == 1 
     && ios[0].LIoOpSend?
     && 0 <= s.follower_id < |g.config| 
@@ -192,11 +195,20 @@ predicate DoSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Leader
     && ios[0].s.dst == g.config[s.follower_id]
     && if |s.queuedPackets| == 0 
         then // Done with sync. Send NewLeader msg
+            g' == g.(nextSerialNL := g.nextSerialNL + 1)
             && s' == s.(state := LH_PROCESS_ACK)
-            && ios[0].s.msg == NewLeader(s.my_id, getLastLoggedZxid(g.zkdb))
+            && ios[0].s.msg == NewLeader(s.my_id, g.nextSerialNL, getLastLoggedZxid(g.zkdb))
         else // Send next item in queuedPackets. Remain in LH_SYNC state
             && s' == s.(queuedPackets := s.queuedPackets[1..])
-            && ios[0].s.msg == s.queuedPackets[0]
+            && var qp := s.queuedPackets[0];
+            && if qp.SyncDIFF?
+                then && ios[0].s.msg == SyncDIFF(qp.sid, g.nextSerialSync, qp.lastProcessedZxid)
+                     && g' == g.(nextSerialSync := g.nextSerialSync + 1)      
+                else if qp.SyncSNAP?
+                then && ios[0].s.msg == SyncSNAP(qp.sid, g.nextSerialSync, qp.leaderDb, qp.lastProcessedZxid)
+                     && g' == g.(nextSerialSync := g.nextSerialSync + 1)
+                else 
+                    false  // In our environment SNAP and DIFF are the only possibilities      
 }
 
 
@@ -251,6 +263,6 @@ function PrepareDiffCommits(leaderId:nat, proposals:seq<Zxid>, peerLastZxid:Zxid
 {
     if |proposals| == 0 then []
     else if peerLastZxid in proposals then PrepareDiffCommits(leaderId, proposals[1..], peerLastZxid)
-    else [Commit(leaderId, proposals[0])] + PrepareDiffCommits(leaderId, proposals[1..], peerLastZxid)
+    else [Commit(leaderId, 0, proposals[0])] + PrepareDiffCommits(leaderId, proposals[1..], peerLastZxid)
 }
 }

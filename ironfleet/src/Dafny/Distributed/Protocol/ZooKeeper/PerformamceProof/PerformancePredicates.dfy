@@ -267,4 +267,137 @@ predicate Handshake_Follower_Invariant(tls:TLS_State)
 *                                 Sync Phase Guarantees                                  *
 *****************************************************************************************/
 
+
+/* For all SyncDIFF | SyncSNAP messages sent */
+function Sync_Message_ts_Formula(f:int, serial:nat) : Timestamp 
+    requires f >= 1;
+{
+    AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+    + PreSync * f    // max possible PrepSyncs done before I was sent
+    + Sync * serial  // max possible NewLeader sent before I was sent
+    + Sync * (serial + 1)  // I am the (serial + 1)-th sync message sent
+    + D
+}
+
+/* For all NewLeader messages sent */
+function NewLeader_Message_ts_Formula(f:int, serial:nat) : Timestamp 
+    requires f >= 1;
+{
+    AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+    + PreSync * f    // max possible PrepSyncs done before I was sent
+    + Sync * f  // max possible Syncs sent before I was sent
+    + Sync * (serial + 1)  // I am the (serial + 1)-th NL message sent
+    + D
+}
+
+/* Follower in F_SYNC state. May or may not have received Newleader at this state. 
+* Just received a SyncDiff | SyncSnap | NewLeader */
+function Follower_F_SYNC_dts_Formula(f:int, s:TQuorumPeer) : Timestamp 
+    requires s.v.FollowerPeer?    
+    requires f >= 1
+    requires s.v.follower.serialSync >= 0
+{
+    if s.v.follower.serialNL < 0 
+    then // yet to receive NL. Just processed SyncDiff | SyncSnap
+        Sync_Message_ts_Formula(f, s.v.follower.serialSync)
+    else // just received NL. Waititng to receive final UpToDate to start running
+        NewLeader_Message_ts_Formula(f, s.v.follower.serialNL)
+}
+
+/* Follower in F_SYNC state. May or may not have received Newleader at this state. 
+* Just received a SyncDiff | SyncSnap | NewLeader */
+function Follower_F_SYNC_ts_Formula(f:int, s:TQuorumPeer) : Timestamp 
+    requires s.v.FollowerPeer?    
+    requires f >= 1
+    requires s.v.follower.serialSync >= 0
+{
+    if s.v.follower.serialNL < 0 
+    then // yet to receive NL. Just processed SyncDiff | SyncSnap
+        Follower_F_SYNC_dts_Formula(f, s) + ProcSyncI
+    else // just received NL. Waititng to receive final UpToDate to start running
+        NewLeader_Message_ts_Formula(f, s.v.follower.serialNL) + ProcSyncI + ProcSync
+}
+
+
+function Ack_Message_ts_Formula(f:int, serial:nat) : Timestamp
+    requires f >= 1;
+{
+    NewLeader_Message_ts_Formula(f, serial) + ProcSyncI + ProcSync
+}
+
+
+function ProcessAck_PreQuorum_ts_Formula(f:int, n:int, l:TQuorumPeer) : Timestamp 
+    requires l.v.LeaderPeer?
+    requires f >= 1
+    requires !IsQuorum(n, l.v.leader.globals.ackSet)
+{
+    var ackSet := l.v.leader.globals.ackSet;
+    if |ackSet| <= 1 then 
+        AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+        + PreSync * l.v.leader.globals.prepCount    // num of PrepSyncs done
+        + Sync * l.v.leader.globals.nextSerialSync   // Only sync, never syncSnap
+        + Sync * l.v.leader.globals.nextSerialNL   // Only sync, never syncSnap
+    else 
+        Ack_Message_ts_Formula(f, f-1) + ProcAck * (|ackSet|-1)
+}
+
+
+function ProcessAck_PreQuorum_dts_Formula(f:int, n:int, l:TQuorumPeer) : Timestamp 
+    requires l.v.LeaderPeer?
+    requires f >= 1
+    requires !IsQuorum(n, l.v.leader.globals.ackSet)
+{
+    var ackSet := l.v.leader.globals.ackSet;
+    if |ackSet| <= 1 then 
+        // Have not received any Acks. Dts is from last AckEpoch received
+        // The largest AckEpoch serial I can get is f
+        AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+    else 
+        // From the last Ack I received
+        // The largest Ack serial I can get is f
+        Ack_Message_ts_Formula(f, f-1)
+}
+
+
+//----------------------------------------------------------------------------------------
+/* Summary of Sync phase messages */
+predicate Sync_Messages_Invariant(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+{   
+    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.SyncDIFF? || pkt.msg.v.SyncSNAP?) // && pkt.msg.v.serial < tls.f
+    :: pkt.msg.ts <= Sync_Message_ts_Formula(tls.f, pkt.msg.v.serial))
+    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.NewLeader?) // && pkt.msg.v.serial < tls.f
+    :: pkt.msg.ts <= NewLeader_Message_ts_Formula(tls.f, pkt.msg.v.serial))
+    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.Ack?) // && pkt.msg.v.serial < tls.f
+    :: pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial))
+}
+
+
+/* Summary of Sync phase followers */
+predicate Sync_Follower_Invariant(tls:TLS_State){
+    forall ep | 
+        && ep in tls.t_servers
+        && tls.t_servers[ep].v.FollowerPeer? 
+        && tls.t_servers[ep].v.follower.state == F_SYNC
+        && 0 <= tls.t_servers[ep].v.follower.serialSync < tls.f
+    ::  && tls.t_servers[ep].dts <= Follower_F_SYNC_dts_Formula(tls.f, tls.t_servers[ep])
+        && tls.t_servers[ep].ts <= Follower_F_SYNC_ts_Formula(tls.f, tls.t_servers[ep])
+}
+
+
+/* Summary of Sync phase leader before AckSet quorum */
+predicate Sync_Leader_PreQuorum_Invariant(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+    // requires QuorumsSizeInvariant(tls)
+{
+    var n := |tls.config|;
+    var leaderTQP := tls.t_servers[tls.config[0]];
+    !IsQuorum(n, leaderTQP.v.leader.globals.ackSet)
+    ==> 
+    && leaderTQP.ts <= ProcessAck_PreQuorum_ts_Formula(tls.f, n, leaderTQP)
+    && leaderTQP.dts <= ProcessAck_PreQuorum_dts_Formula(tls.f, n, leaderTQP)
+}
+
 }
