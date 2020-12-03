@@ -32,4 +32,8 @@ predicate ZxidLt(z1:Zxid, z2:Zxid) {
     if z1.epoch < z2.epoch then true
     else z1.epoch == z2.epoch && z1.counter < z2.counter 
 }
+
+predicate ZxidEq(z1:Zxid, z2:Zxid) {
+    z1.epoch == z2.epoch && z1.counter == z2.counter 
+}
 }

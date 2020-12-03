@@ -168,9 +168,15 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':L
                 && s'.state == LH_SYNC
                 && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)] + PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
        ) else (
-            // Sync empty diff
-            && s'.state == LH_SYNC
-            && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)]
+            if ZxidEq(g.zkdb.maxCommittedLog, s.peerLastZxid) 
+            then 
+                // Sync empty diff
+                && s'.state == LH_SYNC
+                && s'.queuedPackets == [SyncDIFF(s.my_id, s.peerLastZxid)]
+            else 
+                // Default to sync entire snapshot. This is the bug.
+                && s'.state == LH_SYNC
+                && s'.queuedPackets == [SyncSNAP(s.my_id, g.zkdb, getLastLoggedZxid(g.zkdb))]
        )
 }
 
