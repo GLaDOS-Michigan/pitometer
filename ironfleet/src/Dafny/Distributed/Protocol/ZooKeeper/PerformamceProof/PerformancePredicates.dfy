@@ -2,7 +2,7 @@ include "../../../Impl/Common/SeqIsUniqueDef.i.dfy"
 include "../../../Common/Framework/EnvironmentTCP.s.dfy"
 include "../Timestamps/TimestampedType.dfy"
 include "TimestampedLS.dfy"
-include "BasicInvariants.dfy"
+include "ProtocolInvariants.dfy"
 
 include "../Types.dfy"
 include "../DistributedSystem.dfy"
@@ -28,7 +28,7 @@ import opened ZooKeeper_Leader
 import opened ZooKeeper_LearnerHandler
 import opened Zookeeper_Performance_Definitions
 import opened ZooKeeper_TimestampedDistributedSystem
-import opened Zookeeper_BasicInvariants
+import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
 
 
@@ -137,7 +137,7 @@ function ProcessFI_PreQuorum_dts_Formula() : Timestamp {
 predicate ProcessFI_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
-    requires QuorumsSizeInvariant(tls)
+    requires Quorums_Size_Invariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];
@@ -243,7 +243,7 @@ predicate Handshake_Leader_PreQuorum_Invariant(tls:TLS_State)
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
     requires Handshake_Serial_Invariant(tls)
-    requires QuorumsSizeInvariant(tls)
+    requires Quorums_Size_Invariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];
@@ -390,7 +390,7 @@ predicate Sync_Follower_Invariant(tls:TLS_State){
 predicate Sync_Leader_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
-    // requires QuorumsSizeInvariant(tls)
+    // requires Quorums_Size_Invariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];

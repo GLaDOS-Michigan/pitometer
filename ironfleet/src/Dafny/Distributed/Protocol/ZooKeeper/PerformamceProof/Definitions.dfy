@@ -17,8 +17,8 @@ ghost const ProcSnap:Timestamp
 
 ghost const ProcFI:Timestamp
 ghost const ProcEpAck:Timestamp
-ghost const PreSync:Timestamp
-ghost const Sync:Timestamp
+ghost const PreSync:Timestamp // PrepSync
+ghost const Sync:Timestamp  // DoSync
 ghost const SyncSnap:Timestamp
 ghost const ProcAck:Timestamp
 
@@ -48,6 +48,7 @@ function StepToTimeDelta(hstep:HostStep) : Timestamp {
 }
 
 function TLS_NoRecvPerfUpdate(node_pr:Timestamp, hstep:HostStep) : Timestamp
+    ensures TLS_NoRecvPerfUpdate(node_pr, hstep) == node_pr + StepToTimeDelta(hstep)
 {
     var total_time := TimeAdd2(node_pr, StepToTimeDelta(hstep));
     total_time

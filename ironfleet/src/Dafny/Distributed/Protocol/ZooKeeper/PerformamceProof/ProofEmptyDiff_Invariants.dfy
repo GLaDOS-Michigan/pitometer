@@ -12,7 +12,7 @@ include "../Leader.dfy"
 include "../LearnerHandler.dfy"
 include "Definitions.dfy"
 include "PerformancePredicates.dfy"
-include "BasicInvariants.dfy"
+include "ProtocolInvariants.dfy"
 include "Commons.dfy"
 
 
@@ -30,7 +30,7 @@ import opened ZooKeeper_LearnerHandler
 import opened Zookeeper_Performance_Definitions
 import opened ZooKeeper_TimestampedDistributedSystem
 import opened Zookeeper_PerformancePredicates
-import opened Zookeeper_BasicInvariants
+import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
 
 
@@ -257,6 +257,23 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     ensures pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls'.f, pkt.msg.v.serial)
     {}
     // Invariants on leader at syncrhonization barrier at ProcessEpAck -- Handshake_Leader_PreQuorum_Invariant(tls')
+    lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction_Helper(config, tls, tls');
+}
+
+lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction_Helper(config:Config, tls:TLS_State, tls':TLS_State)
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    requires FollowerInit_Invariant(tls) && FollowerInit_Invariant(tls')
+    requires QuorumsMonotoneIncreasing_Property(tls, tls')
+    // Induction hypothesis
+    requires Handshake_Messages_Invariant(tls)
+    requires Handshake_Leader_PreQuorum_Invariant(tls)
+    requires Handshake_Follower_Invariant(tls)
+    requires Handshake_Follower_Invariant(tls')
+    requires Handshake_Messages_Invariant(tls')
+    ensures Handshake_Leader_PreQuorum_Invariant(tls')
+{
     if !IsQuorum(|tls.config|, tls.t_servers[config[0]].v.leader.globals.electingFollowers) {
         var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
         if actor == config[0] {
@@ -299,6 +316,8 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                                 assert lt.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) + ProcEpAck * (|g.electingFollowers|-1);
                                 assert tmsg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, tmsg.v.serial);
                                 assert |g.electingFollowers|-1 >= 0;
+                                lemma_Math_Inequalities_Mult();
+                                assert ProcEpAck * (|g.electingFollowers|-1) >= 0;
                                 lemma_Math_Addition(ProcEpAck * (|g.electingFollowers|-1));
                                 assert AckEpoch_Message_PreQuorum_ts_Formula(f, tmsg.v.serial) <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1) + ProcEpAck * (|g.electingFollowers|-1);
                                 var handlerStartTime := TimeMax(tmsg.ts, lt.ts);
@@ -317,10 +336,8 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
             }
         }
     }
-    assert Handshake_Follower_Invariant(tls');
-    assert Handshake_Messages_Invariant(tls');
-    assert Handshake_Leader_PreQuorum_Invariant(tls');
 }
+
 
 
 /*****************************************************************************************
@@ -332,6 +349,7 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
     requires TLS_Next(tls, tls')
     requires General_LS_Performance_Assumption(tls)
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
     // requires FollowerInit_Invariant(tls) && FollowerInit_Invariant(tls')
     // requires QuorumsMonotoneIncreasing_Property(tls, tls')
     // Induction hypothesis
@@ -342,10 +360,52 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
     ensures Sync_Follower_Invariant(tls')
     ensures Sync_Leader_PreQuorum_Invariant(tls')
 {
-    assume false;
-    assert Sync_Messages_Invariant(tls');
-    assert Sync_Follower_Invariant(tls');
-    assert Sync_Leader_PreQuorum_Invariant(tls');
+    var f, n := tls.f, |tls.config|;
+
+    // First prove Sync_Messages_Invariant(tls');
+    forall pkt | pkt in tls'.t_environment.sentPackets && (pkt.msg.v.SyncDIFF? || pkt.msg.v.SyncSNAP?)
+    ensures pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial)
+    {
+        assert pkt.msg.v.SyncDIFF?;  // By EmptyDiff_Invariant
+        Sync_Messages_Invariant_Helper_A(config, tls, tls', pkt);
+    }
+
+    assume Sync_Messages_Invariant(tls');
+    assume Sync_Follower_Invariant(tls');
+    assume Sync_Leader_PreQuorum_Invariant(tls');
+}
+
+
+lemma Sync_Messages_Invariant_Helper_A(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    // requires FollowerInit_Invariant(tls) && FollowerInit_Invariant(tls')
+    // requires QuorumsMonotoneIncreasing_Property(tls, tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls)
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.SyncDIFF?
+    ensures pkt.msg.ts <= Sync_Message_ts_Formula(tls.f, pkt.msg.v.serial)
+{
+    var f, n := tls.f, |tls.config|;
+    if pkt !in tls.t_environment.sentPackets {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        var lt, lt' := tls.t_servers[config[0]], tls'.t_servers[config[0]];
+        var l, l', ios := lt.v.leader, lt'.v.leader, UntagLIoOpSeq(tios);
+        if actor == config[0] {
+            var fid :| LHNext(l, l', fid, ios);
+            var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
+            assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
+            lemma_Math_Mult_b();
+            assert g'.prepCount ==  g.prepCount <= f;
+            assert g'.nextSerialNL == g.nextSerialNL <= g.nextSerialSync == pkt.msg.v.serial;
+            lemma_Math_Inequalities_CommonMult(Sync, g'.nextSerialNL, pkt.msg.v.serial);
+            lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
+            assert pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
+        }
+    }
 }
 
 

@@ -56,6 +56,11 @@ lemma {:axiom} lemma_Math_MaxOfInequalities(a:Timestamp, b:Timestamp, x:Timestam
     ensures TimeMax(a, b) <= y
 {}
 
+lemma {:axiom} lemma_Math_Inequalities_Mult()
+    ensures forall t:Timestamp, x:nat :: t * x >= 0
+{}
+
+
 lemma {:axiom} lemma_Math_Inequalities_CommonMult(x:Timestamp, a:Timestamp, b:Timestamp)
     requires a <= b
     ensures x * a <= x * b

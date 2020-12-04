@@ -44,6 +44,7 @@ abstract module Timestamp_s {
     ensures Timeout() >= 0
 
   function TimeAdd2(p1:Timestamp, p2:Timestamp) : Timestamp
+    ensures TimeAdd2(p1, p2) == p1 + p2
   {
     p1 + p2
   }

@@ -126,6 +126,6 @@ predicate LHNext(s:Leader, s':Leader, id:int, ios:seq<ZKIo>) {
     && id in s.handlers
     && s'.handlers.Keys == s.handlers.Keys
     && s'.handlers == s.handlers[id := s'.handlers[id]]
-    && ZooKeeper_LearnerHandler.LearnerHandlerNext(s.handlers[id], s'.handlers[id], s.globals, s'.globals, ios)
+    && LearnerHandlerNext(s.handlers[id], s'.handlers[id], s.globals, s'.globals, ios)
 }
 }

@@ -31,7 +31,7 @@ import opened ZooKeeper_LearnerHandler
 import opened Zookeeper_Performance_Definitions
 import opened ZooKeeper_TimestampedDistributedSystem
 import opened Zookeeper_PerformancePredicates
-import opened Zookeeper_BasicInvariants
+import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
 import opened Zookeeper_PerformanceProof_Invariants
 
