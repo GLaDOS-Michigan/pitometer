@@ -365,11 +365,11 @@ predicate Sync_Messages_Invariant(tls:TLS_State)
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
 {   
-    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.SyncDIFF? || pkt.msg.v.SyncSNAP?) // && pkt.msg.v.serial < tls.f
+    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.SyncDIFF? || pkt.msg.v.SyncSNAP?) 
     :: pkt.msg.ts <= Sync_Message_ts_Formula(tls.f, pkt.msg.v.serial))
-    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.NewLeader?) // && pkt.msg.v.serial < tls.f
+    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.NewLeader? 
     :: pkt.msg.ts <= NewLeader_Message_ts_Formula(tls.f, pkt.msg.v.serial))
-    && (forall pkt | pkt in tls.t_environment.sentPackets && (pkt.msg.v.Ack?) // && pkt.msg.v.serial < tls.f
+    && (forall pkt | pkt in tls.t_environment.sentPackets && pkt.msg.v.Ack? 
     :: pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial))
 }
 
