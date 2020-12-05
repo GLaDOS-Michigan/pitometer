@@ -39,6 +39,7 @@ predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
     && Handshake_Serial_Invariant(tls)
     && Sync_Serial_Invariant(tls)
+    && Follower_Serials_In_PreSync_Invariant(tls)
     && Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls)
     && Follower_Cannot_Receive_NewLeader_Before_Sync(tls)
 }
@@ -349,6 +350,23 @@ predicate Quorums_Size_Invariant(tls:TLS_State) {
 
 
 // TODO: Needs Proof
+predicate Follower_Serials_In_PreSync_Invariant(tls:TLS_State) 
+    requires |tls.config| > 0
+    requires tls.config[0] in tls.t_servers
+{
+    forall ep | 
+    && ep in tls.t_servers 
+    && tls.t_servers[ep].v.FollowerPeer? 
+    && tls.t_servers[ep].v.follower.state == F_PRESYNC
+    :: 
+    && var f := tls.t_servers[ep].v.follower;
+    && f.serialLI >= 0 
+    && f.serialSync < 0 
+    && f.serialNL < 0
+}
+
+
+// TODO: Needs Proof
 predicate Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls:TLS_State) 
     requires |tls.config| > 0
     requires tls.config[0] in tls.t_servers
@@ -370,17 +388,4 @@ predicate Follower_Cannot_Receive_NewLeader_Before_Sync(tls:TLS_State) {
     && var f := tls.t_servers[ep].v.follower;
     && f.serialNL >= 0 ==> f.serialSync >= 0 && f.serialLI >= 0
 }
-
-
-/*****************************************************************************************
-*                                    Empty Diff facts                                    *
-*****************************************************************************************/
-
-predicate EmptyDiff_Invariant(tls:TLS_State) {
-    forall pkt | pkt in tls.t_environment.sentPackets ::
-        && !pkt.msg.v.SyncSNAP?
-        && !pkt.msg.v.SyncTRUNC?
-        && !pkt.msg.v.Commit?
-}
-
 }
