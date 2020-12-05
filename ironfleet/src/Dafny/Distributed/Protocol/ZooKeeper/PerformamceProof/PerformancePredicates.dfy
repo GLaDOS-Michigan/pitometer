@@ -315,14 +315,14 @@ function Follower_F_SYNC_ts_Formula(f:int, s:TQuorumPeer) : Timestamp
     then // yet to receive NL. Just processed SyncDiff | SyncSnap
         Follower_F_SYNC_dts_Formula(f, s) + ProcSyncI
     else // just received NL. Waititng to receive final UpToDate to start running
-        NewLeader_Message_ts_Formula(f, s.v.follower.serialNL) + ProcSyncI + ProcSync
+        NewLeader_Message_ts_Formula(f, f-1) + ProcSyncI + ProcSync
 }
 
 
 function Ack_Message_ts_Formula(f:int, serial:nat) : Timestamp
     requires f >= 1;
 {
-    NewLeader_Message_ts_Formula(f, serial) + ProcSyncI + ProcSync + D
+    NewLeader_Message_ts_Formula(f, f-1) + ProcSyncI + ProcSync + D
 }
 
 

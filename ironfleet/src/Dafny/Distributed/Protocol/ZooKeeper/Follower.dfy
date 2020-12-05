@@ -124,13 +124,16 @@ predicate PreSyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
 
         // Sync messages
         case SyncDIFF(sid, serial, lastProcessedZxid) => 
+            && s.serialSync == -1  
             && |ios| == 1
             && s' == s.(state := F_SYNC, serialSync:= serial)
         case SyncSNAP(sid, serial, leaderDb, lastProcessedZxid) =>
+            && s.serialSync == -1  
             && |ios| == 1
             && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
             && ClearAndLoadDbSnapshot(s, s', leaderDb)
         case SyncTRUNC(sid, serial, lastProcessedZxid) => 
+            && s.serialSync == -1  
             && |ios| == 1
             && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
             && truncDatabase(s.zkdb, s'.zkdb, lastProcessedZxid)

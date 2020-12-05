@@ -133,7 +133,7 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
             if zkios[0].r.msg.SyncSNAP? 
                 then F(ProcessSnap)   // Processing a snapshot is a special event
             else if zkios[0].r.msg.SyncDIFF? || zkios[0].r.msg.SyncTRUNC? 
-                then F(ProcessSync)
+                then F(ProcessSyncInfo)
             else F(FStutter)
         )
         case F_SYNC => (
