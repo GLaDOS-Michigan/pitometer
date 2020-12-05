@@ -73,6 +73,7 @@ lemma lemma_FollowerInfo_Message_Invariant_Induction(config:Config, tls:TLS_Stat
         /* Here we deal with a follower taking a step */
         var s, s' := ls.servers[actor].follower, ls'.servers[actor].follower;
         assert FollowerNext(s, s', ios);
+        assert s.state == F_HANDSHAKE_A;
         match s.state 
         case F_HANDSHAKE_A =>  
             assert SendMyInfo(s, s', ios);
@@ -362,7 +363,10 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
 {
     var f, n := tls.f, |tls.config|;
 
-    // First prove Sync_Messages_Invariant(tls');
+    // TODO
+    assume Sync_Follower_Invariant(tls');
+
+    // Prove Sync_Messages_Invariant(tls');
     forall pkt | pkt in tls'.t_environment.sentPackets && (pkt.msg.v.SyncDIFF? || pkt.msg.v.SyncSNAP?)
     ensures pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial)
     {
@@ -375,8 +379,13 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
         Sync_Messages_Invariant_Helper_B(config, tls, tls', pkt);
     }
 
-    assume Sync_Messages_Invariant(tls');
-    assume Sync_Follower_Invariant(tls');
+    forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.Ack?
+    ensures pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial)
+    {
+        Sync_Messages_Invariant_Helper_C(config, tls, tls', pkt);
+    }
+
+    assert Sync_Messages_Invariant(tls');
     assume Sync_Leader_PreQuorum_Invariant(tls');
 }
 
@@ -438,6 +447,30 @@ lemma Sync_Messages_Invariant_Helper_B(config:Config, tls:TLS_State, tls':TLS_St
         }
     }
 }
+
+lemma Sync_Messages_Invariant_Helper_C(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls) && Sync_Follower_Invariant(tls')
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.Ack?
+    ensures pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial)
+{
+    var f, n := tls.f, |tls.config|;
+    if pkt !in tls.t_environment.sentPackets {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        // var ls, ls', ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(tios);
+        // var ft, ft' := tls.t_servers[actor], tls'.t_servers[actor];
+        // var s, s' := ft.v.follower, ft'.v.follower;
+        assert tls.t_servers[actor].v.follower.serialSync >= 0;
+        assert pkt.msg.ts <= Ack_Message_ts_Formula(f, pkt.msg.v.serial);
+    }
+}
+
+
 
 
 }

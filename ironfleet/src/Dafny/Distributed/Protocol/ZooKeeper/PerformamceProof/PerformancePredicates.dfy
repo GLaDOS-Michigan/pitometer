@@ -322,7 +322,7 @@ function Follower_F_SYNC_ts_Formula(f:int, s:TQuorumPeer) : Timestamp
 function Ack_Message_ts_Formula(f:int, serial:nat) : Timestamp
     requires f >= 1;
 {
-    NewLeader_Message_ts_Formula(f, serial) + ProcSyncI + ProcSync
+    NewLeader_Message_ts_Formula(f, serial) + ProcSyncI + ProcSync + D
 }
 
 

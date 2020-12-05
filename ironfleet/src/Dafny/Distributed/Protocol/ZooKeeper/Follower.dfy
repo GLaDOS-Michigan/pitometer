@@ -43,8 +43,8 @@ predicate FollowerNext(s:Follower, s':Follower, ios:seq<ZKIo>) {
     match s.state 
         case F_HANDSHAKE_A => SendMyInfo(s, s', ios)        // SendFI
         case F_HANDSHAKE_B => AcceptNewEpoch(s, s', ios)    // ProcLI
-        case F_PRESYNC => PreSyncWithLeader(s, s', ios)        // ProcSync
-        case F_SYNC => SyncWithLeader(s, s', ios)        // ProcSync
+        case F_PRESYNC => PreSyncWithLeader(s, s', ios)     // ProcSync | ProcSyncSnap
+        case F_SYNC => SyncWithLeader(s, s', ios)           // ProcSync
         case F_RUNNING => FollowerStutter(s, s', ios)       
         case F_ERROR => FollowerStutter(s, s', ios)
 }
@@ -163,6 +163,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
             && s' == s.(zkdb := s'.zkdb, serialSync:= serial)
             && commitToLog(s.zkdb, s'.zkdb, txn)
         case NewLeader(sid, serial, newLeaderZxid) =>
+            && s.serialNL == -1   
             && s' == s.(zkdb := s'.zkdb, serialNL:= serial)
             && takeSnapshot(s.zkdb, s'.zkdb)
             && |ios| == 2

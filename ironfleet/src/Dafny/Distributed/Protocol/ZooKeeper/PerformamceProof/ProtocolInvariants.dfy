@@ -40,6 +40,7 @@ predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && Handshake_Serial_Invariant(tls)
     && Sync_Serial_Invariant(tls)
     && Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls)
+    && Follower_Cannot_Receive_NewLeader_Before_Sync(tls)
 }
 
 
@@ -360,6 +361,14 @@ predicate Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls:TLS_S
     )
     ==> 
     |l.globals.ackSet| == 1
+}
+
+// TODO: Needs Proof
+predicate Follower_Cannot_Receive_NewLeader_Before_Sync(tls:TLS_State) {
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.FollowerPeer? 
+    :: 
+    && var f := tls.t_servers[ep].v.follower;
+    && f.serialNL >= 0 ==> f.serialSync >= 0 && f.serialLI >= 0
 }
 
 
