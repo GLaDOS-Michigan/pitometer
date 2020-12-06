@@ -32,6 +32,7 @@ import opened ZooKeeper_TimestampedDistributedSystem
 predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && DS_Config_Invariant(config, tls)
     && ZK_Config_Invariant(config, tls)
+    && ZKDB_Always_Good_Invariant(tls)
     && Leader_QueuedPackets_Invariant(config, tls)
     && Quorums_Size_Invariant(tls)
     && ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
@@ -137,6 +138,13 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
         assert ZK_Config_Invariant(config, tls');
         i := i + 1;
     }
+}
+
+
+predicate ZKDB_Always_Good_Invariant(tls:TLS_State) {
+    forall ep | ep in tls.t_servers:: 
+    && (tls.t_servers[ep].v.LeaderPeer? ==> tls.t_servers[ep].v.leader.globals.zkdb.initialized && isValidZKDatabase(tls.t_servers[ep].v.leader.globals.zkdb))
+    && (tls.t_servers[ep].v.FollowerPeer? ==> tls.t_servers[ep].v.follower.zkdb.initialized && isValidZKDatabase(tls.t_servers[ep].v.follower.zkdb))
 }
 
 
@@ -316,7 +324,8 @@ predicate Sync_Serial_Invariant(tls:TLS_State) {
         && l.globals.nextSerialNL <= tls.f
         // Can only send NL after sending a Sync to someone
         && l.globals.nextSerialNL <= l.globals.nextSerialSync 
-        // Don't send more than f SyncPreps
+        // At most f of such state transitions
+        && l.globals.procEpCount <= tls.f
         && l.globals.prepCount <= tls.f
     ))
     && (forall pkt | pkt in tls.t_environment.sentPackets :: (

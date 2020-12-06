@@ -178,8 +178,19 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     // Invariant on EpochAck messages 
     forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.AckEpoch? 
     ensures pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls'.f, pkt.msg.v.serial)
-    {}
+    {
+        if pkt !in tls.t_environment.sentPackets {
+            var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+            var st, st' := tls.t_servers[actor], tls'.t_servers[actor];
+            var s, s', ios := st.v.follower, st'.v.follower, UntagLIoOpSeq(tios);
+            assert AcceptNewEpoch(s, s', ios);
+            assert pkt == tios[1].s;
+        }
+    }
+
     // Invariants on leader at syncrhonization barrier at ProcessEpAck -- Handshake_Leader_PreQuorum_Invariant(tls')
+    assert Handshake_Follower_Invariant(tls');
+    assert Handshake_Messages_Invariant(tls');
     lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction_Helper(config, tls, tls');
 }
 
@@ -295,7 +306,7 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
     ensures && tls'.t_servers[ep].dts <= Follower_F_SYNC_dts_Formula(tls'.f, tls'.t_servers[ep])
             && tls'.t_servers[ep].ts <= Follower_F_SYNC_ts_Formula(tls'.f, tls'.t_servers[ep])
     {
-        Sync_Messages_Invariant_Helper_D(config, tls, tls', ep);
+        Sync_Follower_Invariant_Helper(config, tls, tls', ep);
     }
     assert Sync_Follower_Invariant(tls');
 
@@ -317,7 +328,10 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
     assert Sync_Messages_Invariant(tls');
 
     // Prove Sync_Leader_PreQuorum_Invariant(tls')
-    assume Sync_Leader_PreQuorum_Invariant(tls');
+    if !IsQuorum(n, tls'.t_servers[config[0]].v.leader.globals.ackSet) {
+        Sync_Leader_PreQuorum_Invariant_helper(config, tls, tls');
+    }
+    assert Sync_Leader_PreQuorum_Invariant(tls');
 }
 
 
@@ -344,7 +358,9 @@ lemma Sync_Messages_Invariant_Helper_A(config:Config, tls:TLS_State, tls':TLS_St
             lemma_Math_Mult_b();
             assert g'.prepCount ==  g.prepCount <= f;
             assert g'.nextSerialNL == g.nextSerialNL <= g.nextSerialSync == pkt.msg.v.serial;
+            lemma_Math_Inequalities_CommonMult(ProcEpAck, g'.procEpCount, f);
             lemma_Math_Inequalities_CommonMult(Sync, g'.nextSerialNL, pkt.msg.v.serial);
+            lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync + 1, pkt.msg.v.serial + 1);
             lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
             assert pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
         }
@@ -372,6 +388,7 @@ lemma Sync_Messages_Invariant_Helper_B(config:Config, tls:TLS_State, tls':TLS_St
             var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
             assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
             lemma_Math_Mult_b();
+            lemma_Math_Inequalities_CommonMult(ProcEpAck, g'.procEpCount, f);
             lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync, f);
             lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
             assert pkt.msg.ts <= NewLeader_Message_ts_Formula(f, pkt.msg.v.serial);
@@ -398,7 +415,7 @@ lemma Sync_Messages_Invariant_Helper_C(config:Config, tls:TLS_State, tls':TLS_St
     }
 }
 
-lemma Sync_Messages_Invariant_Helper_D(config:Config, tls:TLS_State, tls':TLS_State, ep:EndPoint) 
+lemma Sync_Follower_Invariant_Helper(config:Config, tls:TLS_State, tls':TLS_State, ep:EndPoint) 
     requires TLS_Next(tls, tls')
     requires General_LS_Performance_Assumption(tls)
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
@@ -451,6 +468,7 @@ lemma Sync_Messages_Invariant_Helper_D(config:Config, tls:TLS_State, tls':TLS_St
         lemma_Math_MaxOfInequalities(pkt.msg.ts, st.ts, 
         NewLeader_Message_ts_Formula(f, pkt.msg.v.serial), 
         AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+            + ProcEpAck * f
             + PreSync * f    
             + Sync * f  
             + Sync * f  
@@ -460,6 +478,79 @@ lemma Sync_Messages_Invariant_Helper_D(config:Config, tls:TLS_State, tls':TLS_St
     }
 }
 
+
+lemma Sync_Leader_PreQuorum_Invariant_helper(config:Config, tls:TLS_State, tls':TLS_State) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
+    requires Sync_Messages_Invariant(tls) && Sync_Messages_Invariant(tls')
+    requires Sync_Follower_Invariant(tls) && Sync_Follower_Invariant(tls')
+    // Induction hypothesis
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    // Antecedent
+    requires !IsQuorum(|tls'.config|, tls'.t_servers[config[0]].v.leader.globals.ackSet)
+    // Conclusion
+    ensures tls'.t_servers[config[0]].dts <= ProcessAck_PreQuorum_dts_Formula(tls'.f, |tls'.config|, tls'.t_servers[config[0]])
+    ensures tls'.t_servers[config[0]].ts <= ProcessAck_PreQuorum_ts_Formula(tls'.f, |tls'.config|, tls'.t_servers[config[0]])
+{
+    var f, n := tls'.f, |tls'.config|;
+    var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+    var lt, lt' := tls.t_servers[config[0]], tls'.t_servers[config[0]];
+    var l, l', ios := lt.v.leader, lt'.v.leader, UntagLIoOpSeq(tios);
+    if actor == config[0] {
+        if l.state == L_RUNNING {
+            assert LeaderStutter(l, l', ios);
+            assert lt'.ts == lt.ts && lt'.dts == lt.dts;
+        } else {
+            assert LeaderStartStep(l, l', ios);
+            assert StepSingleHandler(l, l', ios);
+            if StepSingleHandler_NoRcv(l, l', ios) {
+                var fid :| LHNext(l, l', fid, ios);
+                var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
+                match h.state 
+                case LH_HANDSHAKE_A => assert false;
+                case LH_HANDSHAKE_B => {
+                    // Conclusion 
+                    assert IsVerifiedQuorum(h.follower_id, |g.config|, g.electingFollowers);
+                    assert |g'.ackSet| == |g.ackSet| == 1;
+                    lemma_Math_Mult_b();
+                    assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
+                    assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+                }
+                case LH_PREP_SYNC => {
+                    assert lt'.ts == lt.ts + PreSync;
+                    assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt) + PreSync;
+                    lemma_Math_Mult_b();
+                    assert g'.prepCount == g.prepCount + 1;
+                    assert ProcessAck_PreQuorum_ts_Formula(f, n, lt) + PreSync == ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+
+                    assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
+                    assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+                }
+                case LH_SYNC => {
+                    assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
+                    // Conclusion 
+                    assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
+                    assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+                }
+                case LH_PROCESS_ACK => {
+                    assert ZooKeeper_LearnerHandler.ProcessAck(h, h', g, g', ios);
+                    // Conclusion 
+                    assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
+                    assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+                }
+                case LH_RUNNING => {assert lt'.dts == lt.dts && lt'.ts == lt.ts;}
+                case LH_ERROR => {assert lt'.dts == lt.dts && lt'.ts == lt.ts;}                
+            } else {
+                assert StepSingleHandler_Rcv(l, l', ios);
+                assume false;
+                assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
+                assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+            }
+        }
+    }
+}
 
 
 

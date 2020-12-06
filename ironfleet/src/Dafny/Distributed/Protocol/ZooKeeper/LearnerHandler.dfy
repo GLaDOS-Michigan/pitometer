@@ -40,6 +40,7 @@ datatype LeaderGlobals = LeaderGlobals(
     connectingFollowers: set<nat>,
     nextSerialLI: nat,          // next serial number for LeaderInfo
     electingFollowers: set<nat>,
+    procEpCount: nat,           // how many times WaitForEpochAck has been run after electingFollowers is declared quorum
     nextSerialSync: nat,        // next serial number for SyncDIFF | SyncSNAP | SyncTRUNC
     nextSerialNL: nat,          // next serial number for newLeader
     prepCount: nat,             // how many times PrepSync has been run
@@ -124,7 +125,7 @@ predicate WaitForEpochAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, 
     if IsVerifiedQuorum(s.follower_id, |g.config|, g.electingFollowers) 
     then (
         // Proceed to state sync
-        && g' == g
+        g' == g.(procEpCount := g.procEpCount + 1)
         && |ios| == 0   
         && s' == s.(state := LH_PREP_SYNC)
     ) else (
