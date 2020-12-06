@@ -119,7 +119,8 @@ function ActionToHostStep(tls:TLS_State, tls':TLS_State, id:EndPoint, ios:seq<TZ
                     then L(DoSyncSNAP)  // Sending a snapshot is a special event
                     else L(DoSync)
                 )
-                case LH_PROCESS_ACK => L(ProcessAck)
+                case LH_PROCESS_ACK => 
+                    if s.globals.zkdb.isRunning then L(LStutter) else L(ProcessAck)
                 case LH_RUNNING => L(LStutter)
                 case LH_ERROR => L(LStutter)
             )   

@@ -76,6 +76,7 @@ predicate LeaderStartStep(s:Leader, s':Leader, ios:seq<ZKIo>)
          && s'.globals.zkdb == s.globals.zkdb.(isRunning := true)
          && s'.handlers ==  s.handlers
     else 
+        && !s.globals.zkdb.isRunning
         && s' == s.(globals := s'.globals, handlers := s'.handlers)
         && StepSingleHandler(s, s', ios)
 }

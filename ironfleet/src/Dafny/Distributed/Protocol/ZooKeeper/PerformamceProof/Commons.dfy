@@ -34,8 +34,12 @@ lemma lemma_Math_Inequality(a:nat, b:nat)
     ensures b-a+1 >= 0
 {}
 
-lemma lemma_Math_Addition(a:Timestamp)
-    ensures forall x:Timestamp :: x <= x + a
+lemma lemma_Math_Addition()
+    ensures forall x:Timestamp, a:Timestamp :: x <= x + a
+{}
+
+lemma lemma_Math_Addition_2(x:Timestamp, a:Timestamp)
+    ensures x <= x + a
 {}
 
 

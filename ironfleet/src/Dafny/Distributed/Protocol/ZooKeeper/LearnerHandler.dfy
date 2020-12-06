@@ -221,13 +221,14 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
     && if g.zkdb.isRunning  // Leader is in charge of starting db once AckSet is a good quorum
     then (
         // Proceed to Running state, send UPTODATE to follower
-        && s' == s.(state := LH_RUNNING)
-        && g' == g
-        && |ios| == 1
-        && ios[0].LIoOpSend?
-        && ios[0].s.dst == g.config[s.follower_id]
-        && ios[0].s.sender_index == s.my_id
-        && ios[0].s.msg == UpToDate(s.my_id)
+        // && s' == s.(state := LH_RUNNING)
+        // && g' == g
+        // && |ios| == 1
+        // && ios[0].LIoOpSend?
+        // && ios[0].s.dst == g.config[s.follower_id]
+        // && ios[0].s.sender_index == s.my_id
+        // && ios[0].s.msg == UpToDate(s.my_id)
+        LearnerHandlerStutter(s, s', ios)
     ) else (
         // Add sender to my ackSet set, store peerLastZxid, and continue waiting for quorum
         // if |ios| == 0 then LearnerHandlerStutter(s, s', ios)  && g' == g // Case where follower has not sent anything

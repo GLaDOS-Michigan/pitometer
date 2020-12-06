@@ -274,6 +274,7 @@ function Sync_Message_ts_Formula(f:int, serial:nat) : Timestamp
 {
     AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
     + ProcEpAck * f
+    + ProcEpAck * f
     + PreSync * f    // max possible PrepSyncs done before I was sent
     + Sync * serial  // max possible NewLeader sent before I was sent
     + Sync * (serial + 1)  // I am the (serial + 1)-th sync message sent
@@ -285,6 +286,7 @@ function NewLeader_Message_ts_Formula(f:int, serial:nat) : Timestamp
     requires f >= 1;
 {
     AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+    + ProcEpAck * f
     + ProcEpAck * f
     + PreSync * f    // max possible PrepSyncs done before I was sent
     + Sync * f  // max possible Syncs sent before I was sent
@@ -332,10 +334,13 @@ function ProcessAck_PreQuorum_ts_Formula(f:int, n:int, l:TQuorumPeer) : Timestam
     requires l.v.LeaderPeer?
     requires f >= 1
     requires !IsQuorum(n, l.v.leader.globals.ackSet)
+    requires |l.v.leader.globals.electingFollowers| >= 1;
 {
+    var electingFollowers := l.v.leader.globals.electingFollowers;
     var ackSet := l.v.leader.globals.ackSet;
     if |ackSet| <= 1 then 
         AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+        + ProcEpAck * (|electingFollowers|-1)
         + ProcEpAck * l.v.leader.globals.procEpCount 
         + PreSync * l.v.leader.globals.prepCount    // num of PrepSyncs done
         + Sync * l.v.leader.globals.nextSerialSync   // Only sync, never syncSnap
@@ -393,14 +398,20 @@ predicate Sync_Follower_Invariant(tls:TLS_State){
 predicate Sync_Leader_PreQuorum_Invariant(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
     requires ZK_Config_Invariant(tls.config, tls)
-    // requires Quorums_Size_Invariant(tls)
+    requires Quorums_Size_Invariant(tls)
 {
     var n := |tls.config|;
     var leaderTQP := tls.t_servers[tls.config[0]];
+    // && IsQuorum(n, leaderTQP.v.leader.globals.electingFollowers)
     && !IsQuorum(n, leaderTQP.v.leader.globals.ackSet)
     ==> 
     && leaderTQP.ts <= ProcessAck_PreQuorum_ts_Formula(tls.f, n, leaderTQP)
     && leaderTQP.dts <= ProcessAck_PreQuorum_dts_Formula(tls.f, n, leaderTQP)
 }
+
+
+/*****************************************************************************************
+*                          Some lemmas comparing timestamps                              *
+*****************************************************************************************/
 
 }

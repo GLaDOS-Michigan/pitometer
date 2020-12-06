@@ -43,6 +43,7 @@ predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && Follower_Serials_In_PreSync_Invariant(tls)
     && Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls)
     && Follower_Cannot_Receive_NewLeader_Before_Sync(tls)
+    && Leader_Only_Sends_Leader_Msgs(tls)
 }
 
 
@@ -205,7 +206,8 @@ predicate Leader_QueuedPackets_Invariant(config:Config, tls:TLS_State) {
     forall ep | ep in tls.t_servers ::
         tls.t_servers[ep].v.LeaderPeer? ==> (
             forall lh | lh in tls.t_servers[ep].v.leader.handlers.Values
-            :: QueuedPackets_Only_Contains_LeaderMessages(lh.queuedPackets)
+            :: && QueuedPackets_Only_Contains_LeaderMessages(lh.queuedPackets)
+               && |lh.queuedPackets| <= 1
     )
 }
 
@@ -356,6 +358,19 @@ predicate Quorums_Size_Invariant(tls:TLS_State) {
         && 1 <=|l.globals.ackSet| <= (n/2) + 1
     )
 }
+
+
+predicate Leader_Only_Sends_Leader_Msgs(tls:TLS_State) {
+    && tls.t_environment.nextStep.LEnvStepHostIos?
+    && tls.t_environment.nextStep.actor in tls.t_servers
+    && tls.t_servers[tls.t_environment.nextStep.actor].v.LeaderPeer?
+    ==> 
+    forall tio | tio in tls.t_environment.nextStep.ios && tio.LIoOpSend? :: 
+        && !tio.s.msg.v.FollowerInfo? 
+        && !tio.s.msg.v.AckEpoch? 
+        && !tio.s.msg.v.Ack? 
+}
+
 
 
 // TODO: Needs Proof
