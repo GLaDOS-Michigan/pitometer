@@ -336,6 +336,7 @@ predicate Sync_Serial_Invariant(tls:TLS_State) {
         && (pkt.msg.v.SyncSNAP? ==> pkt.msg.v.serial < tls.f)
         && (pkt.msg.v.SyncTRUNC? ==> pkt.msg.v.serial < tls.f)
         && (pkt.msg.v.NewLeader? ==> pkt.msg.v.serial < tls.f)
+        && (pkt.msg.v.Ack? ==> pkt.msg.v.serial < tls.f)
         && (pkt.msg.v.Commit? ==> pkt.msg.v.serial < tls.f)
     )) // Follower serial bound by f
     && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.FollowerPeer? :: (

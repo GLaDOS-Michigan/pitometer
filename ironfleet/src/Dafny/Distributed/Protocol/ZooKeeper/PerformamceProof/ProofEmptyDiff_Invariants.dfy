@@ -656,6 +656,9 @@ lemma Sync_Leader_PreQuorum_Invariant_Helper_Rcv(config:Config, tls:TLS_State, t
                 var lt_max_ts := AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
                                 + ProcEpAck * (|g.electingFollowers|-1);
                 var pkt_max_ts := AckEpoch_Message_PreQuorum_ts_Formula(f, pkt.msg.v.serial);
+                lemma_Math_Inequalities_Mult();
+                lemma_Math_Addition();
+                lemma_Math_MaxOfInequalities(pkt.msg.ts, lt.ts, pkt_max_ts, lt_max_ts);
                 assert lt'.ts <= lt_max_ts + ProcEpAck;
                 var lt'_max_ts := AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
                                 + ProcEpAck * (|g'.electingFollowers|-1);
