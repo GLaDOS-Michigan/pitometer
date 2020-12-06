@@ -12,9 +12,10 @@ include "../Leader.dfy"
 include "../LearnerHandler.dfy"
 include "Definitions.dfy"
 include "PerformancePredicates.dfy"
-include "BasicInvariants.dfy"
+include "ProtocolInvariants.dfy"
 include "Commons.dfy"
 include "ProofEmptyDiff_Invariants.dfy"
+include "EmptyDiffInvariants.dfy"
 
 
 module Zookeeper_PerformanceProof {
@@ -34,6 +35,7 @@ import opened Zookeeper_PerformancePredicates
 import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
 import opened Zookeeper_PerformanceProof_Invariants
+import opened Zookeeper_EmptyDiffInvariants
 
 
 /* Main theorem */
@@ -53,6 +55,9 @@ lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_Stat
     requires ValidTLSBehavior(config, tlb, f)
     requires Performance_Assumption_EmptyDiff(tlb)
     requires forall i | 0 <= i < |tlb| :: Basic_Invariants(config, tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: FollowerInit_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Handshake_Follower_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Handshake_Messages_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: Handshake_Leader_PreQuorum_Invariant(tlb[i])
 {
     assert FollowerInit_Invariant(tlb[0]);
@@ -81,6 +86,34 @@ lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_Stat
             && Handshake_Follower_Invariant(tlb[k]);
         i := i + 1;
         assert tls' == tlb[i];
+    }
+}
+
+
+lemma theorem_ZK_Sync_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, f)
+    requires Performance_Assumption_EmptyDiff(tlb)
+    requires forall i | 0 <= i < |tlb| :: Basic_Invariants(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: EmptyDiff_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Sync_Leader_PreQuorum_Invariant(tlb[i])
+{
+    theorem_ZK_Handshake_Performance_Guarantee(config, tlb, f);
+    assert Sync_Messages_Invariant(tlb[0]);
+    assert Sync_Follower_Invariant(tlb[0]);
+    assert Sync_Leader_PreQuorum_Invariant(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Sync_Messages_Invariant(tlb[k])
+        invariant forall k | 0 <= k <= i :: Sync_Follower_Invariant(tlb[k])
+        invariant forall k | 0 <= k <= i :: Sync_Leader_PreQuorum_Invariant(tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        assert TLS_Next(tls, tls');
+        lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config, tls, tls');
+        i := i + 1;
     }
 }
 

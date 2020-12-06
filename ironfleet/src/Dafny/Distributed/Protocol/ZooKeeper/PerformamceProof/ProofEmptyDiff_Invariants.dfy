@@ -297,8 +297,6 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
     requires Handshake_Messages_Invariant(tls) && Handshake_Messages_Invariant(tls')
     requires Handshake_Follower_Invariant(tls) && Handshake_Follower_Invariant(tls')
     requires Handshake_Leader_PreQuorum_Invariant(tls) && Handshake_Leader_PreQuorum_Invariant(tls')
-    // requires FollowerInit_Invariant(tls) && FollowerInit_Invariant(tls')
-    // requires QuorumsMonotoneIncreasing_Property(tls, tls')
     // Induction hypothesis
     requires Sync_Messages_Invariant(tls)
     requires Sync_Follower_Invariant(tls)
@@ -507,7 +505,6 @@ lemma Sync_Leader_PreQuorum_Invariant_Helper(config:Config, tls:TLS_State, tls':
     // Induction hypothesis
     requires Sync_Leader_PreQuorum_Invariant(tls)
     // Antecedent
-    // requires IsQuorum(|tls'.config|, tls'.t_servers[config[0]].v.leader.globals.electingFollowers)
     requires !IsQuorum(|tls'.config|, tls'.t_servers[config[0]].v.leader.globals.ackSet)
     // Conclusion
     ensures tls'.t_servers[config[0]].dts <= ProcessAck_PreQuorum_dts_Formula(tls'.f, |tls'.config|, tls'.t_servers[config[0]])
