@@ -61,34 +61,39 @@ predicate Performance_Assumption_EmptyDiff(tlb:seq<TLS_State>) {
 *                                     Main Guarantee                                     *
 *****************************************************************************************/
 
-
-function Performance_Formula_EmptyDiff(config: Config) : Timestamp {
-    var q := |config| / 2 + 1;
-    assert q >= 0;
-    SendFI +
-    D + ProcFI * q +
-    D + ProcLI +
-    D + ProcEpAck * q +
-    Sync +
-    Sync * 2 +
-    D + ProcSync +
-    D + ProcAck * q
-}
-
-
 /* Performance guarantee Empty Diff 
-* Every leader in the RUNNING state has the specified performance formula */
-predicate LS_Performance_Guarantee_EmptyDiff(tls:TLS_State) {   
-    forall ep | 
-        && ep in tls.t_servers 
-        && tls.t_servers[ep].v.LeaderPeer? 
-        && tls.t_servers[ep].v.leader.state == L_RUNNING 
-    ::
-        tls.t_servers[ep].ts >= Performance_Formula_EmptyDiff(tls.config)
+* Every leader in the RUNNING state has the specified performance formula. 
+* This formula is:
+    SendFI + D                  # Follower send FI 
+    + ProcFI * f                # Leader receive and process FI
+    + ProcFI * f + D            # Leader gets connectingFollowers quorum and send LI for each follower
+    + ProcLI + D                # Follower process LI and sends AckEpoch
+    + ProcEpAck * f             # Leader receives and processes AckEpoch
+    + ProcEpAck * f             # Leader gets electingFollowers and move to PrepSync state
+    + PreSync * f               # Leader does PrepSync for each folllower
+    + Sync * f                  # Leader sends SyncDiff message to each follower. No "D" here because "parallel" with next step
+    + Sync * f + D              # Leader sends NewLeader to each follower
+    + ProcSyncI + ProcSync + D  # Follower processes SyncDiff, NewLeader, and sends Ack
+    + ProcAck * f               # Leader receives Ack
+ */
+predicate LS_Performance_Guarantee_EmptyDiff(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+    requires Quorums_Size_Invariant(tls)
+{   
+    var f, n := tls.f, |tls.config|;
+    var leaderTQP := tls.t_servers[tls.config[0]];
+    IsQuorum(n, leaderTQP.v.leader.globals.ackSet)
+    ==> 
+    leaderTQP.ts <= Ack_Message_ts_Formula(f, f-1) + ProcAck * f
 }
 
 
-predicate Performance_Guarantee_EmptyDiff(tlb:seq<TLS_State>){
+predicate Performance_Guarantee_EmptyDiff(config:Config, tlb:seq<TLS_State>)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+{
     forall i | 0 <= i < |tlb| :: LS_Performance_Guarantee_EmptyDiff(tlb[i])
 }
 
