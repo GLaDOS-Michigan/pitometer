@@ -235,6 +235,8 @@ predicate ProcessAck(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':Le
         // else 
             && |ios| == 1
              && ios[0].LIoOpReceive?
+             && s.follower_id !in g.ackSet
+             && ios[0].r.msg.sid == s.follower_id
              && ios[0].r.src in g.config
              && ios[0].r.msg.Ack?
              && g.config[s.follower_id] == ios[0].r.src

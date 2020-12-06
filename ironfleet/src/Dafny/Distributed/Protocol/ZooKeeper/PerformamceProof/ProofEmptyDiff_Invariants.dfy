@@ -294,6 +294,7 @@ lemma lemma_Leader_ProcessAck_PreQuorum_Invariant_Induction(config:Config, tls:T
     requires General_LS_Performance_Assumption(tls)
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
     requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
+    requires Handshake_Messages_Invariant(tls) && Handshake_Messages_Invariant(tls')
     requires Handshake_Follower_Invariant(tls) && Handshake_Follower_Invariant(tls')
     requires Handshake_Leader_PreQuorum_Invariant(tls) && Handshake_Leader_PreQuorum_Invariant(tls')
     // requires FollowerInit_Invariant(tls) && FollowerInit_Invariant(tls')
@@ -499,6 +500,7 @@ lemma Sync_Leader_PreQuorum_Invariant_Helper(config:Config, tls:TLS_State, tls':
     requires General_LS_Performance_Assumption(tls)
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
     requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
+    requires Handshake_Messages_Invariant(tls) && Handshake_Messages_Invariant(tls')
     requires Handshake_Leader_PreQuorum_Invariant(tls) && Handshake_Leader_PreQuorum_Invariant(tls')
     requires Sync_Messages_Invariant(tls) && Sync_Messages_Invariant(tls')
     requires Sync_Follower_Invariant(tls) && Sync_Follower_Invariant(tls')
@@ -597,6 +599,7 @@ lemma Sync_Leader_PreQuorum_Invariant_Helper_Rcv(config:Config, tls:TLS_State, t
     requires General_LS_Performance_Assumption(tls)
     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
     requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
+    requires Handshake_Messages_Invariant(tls) && Handshake_Messages_Invariant(tls')
     requires Handshake_Leader_PreQuorum_Invariant(tls) && Handshake_Leader_PreQuorum_Invariant(tls')
     requires Sync_Messages_Invariant(tls) && Sync_Messages_Invariant(tls')
     requires Sync_Follower_Invariant(tls) && Sync_Follower_Invariant(tls')
@@ -647,22 +650,48 @@ lemma Sync_Leader_PreQuorum_Invariant_Helper_Rcv(config:Config, tls:TLS_State, t
                 assert ProcessEpAck_PreQuorum_ts_Formula(f, n, lt')
                     <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
             } else {
-
-                assume false;
-                // Conclusion
-                assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
-                assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+                var pkt := tios[0].r;
+                assert pkt.msg.v.AckEpoch?;
+                lemma_Math_Inequalities_CommonMult(ProcFI, pkt.msg.v.serial+1, f);
+                assert g'.ackSet == g.ackSet;
+                assert |g'.ackSet| <= 1;
+                assert |g'.electingFollowers| == |g.electingFollowers| + 1;
+                var lt_max_ts := AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+                                + ProcEpAck * (|g.electingFollowers|-1);
+                var pkt_max_ts := AckEpoch_Message_PreQuorum_ts_Formula(f, pkt.msg.v.serial);
+                assert lt'.ts <= lt_max_ts + ProcEpAck;
+                var lt'_max_ts := AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+                                + ProcEpAck * (|g'.electingFollowers|-1);
+                assert lt'.ts <= lt'_max_ts;
+                lemma_Math_Inequalities_Mult();
+                var b:Timestamp := ProcEpAck * g'.procEpCount 
+                        + PreSync * g'.prepCount    
+                        + Sync * g'.nextSerialSync 
+                        + Sync * g'.nextSerialNL;
+                lemma_Math_Addition_2(lt'_max_ts, b);
+                assert lt'_max_ts <= lt'_max_ts + b;
             }
-            assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
-            assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
         }
     }
     case LH_PREP_SYNC => assert false;  // No receives in this state
     case LH_SYNC => assert false;       // No receives in this state
     case LH_PROCESS_ACK => {
-        assume false;
-        assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
-        assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+        if !g.zkdb.isRunning {
+            var pkt := tios[0].r;
+            assert pkt.msg.v.Ack?;
+            assert pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial);
+            assert |g'.ackSet| > 1;
+            assert lt'.dts <= ProcessAck_PreQuorum_dts_Formula(f, n, lt');
+            if |g.ackSet| == 1 {
+                lemma_Math_Inequalities_Mult();
+                lemma_Math_Inequalities_CommonMult(ProcEpAck, |g.electingFollowers|-1, f);
+                lemma_Math_Inequalities_CommonMult(ProcEpAck, g.procEpCount, f);
+                lemma_Math_Inequalities_CommonMult(PreSync, g.prepCount, f);
+                lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync, f);
+                lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialNL, f);
+                assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+            } 
+        }
     }
     case LH_RUNNING => {assert lt'.dts == lt.dts && lt'.ts == lt.ts;}
     case LH_ERROR => {assert lt'.dts == lt.dts && lt'.ts == lt.ts;}                           
