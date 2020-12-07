@@ -37,6 +37,7 @@ predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && ZKDB_Always_Good_Invariant(tls)
     && Leader_QueuedPackets_Invariant(config, tls)
     && Quorums_Size_Invariant(tls)
+    && Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tls)
     && ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
     && ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls)
     && ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls)
@@ -59,7 +60,8 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
     lemma_Leader_QueuedPackets_Invariant_Proof(config, tlb, f);
     lemma_Quorums_Size_Invariant_Proof(config, tlb, f);
     lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config, tlb, f);
-    
+    lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config, tlb, f);
+    lemma_ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config, tlb, f);
     // TODO
     assume false;
 }
@@ -239,7 +241,6 @@ lemma lemma_Leader_QueuedPackets_Invariant_Proof(config:Config, tlb:seq<TLS_Stat
 
 
 /* If connectingFollowers is not a full quorum, then all future quorums are empty */
-// TODO: Needs Proof
 predicate ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, tls:TLS_State){
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var leader := tls.t_servers[ep].v.leader;
@@ -259,16 +260,78 @@ predicate ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, 
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var leader := tls.t_servers[ep].v.leader;
         && (
+            && IsQuorum(|config|, leader.globals.connectingFollowers)
             && !IsQuorum(|config|, leader.globals.electingFollowers)
             ==> 
             && leader.globals.ackSet == {0}
             && (forall id | id in leader.handlers :: 
                 if id in leader.globals.connectingFollowers
-                then leader.handlers[id].state == LH_HANDSHAKE_B
+                then leader.handlers[id].state == LH_HANDSHAKE_A || leader.handlers[id].state == LH_HANDSHAKE_B
                 else leader.handlers[id].state == LH_HANDSHAKE_A
             )
         )
     )
+}
+
+lemma lemma_ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, f)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[i]) 
+{
+    assert ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[0]);
+    lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config, tlb, f);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if actor == config[0] {
+            var s, s', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
+            if s.state == L_STARTING {
+                if  && IsQuorum(|config|, s.globals.connectingFollowers)
+                    && !IsQuorum(|config|, s.globals.electingFollowers) {
+                    assert !IsVerifiedQuorum(s.my_id, |s.globals.config|, s.globals.ackSet);
+                    assert StepSingleHandler(s, s', ios);
+                    if StepSingleHandler_NoRcv(s, s', ios) {
+                        assert ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls');
+                    } else {
+                        assert ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls');
+                    }
+                } else {
+                    if !IsQuorum(|config|, s.globals.connectingFollowers) {
+                        assert !IsQuorum(|config|, s'.globals.electingFollowers);
+                        if IsQuorum(|config|, s'.globals.connectingFollowers) {
+                            // ConnectingFollowers manage to form a quorum at this step
+                            assert s'.globals.electingFollowers == s.globals.electingFollowers;
+                            forall id | id in s'.handlers 
+                            ensures if id in s'.globals.connectingFollowers
+                                    then s'.handlers[id].state == LH_HANDSHAKE_A || s'.handlers[id].state == LH_HANDSHAKE_B
+                                    else s'.handlers[id].state == LH_HANDSHAKE_A
+                            {
+                                var h, h' := s.handlers[id], s'.handlers[id];
+                                if id in s.globals.connectingFollowers {
+                                    assert h.state == LH_HANDSHAKE_A;
+                                    assert h'.state == LH_HANDSHAKE_A;
+                                } else {
+                                    assert h'.state == LH_HANDSHAKE_A;
+                                }
+                            }
+                            assert s'.globals.ackSet == s.globals.ackSet;
+                            assert ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls');
+                        }
+                    }
+                }
+            }
+        }
+        assert ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls');
+        i := i + 1;
+    }
 }
 
 
@@ -291,6 +354,19 @@ lemma lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config:
         assert ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls');
         i := i + 1;
     }
+}
+
+
+// TODO: Needs Proof
+predicate Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tls:TLS_State) {
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var leader := tls.t_servers[ep].v.leader;
+        && (
+            && |leader.globals.electingFollowers| > 1
+            ==> 
+            leader.globals.nextSerialLI == tls.f
+        )
+    )
 }
 
 

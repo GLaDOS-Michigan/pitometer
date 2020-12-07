@@ -40,6 +40,7 @@ import opened Zookeeper_EmptyDiffInvariants
 
 /* Main theorem */
 lemma theorem_ZK_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
+    requires |tlb| > 1
     requires SeqIsUnique(config);
     requires ValidTLSBehavior(config, tlb, f)
     requires Performance_Assumption_EmptyDiff(tlb)
@@ -146,11 +147,14 @@ lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_Stat
     requires Performance_Assumption_EmptyDiff(tlb)
     requires forall i | 0 <= i < |tlb| :: Basic_Invariants(config, tlb[i])
     ensures forall i | 0 <= i < |tlb| :: FollowerInit_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: FollowerInfo_Message_ts_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: Handshake_Follower_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: Handshake_Messages_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: Handshake_Leader_PreQuorum_Invariant(tlb[i])
 {
     assert FollowerInit_Invariant(tlb[0]);
+    assert FollowerInfo_Message_ts_Invariant(tlb[0]);
+    assert ProcessFI_PreQuorum_Invariant(tlb[0]);
     assert Handshake_Follower_Invariant(tlb[0]);
     assert Handshake_Messages_Invariant(tlb[0]);
     assert Handshake_Leader_PreQuorum_Invariant(tlb[0]);
@@ -159,6 +163,8 @@ lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_Stat
         decreases |tlb| - i
         invariant 0 <= i < |tlb|
         invariant forall k | 0 <= k <= i :: FollowerInit_Invariant(tlb[k])
+        invariant forall k | 0 <= k <= i :: FollowerInfo_Message_ts_Invariant(tlb[k])
+        invariant forall k | 0 <= k <= i :: ProcessFI_PreQuorum_Invariant(tlb[k])
         invariant forall k | 0 <= k <= i :: Handshake_Follower_Invariant(tlb[k])
         invariant forall k | 0 <= k <= i :: Handshake_Leader_PreQuorum_Invariant(tlb[k])
         invariant forall k | 0 <= k <= i :: Handshake_Messages_Invariant(tlb[k])
@@ -166,6 +172,8 @@ lemma theorem_ZK_Handshake_Performance_Guarantee(config:Config, tlb:seq<TLS_Stat
         var tls, tls' := tlb[i], tlb[i+1];
         assert TLS_Next(tls, tls');
         lemma_FollowerInit_Invariant_Induction(config, tls, tls');
+        lemma_FollowerInfo_Message_Invariant_Induction(config, tls, tls');
+        lemma_Leader_ProcessFI_PreQuorum_Invariant_Induction(config, tls, tls');
         lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config, tls, tls');
         assert Handshake_Follower_Invariant(tls');
         assert Handshake_Messages_Invariant(tls');

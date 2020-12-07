@@ -72,7 +72,9 @@ predicate SendMyInfo(s:Follower, s':Follower, ios:seq<ZKIo>) {
 
 /* State transition from F_HANDSHAKE_B -> F_PRESYNC 
 * Process_LI */
-predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) {
+predicate AcceptNewEpoch(s:Follower, s':Follower, ios:seq<ZKIo>) 
+    requires s.state == F_HANDSHAKE_B
+{
     // state and epoch are the only properties that change in this transition
     && s' == s.(state := s'.state, accepted_epoch := s'.accepted_epoch)  
     && |ios| >= 1

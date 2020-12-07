@@ -129,7 +129,7 @@ function ProcessFI_PreQuorum_ts_Formula(l:TQuorumPeer) : Timestamp
     requires |l.v.leader.globals.connectingFollowers| >= 1
 {
     var connectingFollowers := l.v.leader.globals.connectingFollowers;
-    l.dts + ProcFI * (|connectingFollowers|-1)
+    FollowerInfo_Message_ts_Formula() + ProcFI * (|connectingFollowers|-1)
 }
 
 function ProcessFI_PreQuorum_dts_Formula() : Timestamp {
