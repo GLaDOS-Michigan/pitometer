@@ -52,11 +52,13 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
     requires |tlb| > 1
     ensures forall i | 0 <= i < |tlb| :: Basic_Invariants(config, tlb[i]) 
 {
-    // TODO
-    assume false;
     lemma_DS_Config_Invariant_Proof(config, tlb, f);
     lemma_ZK_Config_Invariant_Proof(config, tlb, f);
     lemma_Leader_QueuedPackets_Invariant_Proof(config, tlb, f);
+    lemma_Quorums_Size_Invariant_Proof(config, tlb, f);
+    
+    // TODO
+    assume false;
 }
 
 
@@ -138,7 +140,6 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
         invariant forall k | 0 <= k <= i :: ZKDB_Always_Good_Invariant(tlb[k])
     {
         var tls, tls' := tlb[i], tlb[i+1];
-        assert TLS_Next(tls, tls');
         assert ZK_Config_Invariant(config, tls');
         var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
         if tls.t_servers[actor].v.LeaderPeer? {
@@ -362,6 +363,31 @@ predicate Quorums_Size_Invariant(tls:TLS_State) {
         && 1 <= |l.globals.electingFollowers| <= (n/2) + 1
         && 1 <=|l.globals.ackSet| <= (n/2) + 1
     )
+}
+
+
+lemma lemma_Quorums_Size_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+{
+    assert Quorums_Size_Invariant(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Quorums_Size_Invariant(tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if tls.t_servers[actor].v.LeaderPeer? {
+            var s, s', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
+            assert Quorums_Size_Invariant(tls');
+        }
+        i := i + 1;
+    }
 }
 
 
