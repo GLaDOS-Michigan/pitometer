@@ -34,7 +34,7 @@ predicate LS_Init(config:Config, s:LS_State, f: int) {
     && LEnvironment_Init(config, s.environment)
     && |config| == |s.initialZkdbState| == 2*f + 1 // we will assign each server in config the corresponding db
     && SeqIsUnique(config)
-    // && InitialZkdbState_EmptyDiff(s.initialZkdbState)
+    && InitialZkdbState_EmptyDiff(s.initialZkdbState)
     && (forall e :: e in config <==> e in s.servers)
         // this is the leader
     && s.servers[config[0]].LeaderPeer?

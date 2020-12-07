@@ -133,10 +133,13 @@ predicate PreSyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
             && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
             && ClearAndLoadDbSnapshot(s, s', leaderDb)
         case SyncTRUNC(sid, serial, lastProcessedZxid) => 
-            && s.serialSync == -1  
+            // This case is unexpected
             && |ios| == 1
-            && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
-            && truncDatabase(s.zkdb, s'.zkdb, lastProcessedZxid)
+            && s' == s
+            // && s.serialSync == -1  
+            // && |ios| == 1
+            // && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
+            // && truncDatabase(s.zkdb, s'.zkdb, lastProcessedZxid)
 }
 
 
@@ -162,9 +165,12 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
 
         // Process new transactions
         case Commit(sid, serial, txn) => 
+            // This case is unexpected
             && |ios| == 1
-            && s' == s.(zkdb := s'.zkdb, serialSync:= serial)
-            && commitToLog(s.zkdb, s'.zkdb, txn)
+            && s' == s
+            // && |ios| == 1
+            // && s' == s.(zkdb := s'.zkdb, serialSync:= serial)
+            // && commitToLog(s.zkdb, s'.zkdb, txn)
         case NewLeader(sid, serial, newLeaderZxid) =>
             && s.serialNL == -1   
             && s' == s.(zkdb := s'.zkdb, serialNL:= serial)
@@ -188,6 +194,8 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
 
 
 predicate ClearAndLoadDbSnapshot(s:Follower, s':Follower, snapshot:ZKDatabase){
-    s'.zkdb == snapshot
+    && snapshot.initialized
+    && isValidZKDatabase(snapshot)
+    && s'.zkdb == snapshot
 }
 }

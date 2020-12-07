@@ -125,18 +125,39 @@ lemma lemma_ZK_Config_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
     requires ValidTLSBehavior(config, tlb, f)
     requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
     ensures forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: ZKDB_Always_Good_Invariant(tlb[i])
 {
     assert ZK_Config_Invariant(config, tlb[0]);
+    assert ZKDB_Always_Good_Invariant(tlb[0]);
     
     var i := 0;
     while i < |tlb| - 1 
         decreases |tlb| - i
         invariant 0 <= i < |tlb|
         invariant forall k | 0 <= k <= i :: ZK_Config_Invariant(config, tlb[k])
+        invariant forall k | 0 <= k <= i :: ZKDB_Always_Good_Invariant(tlb[k])
     {
         var tls, tls' := tlb[i], tlb[i+1];
         assert TLS_Next(tls, tls');
         assert ZK_Config_Invariant(config, tls');
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if tls.t_servers[actor].v.LeaderPeer? {
+            var s, s', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
+            assert s'.globals.zkdb.initialized;
+            assert isValidZKDatabase(s'.globals.zkdb);
+        } else {
+            var s, s', ios := tls.t_servers[actor].v.follower, tls'.t_servers[actor].v.follower, UntagLIoOpSeq(tios);
+            match s.state 
+            case F_HANDSHAKE_A => assert s'.zkdb == s.zkdb;
+            case F_HANDSHAKE_B => assert s'.zkdb == s.zkdb;
+            case F_PRESYNC => assert isValidZKDatabase(s'.zkdb);
+            case F_SYNC => assert isValidZKDatabase(s'.zkdb);
+            case F_RUNNING => assert s'.zkdb == s.zkdb;
+            case F_ERROR => assert s'.zkdb == s.zkdb;
+            assert s'.zkdb.initialized;
+            assert isValidZKDatabase(s'.zkdb);
+        }
+        assert ZKDB_Always_Good_Invariant(tls');
         i := i + 1;
     }
 }
