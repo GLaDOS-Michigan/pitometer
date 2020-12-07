@@ -178,7 +178,21 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
     ensures pkt.msg.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls'.f, pkt.msg.v.serial)
     {}
 
+    // Invariant on followers after sending AckEpoch messages
+    forall ep | ep in tls'.t_servers && tls'.t_servers[ep].v.FollowerPeer? && tls'.t_servers[ep].v.follower.state == F_PRESYNC && 0 <= tls'.t_servers[ep].v.follower.serialLI < tls.f
+    ensures && tls'.t_servers[ep].dts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls'.f, tls'.t_servers[ep].v.follower.serialLI)
+            && tls'.t_servers[ep].ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls'.f, tls'.t_servers[ep].v.follower.serialLI) + ProcLI
+    {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        if ep == actor {
+            var f, f', ios := tls.t_servers[ep].v.follower, tls'.t_servers[ep].v.follower, UntagLIoOpSeq(tios);
+            if f.state != F_HANDSHAKE_B {  // else case is true by Handshake_Messages_Invariant
+                assert f'.state != F_PRESYNC; assert false;
+            } 
+        }
+    }
     assert Follower_PreSync_Invariant(tls');
+
     // Invariant on EpochAck messages 
     forall pkt | pkt in tls'.t_environment.sentPackets && pkt.msg.v.AckEpoch? 
     ensures pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls'.f, pkt.msg.v.serial)

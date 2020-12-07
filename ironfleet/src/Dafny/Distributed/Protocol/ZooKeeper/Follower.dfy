@@ -135,7 +135,7 @@ predicate PreSyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
         case SyncTRUNC(sid, serial, lastProcessedZxid) => 
             // This case is unexpected
             && |ios| == 1
-            && s' == s
+            && s' == s.(state := F_ERROR)
             // && s.serialSync == -1  
             // && |ios| == 1
             // && s' == s.(zkdb := s'.zkdb, state := F_SYNC, serialSync:= serial)
@@ -167,7 +167,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
         case Commit(sid, serial, txn) => 
             // This case is unexpected
             && |ios| == 1
-            && s' == s
+            && s' == s.(state := F_ERROR)
             // && |ios| == 1
             // && s' == s.(zkdb := s'.zkdb, serialSync:= serial)
             // && commitToLog(s.zkdb, s'.zkdb, txn)
