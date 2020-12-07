@@ -280,8 +280,17 @@ lemma lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config:
     requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[i]) 
 {
-    // // TODO
-    assume false;
+    assert ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        assert ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tls');
+        i := i + 1;
+    }
 }
 
 
