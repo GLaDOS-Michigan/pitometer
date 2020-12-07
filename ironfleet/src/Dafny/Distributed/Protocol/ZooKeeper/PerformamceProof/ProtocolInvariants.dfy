@@ -423,9 +423,14 @@ lemma lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B(config:Config, t
         decreases |tlb| - i
         invariant 0 <= i < |tlb|
         invariant forall k | 0 <= k <= i :: tlb[k].t_servers[config[0]].v.leader.globals.nextSerialLI == |Handlers_Past_HandshakeB(tlb[k].t_servers[config[0]].v.leader)|
+        invariant forall k | 0 <= k <= i :: 
+            && tlb[k].t_servers[config[0]].v.leader.globals.zkdb.initialized == tlb[0].t_servers[config[0]].v.leader.globals.zkdb.initialized
+            && tlb[k].t_servers[config[0]].v.leader.globals.zkdb.commitLog == tlb[0].t_servers[config[0]].v.leader.globals.zkdb.commitLog
+            && tlb[k].t_servers[config[0]].v.leader.globals.zkdb.minCommittedLog == tlb[0].t_servers[config[0]].v.leader.globals.zkdb.minCommittedLog
+            && tlb[k].t_servers[config[0]].v.leader.globals.zkdb.maxCommittedLog == tlb[0].t_servers[config[0]].v.leader.globals.zkdb.maxCommittedLog
     {   
         var tls, tls' := tlb[i], tlb[i+1];
-        assume |getInMemorySuffix(tls.t_servers[config[0]].v.leader.globals.zkdb)| == 0;
+        assert |getInMemorySuffix(tls.t_servers[config[0]].v.leader.globals.zkdb)| == 0;
         lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B_Helper(config, tls, tls', t);
         i := i + 1;
     }
@@ -469,8 +474,6 @@ lemma lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B_Helper(config:Co
                     }
                 } else {
                     assert StepSingleHandler_Rcv(s, s', ios);
-                    // var fid := ios[0].r.sender_index;
-                    // var h, h', g, g' := s.handlers[fid], s'.handlers[fid], s.globals, s'.globals;
                     assert sh' == sh;
                 }
                 assert s'.globals.nextSerialLI == |sh'|; 
