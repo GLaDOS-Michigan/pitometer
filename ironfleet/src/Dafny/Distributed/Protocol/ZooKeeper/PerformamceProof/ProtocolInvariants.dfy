@@ -11,10 +11,12 @@ include "../Follower.dfy"
 include "../Leader.dfy"
 include "../LearnerHandler.dfy"
 include "Definitions.dfy"
+include "Commons.dfy"
 
 
 /* This module contains invariants that have nothing to do with performance */
 module Zookeeper_ProtocoIInvariants {
+import opened Zookeeper_Commons
 import opened Common__SeqIsUniqueDef_i
 import opened ZKTimestamp
 import opened ZooKeeper_Types
@@ -119,6 +121,7 @@ predicate ZK_Config_Invariant(config:Config, tls:TLS_State)
     && |tls.t_servers[config[0]].v.leader.handlers| == |config| - 1
     && (forall i :: 1 <= i < |config| <==> i in tls.t_servers[config[0]].v.leader.handlers)
     && (forall follower_id | 1 <= follower_id < |config| :: tls.t_servers[config[0]].v.leader.handlers[follower_id].follower_id == follower_id)
+    && ZKDB_Always_Good_Invariant(tls)
 }
 
 
@@ -300,7 +303,7 @@ lemma lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config:
     assume false;
 }
 
-// TODO: Needs Proof
+
 predicate Handshake_Serial_Invariant(tls:TLS_State) {
     && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var l := tls.t_servers[ep].v.leader;
@@ -319,6 +322,175 @@ predicate Handshake_Serial_Invariant(tls:TLS_State) {
         f.serialLI < tls.f
     ))
 }
+
+
+lemma lemma_Handshake_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Handshake_Serial_Invariant(tlb[i])
+{
+    lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B(config, tlb, t);
+    lemma_Hander_Past_HANDSHAKE_B_Implies_In_ConnectingFollowers(config, tlb, t);
+    assert Handshake_Serial_Invariant(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Handshake_Serial_Invariant(tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+
+        forall ep | ep in tls'.t_servers && tls'.t_servers[ep].v.FollowerPeer?
+        ensures tls'.t_servers[ep].v.follower.serialLI < t;
+        {}
+        
+        forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? 
+        ensures && tls'.t_servers[ep].v.leader.globals.nextSerialLI <= t
+        {
+            var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+            if actor == config[0] {
+                var s, s', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
+                assert s.globals.nextSerialLI >= |Handlers_Past_HandshakeB(s)|;
+                if s'.globals.nextSerialLI > t {
+                    /* Proof by contradiction 
+                    * nextSerialLI => num handlers in state LH_HANDSHAKE_B
+                    * handler in state LH_HANDSHAKE_B ==> handler in connectingFollowers - {0}
+                    * but |connectingFollowers - {0}| <= f */
+                    var hsb_handlers := Handlers_Past_HandshakeB(s');
+                    lemma_Size_of_Supeset_2(hsb_handlers, s'.globals.connectingFollowers - {0});
+                    assert |s'.globals.connectingFollowers| > t;
+                    assert false;
+                }
+            }
+        }
+
+        forall pkt | pkt in tls'.t_environment.sentPackets 
+        ensures && (pkt.msg.v.LeaderInfo? ==> pkt.msg.v.serial < t)
+                && (pkt.msg.v.AckEpoch? ==> pkt.msg.v.serial < t)
+        {}
+
+        forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? 
+        ensures 1 <= |tls'.t_servers[ep].v.leader.globals.electingFollowers| <= tls'.t_servers[ep].v.leader.globals.nextSerialLI + 1
+        {
+            // TODO
+            assume false;
+        }
+        i := i + 1;
+    }
+}
+
+
+lemma lemma_Hander_Past_HANDSHAKE_B_Implies_In_ConnectingFollowers(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: (
+        forall h | 
+            && h in tlb[i].t_servers[config[0]].v.leader.handlers 
+            && (
+                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_HANDSHAKE_B
+                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_PREP_SYNC
+                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_SYNC
+                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_PROCESS_ACK
+            )
+        ::
+            h in tlb[i].t_servers[config[0]].v.leader.globals.connectingFollowers - {0}
+    )
+{
+    // TODO
+    assume false;
+}
+
+
+lemma lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: 
+        tlb[i].t_servers[config[0]].v.leader.globals.nextSerialLI 
+        == 
+        |Handlers_Past_HandshakeB(tlb[i].t_servers[config[0]].v.leader)|
+{
+    assert tlb[0].t_servers[config[0]].v.leader.globals.nextSerialLI == |Handlers_Past_HandshakeB(tlb[0].t_servers[config[0]].v.leader)|;
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: tlb[k].t_servers[config[0]].v.leader.globals.nextSerialLI == |Handlers_Past_HandshakeB(tlb[k].t_servers[config[0]].v.leader)|
+    {   
+        var tls, tls' := tlb[i], tlb[i+1];
+        assume |getInMemorySuffix(tls.t_servers[config[0]].v.leader.globals.zkdb)| == 0;
+        lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B_Helper(config, tls, tls', t);
+        i := i + 1;
+    }
+}
+
+
+lemma lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B_Helper(config:Config, tls:TLS_State, tls':TLS_State, t:int)
+    requires SeqIsUnique(config);
+    requires TLS_Next(tls, tls')
+    requires DS_Config_Invariant(config, tls) && DS_Config_Invariant(config, tls')
+    requires ZK_Config_Invariant(config, tls) && ZK_Config_Invariant(config, tls')
+    requires Quorums_Size_Invariant(tls) && Quorums_Size_Invariant(tls')
+    requires |getInMemorySuffix(tls.t_servers[config[0]].v.leader.globals.zkdb)| == 0;
+    requires tls.t_servers[config[0]].v.leader.globals.nextSerialLI 
+        == 
+        |Handlers_Past_HandshakeB(tls.t_servers[config[0]].v.leader)|
+    ensures tls'.t_servers[config[0]].v.leader.globals.nextSerialLI 
+        == 
+        |Handlers_Past_HandshakeB(tls'.t_servers[config[0]].v.leader)|   
+{
+    var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+    if actor == config[0] {
+        var s, s', ios := tls.t_servers[actor].v.leader, tls'.t_servers[actor].v.leader, UntagLIoOpSeq(tios);
+        var sh, sh' := Handlers_Past_HandshakeB(s), Handlers_Past_HandshakeB(s');
+        if s.state == L_STARTING {
+            if !IsVerifiedQuorum(s.my_id, |s.globals.config|, s.globals.ackSet) {
+                assert StepSingleHandler(s, s', ios);
+                if StepSingleHandler_NoRcv(s, s', ios) {
+                    var fid :| LHNext(s, s', fid, ios);
+                    var h, h', g, g' := s.handlers[fid], s'.handlers[fid], s.globals, s'.globals;
+                    if h.state == LH_HANDSHAKE_A {
+                        if IsVerifiedQuorum(h.follower_id, |g.config|, g.connectingFollowers) {
+                            assert s'.globals.nextSerialLI == s.globals.nextSerialLI + 1;
+                            assert sh' == sh + {h.follower_id};
+                        }
+                    } else if h.state == LH_PREP_SYNC {
+                        assert g.zkdb.initialized && isValidZKDatabase(g.zkdb);
+                        assert sh' == sh;
+                    } else {
+                        assert sh' == sh;
+                    }
+                } else {
+                    assert StepSingleHandler_Rcv(s, s', ios);
+                    // var fid := ios[0].r.sender_index;
+                    // var h, h', g, g' := s.handlers[fid], s'.handlers[fid], s.globals, s'.globals;
+                    assert sh' == sh;
+                }
+                assert s'.globals.nextSerialLI == |sh'|; 
+            } else {
+                assert sh' == sh;
+            }
+        }
+    } 
+}
+
+
+function Handlers_Past_HandshakeB(leader:Leader) : set<nat> {
+    set h | h in leader.handlers && (
+        || leader.handlers[h].state == LH_HANDSHAKE_B
+        || leader.handlers[h].state == LH_PREP_SYNC
+        || leader.handlers[h].state == LH_SYNC
+        || leader.handlers[h].state == LH_PROCESS_ACK
+    ) :: h
+}
+
 
 // TODO: Needs Proof
 predicate Sync_Serial_Invariant(tls:TLS_State) {
@@ -351,17 +523,17 @@ predicate Sync_Serial_Invariant(tls:TLS_State) {
     ))
 }
 
-// TODO: Needs Proof
+
 predicate Quorums_Size_Invariant(tls:TLS_State) {
     var n := |tls.config|;
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
-        && var l := tls.t_servers[ep].v.leader;
-        && {l.my_id} <= l.globals.connectingFollowers
-        && {l.my_id} <= l.globals.electingFollowers
-        && {l.my_id} <= l.globals.ackSet
-        && 1 <= |l.globals.connectingFollowers| <= (n/2) + 1
-        && 1 <= |l.globals.electingFollowers| <= (n/2) + 1
-        && 1 <=|l.globals.ackSet| <= (n/2) + 1
+        // && var ld := tls.t_servers[ep].v.leader;
+        && {tls.t_servers[ep].v.leader.my_id} <= tls.t_servers[ep].v.leader.globals.connectingFollowers
+        && {tls.t_servers[ep].v.leader.my_id} <= tls.t_servers[ep].v.leader.globals.electingFollowers
+        && {tls.t_servers[ep].v.leader.my_id} <= tls.t_servers[ep].v.leader.globals.ackSet
+        && 1 <= |tls.t_servers[ep].v.leader.globals.connectingFollowers| <= (n/2) + 1
+        && 1 <= |tls.t_servers[ep].v.leader.globals.electingFollowers| <= (n/2) + 1
+        && 1 <=|tls.t_servers[ep].v.leader.globals.ackSet| <= (n/2) + 1
     )
 }
 

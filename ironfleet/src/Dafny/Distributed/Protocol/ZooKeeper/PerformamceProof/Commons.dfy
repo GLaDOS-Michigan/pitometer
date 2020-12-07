@@ -83,6 +83,13 @@ lemma lemma_Size_of_Supeset<T>(s:set<T>)
     }
 }
 
+lemma lemma_Size_of_Supeset_2<T>(s1:set<T>, s2:set<T>) 
+    requires forall e | e in s1 :: e in s2
+    ensures |s2| >= |s1|;
+{
+    lemma_Size_of_Supeset(s2);
+}
+
 
 lemma lemma_Size_One_Sets<T>(s:set<T>, e:T) 
     requires s >= {e}
@@ -106,5 +113,4 @@ lemma lemma_Size_One_Sets<T>(s:set<T>, e:T)
         }
     }
 }
-
 }
