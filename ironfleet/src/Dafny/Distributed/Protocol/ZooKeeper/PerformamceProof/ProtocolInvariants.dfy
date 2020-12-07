@@ -432,6 +432,7 @@ lemma lemma_Handshake_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, 
     requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
     requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
     requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: Handshake_Serial_Invariant(tlb[i])
 {
     lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B(config, tlb, t);
@@ -477,9 +478,8 @@ lemma lemma_Handshake_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, 
         forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? 
         ensures 1 <= |tls'.t_servers[ep].v.leader.globals.electingFollowers| <= tls'.t_servers[ep].v.leader.globals.nextSerialLI + 1
         {
-            // TODO
-            /* Tough nut to crack. Skip for now */
-            assume false;
+            // True due to Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant
+            // if |electingFollowers| >1, then nextSerialLI = f.
         }
         i := i + 1;
     }
