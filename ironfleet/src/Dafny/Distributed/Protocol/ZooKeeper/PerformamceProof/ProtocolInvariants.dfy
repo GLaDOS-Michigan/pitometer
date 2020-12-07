@@ -388,21 +388,41 @@ lemma lemma_Hander_Past_HANDSHAKE_B_Implies_In_ConnectingFollowers(config:Config
     requires ValidTLSBehavior(config, tlb, t)
     requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
     requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: (
         forall h | 
             && h in tlb[i].t_servers[config[0]].v.leader.handlers 
-            && (
-                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_HANDSHAKE_B
-                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_PREP_SYNC
-                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_SYNC
-                || tlb[i].t_servers[config[0]].v.leader.handlers[h].state == LH_PROCESS_ACK
-            )
+            && Past_Handshake_B(tlb[i].t_servers[config[0]].v.leader.handlers[h])
         ::
             h in tlb[i].t_servers[config[0]].v.leader.globals.connectingFollowers - {0}
     )
 {
-    // TODO
-    assume false;
+    forall h | 
+            && h in tlb[0].t_servers[config[0]].v.leader.handlers 
+            && Past_Handshake_B(tlb[0].t_servers[config[0]].v.leader.handlers[h])
+    ensures h in tlb[0].t_servers[config[0]].v.leader.globals.connectingFollowers - {0}
+    {}
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: 
+            forall h | 
+            && h in tlb[k].t_servers[config[0]].v.leader.handlers 
+            && Past_Handshake_B(tlb[k].t_servers[config[0]].v.leader.handlers[h])
+            ::
+            h in tlb[k].t_servers[config[0]].v.leader.globals.connectingFollowers - {0}
+    {   
+        var tls, tls' := tlb[i], tlb[i+1];
+        i := i + 1;
+    }
+}
+
+predicate Past_Handshake_B(h : LearnerHandler) {
+    || h.state == LH_HANDSHAKE_B
+    || h.state == LH_PREP_SYNC
+    || h.state == LH_SYNC
+    || h.state == LH_PROCESS_ACK
 }
 
 
@@ -486,12 +506,7 @@ lemma lemma_nextSerialLI_Equals_NumHandlers_Past_LH_HANDSHAKE_B_Helper(config:Co
 
 
 function Handlers_Past_HandshakeB(leader:Leader) : set<nat> {
-    set h | h in leader.handlers && (
-        || leader.handlers[h].state == LH_HANDSHAKE_B
-        || leader.handlers[h].state == LH_PREP_SYNC
-        || leader.handlers[h].state == LH_SYNC
-        || leader.handlers[h].state == LH_PROCESS_ACK
-    ) :: h
+    set h | h in leader.handlers && Past_Handshake_B(leader.handlers[h]) :: h
 }
 
 
