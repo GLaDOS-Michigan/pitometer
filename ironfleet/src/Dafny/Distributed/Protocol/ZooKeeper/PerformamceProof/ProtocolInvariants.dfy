@@ -43,13 +43,13 @@ predicate Basic_Invariants(config:Config, tls:TLS_State) {
     && Follower_Serials_In_PreSync_Invariant(tls)
     && Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls)
     && Follower_Cannot_Receive_NewLeader_Before_Sync(tls)
-    && Leader_Only_Sends_Leader_Msgs(tls)
 }
 
 
 lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int) 
     requires SeqIsUnique(config);
     requires ValidTLSBehavior(config, tlb, f)
+    requires |tlb| > 1
     ensures forall i | 0 <= i < |tlb| :: Basic_Invariants(config, tlb[i]) 
 {
     // TODO
@@ -174,25 +174,7 @@ predicate ZKDB_Always_Good_Invariant(tls:TLS_State) {
 *                                   Transition Invariants                                *
 *****************************************************************************************/
 
-predicate SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
-    requires id in tls.t_servers
-    requires TLS_Next(tls, tls')
-    requires TLS_NextOneServer(tls, tls', id, tios)
-{
-    tls'.t_environment.sentPackets == 
-    tls.t_environment.sentPackets + (set tio : TimestampedLIoOp | tio in tios && tio.LIoOpSend? :: tio.s)
-}
-
-
-lemma lemma_SentPacketsSet_Property(tls:TLS_State, tls':TLS_State, id:EndPoint, tios:seq<TZKIo>)
-    requires id in tls.t_servers
-    requires TLS_Next(tls, tls')
-    requires TLS_Next(tls, tls')
-    requires TLS_NextOneServer(tls, tls', id, tios)
-    ensures SentPacketsSet_Property(tls, tls', id, tios)
-{}
-
-// TODO: Needs Proof
+// Needs no proof. Dafny figured this one out automatically when lemmas requiring it are called. Good boi dafny!
 predicate QuorumsMonotoneIncreasing_Property(tls:TLS_State, tls':TLS_State)
     requires TLS_Next(tls, tls')
     requires Basic_Invariants(tls.config, tls) && Basic_Invariants(tls'.config, tls')
@@ -200,6 +182,7 @@ predicate QuorumsMonotoneIncreasing_Property(tls:TLS_State, tls':TLS_State)
     && |tls.t_servers[tls.config[0]].v.leader.globals.connectingFollowers| <= |tls'.t_servers[tls'.config[0]].v.leader.globals.connectingFollowers|
     && |tls.t_servers[tls.config[0]].v.leader.globals.electingFollowers| <= |tls'.t_servers[tls'.config[0]].v.leader.globals.electingFollowers|
 }
+
 
 
 /*****************************************************************************************
@@ -380,19 +363,6 @@ predicate Quorums_Size_Invariant(tls:TLS_State) {
         && 1 <=|l.globals.ackSet| <= (n/2) + 1
     )
 }
-
-
-predicate Leader_Only_Sends_Leader_Msgs(tls:TLS_State) {
-    && tls.t_environment.nextStep.LEnvStepHostIos?
-    && tls.t_environment.nextStep.actor in tls.t_servers
-    && tls.t_servers[tls.t_environment.nextStep.actor].v.LeaderPeer?
-    ==> 
-    forall tio | tio in tls.t_environment.nextStep.ios && tio.LIoOpSend? :: 
-        && !tio.s.msg.v.FollowerInfo? 
-        && !tio.s.msg.v.AckEpoch? 
-        && !tio.s.msg.v.Ack? 
-}
-
 
 
 // TODO: Needs Proof
