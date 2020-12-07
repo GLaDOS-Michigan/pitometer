@@ -58,6 +58,7 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
     lemma_ZK_Config_Invariant_Proof(config, tlb, f);
     lemma_Leader_QueuedPackets_Invariant_Proof(config, tlb, f);
     lemma_Quorums_Size_Invariant_Proof(config, tlb, f);
+    lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config, tlb, f);
     
     // TODO
     assume false;
@@ -274,9 +275,12 @@ predicate ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant(config:Config, 
 lemma lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
     requires SeqIsUnique(config);
     requires ValidTLSBehavior(config, tlb, f)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant(config, tlb[i]) 
 {
-    // TODO
+    // // TODO
     assume false;
 }
 
@@ -297,10 +301,23 @@ predicate ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config:Config, 
 lemma lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
     requires SeqIsUnique(config);
     requires ValidTLSBehavior(config, tlb, f)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tlb[i]) 
 {
-    // TODO
-    assume false;
+    assert ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tlb[0]);
+    lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config, tlb, f);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        assert ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config, tls');
+        i := i + 1;
+    }
 }
 
 
@@ -376,6 +393,7 @@ lemma lemma_Handshake_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, 
         ensures 1 <= |tls'.t_servers[ep].v.leader.globals.electingFollowers| <= tls'.t_servers[ep].v.leader.globals.nextSerialLI + 1
         {
             // TODO
+            /* Tough nut to crack. Skip for now */
             assume false;
         }
         i := i + 1;
