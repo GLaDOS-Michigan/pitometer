@@ -61,7 +61,7 @@ predicate Performance_Assumption_EmptyDiff(tlb:seq<TLS_State>) {
 *                                     Main Guarantee                                     *
 *****************************************************************************************/
 
-/* Performance guarantee Empty Diff 
+/* Performance guarantee Empty Diff for BUGGY Zookeeper
 * Every leader in the RUNNING state has the specified performance formula. 
 * This formula is:
     SendFI + D                  # Follower send FI 
@@ -71,9 +71,9 @@ predicate Performance_Assumption_EmptyDiff(tlb:seq<TLS_State>) {
     + ProcEpAck * f             # Leader receives and processes AckEpoch
     + ProcEpAck * f             # Leader gets electingFollowers and move to PrepSync state
     + PreSync * f               # Leader does PrepSync for each folllower
-    + Sync * f                  # Leader sends SyncDiff message to each follower. No "D" here because "parallel" with next step
+    + SyncSnap * f              # Leader sends SyncSnap message to each follower. No "D" here because "parallel" with next step
     + Sync * f + D              # Leader sends NewLeader to each follower
-    + ProcSyncI + ProcSync + D  # Follower processes SyncDiff, NewLeader, and sends Ack
+    + ProcSnap + ProcSync + D   # Follower processes SyncSnap, NewLeader, and sends Ack
     + ProcAck * f               # Leader receives Ack
  */
 predicate LS_Performance_Guarantee_EmptyDiff(tls:TLS_State) 
@@ -282,7 +282,7 @@ function Sync_Message_ts_Formula(f:int, serial:nat) : Timestamp
     + ProcEpAck * f
     + PreSync * f    // max possible PrepSyncs done before I was sent
     + Sync * serial  // max possible NewLeader sent before I was sent
-    + Sync * (serial + 1)  // I am the (serial + 1)-th sync message sent
+    + SyncSnap * (serial + 1)  // I am the (serial + 1)-th sync message sent
     + D
 }
 
@@ -294,7 +294,7 @@ function NewLeader_Message_ts_Formula(f:int, serial:nat) : Timestamp
     + ProcEpAck * f
     + ProcEpAck * f
     + PreSync * f    // max possible PrepSyncs done before I was sent
-    + Sync * f  // max possible Syncs sent before I was sent
+    + SyncSnap * f  // max possible Syncs sent before I was sent
     + Sync * (serial + 1)  // I am the (serial + 1)-th NL message sent
     + D
 }
@@ -322,16 +322,16 @@ function Follower_F_SYNC_ts_Formula(f:int, s:TQuorumPeer) : Timestamp
 {
     if s.v.follower.serialNL < 0 
     then // yet to receive NL. Just processed SyncDiff | SyncSnap
-        Follower_F_SYNC_dts_Formula(f, s) + ProcSyncI
+        Follower_F_SYNC_dts_Formula(f, s) + ProcSnap
     else // just received NL. Waititng to receive final UpToDate to start running
-        NewLeader_Message_ts_Formula(f, f-1) + ProcSyncI + ProcSync
+        NewLeader_Message_ts_Formula(f, f-1) + ProcSnap + ProcSync
 }
 
 
 function Ack_Message_ts_Formula(f:int, serial:nat) : Timestamp
     requires f >= 1;
 {
-    NewLeader_Message_ts_Formula(f, f-1) + ProcSyncI + ProcSync + D
+    NewLeader_Message_ts_Formula(f, f-1) + ProcSnap + ProcSync + D
 }
 
 
@@ -348,8 +348,8 @@ function ProcessAck_PreQuorum_ts_Formula(f:int, n:int, l:TQuorumPeer) : Timestam
         + ProcEpAck * (|electingFollowers|-1)
         + ProcEpAck * l.v.leader.globals.procEpCount 
         + PreSync * l.v.leader.globals.prepCount    // num of PrepSyncs done
-        + Sync * l.v.leader.globals.nextSerialSync   // Only sync, never syncSnap
-        + Sync * l.v.leader.globals.nextSerialNL   // Only sync, never syncSnap
+        + SyncSnap * l.v.leader.globals.nextSerialSync   // Number of SyncSnaps done
+        + Sync * l.v.leader.globals.nextSerialNL   
     else 
         Ack_Message_ts_Formula(f, f-1) + ProcAck * (|ackSet|-1)
 }

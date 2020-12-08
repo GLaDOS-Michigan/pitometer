@@ -12,7 +12,7 @@ include "../Leader.dfy"
 include "../LearnerHandler_Bug.dfy"
 include "Definitions.dfy"
 include "ProtocolInvariants.dfy"
-include "PerformancePredicates.dfy"
+include "PerformancePredicates_Bug.dfy"
 
 
 /* This module contains invariants that have nothing to do with performance */
