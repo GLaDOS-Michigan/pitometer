@@ -15,7 +15,7 @@ include "PerformancePredicates.dfy"
 include "ProtocolInvariants.dfy"
 include "Commons.dfy"
 include "ProofEmptyDiff_Invariants.dfy"
-include "EmptyDiffInvariants.dfy"
+include "CorrectZKInvariants.dfy"
 
 
 module Zookeeper_PerformanceProof {
@@ -54,7 +54,8 @@ lemma theorem_ZK_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
     
     lemma_Basic_Invariants(config, tlb, f);
     // TODO: These will later be replaced by lemmas proving these
-    assume forall i | 0 <= i < |tlb| :: EmptyDiff_Invariant(tlb[i]);
+    theorem_ZK_Correct_Guarantee(config, tlb, f);
+    assert forall i | 0 <= i < |tlb| :: EmptyDiff_Invariant(tlb[i]);
 
     theorem_ZK_Sync_Performance_Guarantee(config, tlb, f);
     assert LS_Performance_Guarantee_EmptyDiff(tlb[0]);
@@ -127,7 +128,6 @@ lemma theorem_ZK_Performance_Guarantee_Induction(config:Config, tls:TLS_State, t
                         assert st'.ts <= pkt_max + ProcAck;
                         assert st'.ts <= Ack_Message_ts_Formula(f, f-1) + ProcAck * f;
                     } else {
-                        // assume false;
                         assert st.ts <= Ack_Message_ts_Formula(f, f-1) + ProcAck * (|g.ackSet|-1);
                         assert st'.ts <= Ack_Message_ts_Formula(f, f-1) + ProcAck * f;
                     }

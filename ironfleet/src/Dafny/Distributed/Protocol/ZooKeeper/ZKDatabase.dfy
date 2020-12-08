@@ -146,7 +146,7 @@ predicate InitialZkdbState_EmptyDiff(zkdbs: seq<ZKDatabase>) {
             && db.minCommittedLog == db.maxCommittedLog == NullZxid  // empty in-mem segment
         )
     ) && (forall db1, db2 | db1 in zkdbs && db2 in zkdbs :: (
-            db1.commitLog == db1.commitLog    // commit logs are identical
+            db1.commitLog == db2.commitLog    // commit logs are identical
         )
     )
 }

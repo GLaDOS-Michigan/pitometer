@@ -66,5 +66,6 @@ predicate LS_NextOneServer(s:LS_State, s':LS_State, actor:EndPoint, ios:seq<ZKIo
 predicate LS_Next(s:LS_State, s':LS_State){
     && LEnvironment_Next(s.environment, s'.environment)
     && (exists ep, ios :: ep in s.servers && LS_NextOneServer(s, s', ep, ios))
+    && s'.initialZkdbState == s.initialZkdbState
 }
 }
