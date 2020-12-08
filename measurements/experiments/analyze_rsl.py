@@ -178,6 +178,8 @@ def analyze_client_csv(filepath):
     with open(filepath, 'r') as client:
         csvreader = csv.reader(client, delimiter=' ',)
         for row in csvreader:
+            if 'TIMEOUT' in row[0]:
+                continue
             req_start = int(row[1])
             req_end = int(row[2])
             start = min(start, req_start)   # Note: this is rather inefficient
@@ -386,7 +388,8 @@ def generate_statistics(input):
     res = []
     res.append(f"n = {'{:,}'.format(len(input))}")
     res.append("μ = %.3f" %statistics.mean(input))
-    res.append("σ = %.4f" %statistics.stdev(input))
+    if len(input) > 1:
+        res.append("σ = %.4f" %statistics.stdev(input))
     res.append("99.9%% = %.3f" %np.percentile(input, 99.9))
     res.append("")
     res.append("max = %.3f" %np.max(input))
