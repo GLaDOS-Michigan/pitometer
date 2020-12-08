@@ -114,6 +114,7 @@ predicate PreSyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
     && ios[0].LIoOpReceive?
     && ios[0].r.src in s.config
     && ios[0].r.msg.sid == s.leader_id
+    && s.serialLI > 0
     && match ios[0].r.msg
         // Ignore these 
         case FollowerInfo(sid, latestZxid) => false
@@ -174,6 +175,7 @@ predicate SyncWithLeader(s:Follower, s':Follower, ios:seq<ZKIo>)
             // && s' == s.(zkdb := s'.zkdb, serialSync:= serial)
             // && commitToLog(s.zkdb, s'.zkdb, txn)
         case NewLeader(sid, serial, newLeaderZxid) =>
+            && s.serialSync > 0
             && s.serialNL == -1   
             && s' == s.(zkdb := s'.zkdb, serialNL:= serial)
             && takeSnapshot(s.zkdb, s'.zkdb)

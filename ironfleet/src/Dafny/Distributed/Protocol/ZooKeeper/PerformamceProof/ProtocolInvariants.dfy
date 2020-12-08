@@ -717,7 +717,7 @@ lemma lemma_Quorums_Size_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:in
 }
 
 
-// TODO: Needs Proof
+
 predicate Follower_Serials_In_PreSync_Invariant(tls:TLS_State) 
     requires |tls.config| > 0
     requires tls.config[0] in tls.t_servers
@@ -758,6 +758,7 @@ lemma lemma_Follower_Serials_In_PreSync_Invariant_Proof(config:Config, tlb:seq<T
     requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
     requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
     requires forall i | 0 <= i < |tlb| :: Handshake_Serial_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Follower_Serials_In_PreSync_Invariant_Helper(tlb[i])
     ensures forall i | 0 <= i < |tlb| :: Follower_Serials_In_PreSync_Invariant(tlb[i])
 {
     assert Follower_Serials_In_PreSync_Invariant_Helper(tlb[0]);
@@ -768,7 +769,6 @@ lemma lemma_Follower_Serials_In_PreSync_Invariant_Proof(config:Config, tlb:seq<T
         invariant forall k | 0 <= k <= i :: Follower_Serials_In_PreSync_Invariant_Helper(tlb[k])
     {   
         var tls, tls' := tlb[i], tlb[i+1];
-
         assert Follower_Serials_In_PreSync_Invariant_Helper(tls');
         i := i + 1;
     }
@@ -795,6 +795,35 @@ predicate Follower_Cannot_Receive_NewLeader_Before_Sync(tls:TLS_State) {
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.FollowerPeer? 
     :: 
     && var f := tls.t_servers[ep].v.follower;
-    && f.serialNL >= 0 ==> f.serialSync >= 0 && f.serialLI >= 0
+    && (f.serialNL >= 0 ==> f.serialSync >= 0)
+    && (f.serialSync >= 0 ==> f.serialLI >= 0)
+    // Contrapos: If any of serialLI or serialSync are < 0, then f.serialNL < 0;
 }
+
+
+lemma lemma_Follower_Cannot_Receive_NewLeader_Before_Sync_Proof(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Handshake_Serial_Invariant(tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Sync_Serial_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Follower_Cannot_Receive_NewLeader_Before_Sync(tlb[i])
+{
+    assert Follower_Cannot_Receive_NewLeader_Before_Sync(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Follower_Cannot_Receive_NewLeader_Before_Sync(tlb[k])
+    {   
+        var tls, tls' := tlb[i], tlb[i+1];
+        assert Follower_Cannot_Receive_NewLeader_Before_Sync(tls');
+        i := i + 1;
+    }
+}
+
+// lemma lemma_Follower_In_FSYNC_State_Implies 
+
+
 }

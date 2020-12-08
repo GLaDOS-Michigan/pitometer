@@ -232,11 +232,11 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                                     + ProcFI * tls'.f
                                     + ProcFI * (pkt.msg.v.serial + 1) 
                                     + D;
+                lemma_Math_MaxOfInequalities(ft.ts, pkt.msg.ts, SendFI, SendFI + D + ProcFI * tls'.f + ProcFI * (pkt.msg.v.serial + 1) + D);
                 assert TimeMax(ft.ts, pkt.msg.ts) <= SendFI + D 
                                     + ProcFI * tls'.f 
                                     + ProcFI * (pkt.msg.v.serial + 1) 
                                     + D;
-                lemma_Math_MaxOfInequalities(ft.ts, pkt.msg.ts, SendFI, SendFI + D + ProcFI * tls'.f + ProcFI * (pkt.msg.v.serial + 1) + D);
                 assert ft'.ts <= SendFI + D + ProcFI * tls'.f + ProcFI * (pkt.msg.v.serial + 1) + D + ProcLI;
                 assert ft'.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(tls'.f, f'.serialLI) + ProcLI;
             }
