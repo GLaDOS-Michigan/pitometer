@@ -18,10 +18,10 @@ from plot_constants import *
 
 F_VALUES = [1, 2, 3, 4, 5]
 
-THROW=200  # Ignore the first 100 requests in computing client latencies
+THROW=50  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "new_train"
-TEST_SET = "new_test"
+TEST_SET = "final_test"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -289,7 +289,8 @@ def get_f_max(total_f_client_data):
     """
     res = 0
     for durs in total_f_client_data.values():
-        res = max(res, max(durs[THROW:])) # Ignore the first 100 requests
+        print(len(durs))
+        res = max(res, max(durs[THROW:-THROW])) # Ignore the first 100 requests
     return res
 
 def get_f_999(total_f_client_data):
@@ -299,7 +300,7 @@ def get_f_999(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs[THROW:]) # Ignore the first 100 requests
+        aggregate.extend(durs[THROW: -THROW]) # Ignore the first 100 requests
     return np.percentile(aggregate, 99.9)
 
 def get_f_mean(total_f_client_data):
@@ -309,7 +310,7 @@ def get_f_mean(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs[THROW:])
+        aggregate.extend(durs[THROW: -THROW])
     return np.mean(aggregate)
 
 def get_f_error(total_f_client_data):
@@ -319,7 +320,7 @@ def get_f_error(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs[THROW:])
+        aggregate.extend(durs[THROW: -THROW])
     return statistics.stdev(aggregate)
 
 
