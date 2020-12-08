@@ -35,7 +35,7 @@ import opened Zookeeper_PerformancePredicates
 import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
 import opened Zookeeper_PerformanceProof_Invariants
-import opened Zookeeper_EmptyDiffInvariants
+import opened Zookeeper_CorrectInvariants
 
 
 /* Main theorem */

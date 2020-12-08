@@ -173,7 +173,7 @@ predicate PrepareSync(s:LearnerHandler, s':LearnerHandler, g:LeaderGlobals, g':L
                 && s'.state == LH_SYNC
                 && s'.queuedPackets == [SyncDIFF(s.my_id, 0, s.peerLastZxid)] + PrepareDiffCommits(s.my_id, proposals, s.peerLastZxid)
        ) else (
-            if ZxidEq(g.zkdb.maxCommittedLog, s.peerLastZxid) 
+            if ZxidEq(getLastLoggedZxid(g.zkdb), s.peerLastZxid) 
             then 
                 // Sync empty diff
                 && s'.state == LH_SYNC

@@ -14,7 +14,7 @@ include "Definitions.dfy"
 
 
 /* This module contains invariants that have nothing to do with performance */
-module Zookeeper_EmptyDiffInvariants {
+module Zookeeper_CorrectInvariants {
 import opened Common__SeqIsUniqueDef_i
 import opened ZKTimestamp
 import opened ZooKeeper_Types
@@ -39,5 +39,8 @@ predicate EmptyDiff_Invariant(tls:TLS_State) {
         && !pkt.msg.v.SyncTRUNC?
         && !pkt.msg.v.Commit?
 }
+
+
+
 
 }

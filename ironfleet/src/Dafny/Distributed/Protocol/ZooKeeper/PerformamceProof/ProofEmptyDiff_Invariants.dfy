@@ -14,7 +14,7 @@ include "Definitions.dfy"
 include "PerformancePredicates.dfy"
 include "ProtocolInvariants.dfy"
 include "Commons.dfy"
-include "EmptyDiffInvariants.dfy"
+include "CorrectZKInvariants.dfy"
 
 
 module Zookeeper_PerformanceProof_Invariants {
@@ -33,7 +33,7 @@ import opened ZooKeeper_TimestampedDistributedSystem
 import opened Zookeeper_PerformancePredicates
 import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
-import opened Zookeeper_EmptyDiffInvariants
+import opened Zookeeper_CorrectInvariants
 
 
 /*****************************************************************************************
