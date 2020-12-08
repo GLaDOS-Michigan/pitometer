@@ -425,152 +425,166 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction_Helper(config:Conf
 // }
 
 
-// lemma Sync_Messages_Invariant_Helper_A(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
-//     requires TLS_Next(tls, tls')
-//     requires General_LS_Performance_Assumption(tls)
-//     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
-//     // Induction hypothesis
-//     requires Sync_Messages_Invariant(tls)
-//     requires Sync_Follower_Invariant(tls)
-//     requires Sync_Leader_PreQuorum_Invariant(tls)
-//     requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.SyncDIFF?
-//     ensures pkt.msg.ts <= Sync_Message_ts_Formula(tls.f, pkt.msg.v.serial)
-// {
-//     var f, n := tls.f, |tls.config|;
-//     if pkt !in tls.t_environment.sentPackets {
-//         var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
-//         var lt, lt' := tls.t_servers[config[0]], tls'.t_servers[config[0]];
-//         var l, l', ios := lt.v.leader, lt'.v.leader, UntagLIoOpSeq(tios);
-//         if actor == config[0] {
-//             var fid :| LHNext(l, l', fid, ios);
-//             var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
-//             assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
-//             lemma_Math_Mult_b();
-//             assert g'.prepCount ==  g.prepCount <= f;
-//             assert g'.nextSerialNL == g.nextSerialNL <= g.nextSerialSync == pkt.msg.v.serial;
-//             lemma_Math_Inequalities_CommonMult(ProcEpAck, g'.procEpCount, f);
-//             lemma_Math_Inequalities_CommonMult(Sync, g'.nextSerialNL, pkt.msg.v.serial);
-//             lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync + 1, pkt.msg.v.serial + 1);
-//             lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
-//             assert pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
-//         }
-//     }
-// }
+lemma Sync_Messages_Invariant_Helper_A(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls)
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.SyncSNAP?
+    ensures pkt.msg.ts <= Sync_Message_ts_Formula(tls.f, pkt.msg.v.serial)
+{
+    var f, n := tls.f, |tls.config|;
+    if pkt !in tls.t_environment.sentPackets {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        var lt, lt' := tls.t_servers[config[0]], tls'.t_servers[config[0]];
+        var l, l', ios := lt.v.leader, lt'.v.leader, UntagLIoOpSeq(tios);
+        if actor == config[0] {
+            var fid :| LHNext(l, l', fid, ios);
+            var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
+            assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
+            lemma_Math_Mult_b();
+            assert g'.prepCount ==  g.prepCount <= f;
+            assert g'.nextSerialNL == g.nextSerialNL <= g.nextSerialSync == pkt.msg.v.serial;
+            lemma_Math_Inequalities_CommonMult(ProcEpAck, g'.procEpCount, f);
+            lemma_Math_Inequalities_CommonMult(Sync, g'.nextSerialNL, pkt.msg.v.serial);
+            lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync + 1, pkt.msg.v.serial + 1);
+            lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
+            assert pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
+        }
+    }
+}
 
-// lemma Sync_Messages_Invariant_Helper_B(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
-//     requires TLS_Next(tls, tls')
-//     requires General_LS_Performance_Assumption(tls)
-//     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
-//     // Induction hypothesis
-//     requires Sync_Messages_Invariant(tls)
-//     requires Sync_Follower_Invariant(tls)
-//     requires Sync_Leader_PreQuorum_Invariant(tls)
-//     requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.NewLeader?
-//     ensures pkt.msg.ts <= NewLeader_Message_ts_Formula(tls.f, pkt.msg.v.serial)
-// {
-//     var f, n := tls.f, |tls.config|;
-//     if pkt !in tls.t_environment.sentPackets {
-//         var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
-//         var lt, lt' := tls.t_servers[config[0]], tls'.t_servers[config[0]];
-//         var l, l', ios := lt.v.leader, lt'.v.leader, UntagLIoOpSeq(tios);
-//         if actor == config[0] {
-//             var fid :| LHNext(l, l', fid, ios);
-//             var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
-//             assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
-//             lemma_Math_Mult_b();
-//             lemma_Math_Inequalities_CommonMult(ProcEpAck, g'.procEpCount, f);
-//             lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync, f);
-//             lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
-//             assert pkt.msg.ts <= NewLeader_Message_ts_Formula(f, pkt.msg.v.serial);
-//         }
-//     }
-// }
+lemma Sync_Messages_Invariant_Helper_B(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls)
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.NewLeader?
+    ensures pkt.msg.ts <= NewLeader_Message_ts_Formula(tls.f, pkt.msg.v.serial)
+{
+    var f, n := tls.f, |tls.config|;
+    if pkt !in tls.t_environment.sentPackets {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        var lt, lt' := tls.t_servers[config[0]], tls'.t_servers[config[0]];
+        var l, l', ios := lt.v.leader, lt'.v.leader, UntagLIoOpSeq(tios);
+        if actor == config[0] {
+            var fid :| LHNext(l, l', fid, ios);
+            var h , h', g, g' := l.handlers[fid], l'.handlers[fid], l.globals, l'.globals;
+            assert ZooKeeper_LearnerHandler.DoSync(h, h', g, g', ios);
+            lemma_Math_Mult_b();
+            lemma_Math_Inequalities_CommonMult(ProcEpAck, g'.procEpCount, f);
+            lemma_Math_Inequalities_CommonMult(SyncSnap, g.nextSerialSync, f);
+            lemma_Math_Inequalities_CommonMult(PreSync, g'.prepCount, f);
+            assert pkt.msg.ts <= NewLeader_Message_ts_Formula(f, pkt.msg.v.serial);
+        }
+    }
+}
 
-// lemma Sync_Messages_Invariant_Helper_C(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
-//     requires TLS_Next(tls, tls')
-//     requires General_LS_Performance_Assumption(tls)
-//     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
-//     // Induction hypothesis
-//     requires Sync_Messages_Invariant(tls)
-//     requires Sync_Follower_Invariant(tls) && Sync_Follower_Invariant(tls')
-//     requires Sync_Leader_PreQuorum_Invariant(tls)
-//     requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.Ack?
-//     ensures pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial)
-// {
-//     var f, n := tls.f, |tls.config|;
-//     if pkt !in tls.t_environment.sentPackets {
-//         var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
-//         assert tls'.t_servers[actor].v.follower.serialSync >= 0;
-//         assert pkt.msg.ts <= Ack_Message_ts_Formula(f, pkt.msg.v.serial);
-//     }
-// }
+lemma Sync_Messages_Invariant_Helper_C(config:Config, tls:TLS_State, tls':TLS_State, pkt:TimestampedLPacket<EndPoint,ZKMessage>) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls) && Sync_Follower_Invariant(tls')
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    requires pkt in tls'.t_environment.sentPackets && pkt.msg.v.Ack?
+    ensures pkt.msg.ts <= Ack_Message_ts_Formula(tls.f, pkt.msg.v.serial)
+{
+    var f, n := tls.f, |tls.config|;
+    if pkt !in tls.t_environment.sentPackets {
+        var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+        assert tls'.t_servers[actor].v.follower.serialSync >= 0;
+        assert pkt.msg.ts <= Ack_Message_ts_Formula(f, pkt.msg.v.serial);
+    }
+}
 
-// lemma Sync_Follower_Invariant_Helper(config:Config, tls:TLS_State, tls':TLS_State, ep:EndPoint) 
-//     requires TLS_Next(tls, tls')
-//     requires General_LS_Performance_Assumption(tls)
-//     requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
-//     requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
-//     requires Handshake_Follower_Invariant(tls) && Handshake_Follower_Invariant(tls')
-//     // Induction hypothesis
-//     requires Sync_Messages_Invariant(tls)
-//     requires Sync_Follower_Invariant(tls)
-//     requires Sync_Leader_PreQuorum_Invariant(tls)
-//     // Antecedent
-//     requires ep in tls'.t_servers
-//     requires tls'.t_servers[ep].v.FollowerPeer? 
-//     requires tls'.t_servers[ep].v.follower.state == F_SYNC
-//     requires 0 <= tls'.t_servers[ep].v.follower.serialSync < tls'.f
-//     // Conclusion
-//     ensures tls'.t_servers[ep].dts <= Follower_F_SYNC_dts_Formula(tls'.f, tls'.t_servers[ep])
-//     ensures tls'.t_servers[ep].ts <= Follower_F_SYNC_ts_Formula(tls'.f, tls'.t_servers[ep])
-// {
-//     var f, n := tls.f, |tls.config|;
-//     var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
-//     var ls, ls', ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(tios);
-//     if actor != ep {return;}
-//     var s, s' := ls.servers[actor].follower, ls'.servers[actor].follower;
-//     var st, st' := tls.t_servers[actor], tls'.t_servers[actor];
-//     var pkt := tios[0].r;
+
+lemma Sync_Follower_Invariant_Helper(config:Config, tls:TLS_State, tls':TLS_State, ep:EndPoint) 
+    requires TLS_Next(tls, tls')
+    requires General_LS_Performance_Assumption(tls)
+    requires Basic_Invariants(config, tls) && Basic_Invariants(config, tls')
+    requires EmptyDiff_Invariant(tls) && EmptyDiff_Invariant(tls')
+    requires Handshake_Follower_Invariant(tls) && Handshake_Follower_Invariant(tls')
+    // Induction hypothesis
+    requires Sync_Messages_Invariant(tls)
+    requires Sync_Follower_Invariant(tls)
+    requires Sync_Leader_PreQuorum_Invariant(tls)
+    // Antecedent
+    requires ep in tls'.t_servers
+    requires tls'.t_servers[ep].v.FollowerPeer? 
+    requires tls'.t_servers[ep].v.follower.state == F_SYNC
+    requires 0 <= tls'.t_servers[ep].v.follower.serialSync < tls'.f
+    // Conclusion
+    ensures tls'.t_servers[ep].dts <= Follower_F_SYNC_dts_Formula(tls'.f, tls'.t_servers[ep])
+    ensures tls'.t_servers[ep].ts <= Follower_F_SYNC_ts_Formula(tls'.f, tls'.t_servers[ep])
+{
+    var f, n := tls.f, |tls.config|;
+    var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+    var ls, ls', ios := UntagLS_State(tls), UntagLS_State(tls'), UntagLIoOpSeq(tios);
+    if actor != ep {return;}
+    var s, s' := ls.servers[actor].follower, ls'.servers[actor].follower;
+    var st, st' := tls.t_servers[actor], tls'.t_servers[actor];
+    var pkt := tios[0].r;
     
-//     // s can be in two possible states. 1) F_PRESYNC, 2) F_SYNC
-//     if s.state == F_PRESYNC {
-//         assert pkt.msg.v.SyncDIFF?;
-//         assert st'.dts <= Follower_F_SYNC_dts_Formula(f, st');
-//         assert st.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(f, s.serialLI) + ProcLI;
-//         assert pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
-//         assert s'.state == F_SYNC;
-//         var handlerStartTime := TimeMax(st.ts, pkt.msg.ts);
-//         lemma_Math_Inequalities_CommonMult(ProcFI, s.serialLI+1, f);
+    // s can be in two possible states. 1) F_PRESYNC, 2) F_SYNC
+    if s.state == F_PRESYNC {
+        assert pkt.msg.v.SyncSNAP?;
+        assert st'.dts <= Follower_F_SYNC_dts_Formula(f, st');
+        assert st.ts <= LeaderInfo_Message_PreQuorum_ts_Formula(f, s.serialLI) + ProcLI;
+        assert pkt.msg.ts <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
+        assert s'.state == F_SYNC;
+        var handlerStartTime := TimeMax(st.ts, pkt.msg.ts);
+        lemma_Math_Inequalities_CommonMult(ProcFI, s.serialLI+1, f);
         
-//         assert LeaderInfo_Message_PreQuorum_ts_Formula(f, s.serialLI) + ProcLI
-//                 <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
-//         lemma_Math_MaxOfInequalities(st.ts, pkt.msg.ts, 
-//         LeaderInfo_Message_PreQuorum_ts_Formula(f, s.serialLI) + ProcLI, 
-//         Sync_Message_ts_Formula(f, pkt.msg.v.serial));
-//         assert st'.ts <= Follower_F_SYNC_ts_Formula(f, st');
-//     } else {
-//         assert s.state == F_SYNC;
-//         assert st'.dts <= Follower_F_SYNC_dts_Formula(f, st');
-//         assert pkt.msg.v.NewLeader?;
-//         lemma_Math_Inequalities_CommonMult(Sync, s.serialSync, f);
-//         lemma_Math_Inequalities_CommonMult(Sync, s.serialSync + 1, f);
-//         lemma_Math_Inequalities_CommonMult(Sync, s.serialSync, f);
-//         lemma_Math_Inequalities_CommonMult(Sync, s.serialSync + 1, f);
-//         lemma_Math_Inequalities_CommonMult(Sync, pkt.msg.v.serial + 1, f);
-//         var handlerStartTime := TimeMax(st.ts, pkt.msg.ts);
-//         lemma_Math_MaxOfInequalities(pkt.msg.ts, st.ts, 
-//         NewLeader_Message_ts_Formula(f, pkt.msg.v.serial), 
-//         AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
-//             + ProcEpAck * f
-//             + ProcEpAck * f
-//             + PreSync * f    
-//             + Sync * f  
-//             + Sync * f  
-//             + D
-//             + ProcSyncI);      
-//         assert st'.ts <= Follower_F_SYNC_ts_Formula(f, st');
-//     }
-// }
+        assert LeaderInfo_Message_PreQuorum_ts_Formula(f, s.serialLI) + ProcLI
+                <= Sync_Message_ts_Formula(f, pkt.msg.v.serial);
+        lemma_Math_MaxOfInequalities(st.ts, pkt.msg.ts, 
+        LeaderInfo_Message_PreQuorum_ts_Formula(f, s.serialLI) + ProcLI, 
+        Sync_Message_ts_Formula(f, pkt.msg.v.serial));
+        assert st'.ts <= Follower_F_SYNC_ts_Formula(f, st');
+    } else {
+        assert s.state == F_SYNC;
+        assert st'.dts <= Follower_F_SYNC_dts_Formula(f, st');
+        assert pkt.msg.v.NewLeader?;
+        assert pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+                            + ProcEpAck * f
+                            + ProcEpAck * f
+                            + PreSync * f    // max possible PrepSyncs done before I was sent
+                            + SyncSnap * f  // max possible Syncs sent before I was sent
+                            + Sync * (pkt.msg.v.serial + 1)  // I am the (serial + 1)-th NL message sent
+                            + D;
+        assert st.ts <= AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+                        + ProcEpAck * f
+                        + ProcEpAck * f
+                        + PreSync * f    // max possible PrepSyncs done before I was sent
+                        + Sync * s.serialSync  // max possible NewLeader sent before I was sent
+                        + SyncSnap * (s.serialSync + 1)  // I am the (serial + 1)-th sync message sent
+                        + D
+                        + ProcSnap;
+        lemma_Math_Inequalities_CommonMult(Sync, pkt.msg.v.serial + 1, f);
+        lemma_Math_Inequalities_CommonMult(Sync, s.serialSync, f);
+        lemma_Math_Inequalities_CommonMult(SyncSnap, s.serialSync + 1, f);
+        var handlerStartTime := TimeMax(st.ts, pkt.msg.ts);
+        lemma_Math_MaxOfInequalities(pkt.msg.ts, st.ts, 
+        NewLeader_Message_ts_Formula(f, pkt.msg.v.serial), 
+        AckEpoch_Message_PreQuorum_ts_Formula(f, f-1)
+            + ProcEpAck * f
+            + ProcEpAck * f
+            + PreSync * f    
+            + SyncSnap * f  
+            + Sync * f  
+            + D
+            + ProcSnap);      
+        assert st'.ts <= Follower_F_SYNC_ts_Formula(f, st');
+    }
+}
 
 
 // lemma Sync_Leader_PreQuorum_Invariant_Helper(config:Config, tls:TLS_State, tls':TLS_State) 
