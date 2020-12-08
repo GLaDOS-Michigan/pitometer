@@ -1,7 +1,7 @@
 include "Types.dfy"
 include "ZKDatabase.dfy"
 include "ZKEnvironment.dfy"
-include "LearnerHandler.dfy"
+include "LearnerHandler_Bug.dfy"
 
 
 module ZooKeeper_Leader {
@@ -32,6 +32,7 @@ datatype LeaderGlobals = LeaderGlobals(
 
     // Synchronization globals
     leaderEpoch: int,
+    currZxid: Zxid,
     connectingFollowers: set<nat>,
     nextSerialLI: int,
     electingFollowers: set<nat>,
@@ -51,7 +52,7 @@ datatype LeaderGlobals = LeaderGlobals(
 predicate LeaderInit(s:Leader, my_id:nat, config:Config, zkdb: ZKDatabase) {
     && s.my_id == my_id
     && s.state == L_STARTING
-    && s.globals == LeaderGlobals(zkdb, config, -1, {my_id}, 0, {my_id},0, 0, 0, 0, {my_id})  // Leader is defacto part of all quorums
+    && s.globals == LeaderGlobals(zkdb, config, -1, NullZxid, {my_id}, 0, {my_id},0, 0, 0, 0, {my_id})  // Leader is defacto part of all quorums
     && InitHandlers(s.handlers, my_id, config)
 }
 

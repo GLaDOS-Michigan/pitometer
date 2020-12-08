@@ -6,7 +6,7 @@ include "ZKEnvironment.dfy"
 include "ZKDatabase.dfy"
 include "Follower.dfy"
 include "Leader.dfy"
-include "LearnerHandler.dfy"
+include "LearnerHandler_Bug.dfy"
 
 
 module ZooKeeper_DistributedSystem {
