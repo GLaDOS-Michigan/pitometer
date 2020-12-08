@@ -126,6 +126,7 @@ lemma lemma_Leader_ProcessFI_PreQuorum_Invariant_Induction(config:Config, tls:TL
         assert GetEpochToPropose(h, h', g, g', ios);
         assert !IsVerifiedQuorum(h.follower_id, |config|, g.connectingFollowers); 
         assert |g'.connectingFollowers| == |g.connectingFollowers| + 1;
+        lemma_Math_Mult_b();
         assert ld'.ts <= ProcessFI_PreQuorum_ts_Formula(ld');
     } else {
         // TLS_NoRecvPerfUpdate case.

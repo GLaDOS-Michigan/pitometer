@@ -618,7 +618,7 @@ predicate Sync_Serial_Invariant(tls:TLS_State) {
     && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var l := tls.t_servers[ep].v.leader;
         // Size of ackSet is bound by the # NL's sent
-        && 1 <= |l.globals.ackSet| <= l.globals.nextSerialNL + 1
+        // && 1 <= |l.globals.ackSet| <= l.globals.nextSerialNL + 1  // Commentted out as this fact, while likely true, is not actually used in the proof
         // Don't send more than f Sync's and NL's
         && l.globals.nextSerialSync <= tls.f
         && l.globals.nextSerialNL <= tls.f
@@ -644,6 +644,39 @@ predicate Sync_Serial_Invariant(tls:TLS_State) {
     ))
 }
 
+
+lemma lemma_Sync_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Handshake_Serial_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Sync_Serial_Invariant(tlb[i])
+{
+    assert Sync_Serial_Invariant(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Sync_Serial_Invariant(tlb[k])
+    {   
+        var tls, tls' := tlb[i], tlb[i+1];
+        // Annoying. Defer
+        assume false;
+        // Leader stuff 
+        var l, l' := tls.t_servers[config[0]].v.leader, tls'.t_servers[config[0]].v.leader;
+        assert l'.globals.nextSerialSync <= t;      //nextSerialSync + total #items in all queued packets == f when everyone is prepare sync and beyond
+        assert l'.globals.nextSerialNL <= t;        
+            // Can only send NL after sending a Sync to someone
+        assert l'.globals.nextSerialNL <= l'.globals.nextSerialSync;
+            // At most f of such state transitions
+        assert l'.globals.procEpCount <= t;
+        assert l'.globals.prepCount <= t;
+        assert Sync_Serial_Invariant(tls');
+        i := i + 1;
+    }
+}
 
 predicate Quorums_Size_Invariant(tls:TLS_State) {
     var n := |tls.config|;
@@ -698,6 +731,47 @@ predicate Follower_Serials_In_PreSync_Invariant(tls:TLS_State)
     && f.serialLI >= 0 
     && f.serialSync < 0 
     && f.serialNL < 0
+}
+
+predicate Follower_Serials_In_PreSync_Invariant_Helper(tls:TLS_State) 
+    requires |tls.config| > 0
+    requires tls.config[0] in tls.t_servers
+{
+    Follower_Serials_In_PreSync_Invariant(tls)
+    && forall ep | 
+    && ep in tls.t_servers 
+    && tls.t_servers[ep].v.FollowerPeer? 
+    && (|| tls.t_servers[ep].v.follower.state == F_HANDSHAKE_A
+        || tls.t_servers[ep].v.follower.state == F_HANDSHAKE_B)
+    ::
+    && var f := tls.t_servers[ep].v.follower;
+    && f.serialLI < 0 
+    && f.serialSync < 0 
+    && f.serialNL < 0
+}
+
+
+lemma lemma_Follower_Serials_In_PreSync_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, t)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Quorums_Size_Invariant(tlb[i])
+    requires forall i | 0 <= i < |tlb| :: Handshake_Serial_Invariant(tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Follower_Serials_In_PreSync_Invariant(tlb[i])
+{
+    assert Follower_Serials_In_PreSync_Invariant_Helper(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Follower_Serials_In_PreSync_Invariant_Helper(tlb[k])
+    {   
+        var tls, tls' := tlb[i], tlb[i+1];
+
+        assert Follower_Serials_In_PreSync_Invariant_Helper(tls');
+        i := i + 1;
+    }
 }
 
 
