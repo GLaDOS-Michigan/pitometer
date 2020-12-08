@@ -62,6 +62,11 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
     lemma_ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant_Proof(config, tlb, f);
     lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config, tlb, f);
     lemma_ProcessEA_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config, tlb, f);
+    lemma_Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant_Proof(config, tlb, f);
+    lemma_Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant_Proof(config, tlb, f);
+    lemma_Handshake_Serial_Invariant_Proof(config, tlb, f);
+    lemma_Sync_Serial_Invariant_Proof(config, tlb, f);
+    lemma_Follower_Cannot_Receive_NewLeader_Before_Sync_Proof(config, tlb, f);
     // TODO
     assume false;
 }
@@ -357,19 +362,6 @@ lemma lemma_ProcessFI_PreQuorum_Implies_No_Future_Quorum_Invariant_Proof(config:
 }
 
 
-// TODO: Needs Proof
-predicate Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tls:TLS_State) {
-    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
-        && var leader := tls.t_servers[ep].v.leader;
-        && (
-            && |leader.globals.electingFollowers| > 1
-            ==> 
-            leader.globals.nextSerialLI == tls.f
-        )
-    )
-}
-
-
 /* If connectingFollowers is not a full quorum, the only messages in the network are FollowerInfo messages */
 predicate ProcessFI_PreQuorum_Implies_Only_FI_Messages_Invariant(config:Config, tls:TLS_State){
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
@@ -662,7 +654,7 @@ lemma lemma_Sync_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:int
         invariant forall k | 0 <= k <= i :: Sync_Serial_Invariant(tlb[k])
     {   
         var tls, tls' := tlb[i], tlb[i+1];
-        // Annoying. Defer
+        // Annoying. Defer TODO
         assume false;
         // Leader stuff 
         var l, l' := tls.t_servers[config[0]].v.leader, tls'.t_servers[config[0]].v.leader;
@@ -775,22 +767,7 @@ lemma lemma_Follower_Serials_In_PreSync_Invariant_Proof(config:Config, tlb:seq<T
 }
 
 
-// TODO: Needs Proof
-predicate Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls:TLS_State) 
-    requires |tls.config| > 0
-    requires tls.config[0] in tls.t_servers
-    requires tls.t_servers[tls.config[0]].v.LeaderPeer?
-{
-    var l := tls.t_servers[tls.config[0]].v.leader;
-    (exists fid :: 
-        && fid in l.handlers 
-        && (l.handlers[fid].state == LH_PREP_SYNC || l.handlers[fid].state == LH_SYNC)
-    )
-    ==> 
-    |l.globals.ackSet| == 1
-}
 
-// TODO: Needs Proof
 predicate Follower_Cannot_Receive_NewLeader_Before_Sync(tls:TLS_State) {
     forall ep | ep in tls.t_servers && tls.t_servers[ep].v.FollowerPeer? 
     :: 
@@ -823,7 +800,80 @@ lemma lemma_Follower_Cannot_Receive_NewLeader_Before_Sync_Proof(config:Config, t
     }
 }
 
-// lemma lemma_Follower_In_FSYNC_State_Implies 
+
+
+predicate Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls:TLS_State) 
+    requires |tls.config| > 0
+    requires tls.config[0] in tls.t_servers
+    requires tls.t_servers[tls.config[0]].v.LeaderPeer?
+{
+    var l := tls.t_servers[tls.config[0]].v.leader;
+    (exists fid :: 
+        && fid in l.handlers 
+        && (l.handlers[fid].state == LH_PREP_SYNC || l.handlers[fid].state == LH_SYNC)
+    )
+    ==> 
+    |l.globals.ackSet| == 1
+}
+
+
+// ASSUMPTION: Sends take priority over receives
+lemma lemma_Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, f)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tlb[i]) 
+{
+    assert Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        assume false;
+        assert Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant(tls');
+        i := i + 1;
+    }
+}
+
+
+
+predicate Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tls:TLS_State) {
+    forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
+        && var leader := tls.t_servers[ep].v.leader;
+        && (
+            && |leader.globals.electingFollowers| > 1
+            ==> 
+            leader.globals.nextSerialLI == tls.f
+        )
+    )
+}
+
+// ASSUMPTION: Sends take priority over receives
+lemma lemma_Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant_Proof(config:Config, tlb:seq<TLS_State>, f:int)
+    requires SeqIsUnique(config);
+    requires ValidTLSBehavior(config, tlb, f)
+    requires forall i | 0 <= i < |tlb| :: DS_Config_Invariant(config, tlb[i])
+    requires forall i | 0 <= i < |tlb| :: ZK_Config_Invariant(config, tlb[i])
+    ensures forall i | 0 <= i < |tlb| :: Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tlb[i]) 
+{
+    assert Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tlb[0]);
+    var i := 0;
+    while i < |tlb| - 1 
+        decreases |tlb| - i
+        invariant 0 <= i < |tlb|
+        invariant forall k | 0 <= k <= i :: Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tlb[k])
+    {
+        var tls, tls' := tlb[i], tlb[i+1];
+        assume false;
+        assert Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant(tls');
+        i := i + 1;
+    }
+}
+
 
 
 }
