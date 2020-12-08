@@ -232,6 +232,7 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                                     + ProcFI * tls'.f
                                     + ProcFI * (pkt.msg.v.serial + 1) 
                                     + D;
+                lemma_Math_Addition_2(SendFI, D + ProcFI * tls'.f + ProcFI * (pkt.msg.v.serial + 1) + D);
                 lemma_Math_MaxOfInequalities(ft.ts, pkt.msg.ts, SendFI, SendFI + D + ProcFI * tls'.f + ProcFI * (pkt.msg.v.serial + 1) + D);
                 assert TimeMax(ft.ts, pkt.msg.ts) <= SendFI + D 
                                     + ProcFI * tls'.f 
@@ -259,7 +260,9 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
                 assert AcceptNewEpoch(s, s', ios);
                 assert pkt.msg.ts <= AckEpoch_Message_PreQuorum_ts_Formula(tls'.f, pkt.msg.v.serial);
             } else {
-                assert forall tio | tio in tios && tio.LIoOpSend? :: !tio.s.msg.v.AckEpoch?;
+                forall tio | tio in tios && tio.LIoOpSend? 
+                ensures !tio.s.msg.v.AckEpoch?
+                {}
                 assert false;
             }
         }

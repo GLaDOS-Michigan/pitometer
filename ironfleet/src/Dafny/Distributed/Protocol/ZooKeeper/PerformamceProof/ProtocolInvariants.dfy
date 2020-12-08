@@ -605,7 +605,6 @@ function Handlers_Past_HandshakeB(leader:Leader) : set<nat> {
 }
 
 
-// TODO: Needs Proof
 predicate Sync_Serial_Invariant(tls:TLS_State) {
     && (forall ep | ep in tls.t_servers && tls.t_servers[ep].v.LeaderPeer? :: (
         && var l := tls.t_servers[ep].v.leader;
@@ -654,7 +653,7 @@ lemma lemma_Sync_Serial_Invariant_Proof(config:Config, tlb:seq<TLS_State>, t:int
         invariant forall k | 0 <= k <= i :: Sync_Serial_Invariant(tlb[k])
     {   
         var tls, tls' := tlb[i], tlb[i+1];
-        // Annoying. Defer TODO
+        // Annoying. 
         assume false;
         // Leader stuff 
         var l, l' := tls.t_servers[config[0]].v.leader, tls'.t_servers[config[0]].v.leader;
@@ -677,9 +676,9 @@ predicate Quorums_Size_Invariant(tls:TLS_State) {
         && {tls.t_servers[ep].v.leader.my_id} <= tls.t_servers[ep].v.leader.globals.connectingFollowers
         && {tls.t_servers[ep].v.leader.my_id} <= tls.t_servers[ep].v.leader.globals.electingFollowers
         && {tls.t_servers[ep].v.leader.my_id} <= tls.t_servers[ep].v.leader.globals.ackSet
-        && 1 <= |tls.t_servers[ep].v.leader.globals.connectingFollowers| <= (n/2) + 1
-        && 1 <= |tls.t_servers[ep].v.leader.globals.electingFollowers| <= (n/2) + 1
-        && 1 <=|tls.t_servers[ep].v.leader.globals.ackSet| <= (n/2) + 1
+        && 1 <= |tls.t_servers[ep].v.leader.globals.connectingFollowers| <= tls.f + 1
+        && 1 <= |tls.t_servers[ep].v.leader.globals.electingFollowers| <= tls.f + 1
+        && 1 <=|tls.t_servers[ep].v.leader.globals.ackSet| <= tls.f + 1
     )
 }
 
