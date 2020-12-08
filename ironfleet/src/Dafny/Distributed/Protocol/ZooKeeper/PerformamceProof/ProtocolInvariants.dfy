@@ -65,10 +65,9 @@ lemma lemma_Basic_Invariants(config:Config, tlb:seq<TLS_State>, f:int)
     lemma_Leader_Cannot_Receive_Ack_Before_Sending_All_Syncs_Invariant_Proof(config, tlb, f);
     lemma_Leader_Sends_All_LI_Before_Receiving_EpochAck_Invariant_Proof(config, tlb, f);
     lemma_Handshake_Serial_Invariant_Proof(config, tlb, f);
+    lemma_Follower_Serials_In_PreSync_Invariant_Proof(config, tlb, f);
     lemma_Sync_Serial_Invariant_Proof(config, tlb, f);
     lemma_Follower_Cannot_Receive_NewLeader_Before_Sync_Proof(config, tlb, f);
-    // TODO
-    assume false;
 }
 
 
