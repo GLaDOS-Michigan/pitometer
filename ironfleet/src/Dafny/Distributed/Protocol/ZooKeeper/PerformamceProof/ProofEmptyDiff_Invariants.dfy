@@ -190,12 +190,13 @@ lemma lemma_Leader_ProcessEpAck_PreQuorum_Invariant_Induction(config:Config, tls
             if actor == config[0] {
                 if |l.globals.electingFollowers| <= 1 {
                     assert lt.ts 
-                        <= 
-                            SendFI + D
+                        <=  SendFI + D
                             + ProcFI * (|l.globals.connectingFollowers|-1)
                             + ProcFI * l.globals.nextSerialLI;
+                    lemma_Math_Mult_b();
                     lemma_Math_Inequalities_CommonMult(ProcFI, |l.globals.connectingFollowers| - 1, f);
                     lemma_Math_Inequalities_CommonMult(ProcFI, l.globals.nextSerialLI, pkt.msg.v.serial + 1);
+                    assert l'.globals.nextSerialLI == l.globals.nextSerialLI + 1;
                     assert pkt.msg.ts
                         <=  SendFI + D 
                             + ProcFI * f 
