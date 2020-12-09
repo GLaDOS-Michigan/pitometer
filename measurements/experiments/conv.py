@@ -30,6 +30,15 @@ def pdf_to_cdf(pdf):
     cdf = np.cumsum(pdf/pdf.sum()).tolist()
     return cdf
 
+def cdf_to_pdf(cdf):
+    dx = 1.0 / len(cdf)
+    pdf = [0]
+    for i in range(len(cdf)-1):
+        pdf.append((cdf[i+1]-cdf[i])/dx)
+    
+    return np.array(pdf), dx
+
+
 def add_histograms(pdf1, pdf2, start1, start2, binsize1, binsize2):
     """
     pdf{j} should be a seq of numbers representing the histogram for the jth

@@ -86,7 +86,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
-    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -124,9 +124,12 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
+    predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
+    predict_cdf2 = pdf_to_cdf(predict_pdf2)
 
     plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
+    plt.plot(predict_cdf2, predict_bins2, label='predicted performance (parallel)', color='black', linestyle='dashed')
     plt.plot(client_cdf, client_bins[:-1], label='actual performance', color='navy')
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('round latency (ms)')
@@ -137,6 +140,125 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
     this_ax.legend()
+
+
+
+def compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies):
+    """ return pdf, bins. The 2 series denotes the latest version of the formula accounting for full parallelism.
+        With parallel structure baked in:
+        2aSendTime = NoOps(0, 10) ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull
+        2bSendTime = 2aSendTime + max(D_1 + ProcessPacketFull(2a)_1 + NoOps(0, 10)_1 + D_1', ..., D_{f+1} + ProcessPacketFull(2a)_{f+1} + NoOps(0, 10)_{f+1} + D_{f+1}')
+        ReplyTime = 2bSendTime + (f + 2) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2a) + NoOps(1, 6) + ExecuteFull + D + D
+    Arguments:
+        actual_client_latencies -- list of actual client latencies
+        actual_network_latencies -- list of network latencies
+        actual_method_latencies -- map of method name to list of latencies
+    """
+    initial_binsize = 1e-3
+    tb2b_pdf, tb2b_start, tb2b_binsize = compute_2bSendTime_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
+    (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
+    noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
+    noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
+    (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
+    net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
+
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        processPacketFull_pdf, noop_1_10_pdf, 
+        processPacketFull_start, noop_1_10_start, 
+        initial_binsize, noop_1_10_binsize)
+    for i in range(f + 1):
+        sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, sum_pdf, 
+            sum_start, sum_start, 
+            sum_binsize, sum_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, tb2b_pdf, 
+            sum_start, tb2b_start, 
+            sum_binsize, tb2b_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, processPacketFull_pdf, 
+            sum_start, processPacketFull_start, 
+            sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, noop_1_6_pdf, 
+            sum_start, noop_1_6_start, 
+            sum_binsize, noop_1_6_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, executeFull_pdf, 
+            sum_start, executeFull_start, 
+            sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, net_pdf, 
+        sum_start, min(actual_network_latencies), 
+        sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, net_pdf, 
+        sum_start, min(actual_network_latencies), 
+        sum_binsize, initial_binsize)
+    binrange = sum_binsize * len(sum_pdf)
+    conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
+    return sum_pdf, conv_bins 
+
+
+def compute_2bSendTime_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize):
+    """ 2aSendTime = NoOps(0, 10) ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull
+        2bSendTime = 2aSendTime + max(D_1 + ProcessPacketFull(2a)_1 + NoOps(0, 10)_1 + D_1', ..., D_{f+1} + ProcessPacketFull(2a)_{f+1} + NoOps(0, 10)_{f+1} + D_{f+1}')
+    Arguments:
+        actual_client_latencies -- list of actual client latencies
+        actual_network_latencies -- list of network latencies
+        actual_method_latencies -- map of method name to list of latencies
+    """
+    processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
+    noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
+    nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
+    noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
+    net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
+
+    # 2aSendTime
+    sumA_pdf, sumA_start, sumA_binsize = add_histograms(
+        processPacketFull_pdf, noop_1_3_pdf, 
+        min(actual_method_latencies["LReplicaNextProcessPacket"]), noop_1_3_start, 
+        initial_binsize, noop_1_3_binsize)
+    sumA_pdf, sumA_start, sumA_binsize = add_histograms(
+        sumA_pdf, nominateValueFull_pdf, 
+        sumA_start, min(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"]), 
+        sumA_binsize, initial_binsize)
+    sumA_pdf, sumA_start, sumA_binsize = add_histograms(
+        sumA_pdf, noop_0_10_pdf, 
+        sumA_start, noop_0_10_start, 
+        sumA_binsize, noop_0_10_binsize)
+    
+    # 2bSendTime
+    sumB_pdf, sumB_start, sumB_binsize = net_pdf, min(actual_network_latencies), initial_binsize
+    sumB_pdf, sumB_start, sumB_binsize = add_histograms(
+        sumB_pdf, processPacketFull_pdf, 
+        sumB_start, min(actual_method_latencies["LReplicaNextProcessPacket"]), 
+        sumB_binsize, initial_binsize)
+    sumB_pdf, sumB_start, sumB_binsize = add_histograms(
+        sumB_pdf, noop_0_10_pdf, 
+        sumB_start, noop_0_10_start, 
+        sumB_binsize, noop_0_10_binsize)
+    sumB_pdf, sumB_start, sumB_binsize = add_histograms(
+        sumB_pdf, net_pdf, 
+        sumB_start, min(actual_network_latencies), 
+        sumB_binsize, initial_binsize)
+    
+    # At this point we take the max of f+1 of Sum2B's
+    sumB_cdf = pdf_to_cdf(sumB_pdf)
+    res_cdf = sumB_cdf[:]  # make sure to copy instead of alias
+    for i in range(f):
+        for k in range(len(res_cdf)):
+            res_cdf[k] = res_cdf[k] * sumB_cdf[k]
+    sumB_pdf, _ = cdf_to_pdf(res_cdf)
+
+    # Add the final 2aSendTime
+    sumB_pdf, sumB_start, sumB_binsize = add_histograms(
+        sumB_pdf, sumA_pdf, 
+        sumB_start, sumA_start, 
+        sumB_binsize, sumA_binsize)
+    return sumB_pdf, sumB_start, sumB_binsize
+
+
 
 
 def compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies):
@@ -158,7 +280,7 @@ def compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latenci
         processPacketFull_pdf, noop_1_10_pdf, 
         processPacketFull_start, noop_1_10_start, 
         initial_binsize, noop_1_10_binsize)
-    for i in range(f + 2):
+    for i in range(f + 1):
         sum_pdf, sum_start, sum_binsize = add_histograms(
             sum_pdf, sum_pdf, 
             sum_start, sum_start, 
