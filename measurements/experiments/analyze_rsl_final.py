@@ -79,7 +79,7 @@ def main(exp_dir):
             total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../network/run1/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
+    with open("%s/../network/run1/%s" %(exp_dir, 'total_payload512_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
         # Note that total_client_start_end is currently not used in any computation
 
@@ -102,11 +102,11 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     # First attempt to plot client cdfs
     print("Plotting graphs for Paxos distributions")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        for f in [1, 2, 3]:
+        for f in [1]:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])
             actual_network_latencies = compute_actual_network(total_network_data)
-            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width+3, fig_height), sharex=False)
             fig.subplots_adjust(left=0.215, right=0.95, top=0.88, bottom=0.21 )
             plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
             pp.savefig(fig)

@@ -10,9 +10,11 @@ from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 import seaborn as sns
 
+from conv import *
+
 NODES = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ,20]
 # PAYLOADS = [4, 16, 32, 128, 512]
-PAYLOADS = [16]
+PAYLOADS = [512]
 NODES.sort()
 PAYLOADS.sort()
 THROWAWAY = 10 # Number of starting readings to throw away
@@ -21,7 +23,7 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
     for payload in PAYLOADS:
-        # print("\tAnalyzing payload %d" %payload)
+        print("\tAnalyzing payload %d" %payload)
         # # {2D map} total_data[i][j] is the timings for node i to node j for this payload
         # total_payload_data = dict()  
         # for root, dirs, files in os.walk("%s/payload%d" %(exp_dir, payload)):
@@ -65,11 +67,53 @@ def plot_figures(name, root, total_data):
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
-    assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
+    # assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        # plot_aggregate(pp, name, root, total_data)
+        plot_aggregate(pp, name, root, total_data)
         # plot_individuals(pp, name, root, total_data)
+        plot_cdf(pp, name, root, total_data)
         plot_correlations(pp, name, root, total_data)
+
+
+def plot_cdf(pp, name, root, total_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        pp -- PdfPages object
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data {2D map} -- total_data[i][j] is the timings for node i to node j
+    """
+    # fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
+    fig, axes = plt.subplots(2, 2, figsize=(5*2, 5*2))
+    fig.suptitle(name)
+    sns.despine(left=True)
+    
+    row = 0
+    for i in total_data.keys():
+        col = 0
+        for j in total_data[i].keys():
+            if i > 8 or j > 8:
+                continue
+            i_j_data = total_data[i][j]
+            this_ax = axes[row][col]
+
+            this_ax.set_title("node%d -> node%d" %(i, j), fontsize=9)
+            this_ax.grid()
+
+            cdf, bins = raw_data_to_cdf(i_j_data)
+
+            this_ax.plot(cdf, bins[:-1])
+
+            if i == len(NODES) - 1:
+                this_ax.set_xlabel('round trip time (ms)', fontsize=9)
+            col += 1
+        row += 1
+    # Draw plot
+    plt.subplots_adjust(hspace=0.2, wspace=0.3)
+    # plt.xlabel('latency (ms)', fontsize=10)
+    # plt.ylabel('count', fontsize=10)
+    pp.savefig(fig)
+    plt.close(fig)
 
 
 def plot_correlations(pp, name, root, total_data):
@@ -145,6 +189,20 @@ def plot_aggregate(pp, name, root, total_data):
     this_ax.add_artist(stats)
     this_ax.set_xlabel('round trip time (ms)', fontsize=10)
     this_ax.set_ylabel('count', fontsize=10)
+    pp.savefig(fig)
+    plt.close(fig)
+
+    # Next, draw the cdf graph
+    fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
+    fig.suptitle(name)
+    
+    cdf, bins = raw_data_to_cdf(aggregate_data)
+
+    this_ax.plot(cdf, bins[:-1])
+    this_ax.set_title("Aggregate cdf across all nodes", fontsize=9)
+    this_ax.grid()
+    this_ax.set_xlabel('cumulative probability', fontsize=10)
+    this_ax.set_ylabel('round trip time (ms)', fontsize=10)
 
     # Draw plot
     # plt.subplots_adjust(hspace=0.2, wspace=0.3)
