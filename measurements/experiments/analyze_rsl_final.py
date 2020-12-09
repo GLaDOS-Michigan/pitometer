@@ -81,11 +81,104 @@ def main(exp_dir):
     # total_network_data[i][j] is the timings for node i to node j
     with open("%s/../network/run1/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
+        # Note that total_client_start_end is currently not used in any computation
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
+
+
+def plot_distributions(name, root, total_network_data, total_node_data, total_client_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        total_node_data -- total_node_data[f][node_id][method_name] = list of durations
+        total_client_data -- total_client_data[f][i] = list of client durations for trial i
+    """
+    
+    # First attempt to plot client cdfs
+    print("Plotting graphs for Paxos distributions")
+    for f in [1, 2, 3]:
+        with PdfPages("%s/%s_%d.pdf" %(root, name, f)) as pp:
+            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
+            actual_method_latencies = compute_actual_node(total_node_data[f])
+            actual_network_latencies = compute_actual_network(total_network_data)
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig.subplots_adjust(left=0.215, right=0.95, top=0.88, bottom=0.21 )
+            plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
+            pp.savefig(fig)
+            plt.close(fig)
+
+
+def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_network_latencies, actual_method_latencies):
+    """ 
+    Arguments:
+        name -- name of this figure
+        actual_client_latencies -- list of actual client latencies
+        actual_network_latencies -- list of network latencies
+        actual_method_latencies -- map of method name to list of latencies
+    """
+    print("Plotting distribution for f = %d" %(f))
+    client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
+    predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
+    predict_cdf = pdf_to_cdf(predict_pdf)
+
+    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
+    plt.plot(client_cdf, client_bins[:-1], label='actual performance', color='navy')
+    this_ax.set_xlabel('cumulative probability')
+    this_ax.set_ylabel('round latency (ms)')
+    this_ax.set_title(name)
+    # this_ax.set_ylim(0, np.percentile(list(actual_round_latencies) + list(predict_bins), 99.9))
+    # this_ax.set_ylim(0, np.percentile(list(actual_round_latencies), 100)+30)
+    this_ax.set_xlim(0, 1)
+    # this_ax.set_yscale("log")
+    this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
+    this_ax.legend()
+
+
+def compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies):
+    """ 
+    Arguments:
+        actual_client_latencies -- list of actual client latencies
+        actual_network_latencies -- list of network latencies
+        actual_method_latencies -- map of method name to list of latencies
+    """
+    initial_binsize = 1e-3
+    tb2a_pdf, tb2a_binsize = compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
+
+    reply_bound_pdf, reply_bound_binsize = tb2a_pdf, tb2a_binsize
+    return reply_bound_pdf, reply_bound_binsize 
+
+
+def compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize):
+    """ 
+    Arguments:
+        actual_client_latencies -- list of actual client latencies
+        actual_network_latencies -- list of network latencies
+        actual_method_latencies -- map of method name to list of latencies
+    """
+    processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
+    noop_1_3_pdf, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
+    nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
+    noop_0_10_pdf, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
+    # TONY
+    return noop_1_3_pdf, noop_1_3_binsize
+
+def convolve_noop_pdf(actual_method_latencies, i, j, init_binsize):
+    sum_pdf, _ = raw_data_to_pdf(actual_method_latencies[NOOP_METHODS[i]], init_binsize)
+    sum_start = min(actual_method_latencies[NOOP_METHODS[i]])
+    sum_binsize = init_binsize
+    for x in range(i+1, j):
+        pdf, _ = raw_data_to_pdf(actual_method_latencies[NOOP_METHODS[x]], init_binsize)
+        sum_pdf, sum_start, sum_binsize = add_histograms(sum_pdf, pdf, sum_start, min(actual_method_latencies[NOOP_METHODS[x]]), sum_binsize, init_binsize)
+    
+    binrange = sum_binsize * len(sum_pdf)
+    conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
+    return sum_pdf, conv_bins
+
 
 
 def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data, total_client_data, total_client_start_end):
@@ -269,7 +362,7 @@ def noop_actions_up_to(noop_actions_times, i, j):
     return res
 
 def compute_actual_network(total_network_data):
-    """Compute the aggregate grant and accept latencies for this delay and ring_size
+    """
     Arguments:
         total_network_data -- total_network_data[i][j] is the timings for node i to node j
     """
@@ -280,6 +373,19 @@ def compute_actual_network(total_network_data):
             if k != j: 
                 aggregate_network_latencies.extend(total_network_data[j][k])
     return [x/2.0 for x in aggregate_network_latencies]
+
+def compute_actual_node(total_node_data_f):
+    """maps total_node_data to res: method_name -> list of latencies
+    Args:
+        total_node_data : total_node_data_f[node_id][method_name] = list of durations
+    """
+    res = dict()
+    for node in total_node_data_f:
+        for method in total_node_data_f[node]:
+            if method not in res:
+                res[method] = []
+            res[method].extend(total_node_data_f[node][method])
+    return res
 
 
 def get_f_max(total_f_client_data):
