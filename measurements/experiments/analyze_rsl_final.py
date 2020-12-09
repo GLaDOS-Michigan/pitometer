@@ -140,17 +140,19 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
 
 
 def compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies):
-    """ 
+    """ return pdf, bins
     Arguments:
         actual_client_latencies -- list of actual client latencies
         actual_network_latencies -- list of network latencies
         actual_method_latencies -- map of method name to list of latencies
     """
     initial_binsize = 1e-3
-    tb2a_pdf, tb2a_binsize = compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
+    tb2a_pdf, tb2a_start, tb2a_binsize = compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
 
-    reply_bound_pdf, reply_bound_binsize = tb2a_pdf, tb2a_binsize
-    return reply_bound_pdf, reply_bound_binsize 
+    sum_pdf, sum_start, sum_binsize = tb2a_pdf, tb2a_start, tb2a_binsize
+    binrange = sum_binsize * len(sum_pdf)
+    conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
+    return sum_pdf, conv_bins 
 
 
 def compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize):
@@ -161,11 +163,23 @@ def compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actua
         actual_method_latencies -- map of method name to list of latencies
     """
     processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
-    noop_1_3_pdf, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
+    noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
-    noop_0_10_pdf, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
-    # TONY
-    return noop_1_3_pdf, noop_1_3_binsize
+    noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
+    
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        processPacketFull_pdf, noop_1_3_pdf, 
+        min(actual_method_latencies["LReplicaNextProcessPacket"]), noop_1_3_start, 
+        initial_binsize, noop_1_3_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, nominateValueFull_pdf, 
+        sum_start, min(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"]), 
+        sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, noop_0_10_pdf, 
+        sum_start, noop_0_10_start, 
+        sum_binsize, noop_0_10_binsize)
+    return sum_pdf, sum_start, sum_binsize
 
 def convolve_noop_pdf(actual_method_latencies, i, j, init_binsize):
     sum_pdf, _ = raw_data_to_pdf(actual_method_latencies[NOOP_METHODS[i]], init_binsize)
@@ -174,10 +188,7 @@ def convolve_noop_pdf(actual_method_latencies, i, j, init_binsize):
     for x in range(i+1, j):
         pdf, _ = raw_data_to_pdf(actual_method_latencies[NOOP_METHODS[x]], init_binsize)
         sum_pdf, sum_start, sum_binsize = add_histograms(sum_pdf, pdf, sum_start, min(actual_method_latencies[NOOP_METHODS[x]]), sum_binsize, init_binsize)
-    
-    binrange = sum_binsize * len(sum_pdf)
-    conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
-    return sum_pdf, conv_bins
+    return sum_pdf, sum_start, sum_binsize
 
 
 
