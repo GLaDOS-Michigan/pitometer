@@ -18,7 +18,7 @@ from plot_constants import *
 
 F_VALUES = [1, 2, 3, 4, 5]
 
-THROW=50  # Ignore the first THROW requests in computing client latencies
+THROW=60  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "new_train"
 TEST_SET = "final_test"
@@ -85,8 +85,8 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
-    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -101,8 +101,8 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     
     # First attempt to plot client cdfs
     print("Plotting graphs for Paxos distributions")
-    for f in [1, 2, 3]:
-        with PdfPages("%s/%s_%d.pdf" %(root, name, f)) as pp:
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        for f in [1, 2, 3]:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])
             actual_network_latencies = compute_actual_network(total_network_data)
@@ -131,8 +131,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('round latency (ms)')
     this_ax.set_title(name)
-    # this_ax.set_ylim(0, np.percentile(list(actual_round_latencies) + list(predict_bins), 99.9))
-    # this_ax.set_ylim(0, np.percentile(list(actual_round_latencies), 100)+30)
+    # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
+    this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
@@ -147,15 +147,51 @@ def compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latenci
         actual_method_latencies -- map of method name to list of latencies
     """
     initial_binsize = 1e-3
-    tb2a_pdf, tb2a_start, tb2a_binsize = compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
+    tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
+    (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
+    noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
+    noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
+    (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
+    net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
 
-    sum_pdf, sum_start, sum_binsize = tb2a_pdf, tb2a_start, tb2a_binsize
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        processPacketFull_pdf, noop_1_10_pdf, 
+        processPacketFull_start, noop_1_10_start, 
+        initial_binsize, noop_1_10_binsize)
+    for i in range(f + 1 + 2):
+        sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, sum_pdf, 
+            sum_start, sum_start, 
+            sum_binsize, sum_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, tb2b_pdf, 
+            sum_start, tb2b_start, 
+            sum_binsize, tb2b_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, processPacketFull_pdf, 
+            sum_start, processPacketFull_start, 
+            sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, noop_1_6_pdf, 
+            sum_start, noop_1_6_start, 
+            sum_binsize, noop_1_6_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, executeFull_pdf, 
+            sum_start, executeFull_start, 
+            sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, net_pdf, 
+        sum_start, min(actual_network_latencies), 
+        sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, net_pdf, 
+        sum_start, min(actual_network_latencies), 
+        sum_binsize, initial_binsize)
     binrange = sum_binsize * len(sum_pdf)
     conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
     return sum_pdf, conv_bins 
 
-    
-def compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize):
+def compute_TB2b_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize):
     """ 
     Arguments:
         actual_client_latencies -- list of actual client latencies
@@ -168,6 +204,7 @@ def compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actua
     noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
     net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
 
+    # TB2A
     sum_pdf, sum_start, sum_binsize = add_histograms(
         processPacketFull_pdf, noop_1_3_pdf, 
         min(actual_method_latencies["LReplicaNextProcessPacket"]), noop_1_3_start, 
@@ -184,6 +221,21 @@ def compute_TB2a_pdf(f, actual_client_latencies, actual_network_latencies, actua
         sum_pdf, net_pdf, 
         sum_start, min(actual_network_latencies), 
         sum_binsize, initial_binsize)
+    
+    # TB2B
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, processPacketFull_pdf, 
+        sum_start, min(actual_method_latencies["LReplicaNextProcessPacket"]), 
+        sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, noop_0_10_pdf, 
+        sum_start, noop_0_10_start, 
+        sum_binsize, noop_0_10_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, net_pdf, 
+        sum_start, min(actual_network_latencies), 
+        sum_binsize, initial_binsize)
+
     return sum_pdf, sum_start, sum_binsize
 
 def convolve_noop_pdf(actual_method_latencies, i, j, init_binsize):
@@ -411,7 +463,6 @@ def get_f_max(total_f_client_data):
     """
     res = 0
     for durs in total_f_client_data.values():
-        print(len(durs))
         res = max(res, max(durs[THROW:-THROW])) # Ignore the first 100 requests
     return res
 
