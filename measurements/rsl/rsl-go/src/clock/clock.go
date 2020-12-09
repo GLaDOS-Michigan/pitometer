@@ -67,10 +67,11 @@ func (el *Stopwatch) LogStartEvent(name string) {
 
 // LogEndEvent adds a new end event to the log
 func (el *Stopwatch) LogEndEvent(name string) {
-	var tp = timePointNow(el.nextID, End, name, time.Since(el.startTime))
+	var tp = timePointNow(el.nextID, End, name, 0)
 	el.nextID++
-	var newlog = append(*el.log, tp)
+	var newlog = append(*el.log, tp) // This could be the slow operation causing fat tail TONY
 	el.log = &newlog
+	tp.instant = time.Since(el.startTime)
 }
 
 // PopStartEvent deletes the last event from the log, which must be a start event

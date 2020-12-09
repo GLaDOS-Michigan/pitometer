@@ -16,12 +16,13 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-F_VALUES = [1, 2, 3, 4, 5]
+# F_VALUES = [1, 2, 3, 4, 5]
+F_VALUES = [2]
 
 THROW=60  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "new_train"
-TEST_SET = "new_test"
+TRAIN_SET = "dec_test"
+TEST_SET = "dec_test"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -75,11 +76,11 @@ def main(exp_dir):
             print("%s/%s/total_f%d_node_data.pickle not found" %(exp_dir, TRAIN_SET, f))
         with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
             total_client_data[f] = pickle.load(handle)
-        with open("%s/%s/total_f%d_client_start_end.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
-            total_client_start_end[f] = pickle.load(handle)
+        # with open("%s/%s/total_f%d_client_start_end.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
+        #     total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../network/run1/%s" %(exp_dir, 'total_payload512_data.pickle'), 'rb') as handle:
+    with open("%s/../network/%s" %(exp_dir, 'total_payload512_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
         # Note that total_client_start_end is currently not used in any computation
 
@@ -102,7 +103,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     # First attempt to plot client cdfs
     print("Plotting graphs for Paxos distributions")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        for f in [1]:
+        for f in [2]:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])
             actual_network_latencies = compute_actual_network(total_network_data)
