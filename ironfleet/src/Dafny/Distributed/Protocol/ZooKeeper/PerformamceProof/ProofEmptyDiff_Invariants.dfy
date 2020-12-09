@@ -845,6 +845,10 @@ lemma Sync_Leader_PreQuorum_Invariant_Helper_Rcv(config:Config, tls:TLS_State, t
                 lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialSync, f);
                 lemma_Math_Inequalities_CommonMult(Sync, g.nextSerialNL, f);
                 assert lt'.ts <= ProcessAck_PreQuorum_ts_Formula(f, n, lt');
+            } else {
+                lemma_Math_Mult_a();
+                lemma_Math_Inequalities_Mult();
+                assert lt'.ts <= Ack_Message_ts_Formula(f, f-1) + ProcAck * (|g'.ackSet|-1);
             } 
         }
     }
