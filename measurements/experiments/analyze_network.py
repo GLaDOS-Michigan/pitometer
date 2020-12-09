@@ -21,37 +21,37 @@ def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
     for payload in PAYLOADS:
-        print("\tAnalyzing payload %d" %payload)
-        # {2D map} total_data[i][j] is the timings for node i to node j for this payload
-        total_payload_data = dict()  
-        for root, dirs, files in os.walk("%s/payload%d" %(exp_dir, payload)):
-            files = [f for f in files if not f[0] == '.']  # ignore hidden files
-            if dirs == []:
-                # This is a leaf directory containing trial csv files
-                print("\t\tAnalyzing trial %s" %root)
+        # print("\tAnalyzing payload %d" %payload)
+        # # {2D map} total_data[i][j] is the timings for node i to node j for this payload
+        # total_payload_data = dict()  
+        # for root, dirs, files in os.walk("%s/payload%d" %(exp_dir, payload)):
+        #     files = [f for f in files if not f[0] == '.']  # ignore hidden files
+        #     if dirs == []:
+        #         # This is a leaf directory containing trial csv files
+        #         print("\t\tAnalyzing trial %s" %root)
                 
-                for i in NODES:
-                    grep_str = "node%d" %i
-                    nodei_csvs= [f for f in files if grep_str in f.split('-')[0] and ".csv" in f]
-                    nodei_csvs.sort()
-                    if i not in total_payload_data:
-                        total_payload_data[i] = dict()
+        #         for i in NODES:
+        #             grep_str = "node%d" %i
+        #             nodei_csvs= [f for f in files if grep_str in f.split('-')[0] and ".csv" in f]
+        #             nodei_csvs.sort()
+        #             if i not in total_payload_data:
+        #                 total_payload_data[i] = dict()
 
-                    for j in NODES:
-                        # File for log of nodei->nodej
-                        if j not in total_payload_data[i]:
-                            total_payload_data[i][j] = []
-                        # find the csv for nodei->nodej
-                        grep_str = "node%d." %j
-                        i_j_csv = None
-                        for candidate in nodei_csvs:
-                            if grep_str in candidate.split('-')[1]:
-                                i_j_csv = candidate
-                        if i_j_csv is not None:
-                            total_payload_data[i][j].extend(analyze_csv("%s/%s" %(root, i_j_csv)))
-        print("\tDrawing payload %d" %payload)
-        with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'wb') as handle:
-            pickle.dump(total_payload_data, handle)
+        #             for j in NODES:
+        #                 # File for log of nodei->nodej
+        #                 if j not in total_payload_data[i]:
+        #                     total_payload_data[i][j] = []
+        #                 # find the csv for nodei->nodej
+        #                 grep_str = "node%d." %j
+        #                 i_j_csv = None
+        #                 for candidate in nodei_csvs:
+        #                     if grep_str in candidate.split('-')[1]:
+        #                         i_j_csv = candidate
+        #                 if i_j_csv is not None:
+        #                     total_payload_data[i][j].extend(analyze_csv("%s/%s" %(root, i_j_csv)))
+        # print("\tDrawing payload %d" %payload)
+        # with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'wb') as handle:
+        #     pickle.dump(total_payload_data, handle)
         with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'rb') as handle:
             total_payload_data = pickle.load(handle)
         plot_figures("rtt_payload%d" %payload, exp_dir, total_payload_data)
@@ -67,8 +67,50 @@ def plot_figures(name, root, total_data):
     """
     assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        plot_aggregate(pp, name, root, total_data)
-        plot_individuals(pp, name, root, total_data)
+        # plot_aggregate(pp, name, root, total_data)
+        # plot_individuals(pp, name, root, total_data)
+        plot_correlations(pp, name, root, total_data)
+
+
+def plot_correlations(pp, name, root, total_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        pp -- PdfPages object
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data {2D map} -- total_data[i][j] is the timings for node i to node j
+    """
+    # fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
+    fig, axes = plt.subplots(2, 2, figsize=(5*5, 5*2))
+    fig.suptitle(name)
+    sns.despine(left=True)
+    
+    row = 0
+    for i in total_data.keys():
+        col = 0
+        for j in total_data[i].keys():
+            if i > 8 or j > 8:
+                continue
+            i_j_data = total_data[i][j]
+            this_ax = axes[row][col]
+
+            this_ax.set_title("node%d -> node%d" %(i, j), fontsize=9)
+            this_ax.grid()
+            this_ax.scatter(range(len(i_j_data)), i_j_data, marker = '.')
+
+            if i == len(NODES) - 1:
+                this_ax.set_xlabel('round trip time (ms)', fontsize=9)
+            col += 1
+        row += 1
+
+    # Draw plot
+    plt.subplots_adjust(hspace=0.2, wspace=0.3)
+    # plt.xlabel('latency (ms)', fontsize=10)
+    # plt.ylabel('count', fontsize=10)
+    pp.savefig(fig)
+    plt.close(fig)
+
+
 
 
 def plot_aggregate(pp, name, root, total_data):
