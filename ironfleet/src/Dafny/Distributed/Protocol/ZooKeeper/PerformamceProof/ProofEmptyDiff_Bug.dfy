@@ -14,8 +14,8 @@ include "Definitions.dfy"
 include "PerformancePredicates_Bug.dfy"
 include "ProtocolInvariants.dfy"
 include "Commons.dfy"
-include "ProofEmptyDiff_Invariants.dfy"
-include "CorrectZKInvariants.dfy"
+include "ProofEmptyDiff_Invariants_Bug.dfy"
+include "BuggyZKInvariants.dfy"
 
 
 module Zookeeper_PerformanceProof {
@@ -35,7 +35,7 @@ import opened Zookeeper_PerformancePredicates
 import opened Zookeeper_ProtocoIInvariants
 import opened Zookeeper_Commons
 import opened Zookeeper_PerformanceProof_Invariants
-import opened Zookeeper_CorrectInvariants
+import opened Zookeeper_BuggyInvariants
 
 
 /* Main theorem */
@@ -53,9 +53,8 @@ lemma theorem_ZK_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
 {
     
     lemma_Basic_Invariants(config, tlb, f);
-    // TODO: These will later be replaced by lemmas proving these
-    theorem_ZK_Correct_Guarantee(config, tlb, f);
-    assert forall i | 0 <= i < |tlb| :: EmptyDiff_Invariant(tlb[i]);
+    // theorem_ZK_Correct_Guarantee(config, tlb, f);
+    assume forall i | 0 <= i < |tlb| :: EmptyDiff_Invariant(tlb[i]);
 
     theorem_ZK_Sync_Performance_Guarantee(config, tlb, f);
     assert LS_Performance_Guarantee_EmptyDiff(tlb[0]);
@@ -119,10 +118,10 @@ lemma theorem_ZK_Performance_Guarantee_Induction(config:Config, tls:TLS_State, t
                                 + ProcEpAck * f
                                 + ProcEpAck * f
                                 + PreSync * f    // max possible PrepSyncs done before I was sent
-                                + Sync * f  // max possible Syncs sent before I was sent
+                                + SyncSnap * f  // max possible Syncs sent before I was sent
                                 + Sync * f;
                         assert st.ts <= lt_max;
-                        var pkt_max := lt_max + D + ProcSyncI + ProcSync + D;
+                        var pkt_max := lt_max + D + ProcSnap + ProcSync + D;
                         assert pkt.msg.ts  <= pkt_max;
                         lemma_Math_MaxOfInequalities(st.ts, pkt.msg.ts, lt_max, pkt_max);
                         assert st'.ts <= pkt_max + ProcAck;
