@@ -21,7 +21,7 @@ F_VALUES = [1, 2, 3, 4, 5]
 THROW=60  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "new_train"
-TEST_SET = "final_test"
+TEST_SET = "new_test"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -85,7 +85,7 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
     plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
@@ -158,7 +158,7 @@ def compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latenci
         processPacketFull_pdf, noop_1_10_pdf, 
         processPacketFull_start, noop_1_10_start, 
         initial_binsize, noop_1_10_binsize)
-    for i in range(f + 1 + 2):
+    for i in range(f + 2):
         sum_pdf, sum_start, sum_binsize = add_histograms(
             sum_pdf, sum_pdf, 
             sum_start, sum_start, 
@@ -411,7 +411,7 @@ def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     // Bound with full vs no-op versions:
     // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
     
-    // ReplyBound = TB2b + (f + 3) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2a) + NoOps(1, 6) + ExecuteFull
+    // ReplyBound = TB2b + (f + 2) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2a) + NoOps(1, 6) + ExecuteFull
 
     // TB2b = TB2a + ProcessPacketFull(2a) + NoOps(0, 10) + D
     // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D
@@ -420,7 +420,7 @@ def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     """
     TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay
     TB2b = TB2a + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
-    res = TB2b + (f+3) * (work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 10)) + work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6]
+    res = TB2b + (f+2) * (work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 10)) + work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6]
     return res
 
 def noop_actions_up_to(noop_actions_times, i, j):
