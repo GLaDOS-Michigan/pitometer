@@ -2,7 +2,6 @@ package clock
 
 import (
 	"fmt"
-	"os"
 	"time"
 )
 
@@ -60,33 +59,36 @@ func NewStopwatch(n uint, name string) *Stopwatch {
 
 // LogStartEvent adds a new start event to the log
 func (el *Stopwatch) LogStartEvent(name string) {
-	var tp = timePointNow(el.nextID, Start, name, time.Since(el.startTime))
-	var newlog = append(*el.log, tp)
-	el.log = &newlog
+	// var tp = timePointNow(el.nextID, Start, name, time.Since(el.startTime))
+	// var newlog = append(*el.log, tp)
+	// el.log = &newlog
+	return
 }
 
 // LogEndEvent adds a new end event to the log
 func (el *Stopwatch) LogEndEvent(name string) {
-	var tp = timePointNow(el.nextID, End, name, 0)
-	el.nextID++
-	var newlog = append(*el.log, tp) // This could be the slow operation causing fat tail TONY
-	el.log = &newlog
-	tp.instant = time.Since(el.startTime)
+	// var tp = timePointNow(el.nextID, End, name, 0)
+	// el.nextID++
+	// var newlog = append(*el.log, tp) // This could be the slow operation causing fat tail TONY
+	// el.log = &newlog
+	// tp.instant = time.Since(el.startTime)
+	return
 }
 
 // PopStartEvent deletes the last event from the log, which must be a start event
 func (el *Stopwatch) PopStartEvent() {
-	var l = len(*el.log)
-	if l == 0 {
-		fmt.Printf("Error: Log is empty\n")
-		os.Exit(1)
-	}
-	if (*el.log)[l-1].event != Start {
-		fmt.Printf("Error: %v Expected start event\n", el.name)
-		os.Exit(1)
-	}
-	var newLog = (*el.log)[:l-1]
-	el.log = &newLog
+	// var l = len(*el.log)
+	// if l == 0 {
+	// 	fmt.Printf("Error: Log is empty\n")
+	// 	os.Exit(1)
+	// }
+	// if (*el.log)[l-1].event != Start {
+	// 	fmt.Printf("Error: %v Expected start event\n", el.name)
+	// 	os.Exit(1)
+	// }
+	// var newLog = (*el.log)[:l-1]
+	// el.log = &newLog
+	return
 }
 
 // String formats the log into a string
