@@ -109,17 +109,17 @@ func main() {
 		// If running a local experiment, pick random client port so that they are
 		// unlikely to clash. This is really janky, but ok since this is not meant to
 		// be run locally anyways
-		clientPort = BaseClientPort + uint64(i) + uint64(rand.Intn(990))
+		clientPort = BaseClientPort + uint64(1) + uint64(rand.Intn(990))
 	} else {
-		clientPort = BaseClientPort + uint64(i)
+		clientPort = BaseClientPort + uint64(1)
 	}
 	var clientAddr = &net.UDPAddr{IP: localIP, Port: int(clientPort)}
-	localClientAgent = &agents.Client{
+	var localClientAgent = &agents.Client{
 		LocalAddr:    clientAddr,
 		Targets:      targetServerAddresses, // remote address to send packet
 		Interval:     uint64(interval),      // milliseconds to sleep in between pings
 		PacketSize:   uint64(payloadSz),
-		PingLog:      clock.NewStopwatch(uint(duration*1000/interval+100), fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP)),
+		PingLog:      clock.NewStopwatch(uint(duration*1000/interval+100), fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetServerAddresses)),
 		TimeoutCount: clock.NewCounter("Timeouts")}
 
 	clientsMap[clientPort] = localClientAgent
@@ -140,8 +140,8 @@ func main() {
 	}
 	time.Sleep(1 * time.Second)
 	for _, clientAgent := range clientsMap {
-		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
-		fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Target, clientAgent.TimeoutCount)
+		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Targets)
+		fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Targets, clientAgent.TimeoutCount)
 		fmt.Printf(clientAgent.PingLog.String())
 	}
 }

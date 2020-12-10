@@ -178,7 +178,7 @@ def analyze_client_csv(filepath):
     with open(filepath, 'r') as client:
         csvreader = csv.reader(client, delimiter=' ',)
         for row in csvreader:
-            if 'TIMEOUT' in row[0]:
+            if 'TIMEOUT' in row[0] or 'DEBUG:' in row:
                 continue
             req_start = int(row[1])
             req_end = int(row[2])
