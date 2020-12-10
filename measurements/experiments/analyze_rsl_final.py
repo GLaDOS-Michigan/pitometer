@@ -129,6 +129,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     """
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
+    client_cdf, client_bins = smooth(client_cdf, client_bins)
 
     predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     # predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
@@ -142,7 +143,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
-    # this_ax.set_title(name)
+    this_ax.set_title('Latency distributions of an IronRSL instance')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
     this_ax.set_ylim(0, 50)
@@ -150,6 +151,16 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
     this_ax.legend()
+
+def smooth(x_vals, y_vals):
+    x_res, y_res = [x_vals[0]], [y_vals[0]]
+    curr_y = y_vals[0]
+    for i in range(1, len(x_vals)):
+        if y_vals[i] != curr_y:
+            curr_y = y_vals[i]
+            x_res.append(x_vals[i])
+            y_res.append(y_vals[i]*1.0)
+    return x_res, y_res
 
 
 
