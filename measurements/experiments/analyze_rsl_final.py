@@ -18,13 +18,16 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
+THROW=20  # Ignore the first THROW requests in computing client latencies
+
+# TRAIN_SET = "set1/100_delay"
+# TEST_SET = "set1/100_delay"
 # F_VALUES = [1, 2, 3, 4, 5]
-F_VALUES = [2]
 
-THROW=1  # Ignore the first THROW requests in computing client latencies
-
+# Use these for distribution
 TRAIN_SET = "set2/100_delay_train"
 TEST_SET = "set2/100_delay_test"
+F_VALUES = [2]
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -109,8 +112,8 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[1])   # Always use [1] for training data
             actual_network_latencies = compute_actual_network(total_network_data)
-            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width+3, fig_height), sharex=False)
-            fig.subplots_adjust(left=0.215, right=0.95, top=0.88, bottom=0.21 )
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
             plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
@@ -138,8 +141,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     # plt.plot(xnew, ynew, label='actual performance', color='navy')
 
     this_ax.set_xlabel('cumulative probability')
-    this_ax.set_ylabel('round latency (ms)')
-    this_ax.set_title(name)
+    this_ax.set_ylabel('request latency (ms)')
+    # this_ax.set_title(name)
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
     this_ax.set_ylim(0, 50)
@@ -416,7 +419,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='v', color='forestgreen', linestyle='dashed')
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='forestgreen')
-        this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
+        # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
         this_ax.legend(loc='upper right', bbox_to_anchor=(0.98, 0.45))
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
