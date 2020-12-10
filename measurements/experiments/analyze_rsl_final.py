@@ -16,13 +16,13 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-# F_VALUES = [1, 2, 3, 4, 5]
-F_VALUES = [2]
+F_VALUES = [1, 2, 3, 4, 5]
+# F_VALUES = [2]
 
 THROW=1  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "new_train"
-TEST_SET = "10_delay"
+TEST_SET = "100_delay"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -87,7 +87,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
-    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -103,7 +103,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     # First attempt to plot client cdfs
     print("Plotting graphs for Paxos distributions")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        for f in [2]:
+        for f in F_VALUES:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])
             actual_network_latencies = compute_actual_network(total_network_data)
@@ -124,10 +124,6 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     """
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
-    print(len(set(client_cdf)))
-    print(client_cdf[:20])
-    print(len(client_bins))
-    print(client_bins[:20])
 
     predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
