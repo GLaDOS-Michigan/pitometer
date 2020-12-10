@@ -15,9 +15,12 @@ def get_percentile(cdf, bins, percentile):
     return bins[-1]
 
 def raw_data_to_cdf(data):
-    binsize = 1e-4
-    pdf, bins = raw_data_to_pdf(data, binsize)
-    cdf, bins = pdf_to_cdf(pdf), bins.tolist()
+    sorted_data = sorted(data)
+    cdf, bins = [], []
+    n = len(data) * 1.0
+    for i in range(len(data)):
+        cdf.append(i/n)
+        bins.append(sorted_data[i])
     return [0] + cdf, [bins[0]] + bins
 
 def raw_data_to_pdf(data, binsize):

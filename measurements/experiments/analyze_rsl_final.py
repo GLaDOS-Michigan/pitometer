@@ -8,6 +8,8 @@ from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
 from scipy import stats
 from scipy import signal
+from scipy import ndimage
+from scipy.interpolate import make_interp_spline, BSpline
 import seaborn as sns
 import pickle
 
@@ -87,7 +89,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
-    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -126,13 +128,15 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
 
     predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
-    predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
+    # predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
-    predict_cdf2 = pdf_to_cdf(predict_pdf2)
+    # predict_cdf2 = pdf_to_cdf(predict_pdf2)
 
     plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    plt.plot(predict_cdf2, predict_bins2, label='predicted performance (parallel)', color='black', linestyle='dashed')
-    plt.plot(client_cdf, client_bins[:-1], label='actual performance', color='navy')
+    # plt.plot(predict_cdf2, predict_bins2, label='predicted performance (parallel)', color='black', linestyle='dashed')
+    plt.plot(client_cdf, client_bins, label='actual performance', color='navy')
+    # plt.plot(xnew, ynew, label='actual performance', color='navy')
+
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('round latency (ms)')
     this_ax.set_title(name)
