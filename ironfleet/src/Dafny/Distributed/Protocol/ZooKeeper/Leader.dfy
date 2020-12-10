@@ -106,7 +106,7 @@ predicate InitHandlers(handlers:map<int,LearnerHandler>, my_id: nat, config: Con
 
 
 predicate StepSingleHandler(s:Leader, s':Leader, ios:seq<ZKIo>) {
-    if StepSingleHandler_NoRcv(s, s', ios)
+    if (exists s'', ios'' :: StepSingleHandler_NoRcv(s, s'', ios''))
     then StepSingleHandler_NoRcv(s, s', ios)
     else StepSingleHandler_Rcv(s, s', ios)
 }
