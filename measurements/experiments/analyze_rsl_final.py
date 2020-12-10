@@ -17,11 +17,11 @@ from conv import *
 from plot_constants import *
 
 # F_VALUES = [1, 2, 3, 4, 5]
-F_VALUES = [1, 2]
+F_VALUES = [2]
 
 THROW=1  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "set1/100_delay"
+TRAIN_SET = "set2/100_delay_train"
 TEST_SET = "set2/100_delay_test"
 
 
@@ -70,8 +70,8 @@ def main(exp_dir):
         """
         try:
             # Training set in general may not contain data for all f
-            with open("%s/%s/total_f%d_node_data.pickle" %(exp_dir, TRAIN_SET, f), 'rb') as handle:
-                total_node_data[f] = pickle.load(handle)
+            with open("%s/%s/total_f%d_node_data.pickle" %(exp_dir, TRAIN_SET, 1), 'rb') as handle:
+                total_node_data[1] = pickle.load(handle)   
         except FileNotFoundError:
             print("%s/%s/total_f%d_node_data.pickle not found" %(exp_dir, TRAIN_SET, f))
         with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
@@ -105,7 +105,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for f in F_VALUES:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
-            actual_method_latencies = compute_actual_node(total_node_data[f])
+            actual_method_latencies = compute_actual_node(total_node_data[1])   # Always use [1] for training data
             actual_network_latencies = compute_actual_network(total_network_data)
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width+3, fig_height), sharex=False)
             fig.subplots_adjust(left=0.215, right=0.95, top=0.88, bottom=0.21 )
