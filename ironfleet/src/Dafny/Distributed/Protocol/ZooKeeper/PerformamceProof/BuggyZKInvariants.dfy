@@ -52,7 +52,9 @@ predicate EmptyDiff_Invariant_Inductive(tls:TLS_State)
 {
     && EmptyDiff_Invariant(tls)
     && Dbs_Are_Identical(tls)
+    && Starting_Leader_Does_Not_Modify_Db(tls)
     && All_Messages_Have_Same_Zxid(tls)
+    && All_Snap_Messages_Have_Same_Db(tls)
     && Leader_Have_Bad_Zxid(tls)
     && Leader_Only_Send_SyncSnap(tls)
 }
@@ -81,6 +83,28 @@ predicate All_Messages_Have_Same_Zxid(tls:TLS_State)
     && (pkt.msg.v.FollowerInfo? ==> pkt.msg.v.latestZxid == target_zxid) 
     && (pkt.msg.v.AckEpoch? ==> pkt.msg.v.lastLoggedZxid == target_zxid) 
 }
+
+
+predicate All_Snap_Messages_Have_Same_Db(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+    requires |tls.initialZkdbState| == |tls.config|
+{
+    var target_db := tls.initialZkdbState[0];
+    forall pkt | pkt in tls.t_environment.sentPackets ::
+    && (pkt.msg.v.SyncSNAP? ==> pkt.msg.v.leaderDb == target_db) 
+}
+
+predicate Starting_Leader_Does_Not_Modify_Db(tls:TLS_State) 
+    requires DS_Config_Invariant(tls.config, tls)
+    requires ZK_Config_Invariant(tls.config, tls)
+    requires |tls.initialZkdbState| == |tls.config|
+{
+    var target_db := tls.initialZkdbState[0];
+    var l := tls.t_servers[tls.config[0]].v.leader;
+    l.state == L_STARTING ==> l.globals.zkdb == target_db
+}
+
 
 predicate Leader_Have_Bad_Zxid(tls:TLS_State) 
     requires DS_Config_Invariant(tls.config, tls)
@@ -144,6 +168,32 @@ lemma theorem_ZK_Buggy_Guarantee_Induction(config:Config, tls:TLS_State, tls':TL
     ensures |tls'.initialZkdbState| == |config|
     ensures EmptyDiff_Invariant_Inductive(tls')
 {
+
+    // Prove All_Snap_Messages_Have_Same_Db(tls');
+    var l, l' := tls.t_servers[config[0]].v.leader, tls'.t_servers[config[0]].v.leader;
+    var targDb := tls.initialZkdbState[0];
+    
+    assert Starting_Leader_Does_Not_Modify_Db(tls');
+
+    forall pkt | pkt in tls'.t_environment.sentPackets
+    ensures pkt.msg.v.SyncSNAP? ==> pkt.msg.v.leaderDb == targDb
+    {
+        if pkt !in tls.t_environment.sentPackets {
+            var actor, tios:seq<TZKIo> :| actor in tls.t_servers && TLS_NextOneServer(tls, tls', actor, tios);
+            var ios := UntagLIoOpSeq(tios);
+            if actor == config[0] {
+                assert LeaderStartStep(l, l', ios);
+                assert pkt.msg.v.SyncSNAP? ==> pkt.msg.v.leaderDb == targDb;
+            } else {
+                assert tls.t_servers[actor].v.FollowerPeer?;
+                assert pkt.msg.v.SyncSNAP? ==> pkt.msg.v.leaderDb == targDb;
+            }
+        } else {
+            assert pkt.msg.v.SyncSNAP? ==> pkt.msg.v.leaderDb == targDb;
+        }
+    }
+
+    assert All_Snap_Messages_Have_Same_Db(tls');
     assert Dbs_Are_Identical(tls');
     assert All_Messages_Have_Same_Zxid(tls');
     assert Leader_Have_Bad_Zxid(tls');
