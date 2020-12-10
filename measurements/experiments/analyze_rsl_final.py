@@ -19,10 +19,10 @@ from plot_constants import *
 # F_VALUES = [1, 2, 3, 4, 5]
 F_VALUES = [2]
 
-THROW=60  # Ignore the first THROW requests in computing client latencies
+THROW=1  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "dec_test"
-TEST_SET = "dec_test"
+TRAIN_SET = "new_train"
+TEST_SET = "10_delay"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -124,6 +124,11 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     """
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
+    print(len(set(client_cdf)))
+    print(client_cdf[:20])
+    print(len(client_bins))
+    print(client_bins[:20])
+
     predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
@@ -136,7 +141,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     this_ax.set_ylabel('round latency (ms)')
     this_ax.set_title(name)
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
-    this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
+    # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
+    this_ax.set_ylim(0, 50)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))

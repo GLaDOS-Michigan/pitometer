@@ -144,7 +144,7 @@
                     var dest = ClientBase.endpoints[serverIdx];
                     Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + dest);
 
-                    Thread.Sleep(10);
+                    Thread.Sleep(100);
                     var start_time = HiResTimer.Ticks;
                     this.Send(msg, dest);
                     //foreach (var remote in ClientBase.endpoints)
