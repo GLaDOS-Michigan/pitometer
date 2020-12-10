@@ -17,12 +17,12 @@ from conv import *
 from plot_constants import *
 
 # F_VALUES = [1, 2, 3, 4, 5]
-F_VALUES = [2]
+F_VALUES = [1, 2]
 
 THROW=1  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "set1/new_train"
-TEST_SET = "set2/100_delay"
+TRAIN_SET = "set1/100_delay"
+TEST_SET = "set2/100_delay_test"
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
