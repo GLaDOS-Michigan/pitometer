@@ -116,6 +116,7 @@ predicate Leader_Have_Bad_Zxid(tls:TLS_State)
     var l := tls.t_servers[tls.config[0]].v.leader;
     forall h | h in l.handlers ::
         && (l.handlers[h].peerLastZxid != NullZxid ==> l.handlers[h].peerLastZxid == target_zxid)
+        && (l.handlers[h].peerLastZxid != NullZxid ==> l.handlers[h].peerLastZxid.epoch < l.globals.currZxid.epoch)
         && (l.handlers[h].peerLastZxid != NullZxid ==> l.globals.currZxid == Zxid(l.globals.leaderEpoch, 0))
         && (l.handlers[h].peerLastZxid != NullZxid ==> l.handlers[h].peerLastZxid != l.globals.currZxid)
 }
@@ -172,14 +173,29 @@ lemma theorem_ZK_Buggy_Guarantee_Induction(config:Config, tls:TLS_State, tls':TL
     ensures EmptyDiff_Invariant_Inductive(tls')
 {
 
-    // Prove All_Snap_Messages_Have_Same_Db(tls');
     var l, l' := tls.t_servers[config[0]].v.leader, tls'.t_servers[config[0]].v.leader;
     var targDb := tls.initialZkdbState[0];
+    var targetZxid := getLastLoggedZxid(targDb);
     
     assert Starting_Leader_Does_Not_Modify_Db(tls');
     assert All_Snap_Messages_Have_Same_Db(tls');
     assert Dbs_Are_Identical(tls');
     assert All_Messages_Have_Same_Zxid(tls');
+
+    // Prove Leader_Have_Bad_Zxid;
+    forall h | h in l'.handlers ensures
+    && (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid == targetZxid)
+    && (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid.epoch < l'.globals.currZxid.epoch)
+    && (l'.handlers[h].peerLastZxid != NullZxid ==> l'.globals.currZxid == Zxid(l'.globals.leaderEpoch, 0))
+    && (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid != l'.globals.currZxid)
+    {
+        assert (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid == targetZxid);
+        assert (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid.epoch < l'.globals.leaderEpoch);
+        assert (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid.epoch < l'.globals.currZxid.epoch);
+        assert (l'.handlers[h].peerLastZxid != NullZxid ==> l'.globals.currZxid == Zxid(l'.globals.leaderEpoch, 0));
+        assert (l'.handlers[h].peerLastZxid != NullZxid ==> l'.handlers[h].peerLastZxid != l'.globals.currZxid);
+    }
+
     assert Leader_Have_Bad_Zxid(tls');
     assert Leader_Only_Send_SyncSnap(tls');
     assert EmptyDiff_Invariant(tls');
