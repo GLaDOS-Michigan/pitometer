@@ -20,14 +20,14 @@ from plot_constants import *
 
 THROW=20  # Ignore the first THROW requests in computing client latencies
 
-# TRAIN_SET = "set1/100_delay"
-# TEST_SET = "set1/100_delay"
-# F_VALUES = [1, 2, 3, 4, 5]
+TRAIN_SET = "set1/100_delay"
+TEST_SET = "set1/100_delay"
+F_VALUES = [1, 2, 3, 4, 5]
 
 # Use these for distribution
-TRAIN_SET = "set2/100_delay_train"
-TEST_SET = "set2/100_delay_test"
-F_VALUES = [2]
+# TRAIN_SET = "set2/100_delay_train"
+# TEST_SET = "set2/100_delay_test"
+# F_VALUES = [2]
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -91,8 +91,8 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
-    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -406,14 +406,14 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     # Compute data points
     x_vals_f = sorted(list(total_client_data.keys()))
     y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
-    # y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
     
     print("Computing predictions")
     # TONY: Always use total_node_data[1] to make predictions
     y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[1], f) for f in x_vals_f]
-    # y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
+    y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[1], f, 99.9) for f in x_vals_f]
     y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[1], f) for f in x_vals_f]
 
     print("Drawing graphs")
@@ -422,21 +422,24 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
         fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
         this_ax.set_title("Predictions of IronRSL performance")
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='predicted max', marker='v', color='navy', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='o', color='navy')
         
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
+        
+        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
 
-        # this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9', marker='o', color='blue')
-        # this_ax.plot(x_vals_f, y_vals_predict_999, label='predicted 99.9', marker='x', color='blue', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='predicted mean', marker='v', color='forestgreen', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='forestgreen')
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick')
+        
         # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
-        this_ax.legend(loc='upper right', bbox_to_anchor=(0.98, 0.45))
+        this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=3, columnspacing=0.5, fontsize=6.5)
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
         this_ax.xaxis.set_ticks(x_vals_f)
         this_ax.set_yscale("log")
         this_ax.set_ylim(bottom=0.1)
+        # this_ax.set_ylim(bottom=0)
         pp.savefig(fig)
         plt.close(fig)
 
@@ -453,9 +456,9 @@ def predict_f_max(total_network_data, total_f_node_data, f):
 
 
 def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
-    actions_times = percentile_action_times(total_f_node_data, percentile)
+    work_actions_times, noop_action_times = percentile_action_times(total_f_node_data, percentile)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(actions_times, f, np.percentile(network_delays, 99.9))
+    return sum_from_action_times(work_actions_times, noop_action_times, f, np.percentile(network_delays, 99.9))
 
 def predict_f_mean(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times = mean_action_times(total_f_node_data)
@@ -504,15 +507,26 @@ def percentile_action_times(total_f_node_data, percentile):
     Returns a dictionary mapping action id to the percentile completion time
     total_f_node_data[node_id][method_name] = list of durations
     """
-    method_ids = list(range(0, 10))
-    res = dict()
-    for method_id in method_ids:
-        name = METHODS[method_id]
-        aggregate_method_times = []
+    work_res, noop_res = dict(), dict()
+    for work_method_id, work_name in WORK_METHODS.items():
+        data = []
         for node in total_f_node_data.keys():
-            aggregate_method_times.extend(total_f_node_data[node][name])
-        res[method_id] = np.percentile(aggregate_method_times, percentile)
-    return res
+            data.extend(total_f_node_data[node][work_name])
+        if len(data) == 0:
+            work_res[work_method_id] = 0
+        else:
+            work_res[work_method_id] = np.percentile(data, percentile)
+        
+    for noop_method_id, noop_name in NOOP_METHODS.items():
+        data = []
+        for node in total_f_node_data.keys():
+            data.extend(total_f_node_data[node][noop_name])
+        if len(data) == 0:
+            work_res[work_method_id] = 0
+        else:
+            noop_res[noop_method_id] = np.percentile(data, percentile)
+    return work_res, noop_res
+
 
 def mean_action_times(total_f_node_data):
     """
