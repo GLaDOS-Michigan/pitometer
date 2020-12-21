@@ -53,7 +53,6 @@ lemma theorem_ZK_Performance_Guarantee(config:Config, tlb:seq<TLS_State>, f:int)
 {
     
     lemma_Basic_Invariants(config, tlb, f);
-    // TODO: These will later be replaced by lemmas proving these
     theorem_ZK_Correct_Guarantee(config, tlb, f);
     assert forall i | 0 <= i < |tlb| :: EmptyDiff_Invariant(tlb[i]);
 
