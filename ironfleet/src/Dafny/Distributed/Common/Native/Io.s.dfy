@@ -37,11 +37,11 @@ class HostConstants
 
     static method{:axiom} NumCommandLineArgs(ghost env:HostEnvironment) returns(n:uint32)
         requires env != null && env.Valid();
-        ensures  int(n) == |env.constants.CommandLineArgs()|;
+        ensures  (n as int) == |env.constants.CommandLineArgs()|;
 
     static method{:axiom} GetCommandLineArg(i:uint64, ghost env:HostEnvironment) returns(arg:array<uint16>)
         requires env != null && env.Valid();
-        requires 0 <= int(i) < |env.constants.CommandLineArgs()|;
+        requires 0 <= i as int < |env.constants.CommandLineArgs()|;
         ensures  arg != null;
         ensures  fresh(arg);
         ensures  arg[..] == env.constants.CommandLineArgs()[i];
@@ -80,9 +80,9 @@ class Time
         requires env != null && env.Valid();
         modifies env.now; // To avoid contradiction, GetTime must advance time, because successive calls to GetTime can return different values
         modifies env.udp;
-        ensures  int(t) == env.now.now();
+        ensures  t as int == env.now.now();
         ensures  AdvanceTime(old(env.now.now()), env.now.now(), 0);
-        ensures  env.udp.history() == old(env.udp.history()) + [LIoOpReadClock(int(t))];
+        ensures  env.udp.history() == old(env.udp.history()) + [LIoOpReadClock(t as int)];
 
     // Used for performance debugging
     static method{:axiom} GetDebugTimeTicks() returns(t:uint64)
@@ -166,14 +166,14 @@ class UdpClient
         requires env.ok.ok();
         requires IsOpen();
         requires timeLimit >= 0;
-        requires int(timeLimit) * 1000 < 0x80000000; // only needed when the underlying implementation uses Socket.Poll instead of Task.Wait
+        requires timeLimit as int * 1000 < 0x80000000; // only needed when the underlying implementation uses Socket.Poll instead of Task.Wait
         modifies this;
         modifies env.ok;
         modifies env.now;
         modifies env.udp;
         ensures  env == old(env);
         ensures  env.ok.ok() == ok;
-        ensures  AdvanceTime(old(env.now.now()), env.now.now(), int(timeLimit));
+        ensures  AdvanceTime(old(env.now.now()), env.now.now(), timeLimit as int);
         ensures  LocalEndPoint() == old(LocalEndPoint());
         ensures  ok ==> IsOpen();
         ensures  ok ==> timedOut  ==> env.udp.history() == old(env.udp.history()) + [LIoOpTimeoutReceive()];
@@ -225,7 +225,7 @@ class MutableSet<T(0,==,!new)>
 
     method {:axiom} SizeModest() returns (size:uint64) 
         requires |SetOf(this)| < 0x1_0000_0000_0000_0000;
-        ensures int(size) == |SetOf(this)|;
+        ensures size as int == |SetOf(this)|;
 
     method {:axiom} Contains(x:T) returns (contains:bool)
         ensures contains == (x in SetOf(this));
@@ -274,7 +274,7 @@ class MutableMap<K(==),V>
 
     method {:axiom} SizeModest() returns (size:uint64) 
         requires |MapOf(this)| < 0x1_0000_0000_0000_0000;
-        ensures int(size) == |MapOf(this)|;
+        ensures size as int == |MapOf(this)|;
 
     method {:axiom} Contains(key:K) returns (contains:bool)
         ensures contains == (key in MapOf(this));
@@ -297,15 +297,15 @@ class Arrays
 {
     static method{:axiom} CopySeqIntoArray<A>(src:seq<A>, srcIndex:uint64, dst:array<A>, dstIndex:uint64, len:uint64)
         requires dst != null;
-        requires int(srcIndex) + int(len) <= |src|;
-        requires int(dstIndex) + int(len) <= dst.Length;
+        requires srcIndex as int + len as int <= |src|;
+        requires dstIndex as int + len as int <= dst.Length;
         modifies dst;
         ensures  forall i :: 0 <= i < dst.Length ==> dst[i] == (
-                    if int(dstIndex) <= i < int(dstIndex) + int(len)
-                    then src[i - int(dstIndex) + int(srcIndex)]
+                    if dstIndex as int <= i < dstIndex as int + len as int
+                    then src[i - dstIndex as int + srcIndex as int]
                     else old(dst[..])[i]);
-        ensures  forall i :: int(srcIndex) <= i < int(srcIndex) + int(len) ==>
-                    src[i] == dst[i - int(srcIndex) + int(dstIndex)];
+        ensures  forall i :: srcIndex as int <= i < srcIndex as int + len as int ==>
+                    src[i] == dst[i - srcIndex as int + dstIndex as int];
 }
 
 

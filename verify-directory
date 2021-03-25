@@ -1,7 +1,7 @@
 #!/bin/sh
 
 path=$1
-alias dafny='/home/nudzhang/.vscode-server/extensions/correctnesslab.dafny-vscode-0.18.0/dafny/dafny/Dafny.exe /compile:0 /noCheating:0 /proverWarnings:1 /z3opt:pi.warnings=true /allowGlobals /ironDafny /warnShadowing /z3opt:nlsat.randomize=false /autoTriggers:1 /timeLimit:30'
+alias dafny='/home/nudzhang/.vscode-server/extensions/correctnesslab.dafny-vscode-0.18.0/dafny/dafny/Dafny.exe /compile:0  /arith:2 /timeLimit:30'
 
 for f in $path/*.dfy
 do

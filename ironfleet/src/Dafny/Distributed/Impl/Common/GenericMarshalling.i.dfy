@@ -35,7 +35,7 @@ predicate ValInGrammar(val:V, grammar:G)
         case VTuple(t)  => grammar.GTuple? && |t| == |grammar.t|
                               && forall i :: 0 <= i < |t| ==> ValInGrammar(t[i], grammar.t[i])
         case VByteArray(b) => grammar.GByteArray?
-        case VCase(c, v) => grammar.GTaggedUnion? && int(c) < |grammar.cases| && ValInGrammar(v, grammar.cases[c])
+        case VCase(c, v) => grammar.GTaggedUnion? && c as int < |grammar.cases| && ValInGrammar(v, grammar.cases[c])
 }
 
 // We only support reasonably sized grammars
@@ -90,7 +90,7 @@ function method parse_Uint64(data:seq<byte>) : (Option<V>, seq<byte>)
 
 method ParseUint64(data:array<byte>, index:uint64) returns (success:bool, v:V, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     ensures  int(rest_index) <= data.Length;
     ensures  var (v', rest') := parse_Uint64(data[index..]);
@@ -220,7 +220,7 @@ lemma lemma_ArrayContents_helper_bailout(data:seq<byte>, eltType:G, len:uint64, 
 method{:timeLimitMultiplier 2} ParseArrayContents(data:array<byte>, index:uint64, eltType:G, len:uint64) 
        returns (success:bool, v:seq<V>, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires ValidGrammar(eltType);
     decreases eltType, 1, len;
@@ -297,7 +297,7 @@ function method parse_Array(data:seq<byte>, eltType:G) : (Option<V>, seq<byte>)
 
 method ParseArray(data:array<byte>, index:uint64, eltType:G) returns (success:bool, v:V, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires ValidGrammar(eltType);
     decreases eltType;
@@ -431,7 +431,7 @@ lemma lemma_TupleContents_helper_bailout(data:seq<byte>, eltTypes:seq<G>, trace:
 method{:timeLimitMultiplier 2} ParseTupleContents(data:array<byte>, index:uint64, eltTypes:seq<G>) 
        returns (success:bool, v:seq<V>, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires |eltTypes| < 0x1_0000_0000_0000_0000;
     requires forall elt :: elt in eltTypes ==> ValidGrammar(elt);
@@ -507,7 +507,7 @@ function method parse_Tuple(data:seq<byte>, eltTypes:seq<G>) : (Option<V>, seq<b
 
 method ParseTuple(data:array<byte>, index:uint64, eltTypes:seq<G>) returns (success:bool, v:V, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires |eltTypes| < 0x1_0000_0000_0000_0000;
     requires forall elt :: elt in eltTypes ==> ValidGrammar(elt);
@@ -541,7 +541,7 @@ function method parse_ByteArray(data:seq<byte>) : (Option<V>, seq<byte>)
 
 method ParseByteArray(data:array<byte>, index:uint64) returns (success:bool, v:V, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     ensures  int(rest_index) <= data.Length;
     ensures  var (v', rest') := parse_ByteArray(data[index..]);
@@ -587,7 +587,7 @@ function method parse_Case(data:seq<byte>, cases:seq<G>) : (Option<V>, seq<byte>
 
 method ParseCase(data:array<byte>, index:uint64, cases:seq<G>) returns (success:bool, v:V, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires |cases| < 0x1_0000_0000_0000_0000;
     requires forall elt :: elt in cases ==> ValidGrammar(elt);
@@ -633,7 +633,7 @@ function method {:opaque} parse_Val(data:seq<byte>, grammar:G) : (Option<V>, seq
 
 method ParseVal(data:array<byte>, index:uint64, grammar:G) returns (success:bool, v:V, rest_index:uint64)
     requires data != null;
-    requires int(index) <= data.Length;
+    requires index as int <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires ValidGrammar(grammar);
     decreases grammar, 0;
@@ -1189,8 +1189,8 @@ method ComputeSizeOf(val:V) returns (size:uint64)
 
 method MarshallUint64(n:uint64, data:array<byte>, index:uint64)
     requires data != null;
-    requires int(index) + int(Uint64Size()) <= data.Length;
-    requires 0 <= int(index) + int(Uint64Size()) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + int(Uint64Size()) <= data.Length;
+    requires 0 <= index as int + int(Uint64Size()) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     ensures  SeqByteToUint64(data[index..index+uint64(Uint64Size())]) == n;
@@ -1203,7 +1203,7 @@ method MarshallUint64(n:uint64, data:array<byte>, index:uint64)
     ensures  data[0..index] == old(data[0..index]);
     ensures  data[index+uint64(Uint64Size())..] == old(data[index+uint64(Uint64Size())..]);
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + int(Uint64Size()) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + int(Uint64Size()) <= i < data.Length ==> data[i] == old(data[i]);
 {
     var tuple := parse_Uint64(data[index .. ]);
     MarshallUint64_guts(n, data, index);
@@ -1289,16 +1289,16 @@ method{:timeLimitMultiplier 4} MarshallArrayContents(contents:seq<V>, eltType:G,
     requires forall v :: v in contents ==> ValInGrammar(v, eltType);
     requires forall v :: v in contents ==> ValidVal(v);
     requires ValidGrammar(eltType);
-    requires int(index) + SeqSum(contents) <= data.Length;
-    requires 0 <= int(index) + SeqSum(contents) < 0x1_0000_0000_0000_0000;
+    requires index as int + SeqSum(contents) <= data.Length;
+    requires 0 <= index as int + SeqSum(contents) < 0x1_0000_0000_0000_0000;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires |contents| < 0x1_0000_0000_0000_0000;
     decreases eltType, 1, |contents|;
     modifies data;
-    ensures  parse_Array_contents(data[index..int(index) + SeqSum(contents)], eltType, uint64(|contents|)).0.Some?;
-    ensures  parse_Array_contents(data[index..int(index) + SeqSum(contents)], eltType, uint64(|contents|)).0.v == contents;
+    ensures  parse_Array_contents(data[index..index as int + SeqSum(contents)], eltType, uint64(|contents|)).0.Some?;
+    ensures  parse_Array_contents(data[index..index as int + SeqSum(contents)], eltType, uint64(|contents|)).0.v == contents;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SeqSum(contents) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SeqSum(contents) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SeqSum(contents);
 {
     var i:uint64 := 0;
@@ -1311,10 +1311,10 @@ method{:timeLimitMultiplier 4} MarshallArrayContents(contents:seq<V>, eltType:G,
 
     while i < uint64(|contents|)
         invariant 0 <= int(i) <= |contents|;
-        invariant 0 <= int(index) <= int(index) + SeqSum(contents[..i]) <= data.Length;
-        invariant int(cur_index) == int(index) + SeqSum(contents[..i]);
+        invariant 0 <= index as int <= index as int + SeqSum(contents[..i]) <= data.Length;
+        invariant int(cur_index) == index as int + SeqSum(contents[..i]);
         invariant forall j :: 0 <= j < index ==> data[j] == old(data[j]);
-        invariant forall j :: int(index) + SeqSum(contents) <= j < data.Length ==> data[j] == old(data[j]);
+        invariant forall j :: index as int + SeqSum(contents) <= j < data.Length ==> data[j] == old(data[j]);
         invariant marshalled_bytes == data[index..cur_index];
         invariant marshalled_bytes == SeqCatRev(trace);
         invariant |trace| == int(i);
@@ -1328,13 +1328,13 @@ method{:timeLimitMultiplier 4} MarshallArrayContents(contents:seq<V>, eltType:G,
         // Prove we meet MarshallVal's length requirement
         calc <= {
             int(cur_index) + SizeOfV(contents[i]);
-            int(index) + SeqSum(contents[..i]) + SizeOfV(contents[i]);
+            index as int + SeqSum(contents[..i]) + SizeOfV(contents[i]);
                 { lemma_SeqSum_prefix(contents[..i], contents[i]); 
                   assert contents[..i] + [contents[i]] == contents[..i+1]; }
-            int(index) + SeqSum(contents[..i+1]);
+            index as int + SeqSum(contents[..i+1]);
                 { lemma_SeqSum_bound_prefix(contents, contents[..i+1], int(i)+1); }
-                //{ lemma_SeqSum_bound(contents, data.Length - int(index) + 1); }
-            int(index) + SeqSum(contents);
+                //{ lemma_SeqSum_bound(contents, data.Length - index as int + 1); }
+            index as int + SeqSum(contents);
             //data.Length;
         }
         var item_size := MarshallVal(contents[i], eltType, data, cur_index);
@@ -1359,13 +1359,13 @@ method{:timeLimitMultiplier 4} MarshallArrayContents(contents:seq<V>, eltType:G,
 
         // Prove the invariant that we stay within bounds
         calc <= {
-            int(index) + SeqSum(contents[..i]);
+            index as int + SeqSum(contents[..i]);
             calc {
                 SeqSum(contents[..i]);
                 <=  { lemma_SeqSum_bound_prefix(contents, contents[..i], int(i)); }
                 SeqSum(contents);
             }
-            int(index) + SeqSum(contents);
+            index as int + SeqSum(contents);
             data.Length;
         }
         assert {:split_here} true;
@@ -1375,12 +1375,12 @@ method{:timeLimitMultiplier 4} MarshallArrayContents(contents:seq<V>, eltType:G,
         calc {
             int(cur_index);
             int(old_cur_index) + SizeOfV(contents[i-1]);
-            int(index) + SeqSum(contents[..i-1]) + SizeOfV(contents[i-1]);
+            index as int + SeqSum(contents[..i-1]) + SizeOfV(contents[i-1]);
                 { lemma_SeqSum_prefix(contents[..i-1], contents[i-1]); 
                   assert contents[..i-1] + [contents[i-1]] == contents[..i]; }
-            int(index) + SeqSum(contents[..i]);
+            index as int + SeqSum(contents[..i]);
         }
-        assert int(cur_index) == int(index) + SeqSum(contents[..i]);
+        assert int(cur_index) == index as int + SeqSum(contents[..i]);
         assert marshalled_bytes == data[index..cur_index];
     }
 
@@ -1388,8 +1388,8 @@ method{:timeLimitMultiplier 4} MarshallArrayContents(contents:seq<V>, eltType:G,
 
     // After the while loop, we know:
     assert contents[..i] == contents;   // OBSERVE
-    assert int(cur_index) == int(index) + SeqSum(contents);
-    assert marshalled_bytes == data[index..int(index)+SeqSum(contents)];
+    assert int(cur_index) == index as int + SeqSum(contents);
+    assert marshalled_bytes == data[index..index as int+SeqSum(contents)];
     //assert marshalled_bytes == SeqCatRev(trace);
     //assert |trace| == |contents|;
     lemma_marshall_array_contents(contents, eltType, marshalled_bytes, trace);
@@ -1402,27 +1402,27 @@ method MarshallArray(val:V, grammar:G, data:array<byte>, index:uint64) returns (
     requires ValInGrammar(val, grammar);
     requires ValidGrammar(grammar);
     requires ValidVal(val);
-    requires int(index) + SizeOfV(val) <= data.Length;
-    requires 0 <= int(index) + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + SizeOfV(val) <= data.Length;
+    requires 0 <= index as int + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     decreases grammar, -1;
-    ensures  parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.Some? &&
-             parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.v == val;
+    ensures  parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.Some? &&
+             parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.v == val;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SizeOfV(val);
 {
     //assert{:split_here} true;
     reveal_parse_Val();
     MarshallUint64(uint64(|val.a|), data, index);
 
-    ghost var tuple := parse_Uint64(data[index..int(index) + SizeOfV(val)]);
+    ghost var tuple := parse_Uint64(data[index..index as int + SizeOfV(val)]);
     ghost var len := tuple.0;
     ghost var rest := tuple.1;
     assert !len.None?;
     var contents_size := MarshallArrayContents(val.a, grammar.elt, data, index + Uint64Size());
-    tuple := parse_Uint64(data[index..int(index) + SizeOfV(val)]);
+    tuple := parse_Uint64(data[index..index as int + SizeOfV(val)]);
     assert {:split_here} true;
     len := tuple.0;
     rest := tuple.1;
@@ -1518,16 +1518,16 @@ method{:timeLimitMultiplier 2} MarshallTupleContents(contents:seq<V>, eltTypes:s
     requires forall g :: g in eltTypes ==> ValidGrammar(g);
     requires |eltTypes| < 0x1_0000_0000_0000_0000;
     requires forall i :: 0 <= i < |contents| ==> ValidVal(contents[i]);
-    requires int(index) + SeqSum(contents) <= data.Length;
-    requires 0 <= int(index) + SeqSum(contents) < 0x1_0000_0000_0000_0000;
+    requires index as int + SeqSum(contents) <= data.Length;
+    requires 0 <= index as int + SeqSum(contents) < 0x1_0000_0000_0000_0000;
     requires data.Length < 0x1_0000_0000_0000_0000;
     requires |contents| < 0x1_0000_0000_0000_0000;
     decreases eltTypes, 1, |contents|;
     modifies data;
-    ensures  parse_Tuple_contents(data[index..int(index) + SeqSum(contents)], eltTypes).0.Some?;
-    ensures  parse_Tuple_contents(data[index..int(index) + SeqSum(contents)], eltTypes).0.v == contents;
+    ensures  parse_Tuple_contents(data[index..index as int + SeqSum(contents)], eltTypes).0.Some?;
+    ensures  parse_Tuple_contents(data[index..index as int + SeqSum(contents)], eltTypes).0.v == contents;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SeqSum(contents) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SeqSum(contents) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SeqSum(contents);
 {
     var i:uint64 := 0;
@@ -1540,10 +1540,10 @@ method{:timeLimitMultiplier 2} MarshallTupleContents(contents:seq<V>, eltTypes:s
 
     while i < uint64(|contents|)
         invariant 0 <= int(i) <= |contents|;
-        invariant 0 <= int(index) <= int(index) + SeqSum(contents[..i]) <= data.Length;
-        invariant int(cur_index) == int(index) + SeqSum(contents[..i]);
+        invariant 0 <= index as int <= index as int + SeqSum(contents[..i]) <= data.Length;
+        invariant int(cur_index) == index as int + SeqSum(contents[..i]);
         invariant forall j :: 0 <= j < index ==> data[j] == old(data[j]);
-        invariant forall j :: int(index) + SeqSum(contents) <= j < data.Length ==> data[j] == old(data[j]);
+        invariant forall j :: index as int + SeqSum(contents) <= j < data.Length ==> data[j] == old(data[j]);
         invariant marshalled_bytes == data[index..cur_index];
         invariant marshalled_bytes == SeqCatRev(trace);
         invariant |trace| == int(i);
@@ -1560,13 +1560,13 @@ method{:timeLimitMultiplier 2} MarshallTupleContents(contents:seq<V>, eltTypes:s
         // Prove we meet MarshallVal's length requirement
         calc <= {
             int(cur_index) + SizeOfV(contents[i]);
-            int(index) + SeqSum(contents[..i]) + SizeOfV(contents[i]);
+            index as int + SeqSum(contents[..i]) + SizeOfV(contents[i]);
                 { lemma_SeqSum_prefix(contents[..i], contents[i]); 
                   assert contents[..i] + [contents[i]] == contents[..i+1]; }
-            int(index) + SeqSum(contents[..i+1]);
+            index as int + SeqSum(contents[..i+1]);
                 { lemma_SeqSum_bound_prefix(contents, contents[..i+1], int(i)+1); }
-                //{ lemma_SeqSum_bound(contents, data.Length - int(index) + 1); }
-            int(index) + SeqSum(contents);
+                //{ lemma_SeqSum_bound(contents, data.Length - index as int + 1); }
+            index as int + SeqSum(contents);
             //data.Length;
         }
         var item_size := MarshallVal(contents[i], eltTypes[i], data, cur_index);
@@ -1603,13 +1603,13 @@ method{:timeLimitMultiplier 2} MarshallTupleContents(contents:seq<V>, eltTypes:s
 
         // Prove the invariant that we stay within bounds
         calc <= {
-            int(index) + SeqSum(contents[..i]);
+            index as int + SeqSum(contents[..i]);
             calc {
                 SeqSum(contents[..i]);
                 <=  { lemma_SeqSum_bound_prefix(contents, contents[..i], int(i)); }
                 SeqSum(contents);
             }
-            int(index) + SeqSum(contents);
+            index as int + SeqSum(contents);
             data.Length;
         }
 
@@ -1617,20 +1617,20 @@ method{:timeLimitMultiplier 2} MarshallTupleContents(contents:seq<V>, eltTypes:s
         calc {
             int(cur_index);
             int(old_cur_index) + SizeOfV(contents[i-1]);
-            int(index) + SeqSum(contents[..i-1]) + SizeOfV(contents[i-1]);
+            index as int + SeqSum(contents[..i-1]) + SizeOfV(contents[i-1]);
                 { lemma_SeqSum_prefix(contents[..i-1], contents[i-1]); 
                   assert contents[..i-1] + [contents[i-1]] == contents[..i]; }
-            int(index) + SeqSum(contents[..i]);
+            index as int + SeqSum(contents[..i]);
         }
-        assert int(cur_index) == int(index) + SeqSum(contents[..i]);
+        assert int(cur_index) == index as int + SeqSum(contents[..i]);
     }
 
     // Prove that parsing will produce the correct result
 
     // After the while loop, we know:
     assert contents[..i] == contents;   // OBSERVE
-    assert int(cur_index) == int(index) + SeqSum(contents);
-    assert marshalled_bytes == data[index..int(index)+SeqSum(contents)];
+    assert int(cur_index) == index as int + SeqSum(contents);
+    assert marshalled_bytes == data[index..index as int+SeqSum(contents)];
     //assert marshalled_bytes == SeqCatRev(trace);
     //assert |trace| == |contents|;
     lemma_marshall_tuple_contents(contents, eltTypes, marshalled_bytes, trace);
@@ -1643,35 +1643,35 @@ method MarshallTuple(val:V, grammar:G, data:array<byte>, index:uint64) returns (
     requires ValidVal(val);
     requires ValidGrammar(grammar);
     requires ValInGrammar(val, grammar);
-    requires int(index) + SizeOfV(val) <= data.Length;
-    requires 0 <= int(index) + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + SizeOfV(val) <= data.Length;
+    requires 0 <= index as int + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     decreases grammar, -1;
-    ensures  parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.Some? &&
-             parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.v == val;
+    ensures  parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.Some? &&
+             parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.v == val;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SizeOfV(val);
 {
     size := MarshallTupleContents(val.t, grammar.t, data, index);
 
     calc {
-        parse_Val(data[index..int(index) + SizeOfV(val)], grammar);
+        parse_Val(data[index..index as int + SizeOfV(val)], grammar);
             { reveal_parse_Val(); }
-        parse_Tuple(data[index..int(index) + SizeOfV(val)], grammar.t);
+        parse_Tuple(data[index..index as int + SizeOfV(val)], grammar.t);
     }
 }
 
 method MarshallBytes(bytes:seq<byte>, data:array<byte>, index:uint64)
     requires data != null;
-    requires int(index) + |bytes| <= data.Length;
-    requires 0 <= int(index) + |bytes| < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + |bytes| <= data.Length;
+    requires 0 <= index as int + |bytes| < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) <= i < int(index) + |bytes| ==> data[i] == bytes[i - int(index)];
-    ensures  forall i :: int(index) + |bytes| <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int <= i < index as int + |bytes| ==> data[i] == bytes[i - index as int];
+    ensures  forall i :: index as int + |bytes| <= i < data.Length ==> data[i] == old(data[i]);
 {
     Arrays.CopySeqIntoArray(bytes, 0, data, index, uint64(|bytes|));
 
@@ -1680,9 +1680,9 @@ method MarshallBytes(bytes:seq<byte>, data:array<byte>, index:uint64)
 
     while (j < uint64(|bytes|))
         invariant 0 <= int(j) <= |bytes|;
-        invariant forall i:int :: 0 <= i < int(index) ==> data[i] == old(data[i]);
-        invariant forall i:int :: int(index) <= i < int(index) + int(j) ==> data[i] == bytes[i-int(index)];
-        invariant forall i:int :: int(index) + |bytes| <= i < data.Length ==> data[i] == old(data[i]);
+        invariant forall i:int :: 0 <= i < index as int ==> data[i] == old(data[i]);
+        invariant forall i:int :: index as int <= i < index as int + int(j) ==> data[i] == bytes[i-index as int];
+        invariant forall i:int :: index as int + |bytes| <= i < data.Length ==> data[i] == old(data[i]);
     {
         data[index + j] := bytes[j];
         j := j + 1;
@@ -1696,15 +1696,15 @@ method MarshallByteArray(val:V, grammar:G, data:array<byte>, index:uint64) retur
     requires ValidGrammar(grammar);
     requires ValInGrammar(val, grammar);
     requires ValidVal(val);
-    requires int(index) + SizeOfV(val) <= data.Length;
-    requires 0 <= int(index) + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + SizeOfV(val) <= data.Length;
+    requires 0 <= index as int + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     decreases grammar;
-    ensures  parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.Some? &&
-             parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.v == val;
+    ensures  parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.Some? &&
+             parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.v == val;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SizeOfV(val);
 {
     MarshallUint64(uint64(|val.b|), data, index);
@@ -1712,18 +1712,18 @@ method MarshallByteArray(val:V, grammar:G, data:array<byte>, index:uint64) retur
     MarshallBytes(val.b, data, index + 8);
 
     calc {
-        parse_Val(data[index..int(index) + SizeOfV(val)], grammar);
+        parse_Val(data[index..index as int + SizeOfV(val)], grammar);
             { reveal_parse_Val(); }
-        parse_ByteArray(data[index..int(index) + SizeOfV(val)]);
+        parse_ByteArray(data[index..index as int + SizeOfV(val)]);
     }
-    ghost var data_seq := data[index..int(index) + SizeOfV(val)];
+    ghost var data_seq := data[index..index as int + SizeOfV(val)];
     ghost var tuple := parse_Uint64(data_seq);
     ghost var len := tuple.0;
     ghost var rest := tuple.1;
     assert{:split_here} true;
     // assert len.v.u == uint64(|val.b|);
     
-    assert rest == data[index + 8..int(index) + SizeOfV(val)] == val.b;
+    assert rest == data[index + 8..index as int + SizeOfV(val)] == val.b;
     assert !len.None? && int(len.v.u) <= |rest|;
     assert rest[0..len.v.u] == val.b;       // OBSERVE
     size := 8 + uint64(|val.b|);
@@ -1735,15 +1735,15 @@ method MarshallCase(val:V, grammar:G, data:array<byte>, index:uint64) returns (s
     requires ValidGrammar(grammar);
     requires ValInGrammar(val, grammar);
     requires ValidVal(val);
-    requires int(index) + SizeOfV(val) <= data.Length;
-    requires 0 <= int(index) + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + SizeOfV(val) <= data.Length;
+    requires 0 <= index as int + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     decreases grammar, -1;
-    ensures  parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.Some? &&
-             parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.v == val;
+    ensures  parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.Some? &&
+             parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.v == val;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SizeOfV(val);
 {
     MarshallUint64(val.c, data, index);
@@ -1764,7 +1764,7 @@ method MarshallCase(val:V, grammar:G, data:array<byte>, index:uint64) returns (s
     assert grammar.GTaggedUnion?; 
     assert int(val.c) < |grammar.cases|;
 
-    ghost var bytes := data[index..int(index) + SizeOfV(val)];
+    ghost var bytes := data[index..index as int + SizeOfV(val)];
     assert bytes[..8] == new_int_bytes;
     calc {
         parse_Val(bytes, grammar);
@@ -1793,22 +1793,22 @@ method MarshallVUint64(val:V, grammar:G, data:array<byte>, index:uint64) returns
     requires val.VUint64?;
     requires ValidGrammar(grammar);
     requires ValInGrammar(val, grammar);
-    requires int(index) + SizeOfV(val) <= data.Length;
-    requires 0 <= int(index) + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
+    requires index as int + SizeOfV(val) <= data.Length;
+    requires 0 <= index as int + SizeOfV(val) < 0x1_0000_0000_0000_0000;  // Needed to prevent overflow below
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     decreases grammar;
-    ensures  parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.Some? &&
-             parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.v == val;
+    ensures  parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.Some? &&
+             parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.v == val;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SizeOfV(val);
 {
     MarshallUint64(val.u, data, index);
     calc {
-        parse_Val(data[index..int(index) + SizeOfV(val)], grammar);
+        parse_Val(data[index..index as int + SizeOfV(val)], grammar);
             { reveal_parse_Val(); }
-        parse_Uint64(data[index..int(index) + SizeOfV(val)]);
+        parse_Uint64(data[index..index as int + SizeOfV(val)]);
     }
     return 8;
 }
@@ -1819,14 +1819,14 @@ method MarshallVal(val:V, grammar:G, data:array<byte>, index:uint64) returns (si
     requires ValidVal(val);
     requires 0 <= SizeOfV(val) < 0x1_0000_0000_0000_0000;
     requires data!=null;
-    requires int(index) + SizeOfV(val) <= data.Length;
+    requires index as int + SizeOfV(val) <= data.Length;
     requires data.Length < 0x1_0000_0000_0000_0000;
     modifies data;
     decreases grammar, 0;
-    ensures  parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.Some? &&
-             parse_Val(data[index..int(index) + SizeOfV(val)], grammar).0.v == val;
+    ensures  parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.Some? &&
+             parse_Val(data[index..index as int + SizeOfV(val)], grammar).0.v == val;
     ensures  forall i :: 0 <= i < index ==> data[i] == old(data[i]);
-    ensures  forall i :: int(index) + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
+    ensures  forall i :: index as int + SizeOfV(val) <= i < data.Length ==> data[i] == old(data[i]);
     ensures  int(size) == SizeOfV(val);
 {
     match val

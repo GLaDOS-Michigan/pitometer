@@ -69,7 +69,7 @@ class NodeImpl
         ensures ok ==>
                Valid()
             && Env() == env_
-            && NodeInit(AbstractifyCNode(node), int(my_index), config)
+            && NodeInit(AbstractifyCNode(node), my_index as int, config)
             && node.config == config 
             && node.my_index == my_index;
     {
