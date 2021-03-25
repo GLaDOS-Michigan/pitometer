@@ -44,13 +44,13 @@ method GetHostIndex(host:EndPoint, hosts:seq<EndPoint>) returns (found:bool, ind
     requires SeqIsUnique(hosts);
     requires |hosts| < 0x1_0000_0000_0000_0000;
     requires forall h :: h in hosts ==> EndPointIsValidIPV4(h);
-    ensures  found ==> 0 <= int(index) < |hosts| && hosts[index] == host;
+    ensures  found ==> 0 <= index as int < |hosts| && hosts[index] == host;
     ensures !found ==> !(host in hosts);
 {
     var i:uint64 := 0;
 
     while i < uint64(|hosts|)
-        invariant int(i) <= |hosts|;
+        invariant i as int <= |hosts|;
         invariant forall j :: 0 <= j < i ==> hosts[j] != host;
     {
         if host == hosts[i] {
@@ -60,7 +60,7 @@ method GetHostIndex(host:EndPoint, hosts:seq<EndPoint>) returns (found:bool, ind
             calc ==> {
                 true;
                     { reveal_SeqIsUnique(); }
-                forall j :: 0 <= j < |hosts| && j != int(i) ==> hosts[j] != host;
+                forall j :: 0 <= j < |hosts| && j != i as int ==> hosts[j] != host;
             }
 
             return;
@@ -79,7 +79,7 @@ method GetHostIndex(host:EndPoint, hosts:seq<EndPoint>) returns (found:bool, ind
 method ParseCmdLine(ghost env:HostEnvironment) returns (ok:bool, host_ids:seq<EndPoint>, my_index:uint64)
     requires HostEnvironmentIsValid(env);
     ensures ok ==> |host_ids| > 0;
-    ensures ok ==> 0 <= int(my_index) < |host_ids|;
+    ensures ok ==> 0 <= my_index as int < |host_ids|;
     ensures var (host_ids', my_ep') := lock_cmd_line_parsing(env);
             ok ==> host_ids == host_ids' && host_ids[my_index] == my_ep';
     ensures ok ==> SeqIsUnique(host_ids);

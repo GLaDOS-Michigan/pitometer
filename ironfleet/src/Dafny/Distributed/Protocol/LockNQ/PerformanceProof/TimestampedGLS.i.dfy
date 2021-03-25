@@ -1,7 +1,7 @@
-include "../Node.i.dfy"
+include "../../Lock/Node.i.dfy"
 include "../RefinementProof/DistributedSystem.i.dfy"
 include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
-include "Definitions.i.dfy"
+include "DefinitionsNQ.i.dfy"
 
 module TimestampedGLS_i {
 import opened Protocol_Node_i

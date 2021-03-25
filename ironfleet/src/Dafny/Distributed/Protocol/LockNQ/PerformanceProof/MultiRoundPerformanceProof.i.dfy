@@ -1,6 +1,6 @@
 include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
 include "TimestampedGLS_noduplication.i.dfy"
-include "Definitions.i.dfy"
+include "DefinitionsNQ.i.dfy"
 include "../../../../Libraries/Math/mod_auto.i.dfy"
 include "MultiRoundTimeHelpers.i.dfy"
 include "../../../Common/Collections/Multisets.s.dfy"

@@ -7,7 +7,7 @@ include "../Collections/Maps2.s.dfy"
 abstract module Timestamp_s {
   import opened Collections__Seqs_i
   import opened DS_s : DistributedSystem_s
-  import opened Host_s
+  // import opened Host_s
   import opened Collections__Maps2_s
 
   type Timestamp = i : int | 0 <= i

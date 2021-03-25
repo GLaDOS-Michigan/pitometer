@@ -49,7 +49,7 @@ function method shorts_to_bytes(shorts:seq<uint16>) : (bool, seq<byte>)
 function method bytes_to_decimal(bytes:seq<byte>) : nat
 {
     if |bytes| == 0 then 0
-    else int(bytes[|bytes|-1]) + 10 * bytes_to_decimal(bytes[0..|bytes|-1])
+    else ((bytes[|bytes|-1]) as int) + 10 * bytes_to_decimal(bytes[0..|bytes|-1])
 }
 
 function method shorts_to_nat(shorts:seq<uint16>) : (bool, int)

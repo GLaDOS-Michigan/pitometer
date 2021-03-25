@@ -1,6 +1,6 @@
 // Must be verified with /arith:0. Make sure /noNLarith is not set
 include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
-include "Definitions.i.dfy"
+include "DefinitionsNQ.i.dfy"
 
 module PerformanceProof__MultiRoundTimeHelpers_i {
 import opened LockTimestampedDistributedSystem_i

@@ -1,6 +1,6 @@
 include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
 include "TimestampedGLS.i.dfy"
-include "Definitions.i.dfy"
+include "DefinitionsNQ.i.dfy"
 include "../../../../Libraries/Math/mod_auto.i.dfy"
 include "Invariants.i.dfy"
 

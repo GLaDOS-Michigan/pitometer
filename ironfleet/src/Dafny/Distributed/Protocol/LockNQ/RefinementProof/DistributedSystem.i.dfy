@@ -1,4 +1,4 @@
-include "../Node.i.dfy"
+include "../../Lock/Node.i.dfy"
 include "../../../Impl/Common/SeqIsUnique.i.dfy"
 include "../../../Common/Collections/Seqs.i.dfy"
 include "../../../Common/Framework/DistributedSystem.s.dfy"

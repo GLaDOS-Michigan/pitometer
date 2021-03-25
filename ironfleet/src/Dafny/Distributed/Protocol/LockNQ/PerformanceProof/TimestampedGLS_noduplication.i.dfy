@@ -1,7 +1,7 @@
-include "../Node.i.dfy"
-  include "../RefinementProof/DistributedSystem.i.dfy"
+include "../../Lock/Node.i.dfy"
+include "../RefinementProof/DistributedSystem.i.dfy"
 include "../../../Services/Lock/LockTimestampedDistributedSystem.i.dfy"
-include "Definitions.i.dfy"
+include "DefinitionsNQ.i.dfy"
 
 module TimestampedGLS_noduplication_i {
 import opened Protocol_Node_i
@@ -42,6 +42,7 @@ datatype TimestampedGLS_State = TimestampedGLS_State(
       && tls.undeliveredPackets == multiset{}
       && tls.config == config
       && LEnvironment_Init(tls.t_environment)
+      && config[0] in tls.t_servers
       && tls.t_servers[config[0]].ts == TimeZero()
       && forall id :: id in tls.t_servers && id != config[0] ==> tls.t_servers[id].ts == TimeZero()
   }
