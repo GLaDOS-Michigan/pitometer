@@ -5,7 +5,7 @@ include "../Constants.i.dfy"
 include "../Environment.i.dfy"
 include "../Replica.i.dfy"
 include "../../../Services/RSL/RslTimestampedDistributedSystem.i.dfy"
-include "Definitions.i.dfy"
+include "DefinitionsNQ.i.dfy"
 
 module TimestampedRslSystem_i {
 
@@ -106,7 +106,7 @@ predicate UndeliveredPackets_Next(s:TimestampedRslState, s':TimestampedRslState)
     s'.undeliveredPackets == s.undeliveredPackets -
     (set io | io in ios && io.LIoOpReceive? :: io.r) +
     (set io | io in ios && io.LIoOpSend? :: io.s)
-    && |ios| > 0
+
     && (ios[0].LIoOpReceive? ==> 
         && PacketDeliveredInOrder(ios[0].r, s.undeliveredPackets)
     )
