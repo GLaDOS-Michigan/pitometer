@@ -8,15 +8,15 @@ then
 fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/network"
-GIT_BRANCH="master"
-NODES_IDS=("7" "8") 
+GIT_BRANCH="dec"
+NODES_IDS=("7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20") 
 
 # INTERVAL=1000   # ping interval in ms
 # DURATION=900    # duration for each trial in seconds
-INTERVAL=0   # ping interval in ms
+INTERVAL=1   # ping interval in ms
 DURATION=10    # duration for each trial in seconds
-ITERATIONS=1    # How many times to run each payload
-PAYLOADS=("16")  # payload size variable
+ITERATIONS=5    # How many times to run each payload
+PAYLOADS=("32")  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 # Max payload size must be <= 4096, as dicated by Go sockets
@@ -48,7 +48,7 @@ do
         mkdir -p $trial_dir 
 
         # Start trial
-        ./start_network_trial $trial_dir $INTERVAL $payload_size $DURATION > $trial_dir/info.log
+        ./start_network_correlation_trial $trial_dir $INTERVAL $payload_size $DURATION > $trial_dir/info.log
     done
 done
 

@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
+import statistics
 from scipy import stats
 from scipy import signal
 from scipy import ndimage
@@ -85,7 +86,7 @@ def main(exp_dir):
         #     total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../network/%s" %(exp_dir, 'total_payload512_data.pickle'), 'rb') as handle:
+    with open("%s/../network_parallel/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
         # Note that total_client_start_end is currently not used in any computation
 
@@ -94,6 +95,20 @@ def main(exp_dir):
     # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
     plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
+
+
+def plot_client_data(name, root, total_client_data):
+    print("Plotting graphs for clients")
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        for f in [2]:
+            actual_client_latencies_trials = total_client_data[f]
+            for i in range(len(actual_client_latencies_trials)):
+                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width+3, fig_height), sharex=False)
+                fig.subplots_adjust(left=0.215, right=0.95, top=0.88, bottom=0.21 )
+                this_ax.plot(actual_client_latencies_trials[i])
+                this_ax.set_title("f=%d, trial %d" %(f, i))
+                pp.savefig(fig)
+                plt.close(fig)
 
 
 def plot_distributions(name, root, total_network_data, total_node_data, total_client_data):
@@ -118,6 +133,12 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
             pp.savefig(fig)
             plt.close(fig)
 
+def flatten_map_of_array(l):
+    res = []
+    for key in l:
+        res.extend(l[key])
+    return res
+
 
 def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_network_latencies, actual_method_latencies):
     """ 
@@ -130,7 +151,6 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
-
     predict_pdf, predict_bins = compute_predicted_rsl_pdf(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     # predict_pdf2, predict_bins2 = compute_predicted_rsl_pdf_2(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
@@ -408,6 +428,10 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
+
+    # y_vals_actual_median = [statistics.median(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
+
     y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
     
     print("Computing predictions")
@@ -444,6 +468,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         plt.close(fig)
 
         print("Predicted max for each f:" + str(y_vals_predict_max) )
+        print("Real median     :" + str(y_vals_actual_median) )
         print("Predict mean  :" + str(y_vals_predict_mean) )
         print("Real mean     :" + str(y_vals_actual_mean) )
         print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
@@ -593,9 +618,13 @@ def compute_actual_network(total_network_data):
     """
     # participants.sort()
     aggregate_network_latencies = []
+    sums = set()
     for k in total_network_data.keys():
         for j in total_network_data.keys():
-            if k != j: 
+            # if k != j: 
+            a = sum(total_network_data[j][k])
+            if a not in sums:
+                sums.add(a)
                 aggregate_network_latencies.extend(total_network_data[j][k])
     return [x/2.0 for x in aggregate_network_latencies]
 

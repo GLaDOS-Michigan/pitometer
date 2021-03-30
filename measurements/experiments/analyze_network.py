@@ -14,7 +14,7 @@ from conv import *
 
 NODES = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ,20]
 # PAYLOADS = [4, 16, 32, 128, 512]
-PAYLOADS = [512]
+PAYLOADS = [32]
 NODES.sort()
 PAYLOADS.sort()
 THROWAWAY = 10 # Number of starting readings to throw away
@@ -24,36 +24,36 @@ def main(exp_dir):
     print("\nAnalyzing data for experiment %s" %exp_dir)
     for payload in PAYLOADS:
         print("\tAnalyzing payload %d" %payload)
-        # # {2D map} total_data[i][j] is the timings for node i to node j for this payload
-        # total_payload_data = dict()  
-        # for root, dirs, files in os.walk("%s/payload%d" %(exp_dir, payload)):
-        #     files = [f for f in files if not f[0] == '.']  # ignore hidden files
-        #     if dirs == []:
-        #         # This is a leaf directory containing trial csv files
-        #         print("\t\tAnalyzing trial %s" %root)
+        # {2D map} total_data[i][j] is the timings for node i to node j for this payload
+        total_payload_data = dict()  
+        for root, dirs, files in os.walk("%s/payload%d" %(exp_dir, payload)):
+            files = [f for f in files if not f[0] == '.']  # ignore hidden files
+            if dirs == []:
+                # This is a leaf directory containing trial csv files
+                print("\t\tAnalyzing trial %s" %root)
                 
-        #         for i in NODES:
-        #             grep_str = "node%d" %i
-        #             nodei_csvs= [f for f in files if grep_str in f.split('-')[0] and ".csv" in f]
-        #             nodei_csvs.sort()
-        #             if i not in total_payload_data:
-        #                 total_payload_data[i] = dict()
+                for i in NODES:
+                    grep_str = "node%d" %i
+                    nodei_csvs= [f for f in files if grep_str in f.split('-')[0] and ".csv" in f]
+                    nodei_csvs.sort()
+                    if i not in total_payload_data:
+                        total_payload_data[i] = dict()
 
-        #             for j in NODES:
-        #                 # File for log of nodei->nodej
-        #                 if j not in total_payload_data[i]:
-        #                     total_payload_data[i][j] = []
-        #                 # find the csv for nodei->nodej
-        #                 grep_str = "node%d." %j
-        #                 i_j_csv = None
-        #                 for candidate in nodei_csvs:
-        #                     if grep_str in candidate.split('-')[1]:
-        #                         i_j_csv = candidate
-        #                 if i_j_csv is not None:
-        #                     total_payload_data[i][j].extend(analyze_csv("%s/%s" %(root, i_j_csv)))
-        # print("\tDrawing payload %d" %payload)
-        # with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'wb') as handle:
-        #     pickle.dump(total_payload_data, handle)
+                    for j in NODES:
+                        # File for log of nodei->nodej
+                        if j not in total_payload_data[i]:
+                            total_payload_data[i][j] = []
+                        # find the csv for nodei->nodej
+                        grep_str = "node%d." %j
+                        i_j_csv = None
+                        for candidate in nodei_csvs:
+                            if grep_str in candidate.split('-')[1]:
+                                i_j_csv = candidate
+                        if i_j_csv is not None:
+                            total_payload_data[i][j].extend(analyze_csv("%s/%s" %(root, i_j_csv)))
+        print("\tDrawing payload %d" %payload)
+        with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'wb') as handle:
+            pickle.dump(total_payload_data, handle)
         with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'rb') as handle:
             total_payload_data = pickle.load(handle)
         plot_figures("rtt_payload%d" %payload, exp_dir, total_payload_data)
@@ -71,7 +71,7 @@ def plot_figures(name, root, total_data):
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         plot_aggregate(pp, name, root, total_data)
         # plot_individuals(pp, name, root, total_data)
-        plot_cdf(pp, name, root, total_data)
+        # plot_cdf(pp, name, root, total_data)
         plot_correlations(pp, name, root, total_data)
 
 
@@ -170,6 +170,7 @@ def plot_aggregate(pp, name, root, total_data):
     for i in total_data.keys():
         for durations in total_data[i].values():
             aggregate_data.extend(durations)
+            
 
     # Next, draw the graph
     fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
