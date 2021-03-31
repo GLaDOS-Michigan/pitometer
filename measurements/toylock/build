@@ -15,18 +15,24 @@ if uname -a | grep -q Darwin; then
     export GOPATH=$(go env GOPATH)
 elif uname -a | grep -q Linux; then
     # Build on Linux
+    export GO111MODULE=off
     LOCK_DIR='/home/nudzhang/Documents/pitometer/measurements/toylock/toylock-go'
     export GOPATH=$LOCK_DIR
 
     echo "Starting ToyLock Linux build"
+    go env GOPATH
 
     go build -o toylock-main "$LOCK_DIR/src/Main.go" 
 
-    export GOPATH='/home/nudzhang/go'
-    export PATH=$PATH:$(go env GOPATH)/bin
-    export GOPATH=$(go env GOPATH)
+    # export GOPATH='/home/nudzhang/go'
+    # export PATH=$PATH:$(go env GOPATH)/bin
+    # export GOPATH=$(go env GOPATH)
 else
     echo "Build failed"
     exit 1
 fi
 echo "Build complete"
+
+
+
+#/home/nudzhang/sdk/go1.16.2
