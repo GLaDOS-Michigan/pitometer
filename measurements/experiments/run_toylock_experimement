@@ -8,13 +8,12 @@ then
 fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
-# GIT_BRANCH="measurements"
-GIT_BRANCH="wawa"
+GIT_BRANCH="exp"
 
 NUM_ROUNDS=100
 ITERATIONS=40
 DELAYS=("0" "200" "1000" "5000")   # delays are in microseconds
-RING_SIZES=("2")
+RING_SIZES=("2" "4" "6" "8" "10")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new Toylock experiment at time $TIMESTAMP"
