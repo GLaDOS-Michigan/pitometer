@@ -14,4 +14,6 @@ do
 done
 
 echo "Starting node $MY_ID"
-./toylock-main $ENDPOINTS 127.0.0.1 400$MY_ID $NUM_ROUNDS $DELAY
+port=$((4000 + MY_ID))
+lsof -t -i:$port | xargs -I{} kill -9 {} > /dev/null 
+./toylock-main $ENDPOINTS 127.0.0.1 $port $NUM_ROUNDS $DELAY
