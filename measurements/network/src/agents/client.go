@@ -15,7 +15,7 @@ var ClientTimeOut time.Duration
 // Client is an agent that sends UDP packets and times their round-trip time (RTT)
 type Client struct {
 	LocalAddr    *net.UDPAddr
-	Targets      []*net.UDPAddr   // remote addresses to send packet
+	Target       *net.UDPAddr     // remote address to send packet
 	Interval     uint64           // milliseconds to sleep in between pings
 	PacketSize   uint64           // size of UDP payload to send
 	PingLog      *clock.Stopwatch // record of ping events
@@ -35,40 +35,28 @@ func (c *Client) StartClientLoop() {
 
 	// Craft packet and initialize dest
 	var payload = make([]byte, c.PacketSize, c.PacketSize)
-	var dests = make([]*native.IPEndPoint, 0)
-	for _, dst := range c.Targets {
-		dests = append(dests, native.UDPAddrToIPEndPoint(dst))
-	}
-
-	var packs = make([]*native.Packet, 0)
-	for _, dst := range dests {
-		packs = append(packs, &native.Packet{EndPoint: dst, Buffer: payload[0:]})
-	}
+	var dest = native.UDPAddrToIPEndPoint(c.Target)
+	var pack = &native.Packet{EndPoint: dest, Buffer: payload[0:]}
 	c.active = true
 
-	fmt.Printf("Starting new client at %v targeting %v\n", c.LocalAddr, c.Targets)
-	var sendNote = fmt.Sprintf("Send to targets,%v", c.Targets)
-	var receiveNote = fmt.Sprintf("Receive from targets,%v", c.Targets)
+	fmt.Printf("Starting new client at %v targeting %v\n", c.LocalAddr, c.Target)
+	var sendNote = fmt.Sprintf("Send to target,%v", c.Target)
+	var receiveNote = fmt.Sprintf("Receive from target,%v", c.Target)
 	// Main event loop
 	for c.active {
 
 		// Send packet
+		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
 		c.PingLog.LogStartEvent(sendNote)
-		for _, p := range packs {
-			udpClient.Send(p)
-		}
+		udpClient.Send(pack)
 
 		// Receive packet
 		var remote *native.IPEndPoint = nil
 		var receivedPacket *native.Packet = nil
 		var timedOutChan = make(chan bool, 2)
 		go func(c *Client, timedOutChan chan bool) {
-			var n = len(c.Targets) // number of targets from which to wait or a response
-			for n > 0 {
-				_, _, remote, receivedPacket = udpClient.Receive()
-				native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
-				n -= 1
-			}
+			_, _, remote, receivedPacket = udpClient.Receive()
+			native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
 			c.PingLog.LogEndEvent(receiveNote)
 			timedOutChan <- false
 		}(c, timedOutChan)
@@ -100,7 +88,7 @@ func (c *Client) StartClientLoop() {
 		// Sleep
 		time.Sleep(time.Duration(c.Interval) * time.Millisecond)
 	}
-	fmt.Printf("Client at %v targeting %v deactivated\n", c.LocalAddr, c.Targets)
+	fmt.Printf("Client at %v targeting %v deactivated\n", c.LocalAddr, c.Target)
 }
 
 // StopClientLoop stops the main event loop of the Client.
