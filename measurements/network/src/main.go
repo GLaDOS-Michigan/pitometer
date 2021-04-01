@@ -119,7 +119,7 @@ func main() {
 		Targets:      targetServerAddresses, // remote address to send packet
 		Interval:     uint64(interval),      // milliseconds to sleep in between pings
 		PacketSize:   uint64(payloadSz),
-		PingLog:      clock.NewStopwatch(uint(duration*1000/interval+100), fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetServerAddresses)),
+		PingLog:      clock.NewStopwatch(fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetServerAddresses)),
 		TimeoutCount: clock.NewCounter("Timeouts")}
 
 	clientsMap[clientPort] = localClientAgent
@@ -142,6 +142,5 @@ func main() {
 	for _, clientAgent := range clientsMap {
 		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Targets)
 		fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Targets, clientAgent.TimeoutCount)
-		fmt.Printf(clientAgent.PingLog.String())
 	}
 }
