@@ -7,7 +7,7 @@
 
 ROOT_DIR=$1
 
-LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
+LOGFILES=(`find $ROOT_DIR -type f -name node*_*.log`)
 
 echo "Processing results in $ROOT_DIR"
 find $ROOT_DIR -type f -name "*.pdf" -delete
@@ -33,4 +33,4 @@ done
 
 python3 analyze_toylock.py $ROOT_DIR
 
-# find $ROOT_DIR -type f -name "*.csv" -delete
+find $ROOT_DIR -type f -name "*.csv" -delete

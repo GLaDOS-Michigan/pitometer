@@ -252,17 +252,16 @@ def analyze_grant_or_accept_csv(filepath):
         csvreader = csv.reader(node1, delimiter=',',)
         for row in csvreader:
             if row != [] or int(row[0]) >= 0:
-                event_type = row[1]
-                if event_type == 'Start':
-                    prevStart = int(row[3])
-                if event_type == 'End':
-                    dur = int(row[3]) - prevStart  # duration in nanoseconds
-                    durations_nano.append(dur)
+                start_time = int(row[2])
+                end_time = int(row[3])
+                dur = end_time - start_time  # duration in nanoseconds
+                durations_nano.append(dur)
     durations_milli = list(map(lambda x: x/1_000_000.0, durations_nano))
     return durations_milli
 
 def analyze_round_csv(filepath):
     """ Computes the time taken for each round from nodeGrant csv data.
+        The time for a round is defined by the time between the end of a grant and the end of the next grant
     Arguments:
         filepath -- path to a nodeGrant csv file
     Returns:
@@ -273,15 +272,14 @@ def analyze_round_csv(filepath):
         csvreader = csv.reader(node1, delimiter=',',)
         for row in csvreader:
             if row != [] or int(row[0]) >= 0:
-                event_type = row[1]
-                if event_type == 'End':
-                    round_num = int(row[0])
-                    if round_num == 0:
-                        round_start_time = int(row[3])
-                        continue
-                    dur = int(row[3]) - round_start_time  # duration in nanoseconds
-                    durations_nano.append(dur)
+                round_num = int(row[0])
+                if round_num == 0:
                     round_start_time = int(row[3])
+                    continue
+                round_end_time = int(row[3])
+                dur = round_end_time - round_start_time  # duration in nanoseconds
+                durations_nano.append(dur)
+                round_start_time = round_end_time
     durations_milli = list(map(lambda x: x/1_000_000, durations_nano))
     return durations_milli
 
