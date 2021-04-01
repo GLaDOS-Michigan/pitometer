@@ -15,9 +15,8 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-TRAIN_SETS = ["final_train_1"]
-# TRAIN_SETS = ["final_test_1", "final_test_2"]
-TEST_SETS = ["final_test_1", "final_test_2"]
+TRAIN_SETS = ["train"]
+TEST_SETS = ["test"]
 
 
 DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
@@ -45,15 +44,15 @@ def main(exp_dir):
             test_round_data = pickle.load(handle)
             merge_maps(total_round_data, test_round_data)
 
-    with open("%s/../network/run1/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
+    with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
 
     print("\nComputing graphs")
 
     # Plot Rounds
     plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
-    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -214,7 +213,7 @@ def plot_micro_1_distr_fidelity_ax(
     print('Real average ' + str(sum(actual_round_latencies)/ len(actual_round_latencies)))
     print()
     plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    plt.plot(round_cdf, round_bins[:-1], label='actual performance', color='navy')
+    plt.plot(round_cdf, round_bins, label='actual performance', color='navy')
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
