@@ -284,12 +284,10 @@ def analyze_csv(filepath):
             if int(row[0]) < THROWAWAY:
                 continue
             if row != []:
-                event_type = row[1]
-                if event_type == 'Start':
-                    prevStart = int(row[4])
-                if event_type == 'End':
-                    dur = int(row[4]) - prevStart  # duration in nanoseconds
-                    durations_nano.append(dur)
+                start_time = int(row[3])
+                end_time = int(row[4])
+                dur = end_time - start_time  # duration in nanoseconds
+                durations_nano.append(dur)
     durations_milli = list(map(lambda x: x/1_000_000.0, durations_nano))
     return durations_milli
 
