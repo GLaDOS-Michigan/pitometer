@@ -14,7 +14,7 @@ from conv import *
 
 NODES = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ,20]
 # PAYLOADS = [4, 16, 32, 128, 512]
-PAYLOADS = [32]
+PAYLOADS = [16]
 NODES.sort()
 PAYLOADS.sort()
 THROWAWAY = 10 # Number of starting readings to throw away
@@ -72,7 +72,7 @@ def plot_figures(name, root, total_data):
         plot_aggregate(pp, name, root, total_data)
         # plot_individuals(pp, name, root, total_data)
         # plot_cdf(pp, name, root, total_data)
-        plot_correlations(pp, name, root, total_data)
+        # plot_correlations(pp, name, root, total_data)
 
 
 def plot_cdf(pp, name, root, total_data):
@@ -199,7 +199,7 @@ def plot_aggregate(pp, name, root, total_data):
     
     cdf, bins = raw_data_to_cdf(aggregate_data)
 
-    this_ax.plot(cdf, bins[:-1])
+    this_ax.plot(cdf, bins)
     this_ax.set_title("Aggregate cdf across all nodes", fontsize=9)
     this_ax.grid()
     this_ax.set_xlabel('cumulative probability', fontsize=10)
