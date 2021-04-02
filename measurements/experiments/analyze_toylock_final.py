@@ -16,7 +16,7 @@ from conv import *
 from plot_constants import *
 
 TRAIN_SETS = ["train"]
-TEST_SETS = ["test"]
+TEST_SETS = ["test1", "test2"]
 
 
 DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
