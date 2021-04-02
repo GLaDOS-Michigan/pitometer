@@ -64,7 +64,7 @@ def main(exp_dir):
 
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
-        plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
+        # plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
         # plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
         plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
     print("Done")
@@ -149,16 +149,14 @@ def analyze_node_csv(filepath):
     durations_nano = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
-        prev_event = 'End'
         for row in csvreader:
+            if 'init' in row[0]:
+                continue
             if len(row) > 2 and int(row[0]) >= 0:
-                event_type = row[1]
-                if event_type == 'Start':
-                    prevStart = int(row[3])
-                if event_type == 'End' and prev_event == 'Start':
-                    dur = int(row[3]) - prevStart  # duration in nanoseconds
-                    durations_nano.append(dur)
-                prev_event = event_type
+                start_time = int(row[2])
+                end_time = int(row[3])
+                dur = end_time - start_time  # duration in nanoseconds
+                durations_nano.append(dur)
     durations_milli = list(map(lambda x: x/1_000_000.0, durations_nano))
     return durations_milli
 
