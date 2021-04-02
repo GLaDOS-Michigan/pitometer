@@ -21,14 +21,9 @@ from plot_constants import *
 
 THROW=20  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "set1/100_delay"
-TEST_SET = "set1/100_delay"
+TRAIN_SET = "train"
+TEST_SET = "train"
 F_VALUES = [1, 2, 3, 4, 5]
-
-# Use these for distribution
-# TRAIN_SET = "set2/100_delay_train"
-# TEST_SET = "set2/100_delay_test"
-# F_VALUES = [2]
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -86,7 +81,7 @@ def main(exp_dir):
         #     total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
-    with open("%s/../network_parallel/%s" %(exp_dir, 'total_payload32_data.pickle'), 'rb') as handle:
+    with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
         # Note that total_client_start_end is currently not used in any computation
 
