@@ -188,8 +188,8 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 	_1764_id = _out110
 	{
 	}
-	var nodeGrantLog = clock.NewStopwatch("NodeGrant Stopwatch")
-	var nodeAcceptLog = clock.NewStopwatch("NodeAccept Stopwatch")
+	var nodeGrantLog = clock.NewStopwatch(uint(numRounds*2), "NodeGrant Stopwatch")
+	var nodeAcceptLog = clock.NewStopwatch(uint(numRounds*2), "NodeAccept Stopwatch")
 	var nodeGrantCounter = clock.NewCounter("NodeGrant counter")
 	for _1761_ok {
 		nodeGrantLog.LogStartEvent("NodeNextGrant")
@@ -211,9 +211,11 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		}
 		if nodeGrantCounter.GetCount() == numRounds {
 			// nodeAcceptLog.PopStartEvent()
-			fmt.Printf("Complete %d rounds\n", numRounds)
 			nodeGrantLog.PopStartEvent()
-			time.Sleep(500 * time.Millisecond)
+			// Dump the event log
+			nodeGrantLog.PrintLog()
+			nodeAcceptLog.PrintLog()
+			time.Sleep(1 * time.Second)
 			os.Exit(0)
 		}
 		switch status {

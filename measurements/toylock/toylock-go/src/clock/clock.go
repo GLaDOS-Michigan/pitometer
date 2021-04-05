@@ -10,30 +10,29 @@ import (
 ************************************* TimePoint ******************************************
 *****************************************************************************************/
 
-// EventType is Start or End
-type EventType int
-
-// Start refers to a start timer event, End refers to an end timer event
-const (
-	Start EventType = iota
-	End
-)
-
-// TimePoint contains the information of a clock event
-type TimePoint struct {
+// TimeInterval contains the information of a clock event
+type TimeInterval struct {
 	id           int
-	event        EventType
 	functionName string
-	instant      time.Duration // Time of this TimePoint instance
+	startTime    time.Duration //start time of this interval
+	endTime      time.Duration //end time of this interval
 }
 
-// timePointNow creates a new TimePoint object
-func timePointNow(id int, event EventType, name string, instant time.Duration) *TimePoint {
-	return &TimePoint{
+// newTimeInterval creates a new TimeInterval object with void start and end times
+func newTimeInterval(id int, name string) *TimeInterval {
+	return &TimeInterval{
 		id:           id,
-		event:        event,
 		functionName: name,
-		instant:      instant}
+		startTime:    0,
+		endTime:      0}
+}
+
+func (ti *TimeInterval) logStartTime(st time.Duration) {
+	ti.startTime = st
+}
+
+func (ti *TimeInterval) logEndTime(et time.Duration) {
+	ti.endTime = et
 }
 
 /*****************************************************************************************
@@ -42,49 +41,66 @@ func timePointNow(id int, event EventType, name string, instant time.Duration) *
 
 // Stopwatch represents a sequence of TimePoints
 type Stopwatch struct {
-	name      string
-	initTime  time.Time
-	currStart *TimePoint
-	nextID    int
+	name         string
+	initTime     time.Time
+	log          *[]TimeInterval
+	currInterval *TimeInterval
+	nextIndex    int
 }
 
-// NewStopwatch generates a new clean log
-func NewStopwatch(name string) *Stopwatch {
+// NewStopwatch generates a new log pre-initialized to length n
+func NewStopwatch(n uint, name string) *Stopwatch {
+	var l = make([]TimeInterval, 0, n)
 	var s = &Stopwatch{
-		name:      name,
-		initTime:  time.Now(),
-		currStart: nil,
-		nextID:    0}
+		name:         name,
+		initTime:     time.Now(),
+		log:          &l,
+		currInterval: nil,
+		nextIndex:    0}
 	fmt.Printf("stopwatch init,%s,%v\n", s.name, s.initTime)
 	return s
 }
 
-// LogStartEvent adds a new start event to the log
+// LogStartEvent adds a temp start event to currInterval in the stopwatch
 func (el *Stopwatch) LogStartEvent(name string) {
-	var tp = timePointNow(el.nextID, Start, name, time.Since(el.initTime))
-	el.currStart = tp
+	if el.currInterval != nil {
+		fmt.Printf("Error: Pending interval already present\n")
+		os.Exit(1)
+	}
+	var ti = newTimeInterval(el.nextIndex, name)
+	ti.logStartTime(time.Since(el.initTime))
+	el.currInterval = ti
 }
 
 // LogEndEvent adds a new end event to the log
 func (el *Stopwatch) LogEndEvent(name string) {
-	if el.currStart == nil {
+	if el.currInterval == nil {
 		fmt.Printf("Error: No start time recorded\n")
 		os.Exit(1)
 	}
-	var currStart = el.currStart
-	var currEnd = timePointNow(el.nextID, End, name, time.Since(el.initTime))
-	fmt.Printf("%d,%s,%v,%v\n", el.currStart.id, el.currStart.functionName, currStart.instant.Nanoseconds(), currEnd.instant.Nanoseconds())
-	el.nextID++
-	el.currStart = nil
+	var ti = el.currInterval
+	ti.logEndTime(time.Since(el.initTime))
+	(*el.log)[el.nextIndex] = *ti
+	el.nextIndex++
+	el.currInterval = nil
 }
 
 // PopStartEvent deletes the last event from the log, which must be a start event
 func (el *Stopwatch) PopStartEvent() {
-	if el.currStart == nil {
+	if el.currInterval == nil {
 		fmt.Printf("Error: No start time recorded\n")
 		os.Exit(1)
 	}
-	el.currStart = nil
+	el.currInterval = nil
+}
+
+// PrintLog prints the log line by line
+func (el *Stopwatch) PrintLog() {
+	fmt.Printf("%s,%v\n", el.name, el.initTime)
+	for _, ti := range *el.log {
+		fmt.Printf("%d,%s,%v,%v\n", ti.id, ti.functionName, ti.startTime.Nanoseconds(), ti.startTime.Nanoseconds())
+	}
+	fmt.Printf("End of log %s\n", el.name)
 }
 
 /*****************************************************************************************
