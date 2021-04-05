@@ -50,7 +50,7 @@ type Stopwatch struct {
 
 // NewStopwatch generates a new log pre-initialized to length n
 func NewStopwatch(n uint, name string) *Stopwatch {
-	var l = make([]TimeInterval, 0, n)
+	var l = make([]TimeInterval, n, n)
 	var s = &Stopwatch{
 		name:         name,
 		initTime:     time.Now(),
@@ -97,8 +97,11 @@ func (el *Stopwatch) PopStartEvent() {
 // PrintLog prints the log line by line
 func (el *Stopwatch) PrintLog() {
 	fmt.Printf("%s,%v\n", el.name, el.initTime)
-	for _, ti := range *el.log {
-		fmt.Printf("%d,%s,%v,%v\n", ti.id, ti.functionName, ti.startTime.Nanoseconds(), ti.startTime.Nanoseconds())
+	for i, ti := range *el.log {
+		if i >= el.nextIndex {
+			break
+		}
+		fmt.Printf("%d,%s,%v,%v\n", ti.id, ti.functionName, ti.startTime.Nanoseconds(), ti.endTime.Nanoseconds())
 	}
 	fmt.Printf("End of log %s\n", el.name)
 }
