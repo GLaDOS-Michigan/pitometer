@@ -51,7 +51,7 @@ done
 python3 analyze_network.py $ROOT_DIR
 
 # Delete intermediate csv files
-# find $ROOT_DIR -type f -name "*.csv" -delete
+find $ROOT_DIR -type f -name "*.csv" -delete
 
 # Move pdf files to root
 find $ROOT_DIR -name '*.pdf' -exec mv '{}' $ROOT_DIR \;
