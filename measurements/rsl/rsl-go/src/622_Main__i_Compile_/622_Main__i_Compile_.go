@@ -139,6 +139,8 @@ import (
 	_System "System_"
 	"clock"
 	_dafny "dafny"
+	"os"
+	"time"
 )
 
 var _ _dafny.Dummy__
@@ -276,6 +278,8 @@ var _ _610_DirectRefinement____Refinement__i_Compile.Dummy__
 var _ _615_AbstractServiceRSL__s_Compile.Dummy__
 var _ _620_MarshallProof__i_Compile.Dummy__
 
+var HALT bool
+
 type Dummy__ struct{}
 
 // Definition of class Default__
@@ -361,6 +365,10 @@ func (_this *CompanionStruct_Default___) Default_Main_(logs map[string]*clock.St
 		_out537, _out538 = _466_Host__i_Compile.Companion_Default___.HostNextImpl(_5344_host__state, logs)
 		_5343_ok = _out537
 		_5344_host__state = _out538
+		if HALT {
+			time.Sleep(360 * time.Second)
+			os.Exit(0)
+		}
 		{
 		}
 	}
