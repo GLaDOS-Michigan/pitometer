@@ -18,6 +18,8 @@ const BaseClientPort uint64 = 5000
 // Debug mode
 const Debug bool = false
 
+const INIT_SIZE = 5_000
+
 // TimeOut is the period after which a client retries if failed to receive response
 // In all likelihood, the packet is dropped by the network
 var TimeOut time.Duration = 5 * time.Second
@@ -120,7 +122,7 @@ func main() {
 			Target:       targetAddr,       // remote address to send packet
 			Interval:     uint64(interval), // milliseconds to sleep in between pings
 			PacketSize:   uint64(payloadSz),
-			PingLog:      clock.NewStopwatch(fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP)),
+			PingLog:      clock.NewStopwatch(INIT_SIZE, fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP)),
 			TimeoutCount: clock.NewCounter("Timeouts")}
 		clientsMap[clientPort] = localClientAgent
 	}
@@ -143,6 +145,6 @@ func main() {
 	for _, clientAgent := range clientsMap {
 		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
 		fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Target, clientAgent.TimeoutCount)
-		// fmt.Printf(clientAgent.PingLog.String())
+		clientAgent.PingLog.PrintLog()
 	}
 }
