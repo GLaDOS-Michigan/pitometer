@@ -250,8 +250,9 @@ def analyze_grant_or_accept_csv(filepath):
     durations_nano = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
+        print(filepath)
         for row in csvreader:
-            if row != [] or int(row[0]) >= 0:
+            if row != []:
                 start_time = int(row[2])
                 end_time = int(row[3])
                 dur = end_time - start_time  # duration in nanoseconds
