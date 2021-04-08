@@ -30,12 +30,14 @@ predicate RslConstantsUnchanged(ps:RslState, ps':RslState)
 
 predicate RslInit(con:LConstants, ps:RslState)
 {
-       WellFormedLConfiguration(con.config)
-    && WFLParameters(con.params)
-    && ps.constants == con
+       WellFormedLConfiguration(con.config)     //replicas have distinct IDs
+    && WFLParameters(con.params)                //parameters have valid values
+    && ps.constants == con                      
     && LEnvironment_Init(ps.environment)
-    && RslMapsComplete(ps)
-    && (forall i :: 0 <= i < |con.config.replica_ids| ==> LSchedulerInit(ps.replicas[i], LReplicaConstants(i, con)))
+    && RslMapsComplete(ps)                      // ps.replicas seq has same length as ps.constants.config.replica_ids
+    && (forall i | 0 <= i < |con.config.replica_ids| 
+        :: 
+        LSchedulerInit(ps.replicas[i], LReplicaConstants(i, con)))
 }
 
 predicate RslNextCommon(ps:RslState, ps':RslState)
@@ -71,9 +73,9 @@ predicate RslNextOneExternal(ps:RslState, ps':RslState, eid:NodeIdentity, ios:se
 
 predicate RslNext(ps:RslState, ps':RslState)
 {
-       (exists idx, ios :: RslNextOneReplica(ps, ps', idx, ios))
-    || (exists eid, ios :: RslNextOneExternal(ps, ps', eid, ios))
-    || RslNextEnvironment(ps, ps')
+       (exists idx, ios :: RslNextOneReplica(ps, ps', idx, ios))    //LEnvironment_Next a replica io step
+    || (exists eid, ios :: RslNextOneExternal(ps, ps', eid, ios))   //LEnvironment_Next an external io step
+    || RslNextEnvironment(ps, ps')                                  //LEnvironment_Next not an io step
 }
 
 } 

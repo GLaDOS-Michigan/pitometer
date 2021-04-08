@@ -28,14 +28,17 @@ predicate LeaderAlwaysZero(s:TimestampedRslState)
     )
 }
 
+
+// Main guarantee
 predicate PerformanceGuarantee(s:TimestampedRslState, req_time:Timestamp)
 {
   0 < |s.constants.config.replica_ids|
-    && (forall pkt :: pkt in s.undeliveredPackets
-    && pkt.msg.v.RslMessage_Reply?
-    && pkt.src == s.constants.config.replica_ids[0]
-    ==>
-    TimeLe(pkt.msg.ts, TimeBoundReply(req_time, s.constants))
+    && (forall pkt :: 
+        && pkt in s.undeliveredPackets
+        && pkt.msg.v.RslMessage_Reply?
+        && pkt.src == s.constants.config.replica_ids[0]
+        ==>
+        TimeLe(pkt.msg.ts, TimeBoundReply(req_time, s.constants))
     )
 }
 
@@ -249,7 +252,8 @@ lemma SelectiveProgress2aProperty(progresses:map<NodeIdentity,Phase2Progress>, i
 {
   reveal_Progress2aProperty(); 
 }
-  
+
+// Invariant that is common between Phase2UnacceptedLeaderInvariant and Phase2AcceptedLeaderInvariant
 predicate GenericPhase2Invariant(s:TimestampedRslState, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
   requires RslConsistency(s)
 {
@@ -272,6 +276,8 @@ predicate GenericPhase2Invariant(s:TimestampedRslState, req_time:Timestamp, opn:
   )
 }
 
+// Main invariant part 1
+// Final invariant is (Phase2UnacceptedLeaderInvariant or Phase2AcceptedLeaderInvariant)
 predicate Phase2UnacceptedLeaderInvariant(s:TimestampedRslState, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
   requires RslConsistency(s)
 {
@@ -304,6 +310,9 @@ function Get2bCount(s:LReplica, opn:OperationNumber) : int
     |s.learner.unexecuted_learner_state[opn].received_2b_message_senders|
 }
 
+
+// Main invariant part 2
+// Final invariant is (Phase2UnacceptedLeaderInvariant or Phase2AcceptedLeaderInvariant)
 predicate Phase2AcceptedLeaderInvariant(s:TimestampedRslState, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
   requires RslConsistency(s)
 {
