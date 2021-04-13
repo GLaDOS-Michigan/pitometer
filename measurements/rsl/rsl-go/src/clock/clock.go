@@ -79,6 +79,12 @@ func (el *Stopwatch) LogEndEvent(name string) {
 		os.Exit(1)
 	}
 	var ti = el.currInterval
+	if el.nextIndex >= cap(*el.log) {
+		ti.logEndTime(time.Since(el.initTime))
+		el.nextIndex++
+		el.currInterval = nil
+		return
+	}
 	ti.logEndTime(time.Since(el.initTime))
 	(*el.log)[el.nextIndex] = *ti
 	el.nextIndex++
