@@ -19,10 +19,10 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=20  # Ignore the first THROW requests in computing client latencies
+THROW=10  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "train"
-TEST_SET = "train"
+TRAIN_SET = "test"
+TEST_SET = "test"
 F_VALUES = [1, 2, 3, 4, 5]
 
 
@@ -71,8 +71,8 @@ def main(exp_dir):
         """
         try:
             # Training set in general may not contain data for all f
-            with open("%s/%s/total_f%d_node_data.pickle" %(exp_dir, TRAIN_SET, 1), 'rb') as handle:
-                total_node_data[1] = pickle.load(handle)   
+            with open("%s/%s/total_f%d_node_data.pickle" %(exp_dir, TRAIN_SET, f), 'rb') as handle:
+                total_node_data[f] = pickle.load(handle)   
         except FileNotFoundError:
             print("%s/%s/total_f%d_node_data.pickle not found" %(exp_dir, TRAIN_SET, f))
         with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
@@ -472,6 +472,13 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
 def predict_f_max(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times = max_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
+    print("MAX WORK ACTION TIMES:")
+    print(work_actions_times)
+    print("MAX NO-OP ACTION TIMES:")
+    print(noop_action_times)
+    print("MAX NETWORK:")
+    print(max(network_delays))
+    print()
     return sum_from_action_times(work_actions_times, noop_action_times, f, max(network_delays))
 
 
@@ -577,9 +584,6 @@ def mean_action_times(total_f_node_data):
             sum_times += np.sum(total_f_node_data[node][name])
             count += len(total_f_node_data[node][name])
         noop_res[method_id] = sum_times/float(count)
-    print(work_res)
-    print(noop_res)
-    print()
     return work_res, noop_res
 
 def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
@@ -644,7 +648,7 @@ def get_f_max(total_f_client_data):
     """
     res = 0
     for durs in total_f_client_data.values():
-        res = max(res, max(durs[THROW:-THROW])) # Ignore the first 100 requests
+        res = max(res, max(durs[THROW:])) # Ignore the first 100 requests
     return res
 
 def get_f_999(total_f_client_data):
@@ -654,7 +658,7 @@ def get_f_999(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs[THROW: -THROW]) # Ignore the first 100 requests
+        aggregate.extend(durs[THROW:]) # Ignore the first 100 requests
     return np.percentile(aggregate, 99.9)
 
 def get_f_mean(total_f_client_data):
@@ -664,7 +668,7 @@ def get_f_mean(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs[THROW: -THROW])
+        aggregate.extend(durs[THROW:])
     return np.mean(aggregate)
 
 def get_f_error(total_f_client_data):
@@ -674,7 +678,7 @@ def get_f_error(total_f_client_data):
     """
     aggregate = []
     for durs in total_f_client_data.values():
-        aggregate.extend(durs[THROW: -THROW])
+        aggregate.extend(durs[THROW:])
     return statistics.stdev(aggregate)
 
 
