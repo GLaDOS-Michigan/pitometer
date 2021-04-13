@@ -9,7 +9,7 @@ include "TimestampedRslSystem.i.dfy"
 
 include "../CommonProof/Constants.i.dfy"
 
-module RslPhase1Proof_i {
+module RslPhase2Proof_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
