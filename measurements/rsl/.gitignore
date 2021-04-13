@@ -1,6 +1,7 @@
 IronfleetOutput/*
 Main
 rsl-go/bin
+rsl-go/pkg
 rsl-main
 client.exe
 client-debug.exe
