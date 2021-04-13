@@ -113,7 +113,8 @@ predicate LValIsHighestNumberedProposal(v:RequestBatch, S:set<RslPacket>, opn:Op
 
 predicate LProposerCanNominateUsingOperationNumber(s:LProposer, log_truncation_point:OperationNumber, opn:OperationNumber)
 {
-       s.election_state.current_view == s.max_ballot_i_sent_1a
+    // I belive that I am the elected leader, currently in Phase 2
+    && s.election_state.current_view == s.max_ballot_i_sent_1a
     && s.current_state == 2
     && |s.received_1b_packets| >= LMinQuorumSize(s.constants.all.config)
     && LSetOfMessage1bAboutBallot(s.received_1b_packets, s.max_ballot_i_sent_1a)
@@ -168,9 +169,10 @@ predicate LProposerProcessRequest(s:LProposer, s':LProposer, packet:RslPacket)
 
 predicate LProposerMaybeEnterNewViewAndSend1a(s:LProposer, s':LProposer, sent_packets:seq<RslPacket>)
 {
-    if    s.election_state.current_view.proposer_id == s.constants.my_index
+    //if I think that I have won a leader election in old view
+    if    s.election_state.current_view.proposer_id == s.constants.my_index  
        && BalLt(s.max_ballot_i_sent_1a, s.election_state.current_view) then
-           s' == s.(current_state := 1,
+           s' == s.(current_state := 1,                                     //become leader and enter Phase 1
                     max_ballot_i_sent_1a := s.election_state.current_view,
                     received_1b_packets := {},
                     highest_seqno_requested_by_client_this_view := map[],
@@ -192,12 +194,14 @@ predicate LProposerProcess1b(s:LProposer, s':LProposer, p:RslPacket)
 
 predicate LProposerMaybeEnterPhase2(s:LProposer, s':LProposer, log_truncation_point:OperationNumber, sent_packets:seq<RslPacket>)
 {
+    // If I have received a quorum of 1b messages and I am a leader in phase 1
     if    |s.received_1b_packets| >= LMinQuorumSize(s.constants.all.config)
        && LSetOfMessage1bAboutBallot(s.received_1b_packets, s.max_ballot_i_sent_1a)
        && s.current_state == 1 then
-           s' == s.(current_state := 2,
+            //Enter phase 2 and announce that I am doing so
+            && s' == s.(current_state := 2,
                     next_operation_number_to_propose := log_truncation_point)
-        && LBroadcastToEveryone(s.constants.all.config, s.constants.my_index,
+            && LBroadcastToEveryone(s.constants.all.config, s.constants.my_index,
                                 RslMessage_StartingPhase2(s.max_ballot_i_sent_1a, log_truncation_point), sent_packets)
     else
         s' == s && sent_packets == []
@@ -236,6 +240,7 @@ predicate LProposerMaybeNominateValueAndSend2a(s:LProposer, s':LProposer, clock:
     if !LProposerCanNominateUsingOperationNumber(s, log_truncation_point, s.next_operation_number_to_propose) then
         s' == s && sent_packets == []
     else if !LAllAcceptorsHadNoProposal(s.received_1b_packets, s.next_operation_number_to_propose) then
+        // If some acceptor already accepted a value for this slot, I have to propose the highest numbered accepted value
         LProposerNominateOldValueAndSend2a(s, s', log_truncation_point, sent_packets)
     else if    (exists opn :: opn > s.next_operation_number_to_propose && !LAllAcceptorsHadNoProposal(s.received_1b_packets, opn))
         // If request_queue is larger than batch size, or IncompleteBatchTimer is up, do LProposerNominateNewValueAndSend2a()
