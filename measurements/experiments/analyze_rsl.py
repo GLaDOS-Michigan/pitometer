@@ -65,7 +65,7 @@ def main(exp_dir):
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
         # plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
-        # plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
+        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
         plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
     print("Done")
 
@@ -258,7 +258,7 @@ def plot_overall_figures(name, root, data):
 
     # Plot the data
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        fig, axes = plt.subplots(len(METHODS), 1, figsize=(8.5, 11), sharex=True)
+        fig, axes = plt.subplots(len(METHODS), 1, figsize=(8.5, 20), sharex=True)
         sns.despine(left=True)
 
         row = 0
