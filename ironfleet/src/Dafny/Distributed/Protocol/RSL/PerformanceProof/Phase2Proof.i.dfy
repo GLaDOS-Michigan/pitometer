@@ -54,6 +54,14 @@ predicate RslAssumption(s:TimestampedRslState)
   && minD < SelfDelivery < D < 2*minD
   && ProcessPacket > 0
   && SelfDelivery + TimeActionRange(0) < D
+  // assume no external packets
+  && (forall pkt :: pkt in s.undeliveredPackets ==>
+                && pkt in s.t_environment.sentPackets
+                && pkt.src in s.constants.config.replica_ids
+                && pkt.dst in s.constants.config.replica_ids
+  )
+  // assume that next step is not an TimestampedRslNextOneExternal step
+  && !(exists eid, ios :: s.t_environment.nextStep == LEnvStepHostIos(eid, ios, ExternalStep()))
 }
 
 predicate RslConsistency(s:TimestampedRslState)
@@ -75,7 +83,7 @@ predicate RequestBatchSrcInClientIds(s:TimestampedRslState, v:RequestBatch)
 
 predicate AlwaysInvariant(s:TimestampedRslState)
 {
-  && (forall pkt :: pkt in s.undeliveredPackets ==>
+  && (forall pkt :: pkt in s.undeliveredPackets ==>  // move this to assumption
     && pkt in s.t_environment.sentPackets
     && pkt.src in s.constants.config.replica_ids
     // && pkt.dst in s.constants.config.replica_ids
@@ -233,7 +241,7 @@ predicate GenericPhase2UndeliveredPacketInvariant(undeliveredPackets:Undelivered
 
   )
 
-  && (forall id {:trigger id in progresses} ::
+  && (forall id ::
     Progress2aProperty(progresses, id, undeliveredPackets) 
   )
 }
@@ -445,7 +453,7 @@ lemma lemma_notleader_notreceive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRsl
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires s.t_environment.nextStep.nodeStep != RslStep(0);
-  requires s.t_environment.nextStep.nodeStep == RslStep(6);
+  // requires s.t_environment.nextStep.nodeStep == RslStep(6);
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 

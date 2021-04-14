@@ -147,6 +147,7 @@ predicate TimestampedRslNextEnvironment(ps:TimestampedRslState, ps':TimestampedR
        TimestampedRslNextCommon(ps, ps')
     && !ps.t_environment.nextStep.LEnvStepHostIos?
     && ps'.t_replicas == ps.t_replicas
+    && ps'.undeliveredPackets == ps.undeliveredPackets
 }
 
 predicate TimestampedRslNextOneExternal(ps:TimestampedRslState, ps':TimestampedRslState, eid:NodeIdentity, ios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>)
@@ -163,5 +164,13 @@ predicate TimestampedRslNext(ps:TimestampedRslState, ps':TimestampedRslState)
        (exists idx, ios :: TimestampedRslNextOneReplica(ps, ps', idx, ios))
     || (exists eid, ios :: TimestampedRslNextOneExternal(ps, ps', eid, ios))
     || TimestampedRslNextEnvironment(ps, ps')
+}
+
+predicate ValidTimestampedRSLBehavior(con:LConstants, tglb:seq<TimestampedRslState>)
+  reads *
+{
+  && |tglb| > 0
+    && TimestampedRslInit(con, tglb[0])
+    && (forall i :: 0 < i < |tglb| ==> TimestampedRslNext(tglb[i - 1], tglb[i]))
 }
 }
