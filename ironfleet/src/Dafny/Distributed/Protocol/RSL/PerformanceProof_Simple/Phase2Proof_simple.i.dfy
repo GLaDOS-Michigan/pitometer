@@ -75,7 +75,8 @@ predicate BoundedQueueingAssumption(s:TimestampedRslState)
     && s.t_environment.nextStep == LEnvStepHostIos(s.constants.config.replica_ids[idx], ios, RslStep(s.t_replicas[idx].v.nextActionIndex))
     ==>
     (forall io | io in s.t_environment.nextStep.ios && io.LIoOpReceive? ::
-      s.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueing
+      // this means that max(replica.ts, msg.ts) <= msg.ts + MaxQueueTime
+      s.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueTime
     )
   )
 }
@@ -125,11 +126,11 @@ predicate AlwaysInvariant(s:TimestampedRslState)
   )
 }
 
-predicate LSchedulerLagTimeBound(tls:TimestampedLScheduler)
-{
-  0 <= tls.v.nextActionIndex <= 9
-  && TimeLe(tls.ts, tls.dts + TimeActionRange(tls.v.nextActionIndex))
-}
+// predicate LSchedulerLagTimeBound(tls:TimestampedLScheduler)
+// {
+//   0 <= tls.v.nextActionIndex <= 9
+//   && TimeLe(tls.ts, tls.dts + TimeActionRange(tls.v.nextActionIndex))
+// }
 
 predicate LeaderNextOperationNumberInvariant(s:LProposer, log_truncation_point:OperationNumber)
 {
@@ -173,8 +174,8 @@ predicate Pre2aInvariant(s:TimestampedRslState, req_time:Timestamp, opn:Operatio
     && s.t_replicas[0].v.replica.proposer.request_queue[0].client in s.constants.config.clientIds
     // TODO: put invariants about the content of the request
     && 1 <= s.t_replicas[0].v.nextActionIndex <= 3
-    && TimeLe(s.t_replicas[0].ts, s.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex))
-    && TimeLe(s.t_replicas[0].dts, req_time)
+    // && TimeLe(s.t_replicas[0].ts, s.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex))
+    // && TimeLe(s.t_replicas[0].dts, req_time)
     && s.t_replicas[0].v.replica.learner.unexecuted_learner_state == map[]
 
     && LeaderNextOperationNumberInvariant(s.t_replicas[0].v.replica.proposer,
@@ -185,9 +186,9 @@ predicate Pre2aInvariant(s:TimestampedRslState, req_time:Timestamp, opn:Operatio
   )
 
 
-  && (forall idx :: 0 < idx < |s.t_replicas|
-  ==> LSchedulerLagTimeBound(s.t_replicas[idx])
-  )
+  // && (forall idx :: 0 < idx < |s.t_replicas|
+  // ==> LSchedulerLagTimeBound(s.t_replicas[idx])
+  // )
 
   && (forall idx :: 0 <= idx < |s.t_replicas|
   ==> 
@@ -220,14 +221,15 @@ datatype Phase2Progress = P2a(pkt:TimestampedRslPacket) | P2b | P2done
 predicate GenericPhase2UndeliveredPacketInvariant(undeliveredPackets:UndeliveredPackets, constants:LConstants, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
   requires 0 < |constants.config.replica_ids|
 {
-  && (forall pkt :: pkt in undeliveredPackets && pkt.dst in constants.config.replica_ids
-  ==>
-  pkt.msg.v.RslMessage_2a?
-  || pkt.msg.v.RslMessage_2b?
+  && (forall pkt | pkt in undeliveredPackets && pkt.dst in constants.config.replica_ids
+      ::
+      || pkt.msg.v.RslMessage_2a?
+      || pkt.msg.v.RslMessage_2b?
   )
 
-  && (forall pkt {:trigger pkt.msg.v.RslMessage_2a?} :: pkt in undeliveredPackets && pkt.msg.v.RslMessage_2a?
-      ==> pkt.dst in progresses && progresses[pkt.dst].P2a?
+  && (forall pkt {:trigger pkt.msg.v.RslMessage_2a?} | pkt in undeliveredPackets && pkt.msg.v.RslMessage_2a?
+      ::
+      && pkt.dst in progresses && progresses[pkt.dst].P2a?
       && pkt.src == constants.config.replica_ids[0]
       && pkt.msg.v.opn_2a == opn
       && pkt.msg.v.bal_2a == Ballot(1, 0)
@@ -257,7 +259,7 @@ predicate GenericPhase2UndeliveredPacketInvariant(undeliveredPackets:Undelivered
 
   )
 
-  && (forall id ::
+  && (forall id | id in progresses && progresses[id].P2a? ::
     Progress2aProperty(progresses, id, undeliveredPackets) 
   )
 }
@@ -294,7 +296,8 @@ predicate GenericPhase2Invariant(s:TimestampedRslState, req_time:Timestamp, opn:
   ==>
   // && s.t_replicas[idx].v.replica.executor.next_op_to_execute == OutstandingOpUnknown()
   && (progresses[s.constants.config.replica_ids[idx]].P2a?
-      ==> LSchedulerLagTimeBound(s.t_replicas[idx])
+      ==> 
+        // LSchedulerLagTimeBound(s.t_replicas[idx])
         && s.t_replicas[idx].v.replica.learner.unexecuted_learner_state == map[]
    )
   )
@@ -318,7 +321,7 @@ predicate Phase2UnacceptedLeaderInvariant(s:TimestampedRslState, req_time:Timest
     && s.t_replicas[0].v.replica.executor.next_op_to_execute.OutstandingOpUnknown?
     && BalLeq(s.t_replicas[0].v.replica.learner.max_ballot_seen, Ballot(1, 0))
 
-    && TimeLe(s.t_replicas[0].ts, s.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex))
+    && TimeLe(s.t_replicas[0].ts, req_time + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex))
     && progresses[s.constants.config.replica_ids[0]].P2a?
     && s.t_replicas[0].v.replica.learner.unexecuted_learner_state == map[]
     && s.t_replicas[0].v.replica.executor.next_op_to_execute == OutstandingOpUnknown()
@@ -359,8 +362,8 @@ predicate Phase2AcceptedLeaderInvariant(s:TimestampedRslState, req_time:Timestam
     ==> Get2bCount(s.t_replicas[0].v.replica, opn) < LMinQuorumSize(s.constants.config)
     )
 
-    && (Get2bCount(s.t_replicas[0].v.replica, opn) == LMinQuorumSize(s.constants.config)
-    ==> TimeLe(s.t_replicas[0].dts, TimeBound2bDelivery(req_time)))
+    // && (Get2bCount(s.t_replicas[0].v.replica, opn) == LMinQuorumSize(s.constants.config)
+    // ==> TimeLe(s.t_replicas[0].dts, TimeBound2bDelivery(req_time)))
 
     && (s.t_replicas[0].v.nextActionIndex == 6
         && Get2bCount(s.t_replicas[0].v.replica, opn) == LMinQuorumSize(s.constants.config)
@@ -375,7 +378,7 @@ predicate Phase2AcceptedLeaderInvariant(s:TimestampedRslState, req_time:Timestam
     && ProposedLeaderNextOperationNumberInvariant(s.t_replicas[0].v.replica.proposer, s.t_replicas[0].v.replica.acceptor.log_truncation_point)
 
     && (var num_2bs := Get2bCount(s.t_replicas[0].v.replica, opn);
-     TimeLe(s.t_replicas[0].ts, TimeBoundPhase2Leader(s.t_replicas[0].dts, num_2bs + 2, s.t_replicas[0].v.nextActionIndex))
+     TimeLe(s.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s.t_replicas[0].v.nextActionIndex))
     )
     && !progresses[s.constants.config.replica_ids[0]].P2a?
 
@@ -402,7 +405,7 @@ predicate Phase2CompletedInvariant(s:TimestampedRslState, req_time:Timestamp, op
     && (0 < |s.t_replicas|
     ==>
     // s.t_replicas[0].v.replica.executor.ops_complete > opn
-    s.t_replicas[0].ts <= TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), LMinQuorumSize(s.constants.config) + 2, 7)
+    s.t_replicas[0].ts <= TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7)
     )
 }
 
@@ -502,8 +505,7 @@ lemma lemma_notleader_notreceive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRsl
       lemma_SpecificPacketInGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets, i);
       assert sent_packets[i] == LPacket(batch[i].client, s.constants.config.replica_ids[j], RslMessage_Reply(batch[i].seqno, replies[i].reply));
     }
-  } else {
-  }
+  } else {}
 }
 
 lemma lemma_notleader_receive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
@@ -550,7 +552,7 @@ lemma lemma_notleader_receive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslSta
       }
 
       assert (ios[0].r.msg.v.RslMessage_2a?);
-      BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
+      // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
       progresses' := progresses[s.constants.config.replica_ids[j] := P2b];
 
      // assert (forall io :: io in ios && io.LIoOpSend? && io.s.msg.v.RslMessage_2b?
@@ -614,6 +616,7 @@ lemma lemma_leader_receive_P2UnacceptedGoesToP2(s:TimestampedRslState, s':Timest
   requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
   ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses') || Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
 {
+  assume false; // TODO
   reveal_Progress2aProperty();
   progresses' := progresses;
 
@@ -629,10 +632,11 @@ lemma lemma_leader_receive_P2UnacceptedGoesToP2(s:TimestampedRslState, s':Timest
     }
     assert ios[0].r == pkt_2a;
     assert ios[0].r.src == s.constants.config.replica_ids[0];
-    BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0) + TimeActionRange(0));
+    // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0) + TimeActionRange(0));
     progresses' := progresses[s.constants.config.replica_ids[0] := P2b];
     // assert s.t_replicas[0].ts <= s.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex);
-    assert s'.t_replicas[0].ts <= s'.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
+    // assert s'.t_replicas[0].ts <= s'.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
+    assert s'.t_replicas[0].ts <= ios[0].r.msg.ts + MaxQueueTime + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
     assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
 
   } else {
@@ -661,6 +665,7 @@ lemma lemma_notleader_notreceive_P2GoesToP2(s:TimestampedRslState, s':Timestampe
   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
 {
+  assume false; // TODO
   reveal_Progress2aProperty();
   progresses' := progresses;
   var t_ios := s.t_environment.nextStep.ios;
@@ -713,6 +718,7 @@ lemma lemma_notleader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRs
   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
 {
+  assume false; // TODO
   reveal_PacketDeliveredInOrder();
   reveal_Progress2aProperty();
 
@@ -737,7 +743,7 @@ lemma lemma_notleader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRs
       }
 
       assert (ios[0].r.msg.v.RslMessage_2a?);
-      BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
+      // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
       progresses' := progresses[s.constants.config.replica_ids[j] := P2b];
       assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
     }
@@ -765,6 +771,7 @@ lemma lemma_leader_notreceiveOrExecute_P2GoesToP2(s:TimestampedRslState, s':Time
   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
 {
+  assume false; // TODO
   reveal_Progress2aProperty();
   progresses' := progresses;
 }
@@ -793,12 +800,13 @@ lemma lemma_leader_execute_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslSt
   progresses' := progresses;
 
   if (Get2bCount(s.t_replicas[0].v.replica, opn) >= LMinQuorumSize(s.constants.config)) {
-
+    assume false; // TODO
     assert Get2bCount(s.t_replicas[0].v.replica, opn) == LMinQuorumSize(s.constants.config);
-    assert TimeLe(s.t_replicas[0].ts, TimeBoundPhase2Leader(s.t_replicas[0].dts, Get2bCount(s.t_replicas[0].v.replica, opn) + 2, s.t_replicas[0].v.nextActionIndex));
-    assert TimeLe(s'.t_replicas[0].ts, TimeBoundPhase2Leader(s'.t_replicas[0].dts, LMinQuorumSize(s.constants.config) + 2, s'.t_replicas[0].v.nextActionIndex));
+    assert TimeLe(s.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s.t_replicas[0].v.nextActionIndex));
+    assert TimeLe(s'.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s'.t_replicas[0].v.nextActionIndex));
     assert Phase2CompletedInvariant(s', req_time, opn);
   } else {
+    assume false; // TODO
     assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
   }
 }
@@ -824,6 +832,7 @@ lemma lemma_leader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslSt
   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
 {
+  assume false; // TODO
   reveal_Progress2aProperty();
   progresses' := progresses;
 
@@ -834,17 +843,16 @@ lemma lemma_leader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslSt
     var size' := Get2bCount(s'.t_replicas[0].v.replica, opn);
     assert size' == size + 1;
     
-    BoundedSizeLagImpliesBoundedProcessingTime(s.t_replicas[0].dts,
-      s.t_replicas[0].ts,
-      ios[0].r.msg.ts,
-      s'.t_replicas[0].ts,
-      size + 2
-      );
+    // BoundedSizeLagImpliesBoundedProcessingTime(s.t_replicas[0].dts,
+    //   s.t_replicas[0].ts,
+    //   ios[0].r.msg.ts,
+    //   s'.t_replicas[0].ts,
+    //   size + 2
+    //   );
     progresses' := progresses[ios[0].r.src := P2done];
   } else {
     progresses' := progresses;
-    var size := Get2bCount(s.t_replicas[0].v.replica, opn);
-    LeaderTimeoutPreservesPhase2Invariant(s'.t_replicas[0].dts, size + 2, s'.t_replicas[0].v.nextActionIndex);
+    // LeaderTimeoutPreservesPhase2Invariant(s'.t_replicas[0].dts, s'.t_replicas[0].v.nextActionIndex);
   }
 }
 

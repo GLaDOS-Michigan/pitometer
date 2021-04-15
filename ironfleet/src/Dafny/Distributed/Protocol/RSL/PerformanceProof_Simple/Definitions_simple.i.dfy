@@ -28,7 +28,7 @@ ghost const MbeExec:Timestamp
 ghost const CheckViewTimeout:Timestamp
 ghost const CheckQuorumOfViewSuspicion:Timestamp
 ghost const MbeSendHeartbeat:Timestamp
-ghost const MaxQueueing:Timestamp
+ghost const MaxQueueTime:Timestamp
 
  //ghost const Gs := StepTime(RslStep);
  //ghost const As := StepTime(AcceptStep);
@@ -154,16 +154,15 @@ function TimeBoundPhase1Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Ti
   dts + (ell + 1) * TimeActionRange(0) + TimeActionRange(nextActionIndex)
 }
 
-function TimeBoundPhase2Leader(dts:Timestamp, ell:int, nextActionIndex:int) : Timestamp
-  requires ell >= 0
+function TimeBoundPhase2Leader(t2bDelivery:Timestamp, nextActionIndex:int) : Timestamp
   requires 0 <= nextActionIndex < 10
 {
-  dts + ell * TimeActionRange(0) + TimeActionRange(nextActionIndex)
+  t2bDelivery + MaxQueueTime + TimeActionRange(nextActionIndex)
 }
 
 function TimeBoundReply(req_time:Timestamp, c:LConstants) : Timestamp
 {
-  TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), LMinQuorumSize(c.config) + 2, 8) + D
+  TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7)
 }
 
 lemma LeaderTimeoutPreservesPhase1Invariant(dts:Timestamp, ell:int, nextActionIndex:int)
@@ -174,37 +173,36 @@ lemma LeaderTimeoutPreservesPhase1Invariant(dts:Timestamp, ell:int, nextActionIn
   
 }
 
-lemma LeaderTimeoutPreservesPhase2Invariant(dts:Timestamp, ell:int, nextActionIndex:int)
-  requires ell >= 0
-  requires 0 <= nextActionIndex < 10
-  ensures dts + ProcessPacket <= TimeBoundPhase2Leader(dts, ell, nextActionIndex)
-{
+// lemma LeaderTimeoutPreservesPhase2Invariant(dts:Timestamp, nextActionIndex:int)
+//   requires 0 <= nextActionIndex < 10
+//   ensures dts + ProcessPacket <= TimeBoundPhase2Leader(dts, nextActionIndex)
+// {
   
-}
+// }
 
-lemma TimeActionRangeHelper_NoRecv(dts:Timestamp, node_ts:Timestamp, nextActionIndex:int)
-  requires 0 < nextActionIndex < 10
-  requires node_ts <= dts + TimeActionRange(nextActionIndex)
-  ensures node_ts + StepToTimeDelta(RslStep(nextActionIndex)) <= dts + TimeActionRange((nextActionIndex+1) % LReplicaNumActions())
-{
-}
+// lemma TimeActionRangeHelper_NoRecv(dts:Timestamp, node_ts:Timestamp, nextActionIndex:int)
+//   requires 0 < nextActionIndex < 10
+//   requires node_ts <= dts + TimeActionRange(nextActionIndex)
+//   ensures node_ts + StepToTimeDelta(RslStep(nextActionIndex)) <= dts + TimeActionRange((nextActionIndex+1) % LReplicaNumActions())
+// {
+// }
 
-lemma TimeActionRangeHelper_Recv(dts:Timestamp, node_ts:Timestamp, dts':Timestamp, node_ts':Timestamp)
-  requires node_ts <= dts + TimeActionRange(0);
-  requires dts' >= node_ts;
-  requires node_ts' == TimeMax(dts', node_ts) + StepToTimeDelta(RslStep(0))
-  ensures node_ts' <= dts' + TimeActionRange(1);
-{
-}
+// lemma TimeActionRangeHelper_Recv(dts:Timestamp, node_ts:Timestamp, dts':Timestamp, node_ts':Timestamp)
+//   requires node_ts <= dts + TimeActionRange(0);
+//   requires dts' >= node_ts;
+//   requires node_ts' == TimeMax(dts', node_ts) + StepToTimeDelta(RslStep(0))
+//   ensures node_ts' <= dts' + TimeActionRange(1);
+// {
+// }
 
-lemma BoundedLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp, lag:Timestamp)
-  requires node_ts <= dts + lag
-  requires node_ts' == Rsl_RecvPerfUpdate(node_ts, pkt_ts, RslStep(0));
-  requires pkt_ts >= dts;
+// lemma BoundedLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp, lag:Timestamp)
+//   requires node_ts <= dts + lag
+//   requires node_ts' == Rsl_RecvPerfUpdate(node_ts, pkt_ts, RslStep(0));
+//   requires pkt_ts >= dts;
 
-  ensures node_ts' <= (pkt_ts + lag + ProcessPacket)
-{
-}
+//   ensures node_ts' <= (pkt_ts + lag + ProcessPacket)
+// {
+// }
 
 lemma BoundedSizeLagImpliesBoundedProcessingTime(dts:Timestamp, node_ts:Timestamp, pkt_ts:Timestamp, node_ts':Timestamp, size:int)
   requires node_ts <= dts + size * TimeActionRange(0) + TimeActionRange(0)
