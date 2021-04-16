@@ -126,7 +126,7 @@ function TimeBound2aSelfDelivery(req_time:Timestamp) : Timestamp
 
 function TimeBound2bDelivery(req_time:Timestamp) : Timestamp
 {
-  TimeBound2aDelivery(req_time) + ProcessPacket + TimeActionRange(0) + D
+  TimeBound2aDelivery(req_time) + MaxQueueTime + ProcessPacket + TimeActionRange(0) + D
 }
 
 function TimeActionRangeInclusive(prevActionIndex:int) : Timestamp
@@ -162,7 +162,7 @@ function TimeBoundPhase2Leader(t2bDelivery:Timestamp, nextActionIndex:int) : Tim
 
 function TimeBoundReply(req_time:Timestamp, c:LConstants) : Timestamp
 {
-  TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7)
+  TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7) + D
 }
 
 lemma LeaderTimeoutPreservesPhase1Invariant(dts:Timestamp, ell:int, nextActionIndex:int)
