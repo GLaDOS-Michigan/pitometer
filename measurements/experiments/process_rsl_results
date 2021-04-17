@@ -26,6 +26,7 @@ METHODS=(   "LReplicaNextProcessPacket"
             "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"
             "LReplicaNextReadClockMaybeSendHeartbeat"
             "LReplicaNextReadClockMaybeSendHeartbeatNoop"
+            "MaxQueueing"
         )
 
 # Delete old files

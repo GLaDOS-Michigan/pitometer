@@ -344,7 +344,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(logs map[string]*clock.St
 	var _ = _out535
 	var _out536 _9_Native____Io__s_Compile.EndPoint
 	var _ = _out536
-	_out533, _out534, _out535, _out536 = _466_Host__i_Compile.Companion_Default___.HostInitImpl()
+	_out533, _out534, _out535, _out536 = _466_Host__i_Compile.Companion_Default___.HostInitImpl(logs["MaxQueueing"])
 	_5343_ok = _out533
 	_5344_host__state = _out534
 	_5345_config = _out535

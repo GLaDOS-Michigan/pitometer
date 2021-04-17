@@ -97,6 +97,7 @@ import (
 	_99_LiveRSL____Election__i_Compile "99_LiveRSL____Election__i_Compile_"
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 )
 
@@ -260,11 +261,11 @@ func (_this *ReplicaImpl) Ctor__() {
 TAIL_CALL_START:
 	var _5234_empty__Udp *_9_Native____Io__s_Compile.UdpClient
 	var _ = _5234_empty__Udp
-	var _nw13 = _9_Native____Io__s_Compile.New_UdpClient_()
+	var _nw13 = _9_Native____Io__s_Compile.New_UdpClient_() // this initializes all UdpClient fields to nil
 	var _ = _nw13
-	_nw13.Ctor__()
+	_nw13.Ctor__() // this does literally nothing
 	_5234_empty__Udp = _nw13
-	(_this).UdpClient = _5234_empty__Udp
+	(_this).UdpClient = _5234_empty__Udp // this.UdpClient set to an instance with nil fields
 	var _5235_empty__MutableMap *_9_Native____Io__s_Compile.MutableMap
 	var _ = _5235_empty__MutableMap
 	var _out404 *_9_Native____Io__s_Compile.MutableMap
@@ -281,7 +282,7 @@ TAIL_CALL_START:
 	(_this).Cur__req__set = _5236_empty__MutableSet
 	(_this).Prev__req__set = _5236_empty__MutableSet
 }
-func (_this *ReplicaImpl) ConstructUdpClient(constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState) (bool, *_9_Native____Io__s_Compile.UdpClient) {
+func (_this *ReplicaImpl) ConstructUdpClient(maxQueueSw *clock.Stopwatch, constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState) (bool, *_9_Native____Io__s_Compile.UdpClient) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -308,9 +309,9 @@ TAIL_CALL_START:
 	_out406, _out407 = _9_Native____Io__s_Compile.Companion_IPEndPoint_.Construct(_5238_ip__byte__array, (_5237_my__ep).Dtor_port())
 	ok = _out406
 	_5239_ip__endpoint = _out407
-	var _nw15 = _9_Native____Io__s_Compile.New_UdpClient_()
+	var _nw15 = _9_Native____Io__s_Compile.New_UdpClient_() // initializes a UdpClient with nil fields
 	var _ = _nw15
-	_nw15.Ctor__()
+	_nw15.Ctor__() // this does literally nothing
 	client = _nw15
 	if !(ok) {
 		return ok, client
@@ -319,14 +320,14 @@ TAIL_CALL_START:
 	var _ = _out408
 	var _out409 *_9_Native____Io__s_Compile.UdpClient
 	var _ = _out409
-	_out408, _out409 = _9_Native____Io__s_Compile.Companion_UdpClient_.Construct(_5239_ip__endpoint)
+	_out408, _out409 = _9_Native____Io__s_Compile.Companion_UdpClient_.Construct(_5239_ip__endpoint, maxQueueSw) // the final thing that actually matters. MaxQueueSw gets passed here
 	ok = _out408
 	client = _out409
 	{
 	}
 	return ok, client
 }
-func (_this *ReplicaImpl) Replica__Init(constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState) bool {
+func (_this *ReplicaImpl) Replica__Init(maxQueueSw *clock.Stopwatch, constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -335,7 +336,7 @@ TAIL_CALL_START:
 	var _ = _out410
 	var _out411 *_9_Native____Io__s_Compile.UdpClient
 	var _ = _out411
-	_out410, _out411 = (_this).ConstructUdpClient(constants)
+	_out410, _out411 = (_this).ConstructUdpClient(maxQueueSw, constants) // this is where the UdpClient is made
 	ok = _out410
 	(_this).UdpClient = _out411
 	if ok {

@@ -9,6 +9,7 @@ import (
 	_5_Temporal____Temporal__s_Compile "5_Temporal____Temporal__s_Compile_"
 	_7_Environment__s_Compile "7_Environment__s_Compile_"
 	_System "System_"
+	"clock"
 	_dafny "dafny"
 	"encoding/json"
 	"fmt"
@@ -277,9 +278,9 @@ func (ct *CompanionStruct_Time_) GetDebugTimeTicks() uint64 {
 // Thus, each +1 increment of GetTime represents 1 ms
 // TONY: DONE
 func (ct *CompanionStruct_Time_) GetTime() uint64 {
-	// In C#, this returns DateTime.Now.Ticks / 10000; 
-	return uint64(time.Now().UnixNano()) / 1_000_000  // This is the direct C# translation
-	// return uint64(time.Now().UnixNano()) / 10_000  
+	// In C#, this returns DateTime.Now.Ticks / 10000;
+	return uint64(time.Now().UnixNano()) / 1_000_000 // This is the direct C# translation
+	// return uint64(time.Now().UnixNano()) / 10_000
 }
 
 func (_this *Time) Equals(other *Time) bool {
@@ -549,6 +550,7 @@ func (_this type_IPEndPoint_) String() string {
 type Packet struct {
 	ep     *IPEndPoint
 	buffer []byte
+	ti     *clock.TimeInterval
 }
 
 /// Definition of class UdpClient
@@ -558,6 +560,7 @@ type UdpClient struct {
 	connection    *net.UDPConn
 	send_queue    goconcurrentqueue.Queue
 	receive_queue goconcurrentqueue.Queue
+	stopwatch     *clock.Stopwatch
 }
 
 type CompanionStruct_UdpClient_ struct {
@@ -572,13 +575,14 @@ func New_UdpClient_() *UdpClient {
 }
 
 // TONY : DONE
-func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
+func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn, sw *clock.Stopwatch) *UdpClient {
 	// Initialize record and start send and receive loops
 	_this := UdpClient{
 		localEndpoint: my_ep,
 		connection:    conn,
 		send_queue:    goconcurrentqueue.NewFIFO(),
 		receive_queue: goconcurrentqueue.NewFIFO(),
+		stopwatch:     sw,
 	}
 	fmt.Printf("Starting new UDPClient %v\n", conn.LocalAddr())
 	go _this.sendLoop()
@@ -587,14 +591,14 @@ func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn) *UdpClient {
 }
 
 // TONY : DONE
-func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint) (bool, *UdpClient) {
+func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint, sw *clock.Stopwatch) (bool, *UdpClient) {
 	var localEp = localEndpoint.GetUDPAddr()
 	conn, err := net.ListenUDP("udp", localEp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
 		return false, nil
 	}
-	var udp = new_UdpClient_(localEndpoint, conn)
+	var udp = new_UdpClient_(localEndpoint, conn, sw)
 	return true, udp
 }
 
@@ -628,8 +632,9 @@ func (client *UdpClient) receiveLoop() {
 			os.Exit(1)
 		}
 		if addr != nil {
+			var ti = client.stopwatch.MakeStartEvent()
 			var packetEp = UDPAddrToIPEndPoint(addr)
-			var packet = Packet{packetEp, buffer[0:n]}
+			var packet = Packet{packetEp, buffer[0:n], ti}
 			client.receive_queue.Enqueue(packet)
 		}
 	}
@@ -644,7 +649,7 @@ func (client *UdpClient) Send(remote *IPEndPoint, buffer *_dafny.Array) bool {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var packet = Packet{remote, bufferByte}
+	var packet = Packet{remote, bufferByte, nil}
 	client.send_queue.Enqueue(packet)
 	return true
 }
@@ -676,6 +681,8 @@ func (client *UdpClient) Receive(timeLimit int32) (bool, bool, *IPEndPoint, *_da
 		for _, value := range pack.buffer {
 			interfaceBuf = append(interfaceBuf, interface{}(value))
 		}
+		var ti = pack.ti
+		client.stopwatch.RecordEndEvent(ti)
 		return true, false, pack.ep, _dafny.NewArrayWithValues(interfaceBuf...)
 	}
 }

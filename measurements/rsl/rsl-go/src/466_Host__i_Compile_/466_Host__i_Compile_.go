@@ -349,7 +349,7 @@ func (_this type_Default___) Default() interface{} {
 func (_this type_Default___) String() string {
 	return "Default__"
 }
-func (_this *CompanionStruct_Default___) HostInitImpl() (bool, CScheduler, _240_LiveRSL____ConstantsState__i_Compile.ConstantsState, _9_Native____Io__s_Compile.EndPoint) {
+func (_this *CompanionStruct_Default___) HostInitImpl(maxQueueSw *clock.Stopwatch) (bool, CScheduler, _240_LiveRSL____ConstantsState__i_Compile.ConstantsState, _9_Native____Io__s_Compile.EndPoint) {
 	var ok bool = false
 	var _ = ok
 	var host__state CScheduler = Type_CScheduler_().Default().(CScheduler)
@@ -378,7 +378,7 @@ func (_this *CompanionStruct_Default___) HostInitImpl() (bool, CScheduler, _240_
 	var _ = _5337_repImpl
 	var _nw16 = _383_LiveRSL____ReplicaImplClass__i_Compile.New_ReplicaImpl_()
 	var _ = _nw16
-	_nw16.Ctor__()
+	_nw16.Ctor__() // _nw16 is completely unnecessary
 	_5337_repImpl = _nw16
 	host__state = CScheduler{CScheduler_CScheduler{_5337_repImpl}}
 	if !(ok) {
@@ -388,8 +388,10 @@ func (_this *CompanionStruct_Default___) HostInitImpl() (bool, CScheduler, _240_
 	}
 	id = ((_5334_pconfig).Dtor_replica__ids()).IndexUint(_5335_my__index).(_9_Native____Io__s_Compile.EndPoint)
 	var _5338_scheduler *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl
+	/* This _5338_scheduler is the one that matters.
+	Not sure what the devil is doing with the other instances above */
 	var _ = _5338_scheduler
-	var _nw17 = _383_LiveRSL____ReplicaImplClass__i_Compile.New_ReplicaImpl_()
+	var _nw17 = _383_LiveRSL____ReplicaImplClass__i_Compile.New_ReplicaImpl_() // this initializes all replica fields to nil
 	var _ = _nw17
 	_nw17.Ctor__()
 	_5338_scheduler = _nw17
@@ -413,7 +415,7 @@ func (_this *CompanionStruct_Default___) HostInitImpl() (bool, CScheduler, _240_
 	}
 	var _out531 bool
 	var _ = _out531
-	_out531 = (_5338_scheduler).Replica__Init(_5339_constants)
+	_out531 = (_5338_scheduler).Replica__Init(maxQueueSw, _5339_constants) // this is where the UDP client is constructed
 	ok = _out531
 	if !(ok) {
 		return ok, host__state, config, id

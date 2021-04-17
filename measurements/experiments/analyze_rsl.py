@@ -29,7 +29,8 @@ METHODS = ["LReplicaNextProcessPacket",
             "LReplicaNextReadClockCheckForQuorumOfViewSuspicions",
             "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop",
             "LReplicaNextReadClockMaybeSendHeartbeat",
-            "LReplicaNextReadClockMaybeSendHeartbeatNoop"
+            "LReplicaNextReadClockMaybeSendHeartbeatNoop",
+            "MaxQueueing"
            ]
 
 plt.rc('xtick', labelsize=8)    # fontsize of the tick labels

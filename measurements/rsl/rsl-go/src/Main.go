@@ -337,6 +337,7 @@ func main() {
 
 	logs["LReplicaNextReadClockMaybeSendHeartbeat"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockMaybeSendHeartbeat")
 	logs["LReplicaNextReadClockMaybeSendHeartbeatNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockMaybeSendHeartbeatNoop")
+	logs["MaxQueueing"] = clock.NewStopwatch(INIT_SIZE, "MaxQueueing")
 
 	fmt.Printf("Starting %v\n", os.Args)
 	_622_Main__i_Compile.HALT = false //set termination flag for _622_Main__i_Compile main loop

@@ -100,6 +100,32 @@ func (el *Stopwatch) PopStartEvent() {
 	el.currInterval = nil
 }
 
+func (el *Stopwatch) MakeStartEvent() *TimeInterval {
+	var ti = newTimeInterval(0, el.name)
+	ti.logStartTime(time.Since(el.initTime))
+	return ti
+}
+
+func (el *Stopwatch) RecordEndEvent(ti *TimeInterval) {
+	if el.nextIndex >= cap(*el.log) {
+		ti.logEndTime(time.Since(el.initTime))
+		el.nextIndex++
+		el.currInterval = nil
+		return
+	}
+	ti.logEndTime(time.Since(el.initTime))
+	ti.id = el.nextIndex
+	(*el.log)[el.nextIndex] = *ti
+	el.nextIndex++
+	el.currInterval = nil
+}
+
+func (el *Stopwatch) AppendTimeInterval(ti *TimeInterval) {
+	ti.id = el.nextIndex
+	(*el.log)[el.nextIndex] = *ti
+	el.nextIndex++
+}
+
 // PrintLog prints the log line by line
 func (el *Stopwatch) PrintLog() {
 	fmt.Printf("%s,%v\n", el.name, el.initTime)
