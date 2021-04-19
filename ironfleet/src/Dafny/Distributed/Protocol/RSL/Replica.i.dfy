@@ -165,7 +165,8 @@ predicate LReplicaNextSpontaneousMaybeEnterPhase2(s:LReplica, s':LReplica, sent_
 
 predicate LReplicaNextReadClockMaybeNominateValueAndSend2a(s:LReplica, s':LReplica, clock:ClockReading, sent_packets:seq<RslPacket>)
 {
-       LProposerMaybeNominateValueAndSend2a(s.proposer, s'.proposer, clock.t, s.acceptor.log_truncation_point, sent_packets)
+    // This action reads the clock because of the batch timer
+    && LProposerMaybeNominateValueAndSend2a(s.proposer, s'.proposer, clock.t, s.acceptor.log_truncation_point, sent_packets)
     && s' == s.(proposer := s'.proposer)
 }
 

@@ -14,7 +14,7 @@ import opened Collections__CountMatches_i
 datatype LAcceptor = LAcceptor(
     constants:LReplicaConstants,
     max_bal:Ballot,
-    votes:Votes,
+    votes:Votes,                                        //map<OperationNumber, Vote> represents my promise for each slot
     last_checkpointed_operation:seq<OperationNumber>,
     log_truncation_point:OperationNumber
     )
@@ -108,8 +108,8 @@ predicate LAcceptorTruncateLog(s:LAcceptor, s':LAcceptor, opn:OperationNumber)
     if opn <= s.log_truncation_point then
         s' == s
     else
-        (   RemoveVotesBeforeLogTruncationPoint(s.votes, s'.votes, opn)
-         && s' == s.(log_truncation_point := opn, votes := s'.votes)
-        )
+        // I don't have to remember my promises for slots that have been checkpointed
+        && RemoveVotesBeforeLogTruncationPoint(s.votes, s'.votes, opn)
+        && s' == s.(log_truncation_point := opn, votes := s'.votes)
 }
 }

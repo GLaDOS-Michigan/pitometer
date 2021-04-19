@@ -42,6 +42,7 @@ predicate LExecutorGetDecision(s:LExecutor, s':LExecutor, bal:Ballot, opn:Operat
     requires opn == s.ops_complete;
     requires s.next_op_to_execute.OutstandingOpUnknown?;
 {
+    // Executor learns the next op to execute
     s' == s.(next_op_to_execute := OutstandingOpKnown(v, bal))
 }
 

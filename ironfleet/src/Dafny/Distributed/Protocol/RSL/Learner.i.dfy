@@ -16,7 +16,7 @@ import opened Collections__Maps_i
 datatype LLearner = LLearner(
     constants:LReplicaConstants,
     max_ballot_seen:Ballot,
-    unexecuted_learner_state:LearnerState
+    unexecuted_learner_state:LearnerState   //map<OperationNumber, LearnerTuple>
     )
 
 predicate LLearnerInit(l:LLearner, c:LReplicaConstants)
@@ -51,6 +51,7 @@ predicate LLearnerProcess2b(s:LLearner, s':LLearner, packet:RslPacket)
 predicate LLearnerForgetDecision(s:LLearner, s':LLearner, opn:OperationNumber)
 {
     if opn in s.unexecuted_learner_state then
+        // Remove opn from set of unexecuted operations
         s' == s.(unexecuted_learner_state := RemoveElt(s.unexecuted_learner_state, opn))
     else
         s' == s
