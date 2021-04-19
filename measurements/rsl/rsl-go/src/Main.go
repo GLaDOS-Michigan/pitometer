@@ -346,7 +346,7 @@ func main() {
 		var dur = time.Duration(duration) * time.Second
 		fmt.Printf("Starting %v node expiry timer\n", dur)
 		time.Sleep(time.Duration(duration) * time.Second)
-		_622_Main__i_Compile.HALT = false
+		_622_Main__i_Compile.HALT = true
 		fmt.Printf("Node reached expiry. Exiting\n")
 		for _, sw := range logs {
 			sw.PrintLog()
