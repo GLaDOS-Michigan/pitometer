@@ -51,6 +51,8 @@ NOOP_METHODS = {
            9: "LReplicaNextReadClockMaybeSendHeartbeatNoop"
 }
 
+MAX_QUEUE = "MaxQueueing"
+
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
@@ -89,6 +91,7 @@ def main(exp_dir):
     print("\nPlotting graphs for experiment %s" %exp_dir)
     # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
     plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -462,35 +465,107 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         pp.savefig(fig)
         plt.close(fig)
 
-        print("Predicted max for each f:" + str(y_vals_predict_max) )
-        print("Real median     :" + str(y_vals_actual_median) )
+        print("Predicted max :" + str(y_vals_predict_max) )
+        print("Predicted 999 :" + str(y_vals_predict_999) )
+        print("Real median   :" + str(y_vals_actual_median) )
+        print("Predict mean  :" + str(y_vals_predict_mean) )
+        print("Real mean     :" + str(y_vals_actual_mean) )
+        print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
+
+
+def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_node_data, total_client_data, total_client_start_end):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        total_node_data -- total_node_data[f][node_id][method_name] = list of durations
+        total_client_data -- total_client_data[f][i] = list of client durations for trial i
+        total_client_start_end -- total_client_start_end[f][i] = (start, end) time of trial i, defined from start of first request to end of last request
+    """
+    print("Plotting graphs for Micro-benchmark 1 (simplified model)")
+
+    # Compute data points
+    x_vals_f = sorted(list(total_client_data.keys()))
+    y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
+
+    # y_vals_actual_median = [statistics.median(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
+
+    y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
+    
+    print("Computing predictions")
+    # TONY: Always use total_node_data[1] to make predictions
+    y_vals_predict_max = [predict_f_max_simple(total_network_data, total_node_data[f], f) for f in x_vals_f]
+    y_vals_predict_999 = [predict_f_percentile_simple(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
+    y_vals_predict_mean = [predict_f_mean_simple(total_network_data, total_node_data[f], f) for f in x_vals_f]
+
+    print("Drawing graphs")
+    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        # Draw plot
+        fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
+        this_ax.set_title("Predictions of IronRSL performance")
+        
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
+        
+        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
+
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick')
+        
+        # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
+        this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=3, columnspacing=0.5, fontsize=6.5)
+        this_ax.set_xlabel("f")
+        this_ax.set_ylabel("request latency (ms)")
+        this_ax.xaxis.set_ticks(x_vals_f)
+        this_ax.set_yscale("log")
+        this_ax.set_ylim(bottom=0.1)
+        # this_ax.set_ylim(bottom=0)
+        pp.savefig(fig)
+        plt.close(fig)
+
+        print("Predicted max :" + str(y_vals_predict_max) )
+        print("Predicted 999 :" + str(y_vals_predict_999) )
+        print("Real median   :" + str(y_vals_actual_median) )
         print("Predict mean  :" + str(y_vals_predict_mean) )
         print("Real mean     :" + str(y_vals_actual_mean) )
         print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
 
 
 def predict_f_max(total_network_data, total_f_node_data, f):
-    work_actions_times, noop_action_times = max_action_times(total_f_node_data)
+    work_actions_times, noop_action_times, _ = max_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
-    print("MAX WORK ACTION TIMES:")
-    print(work_actions_times)
-    print("MAX NO-OP ACTION TIMES:")
-    print(noop_action_times)
-    print("MAX NETWORK:")
-    print(max(network_delays))
-    print()
     return sum_from_action_times(work_actions_times, noop_action_times, f, max(network_delays))
+
+def predict_f_max_simple(total_network_data, total_f_node_data, f):
+    work_actions_times, noop_action_times, max_queue_time = max_action_times(total_f_node_data)
+    network_delays = compute_actual_network(total_network_data)
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, max(network_delays))
 
 
 def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
-    work_actions_times, noop_action_times = percentile_action_times(total_f_node_data, percentile)
+    work_actions_times, noop_action_times, _ = percentile_action_times(total_f_node_data, percentile)
     network_delays = compute_actual_network(total_network_data)
     return sum_from_action_times(work_actions_times, noop_action_times, f, np.percentile(network_delays, 99.9))
 
+def predict_f_percentile_simple(total_network_data, total_f_node_data, f, percentile):
+    work_actions_times, noop_action_times, max_queue_time = percentile_action_times(total_f_node_data, percentile)
+    network_delays = compute_actual_network(total_network_data)
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, np.percentile(network_delays, 99.9))
+
 def predict_f_mean(total_network_data, total_f_node_data, f):
-    work_actions_times, noop_action_times = mean_action_times(total_f_node_data)
+    work_actions_times, noop_action_times, _ = mean_action_times(total_f_node_data)
     network_delays = compute_actual_network(total_network_data)
     return sum_from_action_times(work_actions_times, noop_action_times, f, mean_network_delay(network_delays, f))
+
+def predict_f_mean_simple(total_network_data, total_f_node_data, f):
+    work_actions_times, noop_action_times, max_queue_time = mean_action_times(total_f_node_data)
+    network_delays = compute_actual_network(total_network_data)
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time,  mean_network_delay(network_delays, 1))
 
 def predict_f_mean_bad(total_network_data, total_f_node_data, f):
     actions_times = mean_action_times(total_f_node_data)
@@ -527,7 +602,10 @@ def max_action_times(total_f_node_data):
         for node in total_f_node_data.keys():
             max_time = max(max_time, max([0] + total_f_node_data[node][noop_name]))
         noop_res[noop_method_id] = max_time
-    return work_res, noop_res
+    max_queue_res = 0
+    for node in total_f_node_data.keys():
+            max_queue_res = max(max_time, max([0] + total_f_node_data[node][MAX_QUEUE]))
+    return work_res, noop_res, max_queue_res
 
 def percentile_action_times(total_f_node_data, percentile):
     """
@@ -552,7 +630,11 @@ def percentile_action_times(total_f_node_data, percentile):
             work_res[work_method_id] = 0
         else:
             noop_res[noop_method_id] = np.percentile(data, percentile)
-    return work_res, noop_res
+    data = []
+    for node in total_f_node_data.keys():
+        data.extend(total_f_node_data[node][MAX_QUEUE])
+    max_queue_res = np.percentile(data, percentile)
+    return work_res, noop_res, max_queue_res
 
 
 def mean_action_times(total_f_node_data):
@@ -584,7 +666,13 @@ def mean_action_times(total_f_node_data):
             sum_times += np.sum(total_f_node_data[node][name])
             count += len(total_f_node_data[node][name])
         noop_res[method_id] = sum_times/float(count)
-    return work_res, noop_res
+    sum_times = 0
+    count = 0
+    for node in total_f_node_data.keys():
+        sum_times += np.sum(total_f_node_data[node][MAX_QUEUE])
+        count += len(total_f_node_data[node][MAX_QUEUE])
+    max_queue_res = sum_times/float(count)
+    return work_res, noop_res, max_queue_res
 
 def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     """
@@ -592,8 +680,7 @@ def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     // Bound with full vs no-op versions:
     // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
     
-    // ReplyBound = TB2b + (f + 2) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2a) + NoOps(1, 6) + ExecuteFull
-
+    // ReplyBound = TB2b + (f + 2) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2b) + NoOps(1, 6) + ExecuteFull
     // TB2b = TB2a + ProcessPacketFull(2a) + NoOps(0, 10) + D
     // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D
     Arguments:
@@ -602,6 +689,24 @@ def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
     TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay
     TB2b = TB2a + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
     res = TB2b + (f+2) * (work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 10)) + work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6]
+    return res
+
+
+def sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, delay):
+    """
+    Computes the predicted RSL using actions_times
+    // Bound with full vs no-op versions:
+    // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
+    
+    // ReplyBound = TB2b + MaxQueueTime + NoOps(1, 6) + ExecuteFull + D
+    // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + NoOps(0, 10) + D
+    // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D + D
+    Arguments:
+        actions_times -- Map from each action id to the time it uses
+    """
+    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay * 2
+    TB2b = TB2a + max_queue_time + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
+    res = TB2b + max_queue_time + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6] + delay
     return res
 
 def noop_actions_up_to(noop_actions_times, i, j):
