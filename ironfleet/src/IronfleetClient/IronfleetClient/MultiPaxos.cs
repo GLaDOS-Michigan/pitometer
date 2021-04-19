@@ -129,7 +129,7 @@
                 while (true)
                 {
                     Thread.Sleep(100);
-                    Console.WriteLine("TONY DEBUG: Sleep 100");
+                    // Console.WriteLine("TONY DEBUG: Sleep 100");
                     // Make the sequence number a time stamp
                     //var newSeqNum = (ulong) HiResTimer.UtcNow.Ticks;
                     //if (newSeqNum == seqNum) {
