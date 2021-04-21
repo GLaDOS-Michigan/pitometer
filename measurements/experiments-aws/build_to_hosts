@@ -22,8 +22,8 @@ do
         if [ $id -eq $i ]
         then
             echo "Copying builds to $name"
-            # scp network-aws-main rsl-main client.exe nudzhang@$address:$HOST_TARGET_DIR
-            scp network-aws-main client.exe nudzhang@$address:$HOST_TARGET_DIR      #TODO: Add RSL later
+            # scp network-aws-main rsl-main client.exe ubuntu@$address:$HOST_TARGET_DIR
+            scp network-aws-main ubuntu@$address:$HOST_TARGET_DIR      #TODO: Add RSL later
             break
         fi
     done

@@ -74,7 +74,7 @@ func (c *Client) StartClientLoop() {
 				os.Exit(1)
 			}
 			// This event is a timeout
-			c.PingLog.LogEndEvent(fmt.Sprintf("Timeout for %v targeting %v\n", c.LocalAddr, c.Target))
+			c.PingLog.LogEndEvent(fmt.Sprintf("TIMEOUT to target,%v", c.Target))
 			c.TimeoutCount.Increment()
 			continue
 		}

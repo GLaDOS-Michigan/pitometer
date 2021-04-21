@@ -63,24 +63,27 @@ do
     NODE_PORT=${HOST_PORT_LIST[$i]}
     echo "Starting Network Agent $NODE_ID, $NODE_NAME, $NODE_ADDR:$NODE_PORT"
 
-    ARGS="$ENDPOINTS $NODE_ADDR:$NODE_PORT $INTERVAL $PAYLOAD_SZ $DURATION"
-
     # Make dir to store local output
     ssh ubuntu@$NODE_ADDR "mkdir -p $TEMP_DIR"  
 
     # Kill any processes using the required port
     ssh ubuntu@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
 
-    # # Run experiment
+    # Get the inet
+    # xargs trims leading whitespace, cut returns the desired slice
+    NODE_INET=`ssh ubuntu@$NODE_ADDR "ifconfig | grep -m 1 'inet' | xargs | cut -d' ' -f 2"`
+
+    # Run experiment
+    ARGS="$ENDPOINTS $NODE_INET:$NODE_PORT $INTERVAL $PAYLOAD_SZ $DURATION"
     if [ $i -gt 0 ] 
     then 
-        ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"  &
+        ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-aws-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"  &
     else
         # Wait on the last node
-        ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"
+        ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-aws-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"
     fi
 done
-sleep 20
+sleep 5
 echo "Run completed"
 
 # Finally, grab results from each node to local machine
