@@ -40,14 +40,13 @@ func (c *Client) StartClientLoop() {
 	c.active = true
 
 	fmt.Printf("Starting new client at %v targeting %v\n", c.LocalAddr, c.Target)
-	var sendNote = fmt.Sprintf("Send to target,%v", c.Target)
-	var receiveNote = fmt.Sprintf("Receive from target,%v", c.Target)
+	var note = fmt.Sprintf("RTT to target,%v", c.Target)
 	// Main event loop
 	for c.active {
 
 		// Send packet
 		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
-		c.PingLog.LogStartEvent(sendNote)
+		c.PingLog.LogStartEvent()
 		udpClient.Send(pack)
 
 		// Receive packet
@@ -57,7 +56,7 @@ func (c *Client) StartClientLoop() {
 		go func(c *Client, timedOutChan chan bool) {
 			_, _, remote, receivedPacket = udpClient.Receive()
 			native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
-			c.PingLog.LogEndEvent(receiveNote)
+			c.PingLog.LogEndEvent(note)
 			timedOutChan <- false
 		}(c, timedOutChan)
 		go func(timedOutChan chan bool) {
@@ -75,7 +74,7 @@ func (c *Client) StartClientLoop() {
 				os.Exit(1)
 			}
 			// This event is a timeout
-			c.PingLog.PopStartEvent()
+			c.PingLog.LogEndEvent(fmt.Sprintf("Timeout for %v targeting %v\n", c.LocalAddr, c.Target))
 			c.TimeoutCount.Increment()
 			continue
 		}

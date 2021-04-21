@@ -64,12 +64,12 @@ func NewStopwatch(name string) *Stopwatch {
 }
 
 // LogStartEvent adds a temp start event to currInterval in the stopwatch
-func (el *Stopwatch) LogStartEvent(name string) {
+func (el *Stopwatch) LogStartEvent() {
 	if el.currInterval != nil {
 		fmt.Printf("Error: Pending interval already present\n")
 		os.Exit(1)
 	}
-	var ti = newTimeInterval(el.nextIndex, name)
+	var ti = newTimeInterval(el.nextIndex, "generic event")
 	ti.logStartTime(time.Since(el.initTime))
 	el.currInterval = ti
 }
@@ -82,6 +82,7 @@ func (el *Stopwatch) LogEndEvent(name string) {
 	}
 	var ti = el.currInterval
 	ti.logEndTime(time.Since(el.initTime))
+	ti.functionName = name
 	ti.PrintTimeInterval()
 	el.nextIndex++
 	el.currInterval = nil
