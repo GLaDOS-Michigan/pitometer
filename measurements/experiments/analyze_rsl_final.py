@@ -465,12 +465,13 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         pp.savefig(fig)
         plt.close(fig)
 
-        print("Predicted max :" + str(y_vals_predict_max) )
-        print("Predicted 999 :" + str(y_vals_predict_999) )
-        print("Real median   :" + str(y_vals_actual_median) )
+        print("Predict max   :" + str(y_vals_predict_max) )
+        print("Real max      :" + str(y_vals_actual_max) )
+        # print("Predicted 999 :" + str(y_vals_predict_999) )
+        # print("Real median   :" + str(y_vals_actual_median) )
         print("Predict mean  :" + str(y_vals_predict_mean) )
         print("Real mean     :" + str(y_vals_actual_mean) )
-        print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
+        # print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
 
 
 def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_node_data, total_client_data, total_client_start_end):
@@ -528,12 +529,13 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         pp.savefig(fig)
         plt.close(fig)
 
-        print("Predicted max :" + str(y_vals_predict_max) )
-        print("Predicted 999 :" + str(y_vals_predict_999) )
-        print("Real median   :" + str(y_vals_actual_median) )
+        print("Predict max   :" + str(y_vals_predict_max) )
+        print("Real max      :" + str(y_vals_actual_max) )
+        # print("Predicted 999 :" + str(y_vals_predict_999) )
+        # print("Real median   :" + str(y_vals_actual_median) )
         print("Predict mean  :" + str(y_vals_predict_mean) )
         print("Real mean     :" + str(y_vals_actual_mean) )
-        print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
+        # print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
 
 
 def predict_f_max(total_network_data, total_f_node_data, f):
