@@ -21,7 +21,7 @@ do
     toylock_3="ps axf | grep run_toylock_experimement | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
     ssh -n ubuntu@$address "$toylock_1 && $toylock_2 && $toylock_3"
 
-    network_1="ps axf | grep network-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
+    network_1="ps axf | grep network-aws-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
     network_2="ps axf | grep start_network_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
     network_3="ps axf | grep run_network_experimement | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
     ssh -n ubuntu@$address "$network_1 && $network_2 && $network_3"

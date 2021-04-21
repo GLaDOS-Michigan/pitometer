@@ -12,7 +12,7 @@ GIT_BRANCH="exp"
 NODES_IDS=("1" "2" "3") 
 
 INTERVAL=1000   # ping interval in ms
-DURATION=21600  # duration for each trial in seconds (6hrs)
+DURATION=46800  # duration for each trial in seconds (13hrs)
 ITERATIONS=1    # How many times to run each payload
 PAYLOADS=("16")  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
