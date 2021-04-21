@@ -1,0 +1,20 @@
+#!/bin/bash
+# This script does a 'git pull' on all hosts
+# WARNING: All hosts must be using the ssh remote for the project
+
+BRANCH=$1
+WORKING_DIR="/home/ubuntu/pitometer"
+HOSTS="aws-hosts.csv"
+
+echo "Starting git pull for branch $BRANCH on all hosts"
+
+while IFS=, read -r id name address port
+do 
+    command1="git -C $WORKING_DIR checkout $BRANCH"
+    command2="git -C $WORKING_DIR pull origin $BRANCH"
+    ssh -n ubuntu@$address "$command1"
+    ssh -n ubuntu@$address "$command2"
+    echo "  $name : $command1, $command2"
+done < <(tail -n +2 $HOSTS)
+
+echo "Done git pull for all hosts"

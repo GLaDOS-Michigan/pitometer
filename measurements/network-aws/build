@@ -21,7 +21,7 @@ elif uname -a | grep -q Linux; then
 
     echo "Starting Network Agent Linux build"
 
-    go build -o network-main "$NET_DIR/src/main.go" 
+    go build -o network-aws-main "$NET_DIR/src/main.go" 
 
     export GOPATH='/home/nudzhang/go'
     export PATH=$PATH:$(go env GOPATH)/bin
