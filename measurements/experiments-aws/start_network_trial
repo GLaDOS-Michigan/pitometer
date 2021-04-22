@@ -98,3 +98,4 @@ do
 done
 
 echo "Network trial completed"
+date
