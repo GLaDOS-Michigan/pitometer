@@ -55,9 +55,9 @@ func (c *Client) StartClientLoop() {
 		var timedOutChan = make(chan bool, 2)
 		go func(c *Client, timedOutChan chan bool) {
 			_, _, remote, receivedPacket = udpClient.Receive()
+			timedOutChan <- false
 			native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
 			c.PingLog.LogEndEvent(note)
-			timedOutChan <- false
 		}(c, timedOutChan)
 		go func(timedOutChan chan bool) {
 			time.Sleep(ClientTimeOut)

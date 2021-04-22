@@ -14,6 +14,7 @@ import (
 type TimeInterval struct {
 	id           int
 	functionName string
+	timestamp    time.Time
 	startTime    time.Duration //start time of this interval
 	endTime      time.Duration //end time of this interval
 }
@@ -22,9 +23,7 @@ type TimeInterval struct {
 func newTimeInterval(id int, name string) *TimeInterval {
 	return &TimeInterval{
 		id:           id,
-		functionName: name,
-		startTime:    0,
-		endTime:      0}
+		functionName: name}
 }
 
 func (ti *TimeInterval) logStartTime(st time.Duration) {
@@ -33,11 +32,12 @@ func (ti *TimeInterval) logStartTime(st time.Duration) {
 
 func (ti *TimeInterval) logEndTime(et time.Duration) {
 	ti.endTime = et
+	ti.timestamp = time.Now()
 }
 
 // PrintTimeInterval prints the time interval
 func (ti *TimeInterval) PrintTimeInterval() {
-	fmt.Printf("%d,%s,%v,%v\n", ti.id, ti.functionName, ti.startTime.Nanoseconds(), ti.endTime.Nanoseconds())
+	fmt.Printf("%d,%s,%v,%v,%s\n", ti.id, ti.functionName, ti.startTime.Nanoseconds(), ti.endTime.Nanoseconds(), ti.timestamp.String())
 }
 
 /*****************************************************************************************
