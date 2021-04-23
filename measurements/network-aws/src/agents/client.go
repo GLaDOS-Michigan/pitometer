@@ -71,7 +71,8 @@ func (c *Client) StartClientLoop() {
 			ok, err := udpClient.ReceiveQueue.DequeueOrWaitForNextElementCancel()
 			if !ok {
 				fmt.Printf("Error: DequeueOrWaitForNextElementCancel failed. %v\n", err)
-				os.Exit(1)
+				continue
+				// os.Exit(1)
 			}
 			// This event is a timeout
 			c.PingLog.LogEndEvent(fmt.Sprintf("TIMEOUT to target,%v", c.Target))
