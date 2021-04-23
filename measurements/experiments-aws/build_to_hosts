@@ -7,12 +7,12 @@
 
 HOSTS="aws-hosts.csv"
 HOST_TARGET_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
-# RSL_DIR="../rsl"
+RSL_DIR="../rsl-aws"
 NETWORK_DIR="../network-aws"
 
 # Do local build
 ./clean_builds
-# ./$RSL_DIR/build
+./$RSL_DIR/build
 ./$NETWORK_DIR/build
 
 for i in "$@"
@@ -23,7 +23,7 @@ do
         then
             echo "Copying builds to $name"
             # scp network-aws-main rsl-main client.exe ubuntu@$address:$HOST_TARGET_DIR
-            scp network-aws-main ubuntu@$address:$HOST_TARGET_DIR      #TODO: Add RSL later
+            scp network-aws-main rsl-aws-main client.exe ubuntu@$address:$HOST_TARGET_DIR     
             break
         fi
     done

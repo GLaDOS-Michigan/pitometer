@@ -1,0 +1,61 @@
+#!/bin/bash
+# Run an RSL experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/rsl"
+GIT_BRANCH="exp"
+
+CLIENT_ID=1                # node to use as client
+CLIENT_THREADS=1            # number of clients
+BASE_TRIAL_DURATION=5       # minimum duration
+ITERATIONS=3               # repeats of each trial
+BATCH_SIZE=1                # paxos batch size      
+F_VALUES=("1")
+TIMESTAMP=$(date +"%d-%b-%H%M")
+
+echo "Starting new RSL experiment at time $(date)"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+for f in "${F_VALUES[@]}"
+do
+    # Generate node id's to use
+    node_ids=()
+    for ((id=1;id<$[ 1 + 2*f+1 ];id++))
+    do
+        node_ids+=("$id")
+    done
+
+    # Build locally and send executables to the target machines
+    ./build_to_hosts $CLIENT_ID ${node_ids[@]} 
+    echo ""
+
+    trial_duration=$(( $BASE_TRIAL_DURATION + $f ))  # Make trial duration a variable
+
+    for ((trial=0;trial<$ITERATIONS;trial++))
+    do
+        time=$(date +"%d-%b-%H%M")
+                echo "Starting RSL trial at time $time"
+                echo "    - f          : $f"
+                echo "    - clients    : $CLIENT_THREADS"
+                echo "    - batch size : $BATCH_SIZE"
+                echo "    - duration   : $trial_duration"
+                echo "    - trial      : $trial"
+        trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/trial$trial"
+        mkdir -p $trial_dir 
+
+        # Start trial
+        # echo "./start_rsl_trial $trial_dir $trial_duration $CLIENT_ID $CLIENT_THREADS $BATCH_SIZE ${node_ids[@]} > $trial_dir/info.log"
+        ./start_rsl_trial $trial_dir $trial_duration $CLIENT_ID $CLIENT_THREADS $BATCH_SIZE ${node_ids[@]} > $trial_dir/info.log
+
+        echo "Completed trial $trial for f=$f"
+    done
+done
+
+echo "RSL experiment completed at time $(date)"

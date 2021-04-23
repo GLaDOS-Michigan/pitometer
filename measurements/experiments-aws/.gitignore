@@ -2,3 +2,5 @@ __pycache__/
 data/
 tmp/
 network-aws-main
+rsl-aws-main
+*.exe

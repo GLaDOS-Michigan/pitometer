@@ -14,7 +14,7 @@ fi
 
 HOSTS="aws-hosts.csv"
 EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
-TEMP_DIR="/home/ubuntu/tmp"  # temporary dir to store output at each node
+TEMP_DIR="/home/ubuntu/tmp-net"  # temporary dir to store output at each node
 
 # First, grab parameters
 
@@ -27,13 +27,14 @@ HOST_NAME_LIST=()
 HOST_IP_LIST=()
 HOST_PORT_LIST=()
 
-while IFS=, read -r id name address port
+while IFS=, read -r id name address netport rslport
 do 
-    # echo "TONY: $id $name $address $port"
+    # echo "TONY: $id $name $address $netport"
     HOST_ID_LIST+=("$id")
     HOST_NAME_LIST+=("$name")
     HOST_IP_LIST+=("$address")
-    HOST_PORT_LIST+=("$port")
+    HOST_PORT_LIST+=("$netport")
+    echo $netport
 done < <(tail -n +2 $HOSTS)
 
 date

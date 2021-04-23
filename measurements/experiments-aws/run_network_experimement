@@ -16,14 +16,11 @@ PAYLOAD=16  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 # Max payload size must be <= 4096, as dicated by Go sockets
-for num_bytes in "${PAYLOADS[@]}"
-do
-    if [ $num_bytes -gt 4096 ]
-    then
-        echo "Error: Payload size cannot be larger than 4096 bytes"
-        exit 1
-    fi
-done
+if [ $PAYLOAD -gt 4096 ]
+then
+    echo "Error: Payload size cannot be larger than 4096 bytes"
+    exit 1
+fi
 
 echo "Starting new Network AWS experiment at time $(date)"
 echo ""

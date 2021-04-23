@@ -1,4 +1,4 @@
-id,name,address,port,
-1,us-east-2a,18.217.254.113,4000,
-2,us-west-2a,54.187.230.198,4000,
-3,us-west-1a,54.215.79.72,4000,
+id,name,address,netport,rslport
+1,us-east-2a,18.217.254.113,4000,6000
+2,us-west-2a,54.187.230.198,4000,6000
+3,us-west-1a,54.215.79.72,4000,6000
