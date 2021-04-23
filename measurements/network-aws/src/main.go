@@ -26,19 +26,10 @@ func main() {
 	// This program takes the following positional arguments
 	// Each agent only needs to know a priori the target servers' addresses
 	// The local client's port is dynamic based on how many client agents I spawn, let's reserve 5000-5999 for now
-	// <target1 ip:s_port> <target2 ip:s_port> ... <local ip:s_port> <interval> <payload_sz> <duration>
+	// <target1 ip:s_port> <target2 ip:s_port> ... <local ip:s_port> <interval> <payload_sz>
 
 	native.DebugMode = Debug
 	agents.ClientTimeOut = TimeOut
-
-	// Pop the last argument from os.Args -- that is the duration to run this server in seconds
-	// After this duration, the process exits.
-	var duration, err1 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
-	if int(duration) < 0 || err1 != nil {
-		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-1])
-		os.Exit(1)
-	}
-	os.Args = os.Args[:len(os.Args)-1]
 
 	// Pop the next argument from os.Args -- that is the payload size
 	var payloadSz, err2 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
@@ -84,7 +75,6 @@ func main() {
 	}
 
 	fmt.Printf("Initializing Network Agent with the following parameters:\n")
-	fmt.Printf("    duration      = %v seconds\n", duration)
 	fmt.Printf("    payload size  = %v bytes\n", payloadSz)
 	fmt.Printf("    ping interval = %v milliseconds\n", interval)
 	fmt.Printf("    local server  = %v\n", localServerAddr)
@@ -131,17 +121,8 @@ func main() {
 	}
 
 	// Start experiment timer
-	fmt.Printf("Starting experiment for duration %v seconds at %v\n", duration, time.Now())
-	experimentTimer := time.NewTimer(time.Duration(duration) * time.Second)
-
-	// Experiment complete
-	<-experimentTimer.C
-	for _, clientAgent := range clientsMap {
-		clientAgent.StopClientLoop()
+	fmt.Printf("Starting experiment at %v\n", time.Now())
+	for true {
+		time.Sleep(30 * time.Second)
 	}
-	time.Sleep(1 * time.Second)
-	// for _, clientAgent := range clientsMap {
-	// 	fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
-	// 	fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Target, clientAgent.TimeoutCount)
-	// }
 }

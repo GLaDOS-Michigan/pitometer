@@ -2,7 +2,7 @@
 # This script starts a distributed network agent job. It records the directional RTT 
 # between every host pair in HOSTS. 
 # It takes the following positional arguments:
-# ./start_network_trial <results_dir> <interval> <payload_sz> <duration>
+# ./start_network_trial <results_dir> <interval> <payload_sz>
 
 # NOTE: This script assumes that the executables are in place
 
@@ -21,7 +21,6 @@ TEMP_DIR="/home/ubuntu/tmp"  # temporary dir to store output at each node
 RESULTS_DIR=$1
 INTERVAL=$2
 PAYLOAD_SZ=$3  
-DURATION=$4
 
 HOST_ID_LIST=()
 HOST_NAME_LIST=()
@@ -41,7 +40,6 @@ date
 echo "Starting Network trial with parameters:"
 echo "  - Interval     : $INTERVAL milliseconds"
 echo "  - Payload size : $PAYLOAD_SZ bytes"
-echo "  - Duration     : $DURATION seconds"
 echo "  - Participants : ${HOST_NAME_LIST[@]}"
 
 
@@ -74,7 +72,7 @@ do
     NODE_INET=`ssh ubuntu@$NODE_ADDR "ifconfig | grep -m 1 'inet' | xargs | cut -d' ' -f 2"`
 
     # Run experiment
-    ARGS="$ENDPOINTS $NODE_INET:$NODE_PORT $INTERVAL $PAYLOAD_SZ $DURATION"
+    ARGS="$ENDPOINTS $NODE_INET:$NODE_PORT $INTERVAL $PAYLOAD_SZ"
     if [ $i -gt 0 ] 
     then 
         ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-aws-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"  &
