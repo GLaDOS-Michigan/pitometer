@@ -1,0 +1,31 @@
+#!/bin/bash
+# Project build file
+
+if uname -a | grep -q Darwin; then
+    # Build on mac
+    echo "Build failed: rsl-aws meant for linux only"
+    exit 1
+
+elif uname -a | grep -q Linux; then
+    # Build on Linux
+    export GO111MODULE=off
+    RSL_DIR='/home/ubuntu/pitometer/measurements/rsl-aws'
+    RSL_GO_DIR='/home/ubuntu/pitometer/measurements/rsl-aws/rsl-go'
+    export GOPATH=$RSL_GO_DIR
+
+    echo "Starting RSL Linux build"
+
+    echo "Building rsl server"
+    go build -o rsl-aws-main "$RSL_GO_DIR/src/Main.go" 
+
+    export GOPATH='/home/ubuntu/go'
+    export PATH=$PATH:$(go env GOPATH)/bin
+    export GOPATH=$(go env GOPATH)
+
+    echo "Building rsl client"
+    $RSL_DIR/build_client
+else
+    echo "Build failed"
+    exit 1
+fi
+echo "Build complete"

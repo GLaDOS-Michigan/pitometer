@@ -1,0 +1,21 @@
+#!/bin/bash
+# This script starts a single RSL node, and takes the following positional arguments
+# ./run <num_nodes> <my_id> <duration_secs> <batch_size>
+
+NUM_NODES=$1
+MY_ID=$2
+DURATION=$3
+BATCH_SIZE=$4
+
+ENDPOINTS=""
+for ((i=1;i<=$NUM_NODES;i++))
+do
+    port=$(( 4000 + i ))
+    ENDPOINTS="$ENDPOINTS 127.0.0.1 $port"
+done
+
+my_port=$(( 4000 + MY_ID ))
+echo "Starting node $MY_ID"
+
+lsof -t -i :$my_port | xargs -I{} kill -9 {} > /dev/null
+./rsl-main $ENDPOINTS 127.0.0.1 $my_port $DURATION $BATCH_SIZE

@@ -1,0 +1,12 @@
+#!/bin/bash
+# This script deletes the output files and executables
+
+echo "Starting clean"
+
+rm -rf IronfleetOutput/*
+rm -f client-debug.exe
+rm -f client.exe
+rm -f rsl-aws-main
+rm -f node*.log
+
+echo "Clean complete"

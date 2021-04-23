@@ -1,0 +1,7 @@
+IronfleetOutput/*
+Main
+rsl-go/bin
+rsl-go/pkg
+rsl-aws-main
+client.exe
+client-debug.exe
