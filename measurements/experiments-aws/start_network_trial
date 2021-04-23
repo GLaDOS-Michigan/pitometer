@@ -34,7 +34,6 @@ do
     HOST_NAME_LIST+=("$name")
     HOST_IP_LIST+=("$address")
     HOST_PORT_LIST+=("$netport")
-    echo $netport
 done < <(tail -n +2 $HOSTS)
 
 date
@@ -70,7 +69,7 @@ do
 
     # Get the inet
     # xargs trims leading whitespace, cut returns the desired slice
-    NODE_INET=`ssh ubuntu@$NODE_ADDR "ifconfig | grep -m 1 'inet' | xargs | cut -d' ' -f 2"`
+    NODE_INET=$(ssh ubuntu@$NODE_ADDR "ifconfig | grep -m 1 'inet' | xargs | cut -d' ' -f 2")
 
     # Run experiment
     ARGS="$ENDPOINTS $NODE_INET:$NODE_PORT $INTERVAL $PAYLOAD_SZ"
