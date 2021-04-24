@@ -2,7 +2,6 @@ package clock
 
 import (
 	"fmt"
-	"os"
 	"time"
 )
 
@@ -67,7 +66,7 @@ func NewStopwatch(name string) *Stopwatch {
 func (el *Stopwatch) LogStartEvent() {
 	if el.currInterval != nil {
 		fmt.Printf("Error: Pending interval already present\n")
-		os.Exit(1)
+		// os.Exit(1)
 	}
 	var ti = newTimeInterval(el.nextIndex, "generic event")
 	ti.logStartTime(time.Since(el.initTime))
@@ -78,7 +77,7 @@ func (el *Stopwatch) LogStartEvent() {
 func (el *Stopwatch) LogEndEvent(name string) {
 	if el.currInterval == nil {
 		fmt.Printf("Error: No start time recorded\n")
-		os.Exit(1)
+		// os.Exit(1)
 	}
 	var ti = el.currInterval
 	ti.logEndTime(time.Since(el.initTime))
@@ -92,7 +91,7 @@ func (el *Stopwatch) LogEndEvent(name string) {
 func (el *Stopwatch) PopStartEvent() {
 	if el.currInterval == nil {
 		fmt.Printf("Error: No start time recorded\n")
-		os.Exit(1)
+		// os.Exit(1)
 	}
 	el.currInterval = nil
 }
