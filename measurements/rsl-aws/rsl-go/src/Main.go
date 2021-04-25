@@ -305,7 +305,11 @@ func main() {
 		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-2])
 		os.Exit(1)
 	}
-	os.Args = os.Args[:len(os.Args)-2]
+
+	// Grab the third-to-last argument from os.Args -- that is inet ip address.
+	var inet_str = os.Args[len(os.Args)-3]
+
+	os.Args = os.Args[:len(os.Args)-3]
 
 	// Initialize each stopwatch
 	var logs = make(map[string]*clock.Stopwatch)
@@ -354,5 +358,5 @@ func main() {
 		os.Exit(0)
 	}()
 
-	_622_Main__i_Compile.Companion_Default___.Default_Main_(logs)
+	_622_Main__i_Compile.Companion_Default___.Default_Main_(logs, inet_str)
 }

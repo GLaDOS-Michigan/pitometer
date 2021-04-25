@@ -108,6 +108,7 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -275,9 +276,9 @@ func (_this *CompanionStruct_Default___) Parse__cmd__line() (bool, _238_LiveRSL_
 	_out522 = _9_Native____Io__s_Compile.Companion_HostConstants_.NumCommandLineArgs()
 	_5328_num__args = _out522
 	if ((_5328_num__args) < (uint32(4))) || (((_5328_num__args) % (uint32(2))) != (uint32(1)) /* dircomp */) {
-		_dafny.Print(_dafny.SeqOfString("Incorrect number of command line arguments.\n"))
-		_dafny.Print(_dafny.SeqOfString("Expected: ./Main.exe [IP port]+ [IP port]\n"))
-		_dafny.Print(_dafny.SeqOfString("  where the final argument is one of the IP-port pairs provided earlier \n"))
+		fmt.Println("Incorrect number of command line arguments.")
+		fmt.Println("Expected: ./Main.exe [IP port]+ [IP port]")
+		fmt.Println("where the final argument is one of the IP-port pairs provided earlier.")
 		return ok, config, my__index
 	}
 	var _5329_args _dafny.Seq
@@ -304,6 +305,7 @@ func (_this *CompanionStruct_Default___) Parse__cmd__line() (bool, _238_LiveRSL_
 	_5332_tuple2 = _460_CmdLineParser__i_Compile.Companion_Default___.Parse__end__point((_5329_args).Index(((_5329_args).Cardinality()).Minus(_dafny.IntOfInt64(2))).(_dafny.Seq), (_5329_args).Index(((_5329_args).Cardinality()).Minus(_dafny.IntOfInt64(1))).(_dafny.Seq))
 	ok = (*(_5332_tuple2).IndexInt(0)).(bool)
 	if !(ok) {
+		fmt.Println("Error: Parse__end__point() not ok")
 		return ok, config, my__index
 	}
 	var _5333_unique bool
@@ -314,6 +316,7 @@ func (_this *CompanionStruct_Default___) Parse__cmd__line() (bool, _238_LiveRSL_
 	_5333_unique = _out524
 	if !(_5333_unique) {
 		ok = false
+		fmt.Println("Error: Test__unique_k() not ok")
 		return ok, config, my__index
 	}
 	config = _238_LiveRSL____CPaxosConfiguration__i_Compile.CPaxosConfiguration{_238_LiveRSL____CPaxosConfiguration__i_Compile.CPaxosConfiguration_CPaxosConfiguration{_5331_endpoints}}
@@ -327,6 +330,7 @@ func (_this *CompanionStruct_Default___) Parse__cmd__line() (bool, _238_LiveRSL_
 	ok = _out525
 	my__index = _out526
 	if !(ok) {
+		fmt.Println("Error: CGetReplicaIndex() not ok")
 		return ok, config, my__index
 	}
 	{

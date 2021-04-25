@@ -113,7 +113,8 @@ do
     ssh ubuntu@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
 
     # Run experiment
-    ARGS="$ENDPOINTS $NODE_INET $NODE_PORT $node_duration $BATCH_SIZE"
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $NODE_INET $node_duration $BATCH_SIZE"
+    # ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration $BATCH_SIZE"  #OG
     ssh ubuntu@$NODE_ADDR "$EXP_DIR/rsl-aws-main $ARGS > $TEMP_DIR/node_$NODE_ID.log" &
 done
 

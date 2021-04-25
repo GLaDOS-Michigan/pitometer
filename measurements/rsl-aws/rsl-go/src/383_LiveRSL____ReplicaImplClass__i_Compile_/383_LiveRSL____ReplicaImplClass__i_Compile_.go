@@ -282,7 +282,7 @@ TAIL_CALL_START:
 	(_this).Cur__req__set = _5236_empty__MutableSet
 	(_this).Prev__req__set = _5236_empty__MutableSet
 }
-func (_this *ReplicaImpl) ConstructUdpClient(maxQueueSw *clock.Stopwatch, constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState) (bool, *_9_Native____Io__s_Compile.UdpClient) {
+func (_this *ReplicaImpl) ConstructUdpClient(maxQueueSw *clock.Stopwatch, constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState, inet_str string) (bool, *_9_Native____Io__s_Compile.UdpClient) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -320,14 +320,14 @@ TAIL_CALL_START:
 	var _ = _out408
 	var _out409 *_9_Native____Io__s_Compile.UdpClient
 	var _ = _out409
-	_out408, _out409 = _9_Native____Io__s_Compile.Companion_UdpClient_.Construct(_5239_ip__endpoint, maxQueueSw) // the final thing that actually matters. MaxQueueSw gets passed here
+	_out408, _out409 = _9_Native____Io__s_Compile.Companion_UdpClient_.Construct(_5239_ip__endpoint, maxQueueSw, inet_str) // the final thing that actually matters. MaxQueueSw stopwatch gets passed here
 	ok = _out408
 	client = _out409
 	{
 	}
 	return ok, client
 }
-func (_this *ReplicaImpl) Replica__Init(maxQueueSw *clock.Stopwatch, constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState) bool {
+func (_this *ReplicaImpl) Replica__Init(maxQueueSw *clock.Stopwatch, constants _245_LiveRSL____ReplicaConstantsState__i_Compile.ReplicaConstantsState, inet_str string) bool {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
 	var ok bool = false
@@ -336,7 +336,7 @@ TAIL_CALL_START:
 	var _ = _out410
 	var _out411 *_9_Native____Io__s_Compile.UdpClient
 	var _ = _out411
-	_out410, _out411 = (_this).ConstructUdpClient(maxQueueSw, constants) // this is where the UdpClient is made
+	_out410, _out411 = (_this).ConstructUdpClient(maxQueueSw, constants, inet_str) // this is where the UdpClient is made
 	ok = _out410
 	(_this).UdpClient = _out411
 	if ok {

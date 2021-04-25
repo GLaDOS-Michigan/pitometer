@@ -349,7 +349,7 @@ func (_this type_Default___) Default() interface{} {
 func (_this type_Default___) String() string {
 	return "Default__"
 }
-func (_this *CompanionStruct_Default___) HostInitImpl(maxQueueSw *clock.Stopwatch) (bool, CScheduler, _240_LiveRSL____ConstantsState__i_Compile.ConstantsState, _9_Native____Io__s_Compile.EndPoint) {
+func (_this *CompanionStruct_Default___) HostInitImpl(maxQueueSw *clock.Stopwatch, inet_str string) (bool, CScheduler, _240_LiveRSL____ConstantsState__i_Compile.ConstantsState, _9_Native____Io__s_Compile.EndPoint) {
 	var ok bool = false
 	var _ = ok
 	var host__state CScheduler = Type_CScheduler_().Default().(CScheduler)
@@ -415,7 +415,7 @@ func (_this *CompanionStruct_Default___) HostInitImpl(maxQueueSw *clock.Stopwatc
 	}
 	var _out531 bool
 	var _ = _out531
-	_out531 = (_5338_scheduler).Replica__Init(maxQueueSw, _5339_constants) // this is where the UDP client is constructed
+	_out531 = (_5338_scheduler).Replica__Init(maxQueueSw, _5339_constants, inet_str) // this is where the UDP client is constructed
 	ok = _out531
 	if !(ok) {
 		return ok, host__state, config, id
