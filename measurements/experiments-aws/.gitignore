@@ -1,5 +1,6 @@
 __pycache__/
 data/
+final_data/
 tmp/
 network-aws-main
 rsl-aws-main
