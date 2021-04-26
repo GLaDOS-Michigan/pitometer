@@ -18,7 +18,7 @@
 
         static void Main(string[] args)
         {            
-            // Console.WriteLine("Client launch time: " + DateTime.Now);
+            Console.WriteLine("Client launch time: " + DateTime.Now);
             if (args.Length < 10)  // length 10 gives n=3 nodes, the paxos minimum for f=1
             {
                 usage();
