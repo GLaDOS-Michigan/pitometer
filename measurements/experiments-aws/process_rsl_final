@@ -1,0 +1,10 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./process_toylock_results <root_dir>
+# Converts each log file in <root_dir>, and its sub-directories into separate csv files 
+# for each toylock stopwatch. It places each resulting csv in the directory of its 
+# corresponding log file. Then, it calls analyze_toylock.py to generate graphs
+
+ROOT_DIR="final_data/rsl"
+
+python3 analyze_rsl_final.py $ROOT_DIR
