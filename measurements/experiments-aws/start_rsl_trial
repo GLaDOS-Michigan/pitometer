@@ -119,7 +119,7 @@ do
 done
 
 # Run the client. Note that client is fixed at the present host
-# mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $TEMP_DIR
+mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $TEMP_DIR
 
 echo "Run completed"
 
