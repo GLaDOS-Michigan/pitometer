@@ -10,10 +10,10 @@ fi
 ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/rsl"
 GIT_BRANCH="exp"
 
-CLIENT_ID=1                # node to use as client
+CLIENT_ID=1                 # node to use as client
 CLIENT_THREADS=1            # number of clients
 BASE_TRIAL_DURATION=5       # minimum duration
-ITERATIONS=500               # repeats of each trial
+ITERATIONS=300              # repeats of each trial
 BATCH_SIZE=1                # paxos batch size      
 F_VALUES=("1")
 TIMESTAMP=$(date +"%d-%b-%H%M")
@@ -57,5 +57,9 @@ do
         echo "Completed trial $trial for f=$f"
     done
 done
+
+# Copy results to Skynode20
+trial_dir="$ROOT_DIR/$TIMESTAMP"
+scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws/data/rsl
 
 echo "RSL experiment completed at time $(date)"
