@@ -8,30 +8,31 @@ import matplotlib.pyplot as plt
 import textwrap as tw
 from matplotlib.offsetbox import AnchoredText
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib import dates as mdates
+from datetime import datetime
 import seaborn as sns
 
 from conv import *
 
 NODES = [1, 2, 3]
-# PAYLOADS = [4, 16, 32, 128, 512]
 PAYLOADS = [16]
 NODES.sort()
 PAYLOADS.sort()
-THROWAWAY = 10 # Number of starting readings to throw away
-HOSTS = "/home/ubuntu/pitometer/measurements/experiments-aws/aws-hosts.csv"
+HOSTS = "/home/nudzhang/Documents/pitometer/measurements/experiments-aws/aws-hosts.csv"
+
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
-    print("\nAnalyzing data for experiment %s" %exp_dir)
     for payload in PAYLOADS:
-        print("\tAnalyzing payload %d" %payload)
-        # {2D map} total_data[i][j] is the timings for node i to node j for this payload
-        total_payload_data = dict()  
-        for root, dirs, files in os.walk("%s/payload%d" %(exp_dir, payload)):
+        print("\nAnalyzing all network data (payload %d): %s" %(payload, exp_dir))
+        total_payload_data = dict()  # {2D map} The timings for node i to node j for this payload
+        for root, dirs, files in os.walk("%s" %exp_dir):
+            if "payload%d" %payload not in root:
+                # Only look at data for the specific payload
+                continue    
             files = [f for f in files if not f[0] == '.']  # ignore hidden files
             if dirs == []:
                 # This is a leaf directory containing trial csv files
-                print("\t\tAnalyzing trial %s" %root)
                 host_names = get_hosts()
                 for src in host_names:
                     if src not in total_payload_data:
@@ -76,7 +77,7 @@ def plot_figures(name, root, total_data):
     # assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # plot_aggregate(pp, name, root, total_data)
-        plot_individuals(pp, name, root, total_data)
+        # plot_individuals(pp, name, root, total_data)
         # plot_cdf(pp, name, root, total_data)
         plot_time_series(pp, name, root, total_data)
 
@@ -130,29 +131,37 @@ def plot_time_series(pp, name, root, total_data):
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
-    fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
-    # fig, axes = plt.subplots(3, 3, figsize=(5*5, 5*2))
+    fig, axes = plt.subplots(len(NODES)*len(NODES), 1, figsize=(4*len(NODES), 4*len(NODES)*len(NODES)))
     fig.suptitle(name)
     sns.despine(left=True)
     
     row = 0
     for i in total_data.keys():
-        col = 0
         for j in total_data[i].keys():
-            # if i > 8 or j > 8:
-            #     continue
-            i_j_data = [p[0] for p in total_data[i][j]]
-            this_ax = axes[row][col]
+            y_vals = [p[0] for p in total_data[i][j]]
+            x_vals = mdates.date2num([p[1] for p in total_data[i][j]])
+            this_ax = axes[row]
 
             this_ax.set_title("%s -> %s" %(i, j), fontsize=9)
             this_ax.grid()
-            this_ax.scatter(range(len(i_j_data)), i_j_data, marker = '.')
+            this_ax.scatter(x_vals, y_vals, marker='.', s=3)
+
+            # Major ticks every few hours.
+            fmt_hrs = mdates.HourLocator(interval=4)
+            this_ax.xaxis.set_major_locator(fmt_hrs)
+
+            # Minor ticks every hour.
+            fmt_hr = mdates.HourLocator(interval=1)
+            this_ax.xaxis.set_minor_locator(fmt_hr)
+
+            # see https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior for formatting str
+            this_ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M')) 
 
             if i == len(NODES) - 1:
                 this_ax.set_xlabel('round trip time (ms)', fontsize=9)
-            col += 1
-        row += 1
+            row += 1
 
+    fig.autofmt_xdate()
     # Draw plot
     plt.subplots_adjust(hspace=0.2, wspace=0.3)
     # plt.xlabel('latency (ms)', fontsize=10)
@@ -257,8 +266,8 @@ def plot_individuals(pp, name, root, total_data):
 
     # Draw plot
     plt.subplots_adjust(hspace=0.2, wspace=0.3)
-    # plt.xlabel('latency (ms)', fontsize=10)
-    # plt.ylabel('count', fontsize=10)
+    plt.xlabel('latency (ms)', fontsize=10)
+    plt.ylabel('count', fontsize=10)
     pp.savefig(fig)
     plt.close(fig)
 
@@ -286,17 +295,28 @@ def analyze_csv(filepath):
     durations_milli = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
+        i = 0
         for row in csvreader:
-            if int(row[0]) < THROWAWAY:
-                continue
-            if row != []:
+            # Only look at every 200th row
+            i += 1
+            if i % 200 == 0 and  row != []:
                 start_time = int(row[3])
                 end_time = int(row[4])
-                timestamp = row[5]
+                timestamp = parse_go_timestamp(row[5])
                 dur = (end_time - start_time)/1_000_000.0  # duration in milliseconds
-                durations_milli.append((dur,timestamp))
+                if "TIMEOUT" in row[1]:
+                    # ignore timeouts for now
+                    # durations_milli.append((dur,timestamp,True))
+                    pass
+                else:
+                    durations_milli.append((dur,timestamp, False))
     return durations_milli
 
+
+def parse_go_timestamp(time_str):
+    """ Return Python datetime object representing time_str"""
+    res = time_str[:23].strip()  # leave the seconds to 3dp
+    return datetime.fromisoformat(res)
 
 if __name__ == "__main__":
     # positional arguments <experiment_dir>

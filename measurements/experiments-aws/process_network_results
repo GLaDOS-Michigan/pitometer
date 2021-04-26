@@ -7,11 +7,11 @@
 
 HOSTS="aws-hosts.csv"
 
-ROOT_DIR=$1
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments-aws/final_data/network"
 
 LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
 
-find $ROOT_DIR -type f -name "*.pdf" -delete
+# find $ROOT_DIR -type f -name "*.pdf" -delete
 
 HOST_ID_LIST=()
 HOST_NAME_LIST=()
@@ -51,7 +51,7 @@ done
 python3 analyze_network.py $ROOT_DIR
 
 # Delete intermediate csv files
-# find $ROOT_DIR -type f -name "*.csv" -delete
+find $ROOT_DIR -type f -name "*.csv" -delete
 
 # Move pdf files to root
-find $ROOT_DIR -name '*.pdf' -exec mv '{}' $ROOT_DIR \;
+# find $ROOT_DIR -name '*.pdf' -exec mv '{}' $ROOT_DIR \;
