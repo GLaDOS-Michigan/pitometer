@@ -65,9 +65,9 @@ def main(exp_dir):
 
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
-        # plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
-        # plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
-        # plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
+        plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
+        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
+        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
     print("Done")
 
 
@@ -147,7 +147,7 @@ def analyze_trial_dir(trial_dir):
 
 
 def analyze_node_csv(filepath):
-    durations_nano = []
+    durations_milli = []
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
         for row in csvreader:
@@ -156,9 +156,8 @@ def analyze_node_csv(filepath):
             if len(row) > 2 and int(row[0]) >= 0:
                 start_time = int(row[2])
                 end_time = int(row[3])
-                dur = end_time - start_time  # duration in nanoseconds
-                durations_nano.append(dur)
-    durations_milli = list(map(lambda x: x/1_000_000.0, durations_nano))
+                dur = (end_time - start_time)/1_000_000.0  # duration in milliseconds
+                durations_milli.append(dur)
     return durations_milli
 
 
