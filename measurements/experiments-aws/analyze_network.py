@@ -131,7 +131,7 @@ def plot_time_series(pp, name, root, total_data):
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
-    fig, axes = plt.subplots(len(NODES)*len(NODES), 1, figsize=(4*len(NODES), 4*len(NODES)*len(NODES)))
+    fig, axes = plt.subplots(len(NODES)*len(NODES), 1, figsize=(4*len(NODES), 4*len(NODES)*len(NODES)), sharex=True)
     fig.suptitle(name)
     sns.despine(left=True)
     
@@ -139,15 +139,16 @@ def plot_time_series(pp, name, root, total_data):
     for i in total_data.keys():
         for j in total_data[i].keys():
             y_vals = [p[0] for p in total_data[i][j]]
+            colors = ['red' if p[2] else 'blue' for p in total_data[i][j]]
             x_vals = mdates.date2num([p[1] for p in total_data[i][j]])
             this_ax = axes[row]
 
             this_ax.set_title("%s -> %s" %(i, j), fontsize=9)
             this_ax.grid()
-            this_ax.scatter(x_vals, y_vals, marker='.', s=3)
+            this_ax.scatter(x_vals, y_vals, c=colors, marker='.', s=3)
 
             # Major ticks every few hours.
-            fmt_hrs = mdates.HourLocator(interval=4)
+            fmt_hrs = mdates.HourLocator(interval=6)
             this_ax.xaxis.set_major_locator(fmt_hrs)
 
             # Minor ticks every hour.
@@ -297,18 +298,18 @@ def analyze_csv(filepath):
         csvreader = csv.reader(node1, delimiter=',',)
         i = 0
         for row in csvreader:
-            # Only look at every 200th row
+            # Only look at every 50th row
             i += 1
-            if i % 200 == 0 and  row != []:
-                start_time = int(row[3])
-                end_time = int(row[4])
-                timestamp = parse_go_timestamp(row[5])
-                dur = (end_time - start_time)/1_000_000.0  # duration in milliseconds
+            if i % 50 == 0 and  row != []:
+                
                 if "TIMEOUT" in row[1]:
-                    # ignore timeouts for now
-                    # durations_milli.append((dur,timestamp,True))
-                    pass
+                    timestamp = parse_go_timestamp(row[5])
+                    durations_milli.append((0,timestamp, True))
                 else:
+                    start_time = int(row[3])
+                    end_time = int(row[4])
+                    timestamp = parse_go_timestamp(row[5])
+                    dur = (end_time - start_time)/1_000_000.0  # duration in milliseconds
                     durations_milli.append((dur,timestamp, False))
     return durations_milli
 
