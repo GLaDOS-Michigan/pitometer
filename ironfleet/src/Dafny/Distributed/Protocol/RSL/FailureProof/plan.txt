@@ -1,0 +1,80 @@
+=
+When second leader gets client request, it may reply from its
+s.executor.reply_cache, but that's ok since it'll just be done faster than
+otherwise.
+
+Q: What happens when a non-leader gets a client request?
+A: Nothing, it does not change state and ignores the packet.
+
+=
+
+Pure failure detection proof.
+
+Need to have some sort of ordering on heartbeat delivery times.
+
+Assume node fails at time $t$. By time $FDT(t)$, node 2 will be the leader. To
+do this, we really just need to know when node 2 will start leader election.
+
+If leader fails at time $t$.
+
+View timer is reset when a request is executed.
+If we assume |es.requests_received_prev_epoch| == 0 ->
+Election.i.dfy:145 tells us that the epoch will be extended.
+So, if there are no incoming requests.
+
+Let's instead assume that |es.requests_received_prev_epoch| == 1.
+Let's assume that node 0 is leader.
+View timer is reset periodically.
+One possibility is that the view timer is set to expire \epsilon after the
+request arrives. In that case, the request having arrived will cause it to be
+put in requests_reveived_prev_epochs. Then, after another epoch_length time
+passes, the node will actually be a view suspector.
+Then, the node needs to send a heartbeat to the new leader. Rather, f+1 nodes
+need to send heartbeats to the new leader to make it so that the leader starts
+phase 2.
+
+So, we need an upper bound on the first heartbeat packets sent to the leader
+from each individual node.
+
+Let's also assume that leader 0 fails at time t_2.
+Packet 1 gets delivered at time t_1.
+
+For all nodes n,
+if n is not a view suspector, then
+  |reqs_prev_epoch| == 0 ==> |reqs_this_epoch| == 1 && epoch_end_time <= FirstEpochEnd()
+  |reqs_prev_epoch| == 1 ==> epoch_end_time <= SecondEpochEnd()
+if n is a view suspector, then forall suspecting heartbeat packets from node n
+to node 1, either node 1 has node n as a suspector, or there exists a packet
+from node n to node 1 with deliveryTime <= FirstHeartbeatTime()
+
+Assume   node.ts <= value read from clock <= node'.ts.
+Going to know at every state that # actions since last checkviewtimeout,
+If view-timeout fails, then value read from clock <= epoch end time.
+That means node.ts <= epoch end time. That means
+node'.ts <= (epoch end time + steptime)
+In general, node'.ts <= epoch_end_time + steps_since_last_check.
+Then, if we get to a step in which
+epoch_end_time <= value read from clock, we will have
+node'.ts <= epoch_end_time + allactions(0). (hard to avoid this queuing delay)
+
+Node 1 invariant:
+If # of suspectors == LMinQuorumSize and current_view != 2, then
+node.ts <= Blah.
+(If has a quorum, but hasn't decided to change election.current_view )
+
+If node.current_view == 2, and node.current_state != 1, then node.ts <= Foo.
+(If wants to do view change, but hasn't sent 1a packets)
+
+Invariant about state:
+epoch_end_time = UpperBoundedAddition(clock, )
+
+Heartbeat sent every constants.all.params.heartbeat_period time
+
+We know that all HB packets sent after SecondEpochEnd() will indicate to node 1
+that the sending node is a view-suspector.
+
+Forall node n,
+ node n is not a suspector, or
+ node n is a suspector, but has not sent HB, or
+ node n is a suspector and there's an HB with TS <= ..., or
+ node 1 knows that n is a suspector.
