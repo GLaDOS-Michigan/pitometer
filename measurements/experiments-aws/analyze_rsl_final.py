@@ -92,9 +92,9 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_distributions("Paxos Distributions (simple)", exp_dir, total_network_data, total_node_data, total_client_data)
     # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
-    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -151,7 +151,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
-    predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, actual_client_latencies, total_network_data, actual_method_latencies)
+    sanity_check(actual_client_latencies, total_network_data, actual_method_latencies)
+    predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
     plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
@@ -179,8 +180,25 @@ def smooth(x_vals, y_vals):
     return x_res, y_res
 
 
+def sanity_check(actual_client_latencies, total_network_data, actual_method_latencies):
+    # check that network minimums are sane
+    print()
+    print("SANITY CHECK")
+    print("min/max for end-to-end client latency is %.3f/%.3f" %(min(actual_client_latencies), max(actual_client_latencies)))
+    print()
+    nodes = ["us-east-2a", "us-west-1a", "us-west-2a"]
+    for src in nodes:
+        for dst in nodes:
+            data = [p[0]/2.0 for p in total_network_data[src][dst] if START < p[1] and p[1] < END and not p[2]]
+            print("min/max from %s to %s is %.3f/%.3f" %(src, dst, min(data), max(data)))
+    print()
+    q_data = actual_method_latencies["MaxQueueing"]
+    print("min/max for queueing is %.3f/%.3f" %(min(q_data), max(q_data)))
+    print("percentiles for queueing is p50:%.3f, p90:%.3f, p99:%.3f, p99.9:%.3f," %(np.percentile(q_data, 50), np.percentile(q_data, 90), np.percentile(q_data, 99), np.percentile(q_data, 99.9)))
+    print()
 
-def compute_predicted_rsl_pdf_simple(f, actual_client_latencies, total_network_data, actual_method_latencies):
+
+def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies):
     """ return pdf, bins
     Arguments:
         actual_client_latencies -- list of actual client latencies
@@ -190,35 +208,34 @@ def compute_predicted_rsl_pdf_simple(f, actual_client_latencies, total_network_d
         // ReplyBound = TB2b + MaxQueueTime + ProcessPacketFull(2b) + NoOps(1, 6) + ExecuteFull + D(OH->C)
     """
     initial_binsize = 1e-3
-    tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf_simple(f, actual_client_latencies, total_network_data, actual_method_latencies, initial_binsize)
+    tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, initial_binsize)
     (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
     noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2a", initial_binsize)
-
     (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies["MaxQueueing"], initial_binsize), min(actual_method_latencies["MaxQueueing"])
 
     sum_pdf, sum_start, sum_binsize = add_histograms(
-            tb2b_pdf, noop_1_6_pdf, 
-            tb2b_start, noop_1_6_start, 
-            initial_binsize, tb2b_binsize)
-    sum_pdf, sum_start, sum_binsize = add_histograms(
-            sum_pdf, maxQ_pdf, 
-            sum_start, maxQ_start, 
-            sum_binsize, initial_binsize)
+            tb2b_pdf, maxQ_pdf, 
+            tb2b_start, maxQ_start, 
+            tb2b_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
             sum_pdf, processPacketFull_pdf, 
             sum_start, processPacketFull_start, 
             sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
+            sum_pdf, noop_1_6_pdf, 
+            sum_start, noop_1_6_start, 
+            sum_binsize, noop_1_6_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
             sum_pdf, executeFull_pdf, 
             sum_start, executeFull_start, 
             sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_C_OH_pdf, 
-        sum_start, min_C_OH, 
-        sum_binsize, initial_binsize)
+            sum_pdf, net_C_OH_pdf, 
+            sum_start, min_C_OH, 
+            sum_binsize, initial_binsize)
     binrange = sum_binsize * len(sum_pdf)
     conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
     return sum_pdf, conv_bins 
@@ -229,10 +246,9 @@ def network_to_pdf(total_network_data, src, targ, initial_binsize):
     net_pdf, _ = raw_data_to_pdf(latencies, initial_binsize)
     return net_pdf, min(latencies)
 
-def compute_TB2b_pdf_simple(f, actual_client_latencies, total_network_data, actual_method_latencies, initial_binsize):
+def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, initial_binsize):
     """ 
     Arguments:
-        actual_client_latencies -- list of actual client latencies
         total_network_data -- map[src node][target node] -> list of network tuples
         actual_method_latencies -- map of method name to list of latencies
         // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
@@ -247,6 +263,7 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, total_network_data, actu
 
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2a", initial_binsize)
     net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, "us-east-2a", "us-west-1a", initial_binsize)
+    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies["MaxQueueing"], initial_binsize), min(actual_method_latencies["MaxQueueing"])
 
 
     # TB2A
@@ -275,6 +292,10 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, total_network_data, actu
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, processPacketFull_pdf, 
         sum_start, min(actual_method_latencies["LReplicaNextProcessPacket"]), 
+        sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, maxQ_pdf, 
+        sum_start, maxQ_start, 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, noop_0_10_pdf, 
