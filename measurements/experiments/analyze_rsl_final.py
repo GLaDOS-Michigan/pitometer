@@ -21,8 +21,8 @@ from plot_constants import *
 
 THROW=0  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "train"
-TEST_SET = "train"
+TRAIN_SET = "test"
+TEST_SET = "test"
 F_VALUES = [1, 2, 3, 4, 5]
 
 
@@ -121,7 +121,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     with PdfPages("%s/%s (simple).pdf" %(root, name)) as pp:
         for f in F_VALUES:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
-            actual_method_latencies = compute_actual_node(total_node_data[1])   # Always use [1] for training data
+            actual_method_latencies = compute_actual_node(total_node_data[f]) 
             actual_network_latencies = compute_actual_network(total_network_data)
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
@@ -132,7 +132,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     with PdfPages("%s/%s (advanced).pdf" %(root, name)) as pp:
         for f in F_VALUES:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
-            actual_method_latencies = compute_actual_node(total_node_data[1])   # Always use [1] for training data
+            actual_method_latencies = compute_actual_node(total_node_data[f])  
             actual_network_latencies = compute_actual_network(total_network_data)
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
@@ -189,6 +189,7 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
         actual_method_latencies -- map of method name to list of latencies
     """
     print("Plotting distribution for f = %d" %(f))
+    sanity_check(actual_client_latencies, actual_network_latencies, actual_method_latencies)
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
@@ -204,6 +205,22 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
     this_ax.set_xlim(0, 1)
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
     this_ax.legend()
+
+
+def sanity_check(actual_client_latencies, total_network_data, actual_method_latencies):
+    # check that network minimums are sane
+    print()
+    print("SANITY CHECK")
+    print("min/max for end-to-end client latency is %.3f/%.3f" %(min(actual_client_latencies), max(actual_client_latencies)))
+    print()
+    print("min/max for message delay is %.3f/%.3f" %(min(total_network_data), max(total_network_data)))
+    print()
+    q_data = actual_method_latencies["MaxQueueing"]
+    print(len(q_data))
+    print(len(actual_client_latencies))
+    print("min/max for queueing is %.3f/%.3f" %(min(q_data), max(q_data)))
+    print("percentiles for queueing is p50:%.3f, p90:%.3f, p99:%.3f, p99.9:%.3f," %(np.percentile(q_data, 50), np.percentile(q_data, 90), np.percentile(q_data, 99), np.percentile(q_data, 99.9)))
+    print()
 
 
 def smooth(x_vals, y_vals):
@@ -403,7 +420,7 @@ def compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_
     noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
-    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies["MaxQueueing"], initial_binsize), min(actual_method_latencies["MaxQueueing"])
+    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies[MAX_QUEUE], initial_binsize), min(actual_method_latencies[MAX_QUEUE])
     net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
 
 
@@ -502,7 +519,7 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies
     noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
     noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
-    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies["MaxQueueing"], initial_binsize), min(actual_method_latencies["MaxQueueing"])
+    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies[MAX_QUEUE], initial_binsize), min(actual_method_latencies[MAX_QUEUE])
     net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
 
     # TB2A
