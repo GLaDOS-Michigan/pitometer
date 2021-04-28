@@ -119,13 +119,15 @@ do
 done
 
 # Run the client. Note that client is fixed at the present host
-mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION 1000 $TEMP_DIR
+mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION 1500 $TEMP_DIR
 
 echo "Run completed"
 
 # Finally, grab results from each node to local machine
 echo "sleep $(( node_duration ))"
-sleep $(( node_duration ))    # allow some time for the logs to finish writing to file. These logs are massive
+# sleep $(( node_duration ))    # allow some time for the logs to finish writing to file. These logs are massive
+#                               # so leave plenty of time
+sleep $(( 15 ))               # allow some time for the logs to finish writing to file. These logs are massive
                               # so leave plenty of time
 echo "Collecting results..."
 
