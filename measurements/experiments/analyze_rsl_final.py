@@ -408,9 +408,9 @@ def compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_
 
 
     sum_pdf, sum_start, sum_binsize = add_histograms(
-            maxQ_pdf, tb2b_pdf, 
-            maxQ_start, tb2b_start, 
-            initial_binsize, tb2b_binsize)
+            tb2b_pdf, maxQ_pdf, 
+            tb2b_start, maxQ_start, 
+            tb2b_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
             sum_pdf, processPacketFull_pdf, 
             sum_start, processPacketFull_start, 
@@ -424,9 +424,9 @@ def compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_
             sum_start, executeFull_start, 
             sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_pdf, 
-        sum_start, min(actual_network_latencies), 
-        sum_binsize, initial_binsize)
+            sum_pdf, net_pdf, 
+            sum_start, min(actual_network_latencies), 
+            sum_binsize, initial_binsize)
     binrange = sum_binsize * len(sum_pdf)
     conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
     return sum_pdf, conv_bins 
