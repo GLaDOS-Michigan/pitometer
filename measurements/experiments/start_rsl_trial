@@ -116,7 +116,7 @@ do
 done
 
 # Run the client
-mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $TEMP_DIR
+mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION 321 $TEMP_DIR
 
 echo "Run completed"
 

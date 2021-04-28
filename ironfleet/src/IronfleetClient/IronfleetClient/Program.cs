@@ -13,7 +13,7 @@
         static void usage()
         {
             // Console.WriteLine("Expected usage: clientIP IP0 port0 IP1 port1 IP2 port2 num_threads duration_secs [send_reqs_at_once]");
-            Console.WriteLine("Expected usage: clientIP IP_1 port_1 ... IP_n port_n num_threads duration_secs output_dir");
+            Console.WriteLine("Expected usage: clientIP IP_1 port_1 ... IP_n port_n num_threads duration_secs sleep_time output_dir");
         }
 
         static void Main(string[] args)
@@ -31,6 +31,7 @@
 
             ulong num_threads = 1;
             ulong experiment_duration = 60;
+            int sleep_time = 250;
             string output_directory = String.Format("IronfleetOutput/Job-{0}", guid);
             IPAddress client_ip;
             bool send_reqs_at_once = false;
@@ -40,8 +41,11 @@
             try
             {
                 output_directory = args[args.Length-1];
-                experiment_duration = Convert.ToUInt64(args[args.Length-2]);
-                num_threads = Convert.ToUInt64(args[args.Length-3]);
+                sleep_time = Convert.ToInt32(args[args.Length-2]);  // time the client sleeps between requests, in milliseconds
+                ClientBase.sleep_time = sleep_time;
+
+                experiment_duration = Convert.ToUInt64(args[args.Length-3]);
+                num_threads = Convert.ToUInt64(args[args.Length-4]);
                 client_ip = IPAddress.Parse(args[0]);
 
                 for (int i = 1; i < args.Length-3; i=i+2) {
