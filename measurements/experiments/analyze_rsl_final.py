@@ -19,10 +19,10 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=10  # Ignore the first THROW requests in computing client latencies
+THROW=0  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "dummy"
-TEST_SET = "dummy"
+TRAIN_SET = "train"
+TEST_SET = "train"
 F_VALUES = [1, 2, 3, 4, 5]
 
 
@@ -117,18 +117,6 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
         total_node_data -- total_node_data[f][node_id][method_name] = list of durations
         total_client_data -- total_client_data[f][i] = list of client durations for trial i
     """
-    
-    print("Plotting graphs for Paxos distributions (advanced)")
-    with PdfPages("%s/%s (advanced).pdf" %(root, name)) as pp:
-        for f in F_VALUES:
-            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
-            actual_method_latencies = compute_actual_node(total_node_data[1])   # Always use [1] for training data
-            actual_network_latencies = compute_actual_network(total_network_data)
-            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
-            plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
-            pp.savefig(fig)
-            plt.close(fig)
     print("Plotting graphs for Paxos distributions (simple)")
     with PdfPages("%s/%s (simple).pdf" %(root, name)) as pp:
         for f in F_VALUES:
@@ -138,6 +126,17 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
             plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
+            pp.savefig(fig)
+            plt.close(fig)
+    print("Plotting graphs for Paxos distributions (advanced)")
+    with PdfPages("%s/%s (advanced).pdf" %(root, name)) as pp:
+        for f in F_VALUES:
+            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
+            actual_method_latencies = compute_actual_node(total_node_data[1])   # Always use [1] for training data
+            actual_network_latencies = compute_actual_network(total_network_data)
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
+            plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
 
@@ -524,14 +523,18 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies
         sum_start, min(actual_network_latencies), 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, maxQ_pdf, 
-        sum_start, maxQ_start, 
+        sum_pdf, net_pdf, 
+        sum_start, min(actual_network_latencies), 
         sum_binsize, initial_binsize)
     
     # TB2B
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, processPacketFull_pdf, 
         sum_start, min(actual_method_latencies["LReplicaNextProcessPacket"]), 
+        sum_binsize, initial_binsize)
+    sum_pdf, sum_start, sum_binsize = add_histograms(
+        sum_pdf, maxQ_pdf, 
+        sum_start, maxQ_start, 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, noop_0_10_pdf, 
@@ -638,7 +641,6 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
     y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
 
-    # y_vals_actual_median = [statistics.median(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
 
     y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
@@ -658,6 +660,7 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed')
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
+        # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='green')
         
         this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed')
         this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
