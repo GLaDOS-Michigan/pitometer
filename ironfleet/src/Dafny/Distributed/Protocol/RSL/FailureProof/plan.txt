@@ -78,3 +78,15 @@ Forall node n,
  node n is a suspector, but has not sent HB, or
  node n is a suspector and there's an HB with TS <= ..., or
  node 1 knows that n is a suspector.
+
+
+At the moment that we become a suspector, we know that the heartbeat_period ends
+within (node.ts + HBperiod) time. So, we can know that the first suspecting HB
+to be sent will be sent at time at most (SecondEpochEnd + HBperiod).
+
+If we are the suspector and we haven't sent the heartbeat, then we know that
+node.ts <= .
+ns
+
+=
+boilerplate for step destruction:
