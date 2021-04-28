@@ -314,13 +314,13 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 		Max__batch__delay:               uint64(10)}}
 
 	// Tune for rsl latency-throughput measurements: restore to C# default
-	return ParametersState{ParametersState_ParametersState{
-		Max__log__length:                uint64(7),
-		Baseline__view__timeout__period: uint64(1000),
-		Heartbeat__period:               uint64(100),
-		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
-		Max__batch__size:                uint64(BatchSize),
-		Max__batch__delay:               uint64(10)}}
+	// return ParametersState{ParametersState_ParametersState{
+	// 	Max__log__length:                uint64(7),
+	// 	Baseline__view__timeout__period: uint64(1000),
+	// 	Heartbeat__period:               uint64(100),
+	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
+	// 	Max__batch__size:                uint64(BatchSize),
+	// 	Max__batch__delay:               uint64(10)}}
 }
 
 // End of class Default__
