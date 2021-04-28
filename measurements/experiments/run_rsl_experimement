@@ -60,3 +60,10 @@ done
 
 end_timestamp=$(date +"%d-%b-%H%M")
 echo "RSL experiment completed at time $end_timestamp"
+
+# Process results immediately when done
+sleep 5
+echo "Processing results"
+./process_rsl_results $ROOT_DIR/$TIMESTAMP
+echo "Done"
+
