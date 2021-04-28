@@ -22,8 +22,8 @@ from plot_constants import *
 
 THROW=10  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "test"
-TEST_SET = "test"
+TRAIN_SET = "dummy"
+TEST_SET = "dummy"
 F_VALUES = [1]
 
 START = datetime.fromisoformat("2021-04-24 14:00:00")
@@ -193,6 +193,8 @@ def sanity_check(actual_client_latencies, total_network_data, actual_method_late
             print("min/max from %s to %s is %.3f/%.3f" %(src, dst, min(data), max(data)))
     print()
     q_data = actual_method_latencies["MaxQueueing"]
+    print(len(q_data))
+    print(len(actual_client_latencies))
     print("min/max for queueing is %.3f/%.3f" %(min(q_data), max(q_data)))
     print("percentiles for queueing is p50:%.3f, p90:%.3f, p99:%.3f, p99.9:%.3f," %(np.percentile(q_data, 50), np.percentile(q_data, 90), np.percentile(q_data, 99), np.percentile(q_data, 99.9)))
     print()
@@ -214,7 +216,11 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2a", initial_binsize)
-    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies["MaxQueueing"], initial_binsize), min(actual_method_latencies["MaxQueueing"])
+
+    q_data = actual_method_latencies["MaxQueueing"]
+    # q_data.sort()
+    # q_data = q_data[len(q_data)//1000*999:]
+    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(q_data, initial_binsize), min(q_data)
 
     sum_pdf, sum_start, sum_binsize = add_histograms(
             tb2b_pdf, maxQ_pdf, 
@@ -263,7 +269,11 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
 
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2a", initial_binsize)
     net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, "us-east-2a", "us-west-1a", initial_binsize)
-    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies["MaxQueueing"], initial_binsize), min(actual_method_latencies["MaxQueueing"])
+
+    q_data = actual_method_latencies["MaxQueueing"]
+    # q_data.sort()
+    # q_data = q_data[len(q_data)//1000*999:]  
+    (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(q_data, initial_binsize), min(q_data)
 
 
     # TB2A
