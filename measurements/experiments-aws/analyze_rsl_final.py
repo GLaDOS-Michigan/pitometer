@@ -26,8 +26,8 @@ TRAIN_SET = "test"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-04-27 23:00:00")
-END = datetime.fromisoformat("2021-04-28 05:00:00")
+START = datetime.fromisoformat("2020-04-28 18:00:00")
+END = datetime.fromisoformat("2022-04-28 18:45:00")
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
@@ -163,7 +163,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     this_ax.set_title('Latency distributions of an IronRSL instance')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
-    this_ax.set_ylim(0, 200)
+    this_ax.set_ylim(0, 150)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
@@ -215,7 +215,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
-    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2a", initial_binsize)
+    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2b", "us-east-2a", initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -249,6 +249,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
 
 def network_to_pdf(total_network_data, src, targ, initial_binsize):
     latencies = [p[0]/2.0 for p in total_network_data[src][targ] if START < p[1] and p[1] < END and not p[2]]
+    latencies.extend([p[0]/2.0 for p in total_network_data[targ][src] if START < p[1] and p[1] < END and not p[2]])
     net_pdf, _ = raw_data_to_pdf(latencies, initial_binsize)
     return net_pdf, min(latencies)
 
@@ -267,8 +268,8 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
     noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
 
-    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2a", initial_binsize)
-    net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, "us-east-2a", "us-west-1a", initial_binsize)
+    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2b", initial_binsize)
+    net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, "us-east-2b", "us-west-1a", initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
