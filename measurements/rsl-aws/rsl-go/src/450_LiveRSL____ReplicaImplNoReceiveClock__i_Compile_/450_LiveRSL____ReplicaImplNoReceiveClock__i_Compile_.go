@@ -106,6 +106,7 @@ import (
 	_System "System_"
 	"clock"
 	_dafny "dafny"
+	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -256,6 +257,8 @@ func (_this type_Default___) String() string {
 	return "_450_LiveRSL____ReplicaImplNoReceiveClock__i_Compile.Default__"
 }
 
+var declare = true
+
 func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextReadClockMaybeNominateValueAndSend2aLog *clock.Stopwatch, LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog *clock.Stopwatch) bool {
 	LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogStartEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
 	LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.LogStartEvent("LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
@@ -320,6 +323,10 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNomin
 		LReplicaNextReadClockMaybeNominateValueAndSend2aLog.PopStartEvent()
 	} else {
 		LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
+		if declare {
+			fmt.Println("TONY: I am the leader, sent 1a")
+			declare = false
+		}
 		LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.PopStartEvent()
 	}
 	return ok
