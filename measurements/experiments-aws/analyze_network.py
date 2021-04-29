@@ -78,7 +78,7 @@ def plot_figures(name, root, total_data):
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # plot_aggregate(pp, name, root, total_data)
         # plot_individuals(pp, name, root, total_data)
-        # plot_cdf(pp, name, root, total_data)
+        plot_cdf(pp, name, root, total_data)
         plot_time_series(pp, name, root, total_data)
 
 
@@ -90,8 +90,8 @@ def plot_cdf(pp, name, root, total_data):
         root -- directory to save this figure
         total_data {2D map} -- total_data[i][j] is the timings for node i to node j
     """
-    # fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
-    fig, axes = plt.subplots(2, 2, figsize=(5*2, 5*2))
+    fig, axes = plt.subplots(len(NODES), len(NODES), figsize=(4*len(NODES), 4*len(NODES)), sharex=True)
+    # fig, axes = plt.subplots(2, 2, figsize=(5*2, 5*2))
     fig.suptitle(name)
     sns.despine(left=True)
     
@@ -99,9 +99,7 @@ def plot_cdf(pp, name, root, total_data):
     for i in total_data.keys():
         col = 0
         for j in total_data[i].keys():
-            if i > 8 or j > 8:
-                continue
-            i_j_data = total_data[i][j]
+            i_j_data = [p[0]/2 for p in total_data[i][j] if not p[2]]
             this_ax = axes[row][col]
 
             this_ax.set_title("node%s -> node%s" %(i, j), fontsize=9)
@@ -109,7 +107,7 @@ def plot_cdf(pp, name, root, total_data):
 
             cdf, bins = raw_data_to_cdf(i_j_data)
 
-            this_ax.plot(cdf, bins[:-1])
+            this_ax.plot(cdf, bins)
 
             if i == len(NODES) - 1:
                 this_ax.set_xlabel('round trip time (ms)', fontsize=9)
@@ -243,7 +241,7 @@ def plot_individuals(pp, name, root, total_data):
     for i in total_data.keys():
         col = 0
         for j in total_data[i].keys():
-            i_j_data = [p[0] for p in total_data[i][j]]  # each elem of total_data is a pair
+            i_j_data = [p[0]/2 for p in total_data[i][j]]  # each elem of total_data is a pair
             this_ax = axes[row][col]
 
             this_ax.set_title("%s -> %s" %(i, j), fontsize=9)
