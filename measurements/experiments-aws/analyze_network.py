@@ -14,7 +14,7 @@ import seaborn as sns
 
 from conv import *
 
-NODES = [1, 2, 3]
+NODES = [1, 2, 3, 4]
 PAYLOADS = [16]
 NODES.sort()
 PAYLOADS.sort()
@@ -298,10 +298,10 @@ def analyze_csv(filepath):
         csvreader = csv.reader(node1, delimiter=',',)
         i = 0
         for row in csvreader:
-            # Only look at every 50th row
             i += 1
-            if i % 50 == 0 and  row != []:
-                
+            # Only look at every 50th row
+            # if i % 50 == 0 and  row != []:
+            if True:            # look at every row
                 if "TIMEOUT" in row[1]:
                     timestamp = parse_go_timestamp(row[5])
                     durations_milli.append((0,timestamp, True))
