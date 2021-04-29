@@ -66,7 +66,7 @@ def main(exp_dir):
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
         # plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
-        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
+        # plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
         plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
     print("Done")
 

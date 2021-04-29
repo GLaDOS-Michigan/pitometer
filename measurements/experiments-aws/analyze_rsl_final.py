@@ -20,14 +20,14 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=10  # Ignore the first THROW requests in computing client latencies
+THROW=0  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "dummy"
-TEST_SET = "dummy"
+TRAIN_SET = "test"
+TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-04-24 14:00:00")
-END = datetime.fromisoformat("2021-04-24 20:30:00")
+START = datetime.fromisoformat("2021-04-27 23:00:00")
+END = datetime.fromisoformat("2021-04-28 05:00:00")
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
@@ -219,7 +219,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
-    # q_data = q_data[len(q_data)//1000*999:]
+    # q_data = q_data[len(q_data)//10*9:]
     (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(q_data, initial_binsize), min(q_data)
 
     sum_pdf, sum_start, sum_binsize = add_histograms(
@@ -272,7 +272,7 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
-    # q_data = q_data[len(q_data)//1000*999:]  
+    # q_data = q_data[len(q_data)//10*9:]  
     (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(q_data, initial_binsize), min(q_data)
 
 
