@@ -1,0 +1,12 @@
+#!/bin/sh
+
+path=$1
+alias dafny='/usr/lib/dafny2.3/dafny /deprecation:0 /allowGlobals /noNLarith /autoTriggers:1 /z3opt:nlsat.randomize=false /warnShadowing /ironDafny /compile:0'
+
+for f in $path/*.dfy
+do
+	echo $f
+	dafny $f | grep -vi "Warning"
+	echo 
+	echo
+done
