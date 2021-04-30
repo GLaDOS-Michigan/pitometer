@@ -21,6 +21,10 @@ PAYLOADS.sort()
 HOSTS = "/home/nudzhang/Documents/pitometer/measurements/experiments-aws/aws-hosts.csv"
 
 
+START = datetime.fromisoformat("2021-04-29 17:44:54")
+END = datetime.fromisoformat("2021-04-29 19:35:00")
+
+
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     for payload in PAYLOADS:
@@ -302,13 +306,16 @@ def analyze_csv(filepath):
             if True:            # look at every row
                 if "TIMEOUT" in row[1]:
                     timestamp = parse_go_timestamp(row[5])
-                    durations_milli.append((0,timestamp, True))
+                    if START < timestamp and timestamp < END:
+                        durations_milli.append((0,timestamp, True))
                 else:
                     start_time = int(row[3])
                     end_time = int(row[4])
                     timestamp = parse_go_timestamp(row[5])
                     dur = (end_time - start_time)/1_000_000.0  # duration in milliseconds
-                    durations_milli.append((dur,timestamp, False))
+                    # throw away anomalous data, and consider desired time period
+                    if dur > 0.25 and START < timestamp and timestamp < END:
+                        durations_milli.append((dur,timestamp, False))
     return durations_milli
 
 
