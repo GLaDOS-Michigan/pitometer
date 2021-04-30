@@ -26,8 +26,8 @@ TRAIN_SET = "test"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-04-29 17:44:54")
-END = datetime.fromisoformat("2021-04-29 19:35:00")
+START = datetime.fromisoformat("2021-04-30 09:35:00")
+END = datetime.fromisoformat("2021-04-30 12:19:00")
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
