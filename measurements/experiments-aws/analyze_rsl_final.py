@@ -20,14 +20,14 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=20  # Ignore the first THROW requests in computing client latencies
+THROW=100  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "test"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-04-29 11:44:00")
-END = datetime.fromisoformat("2021-04-29 12:50:00")
+START = datetime.fromisoformat("2021-04-29 17:44:54")
+END = datetime.fromisoformat("2021-04-29 19:35:00")
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
@@ -189,7 +189,7 @@ def sanity_check(actual_client_latencies, total_network_data, actual_method_late
     nodes = ["us-east-2a", "us-west-1a", "us-west-2a"]
     for src in nodes:
         for dst in nodes:
-            data = [p[0]/2.0 for p in total_network_data[src][dst] if START < p[1] and p[1] < END and not p[2] and p[0] > 0.2]
+            data = [p[0]/2.0 for p in total_network_data[src][dst] if START < p[1] and p[1] < END and not p[2]]
             print("min/max from %s to %s is %.3f/%.3f" %(src, dst, min(data), max(data)))
     print()
     q_data = actual_method_latencies["MaxQueueing"]
@@ -248,8 +248,8 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
 
 
 def network_to_pdf(total_network_data, src, targ, initial_binsize):
-    latencies = [p[0]/2.0 for p in total_network_data[src][targ] if START < p[1] and p[1] < END and not p[2] and p[0] > 0.2]
-    latencies.extend([p[0]/2.0 for p in total_network_data[targ][src] if START < p[1] and p[1] < END and not p[2] and p[0] > 0.2])
+    latencies = [p[0]/2.0 for p in total_network_data[src][targ] if START < p[1] and p[1] < END and not p[2]]
+    latencies.extend([p[0]/2.0 for p in total_network_data[targ][src] if START < p[1] and p[1] < END and not p[2]])
     net_pdf, _ = raw_data_to_pdf(latencies, initial_binsize)
     return net_pdf, min(latencies)
 
