@@ -67,8 +67,9 @@ func (el *Stopwatch) LogStartEvent(name string) {
 		fmt.Printf("Error: Pending interval already present\n")
 		os.Exit(1)
 	}
+	var st = time.Since(el.initTime)
 	var ti = newTimeInterval(el.nextIndex, name)
-	ti.logStartTime(time.Since(el.initTime))
+	ti.logStartTime(st)
 	el.currInterval = ti
 }
 
@@ -85,10 +86,11 @@ func (el *Stopwatch) LogEndEvent(name string) {
 		el.currInterval = nil
 		return
 	}
-	ti.logEndTime(time.Since(el.initTime))
 	(*el.log)[el.nextIndex] = *ti
 	el.nextIndex++
 	el.currInterval = nil
+	var et = time.Since(el.initTime)
+	ti.logEndTime(et)
 }
 
 // PopStartEvent deletes the last event from the log, which must be a start event
@@ -101,8 +103,9 @@ func (el *Stopwatch) PopStartEvent() {
 }
 
 func (el *Stopwatch) MakeStartEvent() *TimeInterval {
+	var st = time.Since(el.initTime)
 	var ti = newTimeInterval(0, el.name)
-	ti.logStartTime(time.Since(el.initTime))
+	ti.logStartTime(st)
 	return ti
 }
 
@@ -113,11 +116,12 @@ func (el *Stopwatch) RecordEndEvent(ti *TimeInterval) {
 		el.currInterval = nil
 		return
 	}
-	ti.logEndTime(time.Since(el.initTime))
-	ti.id = el.nextIndex
 	(*el.log)[el.nextIndex] = *ti
+	ti.id = el.nextIndex
 	el.nextIndex++
 	el.currInterval = nil
+	var et = time.Since(el.initTime)
+	ti.logEndTime(et)
 }
 
 func (el *Stopwatch) AppendTimeInterval(ti *TimeInterval) {
