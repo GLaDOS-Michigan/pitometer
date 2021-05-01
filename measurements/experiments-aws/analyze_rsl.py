@@ -329,7 +329,7 @@ def plot_client_figures(name, root, data, start_end_data):
         pp.savefig(fig)
         plt.close(fig)
 
-        # Draw individual trials
+        # Draw individual trial historgrams
         trials = list(data.keys())
         trials.sort()
 
@@ -351,6 +351,51 @@ def plot_client_figures(name, root, data, start_end_data):
                 # Plot the subfigure 
                 this_ax.grid()
                 sns.distplot(durations_milli, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
+                if len(durations_milli) > 0:
+                    stats = AnchoredText(
+                        generate_client_statistics(durations_milli, start_end=start_end_data[t]), 
+                        loc='upper right',  
+                        prop=dict(size=8),
+                        bbox_to_anchor=(1.1, 1),
+                        bbox_transform=this_ax.transAxes
+                    )
+                    this_ax.add_artist(stats)
+                row += 1
+            pad = 5
+            if len(trial_page) == 1:
+                axes.annotate("Trial %d" %trial_page[0], xy=(0, 0.5), xytext=(-axes.yaxis.labelpad - pad, 0),
+                            xycoords=axes.yaxis.label, textcoords='offset points',
+                            fontsize=10, ha='right', va='center')
+            else:
+                for ax, t in zip(axes, trial_page):
+                    ax.annotate("Trial %d" %t, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                            xycoords=ax.yaxis.label, textcoords='offset points',
+                            fontsize=10, ha='right', va='center')
+            fig.tight_layout()
+            fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
+            plt.subplots_adjust(hspace=0.2)
+            pp.savefig(fig)
+            plt.close(fig)
+
+        # Draw individual trial timeseries
+        trials_per_page = 5
+        trials_pages = [trials[i:i + trials_per_page] for i in range(0, len(trials), trials_per_page)]  
+
+        for trial_page in trials_pages:
+            fig, axes = plt.subplots(len(trial_page), 1, figsize=(8.5, 11), sharex=True)
+            fig.suptitle("Client data timeseries for each trial", fontsize=12, fontweight='bold')
+            sns.despine(left=True)
+
+            row = 0
+            for t in trial_page:
+                durations_milli = data[t]
+                if len(trial_page) == 1:
+                    this_ax = axes
+                else:
+                    this_ax = axes[row]
+                # Plot the subfigure 
+                this_ax.grid()
+                this_ax.scatter(range(len(durations_milli)), durations_milli, marker='.', s=3)
                 if len(durations_milli) > 0:
                     stats = AnchoredText(
                         generate_client_statistics(durations_milli, start_end=start_end_data[t]), 

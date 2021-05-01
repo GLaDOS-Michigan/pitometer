@@ -30,9 +30,7 @@ METHODS=(   "LReplicaNextProcessPacket"
         )
 
 # Delete old files
-# find $ROOT_DIR -type f -name "*.csv" -delete
-# Delete old files
-find $ROOT_DIR -type f -name "*.pdf" -delete
+# find $ROOT_DIR -type f -name "*.pdf" -delete
 
 
 LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
