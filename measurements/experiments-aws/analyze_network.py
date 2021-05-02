@@ -21,9 +21,10 @@ PAYLOADS.sort()
 HOSTS = "/home/nudzhang/Documents/pitometer/measurements/experiments-aws/aws-hosts.csv"
 
 
-START = datetime.fromisoformat("2021-04-29 17:44:54")
-END = datetime.fromisoformat("2021-04-29 19:35:00")
+START = datetime.fromisoformat("2021-05-01 21:13:57")
+END = datetime.fromisoformat("2021-05-01 23:37:19")
 
+SAMPLE_EVERY = 10
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
@@ -80,7 +81,6 @@ def plot_figures(name, root, total_data):
     """
     # assert len(total_data) == len(NODES) and len(total_data[NODES[0]]) == len(NODES)
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        # plot_aggregate(pp, name, root, total_data)
         # plot_individuals(pp, name, root, total_data)
         plot_cdf(pp, name, root, total_data)
         plot_time_series(pp, name, root, total_data)
@@ -157,9 +157,18 @@ def plot_time_series(pp, name, root, total_data):
             fmt_hr = mdates.HourLocator(interval=1)
             this_ax.xaxis.set_minor_locator(fmt_hr)
 
-            # see https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior for formatting str
+            # See https://docs.python.org/3/library/datetime.html#strftime-strptime-behavior for formatting str
             this_ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d %H:%M')) 
 
+            # Statistics
+            stats = AnchoredText(
+                generate_statistics(y_vals), 
+                loc='upper right',  
+                prop=dict(size=8),
+                bbox_to_anchor=(1.1, 1),
+                bbox_transform=this_ax.transAxes
+            )
+            this_ax.add_artist(stats)
             if i == len(NODES) - 1:
                 this_ax.set_xlabel('round trip time (ms)', fontsize=9)
             row += 1
@@ -172,61 +181,6 @@ def plot_time_series(pp, name, root, total_data):
     pp.savefig(fig)
     plt.close(fig)
 
-
-
-
-def plot_aggregate(pp, name, root, total_data):
-    """ Plot the aggregated network behavior
-    Arguments:
-        pp -- PdfPages object
-        name -- name of this figure
-        root -- directory to save this figure
-        total_data {2D map} -- total_data[i][j] is the timings for node i to node j
-    """
-    # First, collect list of ALL data
-    aggregate_data = []  
-    for i in total_data.keys():
-        for durations in total_data[i].values():
-            aggregate_data.extend(durations)
-            
-
-    # Next, draw the graph
-    fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
-    fig.suptitle(name)
-    sns.despine(left=True)
-    
-    this_ax.set_title("Aggregate data across all nodes", fontsize=9)
-    this_ax.grid()
-    sns.distplot(aggregate_data, kde=False, ax=this_ax, hist_kws=dict(edgecolor="k", linewidth=0.1))
-    stats = AnchoredText(
-        generate_statistics(aggregate_data), 
-        loc='upper right',  
-        prop=dict(size=8),
-        bbox_to_anchor=(1.1, 1),
-        bbox_transform=this_ax.transAxes
-    )
-    this_ax.add_artist(stats)
-    this_ax.set_xlabel('round trip time (ms)', fontsize=10)
-    this_ax.set_ylabel('count', fontsize=10)
-    pp.savefig(fig)
-    plt.close(fig)
-
-    # Next, draw the cdf graph
-    fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
-    fig.suptitle(name)
-    
-    cdf, bins = raw_data_to_cdf(aggregate_data)
-
-    this_ax.plot(cdf, bins)
-    this_ax.set_title("Aggregate cdf across all nodes", fontsize=9)
-    this_ax.grid()
-    this_ax.set_xlabel('cumulative probability', fontsize=10)
-    this_ax.set_ylabel('round trip time (ms)', fontsize=10)
-
-    # Draw plot
-    # plt.subplots_adjust(hspace=0.2, wspace=0.3)
-    pp.savefig(fig)
-    plt.close(fig)
 
 
 def plot_individuals(pp, name, root, total_data):
@@ -301,9 +255,9 @@ def analyze_csv(filepath):
         i = 0
         for row in csvreader:
             i += 1
-            # Only look at every 50th row
-            # if i % 50 == 0 and  row != []:
-            if True:            # look at every row
+            
+            # Only look at every SAMPLE_EVERY row
+            if (SAMPLE_EVERY <= 1 or i % SAMPLE_EVERY == 0) and  row != []:
                 if "TIMEOUT" in row[1]:
                     timestamp = parse_go_timestamp(row[5])
                     if START < timestamp and timestamp < END:
