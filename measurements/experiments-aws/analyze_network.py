@@ -24,7 +24,7 @@ HOSTS = "/home/nudzhang/Documents/pitometer/measurements/experiments-aws/aws-hos
 START = datetime.fromisoformat("2021-05-01 21:13:57")
 END = datetime.fromisoformat("2021-05-01 23:37:19")
 
-SAMPLE_EVERY = 10
+SAMPLE_EVERY = 1
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
@@ -253,9 +253,10 @@ def analyze_csv(filepath):
     with open(filepath, 'r') as node1:
         csvreader = csv.reader(node1, delimiter=',',)
         i = 0
+        count = 0  # count of valid, non-timeout entries
+        sum = 0
         for row in csvreader:
             i += 1
-            
             # Only look at every SAMPLE_EVERY row
             if (SAMPLE_EVERY <= 1 or i % SAMPLE_EVERY == 0) and  row != []:
                 if "TIMEOUT" in row[1]:
@@ -267,9 +268,14 @@ def analyze_csv(filepath):
                     end_time = int(row[4])
                     timestamp = parse_go_timestamp(row[5])
                     dur = (end_time - start_time)/1_000_000.0  # duration in milliseconds
-                    # throw away anomalous data, and consider desired time period
-                    if dur > 0.25 and START < timestamp and timestamp < END:
+                    # Weed out anomalous data
+                    if count > 0 and dur < sum / count / 10:
+                        continue
+                    # Consider desired time period
+                    if START < timestamp and timestamp < END:
                         durations_milli.append((dur,timestamp, False))
+                        count += 1
+                        sum += dur
     return durations_milli
 
 
