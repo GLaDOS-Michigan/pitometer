@@ -43,14 +43,14 @@ func (ti *TimeInterval) logEndTime(et time.Duration) {
 type Stopwatch struct {
 	name         string
 	initTime     time.Time
-	log          *[]*TimeInterval
+	log          *[]TimeInterval
 	currInterval *TimeInterval
 	nextIndex    int
 }
 
 // NewStopwatch generates a new log pre-initialized to length n
 func NewStopwatch(n uint, name string) *Stopwatch {
-	var l = make([]*TimeInterval, n, n)
+	var l = make([]TimeInterval, n, n)
 	var s = &Stopwatch{
 		name:         name,
 		initTime:     time.Now(),
@@ -86,11 +86,11 @@ func (el *Stopwatch) LogEndEvent(name string) {
 		el.currInterval = nil
 		return
 	}
-	(*el.log)[el.nextIndex] = ti
-	el.nextIndex++
 	el.currInterval = nil
 	var et = time.Since(el.initTime)
 	ti.logEndTime(et)
+	(*el.log)[el.nextIndex] = *ti
+	el.nextIndex++
 }
 
 // PopStartEvent deletes the last event from the log, which must be a start event
@@ -116,17 +116,17 @@ func (el *Stopwatch) RecordEndEvent(ti *TimeInterval) {
 		el.currInterval = nil
 		return
 	}
-	(*el.log)[el.nextIndex] = ti
 	ti.id = el.nextIndex
-	el.nextIndex++
-	el.currInterval = nil
 	var et = time.Since(el.initTime)
 	ti.logEndTime(et)
+	(*el.log)[el.nextIndex] = *ti
+	el.nextIndex++
+	el.currInterval = nil
 }
 
 func (el *Stopwatch) AppendTimeInterval(ti *TimeInterval) {
 	ti.id = el.nextIndex
-	(*el.log)[el.nextIndex] = ti
+	(*el.log)[el.nextIndex] = *ti
 	el.nextIndex++
 }
 
