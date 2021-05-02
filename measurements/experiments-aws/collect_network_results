@@ -31,5 +31,10 @@ do
     NODE_NAME=${HOST_NAME_LIST[$i]}
     NODE_ADDR=${HOST_IP_LIST[$i]}
 
-    scp $NODE_ADDR:$TEMP_DIR/node_$NODE_NAME.log $RESULTS_DIR
+    scp $NODE_ADDR:$TEMP_DIR/node_$NODE_NAME.log $RESULTS_DIR/payload16
 done
+
+# Also send data to skynode 20
+echo "Sending results to Skynode20"
+scp -r $RESULTS_DIR nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws/final_data/network
+echo "Done"
