@@ -396,15 +396,6 @@ def plot_client_figures(name, root, data, start_end_data):
                 # Plot the subfigure 
                 this_ax.grid()
                 this_ax.scatter(range(len(durations_milli)), durations_milli, marker='.', s=3)
-                if len(durations_milli) > 0:
-                    stats = AnchoredText(
-                        generate_client_statistics(durations_milli, start_end=start_end_data[t]), 
-                        loc='upper right',  
-                        prop=dict(size=8),
-                        bbox_to_anchor=(1.1, 1),
-                        bbox_transform=this_ax.transAxes
-                    )
-                    this_ax.add_artist(stats)
                 row += 1
             pad = 5
             if len(trial_page) == 1:
