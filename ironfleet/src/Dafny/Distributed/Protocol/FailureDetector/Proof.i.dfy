@@ -38,12 +38,25 @@ predicate ClockAssumption(s:TFD_State)
 // inductive on its own
 predicate BasicInvariant(s:TFD_State)
 {
+  && (forall i :: i in s.t_servers ==> i == s.config.detectorEp || i == s.config.nodeEp)
   && |s.t_servers| == 2
     && s.config.nodeEp in s.t_servers
     && s.config.detectorEp in s.t_servers
     && s.t_servers[s.config.detectorEp].v.D?
+    && (0 <= s.t_servers[s.config.detectorEp].v.d.nextActionIndex < 2)
     && s.t_servers[s.config.nodeEp].v.N?
     && s.t_servers[s.config.detectorEp].v.D?
+}
+
+lemma BasicInvariantInductive(s:TFD_State, s':TFD_State, fs:FailState)
+  requires Assumption(s)
+  requires Assumption(s')
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires TFD_NextOneServer(s, s', s.t_environment.nextStep.actor, s.t_environment.nextStep.ios);
+
+  requires BasicInvariant(s)
+  ensures BasicInvariant(s')
+{
 }
 
 function LastHBDeliveryTime() : Timestamp
@@ -157,11 +170,27 @@ lemma InvInductiveDetector_1(s:TFD_State, s':TFD_State, fs:FailState) returns (f
   }
 }
 
-lemma {:verify false} InvInductive(s:TFD_State, s':TFD_State, actor:EndPoint, fs:FailState) returns (fs':FailState)
+lemma InvInductiveNode(s:TFD_State, s':TFD_State, fs:FailState)
   requires Assumption(s)
   requires Assumption(s')
   requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == actor
+  requires s.t_environment.nextStep.actor == s.config.nodeEp;
+  requires s.t_environment.nextStep.nodeStep == NodeStep;
+  requires TFD_NextOneServer(s, s', s.t_environment.nextStep.actor, s.t_environment.nextStep.ios);
+  requires BasicInvariant(s)
+  requires BasicInvariant(s')
+
+  requires Invariant_aux(s, fs)
+  ensures Invariant_aux(s', fs)
+{
+  assert s.config.nodeEp != s.config.detectorEp;
+  assert s.t_servers[s.config.detectorEp] == s'.t_servers[s.config.detectorEp];
+}
+
+lemma InvInductive(s:TFD_State, s':TFD_State, fs:FailState) returns (fs':FailState)
+  requires Assumption(s)
+  requires Assumption(s')
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires TFD_NextOneServer(s, s', s.t_environment.nextStep.actor, s.t_environment.nextStep.ios);
   requires BasicInvariant(s)
   requires BasicInvariant(s')
@@ -169,19 +198,22 @@ lemma {:verify false} InvInductive(s:TFD_State, s':TFD_State, actor:EndPoint, fs
   requires Invariant_aux(s, fs)
   ensures Invariant_aux(s', fs')
 {
-  if fs.Failed? {
-    fs' := fs;
-    if actor == s.config.nodeEp {
-      assert
-        && (forall pkt :: pkt in s'.t_environment.sentPackets && pkt.msg.v.Heartbeat? ==>
-        TimeLe(pkt.msg.ts, LastHBDeliveryTime())
-        );
-      assume false;
+  var actor := s.t_environment.nextStep.actor;
+  if actor == s.config.detectorEp {
+    assert s.t_environment.nextStep.nodeStep.DetectorStep?;
+    if s.t_environment.nextStep.nodeStep == DetectorStep(0) {
+      fs' := fs;
+      InvInductiveDetector_0(s, s', fs);
+    } else if s.t_environment.nextStep.nodeStep == DetectorStep(1) {
+      fs' := InvInductiveDetector_1(s, s', fs);
     } else {
-      assume actor == s.config.detectorEp;
+      assert false;
     }
-  } else {
-    assume false;
+  } else if actor == s.config.nodeEp {
+    fs' := fs;
+    InvInductiveNode(s, s', fs);
+  } else{
+    assert false;
   }
 }
 

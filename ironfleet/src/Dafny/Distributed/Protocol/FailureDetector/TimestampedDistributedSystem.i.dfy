@@ -78,6 +78,7 @@ datatype TFD_State = TFD_State(
     && actor in s.t_servers
     && FD_NextOneServer(UntagFDState(s), UntagFDState(s'), actor, UntagLIoOpSeq(ios))
     && LEnvironment_Next(s.t_environment, s'.t_environment)
+    && s'.t_servers == s.t_servers[actor := s'.t_servers[actor]]
 
     && var hstep := s.t_environment.nextStep.nodeStep;
     (if |ios| > 0 && ios[0].LIoOpReceive? then
