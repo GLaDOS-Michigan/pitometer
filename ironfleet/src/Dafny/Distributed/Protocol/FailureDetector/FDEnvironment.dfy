@@ -16,7 +16,7 @@ datatype FDMessage =
     | Heartbeat(time:int)
     | Alert(time:int)
 
-type FDEnvironment = LEnvironment<EndPoint, FDMessage, RslStep>
+type FDEnvironment = LEnvironment<EndPoint, FDMessage, FDStep>
 type FDPacket = LPacket<EndPoint, FDMessage>
 type FDIo = LIoOp<EndPoint, FDMessage>
 

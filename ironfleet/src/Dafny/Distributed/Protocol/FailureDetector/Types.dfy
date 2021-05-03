@@ -10,7 +10,7 @@ import opened Environment_s
 *                                       Hoststep                                         *
 *****************************************************************************************/
 
-datatype RslStep = NodeStep | DetectorStep(actionIndex:int)
+datatype FDStep = NodeStep | DetectorStep(actionIndex:int)
 
 datatype ClockReading = ClockReading(t:int)
 
