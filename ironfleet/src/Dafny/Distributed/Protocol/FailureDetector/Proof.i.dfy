@@ -24,8 +24,7 @@ predicate Assumption(s:TFD_State)
   BoundedQueueingAssumption(s)
 
   && (forall i :: i in s.t_servers ==>
-    TimeLe(s.t_servers[i].ts, FailureTime)
-    && (s.t_servers[i].v.N? ==> s.t_servers[i].v.n.state == RUNNING)
+    && (s.t_servers[i].v.N? ==> s.t_servers[i].v.n.state == RUNNING && TimeLe(s.t_servers[i].ts, FailureTime))
     && (s.t_servers[i].v.D? ==> s.t_servers[i].v.d.timeoutInterval == TimeoutInterval)
     // FIXME: assume that RUNNING ==> ts <= FailureTime()
    )
@@ -80,7 +79,7 @@ predicate Invariant_aux(s:TFD_State, fs:FailState)
        && TimeLe(fs.pkt.msg.ts, FailureDetectionTime()))
     else
       (forall pkt :: pkt in s.t_environment.sentPackets ==> pkt.msg.v.Alert? ==> false)
-      && s.t_servers[s.config.detectorEp].v.d.lastHeartbeatTime <= (LastHBDeliveryTime() + Q)
+      && s.t_servers[s.config.detectorEp].v.d.lastHeartbeatTime <= (LastHBDeliveryTime() + Q + TryRecv)
     )
 }
 
@@ -102,10 +101,10 @@ lemma InvInductiveDetector_0(s:TFD_State, s':TFD_State, fs:FailState)
     var actor := s.config.detectorEp;
     var hstep := DetectorStep(0);
     assert ios[1].t <= s'.t_servers[s.config.detectorEp].ts;
-    assert TimeLe(s'.t_servers[actor].ts, FD_RecvPerfUpdate(s.t_servers[actor].ts, ios[0].r.msg.ts, hstep));
+    // assert TimeLe(s'.t_servers[actor].ts, FD_RecvPerfUpdate(s.t_servers[actor].ts, ios[0].r.msg.ts, hstep));
     // assert FD_RecvPerfUpdate(s.t_servers[s.config.detectorEp].ts, ios[0].r.msg.ts, DetectorStep(0)) <= (LastHBDeliveryTime() + Q);
-    assert s'.t_servers[s.config.detectorEp].ts <= (LastHBDeliveryTime()); // FIXME: this should fail...
-    assert ios[1].t <= (LastHBDeliveryTime() + Q);
+    assert s'.t_servers[s.config.detectorEp].ts <= (LastHBDeliveryTime() + Q + TryRecv); // FIXME: this should fail...
+    assert ios[1].t <= (LastHBDeliveryTime() + Q + TryRecv);
   } else {
 
   }
