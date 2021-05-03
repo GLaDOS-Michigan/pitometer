@@ -53,7 +53,7 @@ function LastHBDeliveryTime() : Timestamp
 
 function FailureDetectionTime() : Timestamp
 {
-  FailureTime + MbeSend + Delay + Q + TimeoutInterval
+  (LastHBDeliveryTime() + Q + TryRecv) + TimeoutInterval + MbeTimeout + Timeout() + TryRecv + MbeTimeout + Delay
 }
 
 predicate Guarantee(s:TFD_State)
@@ -80,6 +80,14 @@ predicate Invariant_aux(s:TFD_State, fs:FailState)
     else
       (forall pkt :: pkt in s.t_environment.sentPackets ==> pkt.msg.v.Alert? ==> false)
       && s.t_servers[s.config.detectorEp].v.d.lastHeartbeatTime <= (LastHBDeliveryTime() + Q + TryRecv)
+      && (
+      s.t_servers[s.config.detectorEp].v.d.nextActionIndex == 0 ==>
+      s.t_servers[s.config.detectorEp].ts <= s.t_servers[s.config.detectorEp].v.d.lastHeartbeatTime + TimeoutInterval + MbeTimeout
+      )
+      && (
+      s.t_servers[s.config.detectorEp].v.d.nextActionIndex == 1 ==>
+      s.t_servers[s.config.detectorEp].ts <= s.t_servers[s.config.detectorEp].v.d.lastHeartbeatTime + TimeoutInterval + MbeTimeout + Timeout() + TryRecv
+      )
     )
 }
 
@@ -136,6 +144,10 @@ lemma InvInductiveDetector_1(s:TFD_State, s':TFD_State, fs:FailState) returns (f
       assert ios_u[1].LIoOpSend?;
       assert ios[1].LIoOpSend?;
       fs' := Failed(ios[1].s);
+
+      assert TimeLe(s'.t_servers[s.config.detectorEp].ts, FailureDetectionTime());
+      assert fs'.pkt.msg.ts <= s'.t_servers[s.config.detectorEp].ts + Delay;
+      // (LastHBDeliveryTime() + Q + TryRecv) + TimeoutInterval + MbeTimeout + Timeout() + TryRecv + MbeTimeout
     } else {
       fs' := NotFailed;
       assert (forall pkt :: pkt in s'.t_environment.sentPackets ==> pkt.msg.v.Alert? ==> false);
@@ -144,7 +156,6 @@ lemma InvInductiveDetector_1(s:TFD_State, s':TFD_State, fs:FailState) returns (f
     }
   }
 }
-
 
 lemma {:verify false} InvInductive(s:TFD_State, s':TFD_State, actor:EndPoint, fs:FailState) returns (fs':FailState)
   requires Assumption(s)
