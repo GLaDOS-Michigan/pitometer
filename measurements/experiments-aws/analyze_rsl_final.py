@@ -29,6 +29,11 @@ F_VALUES = [1]
 START = datetime.fromisoformat("2021-05-02 00:00:00")
 END = datetime.fromisoformat("2021-05-02 10:00:00")
 
+CLIENT = "us-east-2a"
+OH = "us-east-2b"
+OR = "us-west-2a"
+CA = "us-west-1a"
+
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
            2: "LReplicaNextSpontaneousMaybeEnterPhase2",
@@ -93,8 +98,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions (simple)", exp_dir, total_network_data, total_node_data, total_client_data)
-    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
-    # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -216,7 +220,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
-    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2b", "us-east-2a", initial_binsize)
+    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, CLIENT, OH, initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -269,9 +273,9 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
     noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
 
-    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2b", initial_binsize)
-    net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, "us-east-2b", "us-west-1a", initial_binsize)
-    net_OH_OR_pdf, min_OH_OR = network_to_pdf(total_network_data, "us-east-2b", "us-west-2a", initial_binsize)
+    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, CLIENT, OH, initial_binsize)
+    net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, OH, CA, initial_binsize)
+    net_OH_OR_pdf, min_OH_OR = network_to_pdf(total_network_data, OH, OR, initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -397,54 +401,27 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         # print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
 
 
-def predict_f_max(total_network_data, total_f_node_data, f):
-    work_actions_times, noop_action_times, _ = max_action_times(total_f_node_data)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(work_actions_times, noop_action_times, f, max(network_delays))
-
 def predict_f_max_simple(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times, max_queue_time = max_action_times(total_f_node_data)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, max(network_delays))
-
-
-def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
-    work_actions_times, noop_action_times, _ = percentile_action_times(total_f_node_data, percentile)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(work_actions_times, noop_action_times, f, np.percentile(network_delays, 99.9))
+    delay_c_oh = max(compute_actual_network(total_network_data, CLIENT, OH))
+    delay_oh_or = max(compute_actual_network(total_network_data, OH, OR))
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_oh, oh_or=delay_oh_or)
 
 def predict_f_percentile_simple(total_network_data, total_f_node_data, f, percentile):
     work_actions_times, noop_action_times, max_queue_time = percentile_action_times(total_f_node_data, percentile)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, np.percentile(network_delays, 99.9))
-
-def predict_f_mean(total_network_data, total_f_node_data, f):
-    work_actions_times, noop_action_times, _ = mean_action_times(total_f_node_data)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(work_actions_times, noop_action_times, f, mean_network_delay(network_delays, f))
+    delay_c_oh = np.percentile(compute_actual_network(total_network_data, CLIENT, OH), percentile)
+    delay_oh_or = np.percentile(compute_actual_network(total_network_data, OH, OR), percentile)
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_oh, oh_or=delay_oh_or)
 
 def predict_f_mean_simple(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times, max_queue_time = mean_action_times(total_f_node_data)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time,  mean_network_delay(network_delays, 1))
-
-def predict_f_mean_bad(total_network_data, total_f_node_data, f):
-    actions_times = mean_action_times(total_f_node_data)
-    network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(actions_times, f, np.mean(network_delays))
+    delay_c_oh = mean_network_delay(compute_actual_network(total_network_data, CLIENT, OH))
+    delay_oh_or = mean_network_delay(compute_actual_network(total_network_data, OH, OR))
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_oh, oh_or=delay_oh_or)
 
 
-def mean_network_delay(network_delays, f):
-    cdf, bins = raw_data_to_cdf(network_delays)
-    total_cdf = cdf
-    for q in range(f):
-        for i in range(len(cdf)):
-            total_cdf[i] = total_cdf[i] * cdf[i]
-    mean = 0
-    for i in range(len(bins)-1):
-        binsize = bins[i+1] - bins[i]
-        mean += binsize - cdf[i] * binsize
-    return mean
+def mean_network_delay(network_delays):
+    return sum(network_delays)/len(network_delays)
 
 def max_action_times(total_f_node_data):
     """
@@ -535,25 +512,8 @@ def mean_action_times(total_f_node_data):
     max_queue_res = sum_times/float(count)
     return work_res, noop_res, max_queue_res
 
-def sum_from_action_times(work_actions_times, noop_action_times, f, delay):
-    """
-    Computes the predicted RSL using actions_times
-    // Bound with full vs no-op versions:
-    // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
-    
-    // ReplyBound = TB2b + (f + 2) * (ProcessPacketFull(2b) + NoOps(1, 10)) + ProcessPacketFull(2b) + NoOps(1, 6) + ExecuteFull
-    // TB2b = TB2a + ProcessPacketFull(2a) + NoOps(0, 10) + D
-    // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D
-    Arguments:
-        actions_times -- Map from each action id to the time it uses
-    """
-    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay
-    TB2b = TB2a + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
-    res = TB2b + (f+2) * (work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 10)) + work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6]
-    return res
 
-
-def sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, delay):
+def sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=-10, oh_or=-10):
     """
     Computes the predicted RSL using actions_times
     // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
@@ -564,9 +524,9 @@ def sum_from_action_times_simple(work_actions_times, noop_action_times, max_queu
     Arguments:
         actions_times -- Map from each action id to the time it uses
     """
-    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay * 2
-    TB2b = TB2a + max_queue_time + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
-    res = TB2b + max_queue_time + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6] + delay
+    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + c_oh * 2
+    TB2b = TB2a + max_queue_time + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + oh_or
+    res = TB2b + max_queue_time + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6] + oh_or
     return res
 
 def noop_actions_up_to(noop_actions_times, i, j):
@@ -574,7 +534,15 @@ def noop_actions_up_to(noop_actions_times, i, j):
     for x in range(i, j):
         res += noop_actions_times[x]
     return res
- 
+
+def compute_actual_network(total_network_data, src, targ):
+    """
+    Arguments:
+        total_network_data -- total_network_data[i][j] is the timings for node i to node j
+    """
+    latencies = [p[0]/2.0 for p in total_network_data[src][targ] if START < p[1] and p[1] < END and not p[2]]
+    latencies.extend([p[0]/2.0 for p in total_network_data[targ][src] if START < p[1] and p[1] < END and not p[2]])
+    return latencies
 
 def compute_actual_node(total_node_data_f):
     """maps total_node_data to res: method_name -> list of latencies
