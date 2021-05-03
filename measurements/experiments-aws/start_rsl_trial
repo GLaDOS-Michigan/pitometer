@@ -25,6 +25,7 @@ fi
 HOSTS="aws-hosts.csv"
 EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
 TEMP_DIR="/home/ubuntu/tmp-rsl"  # temporary dir to store output at each node
+FALLOW=600
 
 # First, grab parameters
 
@@ -71,6 +72,7 @@ done
 date
 echo "Starting RSL trial with parameters:"
 echo "  - Duration    : $CLIENT_DURATION seconds"
+echo "  - Fallow time : $FALLOW ms"
 echo "  - Client      : $CLIENT_NAME"
 echo "  - Participants: ${HOST_NAME_LIST[@]}"
 echo "  - Batch size  : $BATCH_SIZE"
@@ -119,7 +121,7 @@ do
 done
 
 # Run the client. Note that client is fixed at the present host
-mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION 500 $TEMP_DIR
+mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $FALLOW $TEMP_DIR
 
 echo "Run completed"
 
