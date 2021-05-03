@@ -53,14 +53,19 @@ type Stopwatch struct {
 
 // NewStopwatch generates a new log pre-initialized to length n
 func NewStopwatch(name string) *Stopwatch {
-	var l = make([]TimeInterval, INIT_SIZE, INIT_SIZE)
+	var l []TimeInterval
+	if !ON {
+		l = make([]TimeInterval, 0, 0)
+	} else {
+		l = make([]TimeInterval, INIT_SIZE, INIT_SIZE)
+	}
 	var s = &Stopwatch{
 		name:         name,
 		initTime:     time.Now(),
 		log:          &l,
 		currInterval: nil,
 		nextIndex:    0}
-	fmt.Printf("stopwatch init,%s,%v\n", s.name, s.initTime)
+	fmt.Printf("stopwatch init,%s,%v (log cap: %v)\n", s.name, s.initTime, cap(*s.log))
 	return s
 }
 
