@@ -26,8 +26,8 @@ TRAIN_SET = "test"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-04-30 09:35:00")
-END = datetime.fromisoformat("2021-04-30 12:19:00")
+START = datetime.fromisoformat("2021-05-02 00:00:00")
+END = datetime.fromisoformat("2021-05-02 10:00:00")
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
@@ -163,8 +163,9 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     this_ax.set_title('Latency distributions of an IronRSL instance')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
-    this_ax.set_ylim(0, 150)
+    this_ax.set_ylim(0, 120)
     this_ax.set_xlim(0, 1)
+    # this_ax.grid()
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
     this_ax.legend()
@@ -270,6 +271,7 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
 
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, "us-east-2a", "us-east-2b", initial_binsize)
     net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, "us-east-2b", "us-west-1a", initial_binsize)
+    net_OH_OR_pdf, min_OH_OR = network_to_pdf(total_network_data, "us-east-2b", "us-west-2a", initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -295,8 +297,8 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_start, min_C_OH, 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_OH_CA_pdf, 
-        sum_start, min_OH_CA, 
+        sum_pdf, net_OH_OR_pdf, 
+        sum_start, min_OH_OR, 
         sum_binsize, initial_binsize)
     
     # TB2B
@@ -313,8 +315,8 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_start, noop_0_10_start, 
         sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_OH_CA_pdf, 
-        sum_start, min_OH_CA, 
+        sum_pdf, net_OH_OR_pdf, 
+        sum_start, min_OH_OR, 
         sum_binsize, initial_binsize)
 
     return sum_pdf, sum_start, sum_binsize
@@ -328,70 +330,6 @@ def convolve_noop_pdf(actual_method_latencies, i, j, init_binsize):
         sum_pdf, sum_start, sum_binsize = add_histograms(sum_pdf, pdf, sum_start, min(actual_method_latencies[NOOP_METHODS[x]]), sum_binsize, init_binsize)
     return sum_pdf, sum_start, sum_binsize
 
-
-
-def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data, total_client_data, total_client_start_end):
-    """ Plot a figure where each subfigure is from an element in total_data
-    Arguments:
-        name -- name of this figure
-        root -- directory to save this figure
-        total_node_data -- total_node_data[f][node_id][method_name] = list of durations
-        total_client_data -- total_client_data[f][i] = list of client durations for trial i
-        total_client_start_end -- total_client_start_end[f][i] = (start, end) time of trial i, defined from start of first request to end of last request
-    """
-    print("Plotting graphs for Micro-benchmark 1")
-
-    # Compute data points
-    x_vals_f = sorted(list(total_client_data.keys()))
-    y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
-    y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
-    y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
-
-    # y_vals_actual_median = [statistics.median(total_client_data[f]) for f in x_vals_f]
-    y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
-
-    y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
-    
-    print("Computing predictions")
-    # TONY: Always use total_node_data[1] to make predictions
-    y_vals_predict_max = [predict_f_max(total_network_data, total_node_data[1], f) for f in x_vals_f]
-    y_vals_predict_999 = [predict_f_percentile(total_network_data, total_node_data[1], f, 99.9) for f in x_vals_f]
-    y_vals_predict_mean = [predict_f_mean(total_network_data, total_node_data[1], f) for f in x_vals_f]
-
-    print("Drawing graphs")
-    with PdfPages("%s/%s.pdf" %(root, name)) as pp:
-        # Draw plot
-        fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-        fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
-        this_ax.set_title("Predictions of IronRSL performance")
-        
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
-        
-        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
-
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed')
-        this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick')
-        
-        # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
-        this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=3, columnspacing=0.5, fontsize=6.5)
-        this_ax.set_xlabel("f")
-        this_ax.set_ylabel("request latency (ms)")
-        this_ax.xaxis.set_ticks(x_vals_f)
-        this_ax.set_yscale("log")
-        this_ax.set_ylim(bottom=0.1)
-        # this_ax.set_ylim(bottom=0)
-        pp.savefig(fig)
-        plt.close(fig)
-
-        print("Predict max   :" + str(y_vals_predict_max) )
-        print("Real max      :" + str(y_vals_actual_max) )
-        # print("Predicted 999 :" + str(y_vals_predict_999) )
-        # print("Real median   :" + str(y_vals_actual_median) )
-        print("Predict mean  :" + str(y_vals_predict_mean) )
-        print("Real mean     :" + str(y_vals_actual_mean) )
-        # print("Real ratio    :" + str([(y_vals_predict_mean[i]-y_vals_actual_mean[i])/y_vals_actual_mean[i] for i in range(len(y_vals_actual_mean))]) )
 
 
 def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_node_data, total_client_data, total_client_start_end):
