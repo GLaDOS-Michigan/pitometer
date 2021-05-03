@@ -93,5 +93,10 @@ datatype TFD_State = TFD_State(
       && (forall io :: io in ios && io.LIoOpSend? ==>
           TimeLe(io.s.msg.ts, s'.t_servers[actor].ts + Delay)
       )
+
+      && (forall io :: io in ios && io.LIoOpReadClock? ==>
+          && TimeLe(io.t, s'.t_servers[actor].ts)
+          && TimeLe(s.t_servers[actor].ts, io.t)
+      )
   }
 }

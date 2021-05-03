@@ -99,7 +99,12 @@ lemma InvInductiveDetector_0(s:TFD_State, s':TFD_State, fs:FailState)
 {
   var ios := s.t_environment.nextStep.ios;
   if ios[0].LIoOpReceive? && ios[0].r.msg.v.Heartbeat? {
+    var actor := s.config.detectorEp;
+    var hstep := DetectorStep(0);
     assert ios[1].t <= s'.t_servers[s.config.detectorEp].ts;
+    assert TimeLe(s'.t_servers[actor].ts, FD_RecvPerfUpdate(s.t_servers[actor].ts, ios[0].r.msg.ts, hstep));
+    // assert FD_RecvPerfUpdate(s.t_servers[s.config.detectorEp].ts, ios[0].r.msg.ts, DetectorStep(0)) <= (LastHBDeliveryTime() + Q);
+    assert s'.t_servers[s.config.detectorEp].ts <= (LastHBDeliveryTime()); // FIXME: this should fail...
     assert ios[1].t <= (LastHBDeliveryTime() + Q);
   } else {
 
