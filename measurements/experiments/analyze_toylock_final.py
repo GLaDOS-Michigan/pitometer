@@ -16,7 +16,7 @@ from conv import *
 from plot_constants import *
 
 TRAIN_SETS = ["train"]
-TEST_SETS = ["test1", "test2"]
+TEST_SETS = ["test1", "test2", "test3"]
 
 
 DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
@@ -53,6 +53,7 @@ def main(exp_dir):
     plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -147,6 +148,34 @@ def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, 
                 pp.savefig(fig)
                 plt.close(fig)
 
+
+def plot_micro_1_distr_fidelity_FINAL(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
+    """ Plot a figure where each subfigure is from an element in total_data
+    Arguments:
+        name -- name of this figure
+        root -- directory to save this figure
+        total_data -- dict of (size -> delay -> node -> [ durs ])
+        total_network_data -- total_network_data[i][j] is the timings for node i to node j
+    """
+    print("Plotting graphs for Micro-benchmark 1 FINAL")
+    ring_size = 8
+    with PdfPages("%s/%s_size%d.pdf" %(root, name, ring_size)) as pp:
+        fig, axes = plt.subplots(1, len(DELAYS), figsize=(12, 2.5), sharex=False)
+        col = 0
+        for delay in DELAYS:
+            participants = sorted(list(total_round_data[ring_size][delay].keys()))
+            leader_node = participants[0]
+            actual_round_latencies = total_round_data[ring_size][delay][leader_node]
+            actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
+            actual_network_latencies = compute_actual_network(participants, total_network_data)
+            fig.subplots_adjust(left=0.05, right=0.96, top=0.88, bottom=0.19 )
+            this_ax = axes[col]
+            plot_micro_1_distr_fidelity_ax(delay, ring_size, this_ax, "workload %.1f ms" %(delay/1000.0), actual_round_latencies, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
+            col += 1
+        pp.savefig(fig)
+        plt.close(fig)
+
+
 def compute_actual_network(participants, total_network_data):
     """Compute the aggregate grant and accept latencies for this delay and ring_size
     Arguments:
@@ -212,8 +241,8 @@ def plot_micro_1_distr_fidelity_ax(
     print('Pred average '+  str(np.average(predict_bins, weights=predict_pdf)))
     print('Real average ' + str(sum(actual_round_latencies)/ len(actual_round_latencies)))
     print()
-    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    plt.plot(round_cdf, round_bins, label='actual performance', color='navy')
+    this_ax.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
+    this_ax.plot(round_cdf, round_bins, label='actual performance', color='navy')
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
