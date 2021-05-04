@@ -1,0 +1,15 @@
+#!/bin/bash
+# Run a Toylock experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+REPEATS=5
+
+for ((i=0;i<$[ $REPEATS ];i++))
+do
+    ./run_toylock_experimement > "tmp/toy_exp_$i.log"
+done
