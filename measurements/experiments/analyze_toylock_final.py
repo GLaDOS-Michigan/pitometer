@@ -19,7 +19,7 @@ TRAIN_SETS = ["train"]
 TEST_SETS = ["test1", "test2", "test3"]
 
 
-DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
+DELAYS = [0, 1_000, 2_000, 4_000]  # units of microseconds
 
 
 def main(exp_dir):
