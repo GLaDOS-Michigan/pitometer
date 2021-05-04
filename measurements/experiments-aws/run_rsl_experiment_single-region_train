@@ -1,0 +1,65 @@
+#!/bin/bash
+# Run an RSL experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/rsl_single-region"
+GIT_BRANCH="exp"
+
+CLIENT_ID=1                             # node to use as client
+CLIENT_THREADS=1                        # number of clients
+BASE_TRIAL_DURATION=$(( 5 * 60 ))       # minimum duration in seconds
+ITERATIONS=15                           # repeats of each trial
+BATCH_SIZE=1                            # paxos batch size      
+F_VALUES=("1")
+TIMESTAMP=$(date +"%d-%b-%H%M")
+CLOCK_MODE="on"
+
+echo "Starting new RSL training experiment at time $(date)"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+for f in "${F_VALUES[@]}"
+do
+    # Generate node id's to use
+    node_ids=()
+    for ((id=1;id<$[ 1 + 2*f+1 ];id++))
+    do
+        node_ids+=("$id")
+    done
+
+    # Build locally and send executables to the target machines
+    ./build_to_hosts_single-region $CLIENT_ID ${node_ids[@]} 
+    echo ""
+
+    trial_duration=$(( $BASE_TRIAL_DURATION ))  # Make trial duration a variable
+
+    for ((trial=0;trial<$ITERATIONS;trial++))
+    do
+        time=$(date +"%d-%b-%H%M")
+                echo "Starting RSL training trial at time $time"
+                echo "    - f          : $f"
+                echo "    - clients    : $CLIENT_THREADS"
+                echo "    - batch size : $BATCH_SIZE"
+                echo "    - duration   : $trial_duration"
+                echo "    - trial      : $trial"
+        trial_dir="$ROOT_DIR/$TIMESTAMP-train/f_$f/trial$trial"
+        mkdir -p $trial_dir 
+
+        # Start trial
+        ./start_rsl_trial_single-region $trial_dir $trial_duration $CLIENT_ID $CLIENT_THREADS $BATCH_SIZE $CLOCK_MODE ${node_ids[@]} > $trial_dir/info.log
+
+        echo "Completed trial $trial for f=$f"
+    done
+done
+
+# Copy results to Skynode20
+trial_dir="$ROOT_DIR/$TIMESTAMP-train"
+scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws/data/rsl_single-region
+
+echo "RSL training experiment completed at time $(date)"
