@@ -168,9 +168,9 @@ def plot_round_delay(name, root, delay, total_round_data):
 
     with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
         for size in sizes:
-            all_nodes = list(total_round_data[size][delay].keys())
-            all_nodes.sort()
-            leader_node = all_nodes[0]
+            # all_nodes = list(total_round_data[size][delay].keys())
+            # all_nodes.sort()
+            leader_node = 20
             data = total_round_data[size][delay][leader_node]
             fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
             fig.suptitle("%s, delay %.1f ms, size %d" %(name, delay/1000.0, size), fontweight='bold')
