@@ -17,4 +17,10 @@ do
     echo "  $name : $command1, $command2"
 done < <(tail -n +2 $HOSTS)
 
+# Manually do Ohio C
+    command1="git -C $WORKING_DIR checkout $BRANCH"
+    command2="git -C $WORKING_DIR pull origin $BRANCH"
+    ssh -n ubuntu@18.116.121.70 "$command1"
+    ssh -n ubuntu@18.116.121.70 "$command2"
+    echo "  us-east-2c : $command1, $command2"
 echo "Done git pull for all hosts"

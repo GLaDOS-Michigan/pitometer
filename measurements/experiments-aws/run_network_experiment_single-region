@@ -7,9 +7,9 @@ then
     exit 1
 fi
 
-ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/network"
+ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/network_single-region"
 GIT_BRANCH="exp"
-NODES_IDS=("1" "2" "3" "4") 
+NODES_IDS=("1" "2" "3") 
 
 INTERVAL=1000   # ping interval in ms
 PAYLOAD=16  # payload size variable
@@ -22,13 +22,13 @@ then
     exit 1
 fi
 
-echo "Starting new Network AWS experiment at time $(date)"
+echo "Starting new Network AWS (single region) experiment at time $(date)"
 echo ""
 ./git_pull_all_hosts $GIT_BRANCH
 echo ""
 
 # Build locally and send executables to the target machines
-./build_to_hosts ${NODES_IDS[@]}
+./build_to_hosts_single-region ${NODES_IDS[@]}
 
 time=$(date)
 echo "Starting payload size $PAYLOAD bytes at time $time"
@@ -37,7 +37,7 @@ trial_dir="$ROOT_DIR/$TIMESTAMP/payload$PAYLOAD"
 mkdir -p $trial_dir 
 
 # Start trial
-./start_network_trial $trial_dir $INTERVAL $PAYLOAD > $trial_dir/info.log
+./start_network_trial_single-region $trial_dir $INTERVAL $PAYLOAD > $trial_dir/info.log
 
 end_timestamp=$(date +"%d-%b-%H%M")
-echo "Network experiment completed at time $end_timestamp"
+echo "Network single region experiment completed at time $end_timestamp"

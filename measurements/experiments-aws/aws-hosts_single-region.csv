@@ -1,0 +1,4 @@
+id,name,address,netport,rslport
+1,us-east-2a,18.217.254.113,4000,6000
+2,us-east-2b,3.140.44.192,4000,6000
+3,us-east-2c,18.116.121.70,4000,6000
