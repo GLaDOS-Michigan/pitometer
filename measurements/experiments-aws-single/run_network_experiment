@@ -37,7 +37,7 @@ trial_dir="$ROOT_DIR/$TIMESTAMP/payload$PAYLOAD"
 mkdir -p $trial_dir 
 
 # Start trial
-./start_network_trial_single-region $trial_dir $INTERVAL $PAYLOAD > $trial_dir/info.log
+./start_network_trial $trial_dir $INTERVAL $PAYLOAD > $trial_dir/info.log
 
 end_timestamp=$(date +"%d-%b-%H%M")
 echo "Network single region experiment completed at time $end_timestamp"
