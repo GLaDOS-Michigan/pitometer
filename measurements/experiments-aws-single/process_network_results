@@ -7,7 +7,7 @@
 
 HOSTS="aws-hosts_single-region.csv"
 
-ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/final_data/network_single-region"
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/final_data/network"
 
 LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
 
