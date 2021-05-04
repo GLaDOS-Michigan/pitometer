@@ -5,6 +5,6 @@
 # for each toylock stopwatch. It places each resulting csv in the directory of its 
 # corresponding log file. Then, it calls analyze_toylock.py to generate graphs
 
-ROOT_DIR="final_data/rsl_northamerica"
+ROOT_DIR="final_data/rsl_ohio"
 
 python3 analyze_rsl_final.py $ROOT_DIR

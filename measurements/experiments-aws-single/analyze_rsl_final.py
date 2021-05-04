@@ -20,19 +20,19 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=100  # Ignore the first THROW requests in computing client latencies
+THROW=10  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1]
 
 START = datetime.fromisoformat("2021-05-03 17:00:00")
-END = datetime.fromisoformat("2021-05-03 19:00:00")
+END = datetime.fromisoformat("2021-05-04 19:00:00")
 
 CLIENT = "us-east-2a"
-OH = "us-east-2b"
-OR = "us-west-2a"
-CA = "us-west-1a"
+A = "us-east-2a"
+B = "us-east-2b"
+C = "us-east-2c"
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
            1: "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a",
@@ -168,7 +168,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     this_ax.set_title('f=1, aws')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
-    this_ax.set_ylim(0, 120)
+    this_ax.set_ylim(0, 30)
     this_ax.set_xlim(0, 1)
     # this_ax.grid()
     # this_ax.set_yscale("log")
@@ -192,7 +192,7 @@ def sanity_check(actual_client_latencies, total_network_data, actual_method_late
     print("SANITY CHECK")
     print("min/max for end-to-end client latency is %.3f/%.3f" %(min(actual_client_latencies), max(actual_client_latencies)))
     print()
-    nodes = ["us-east-2a", "us-west-1a", "us-west-2a"]
+    nodes = [A, B, C]
     for src in nodes:
         for dst in nodes:
             data = [p[0]/2.0 for p in total_network_data[src][dst] if START < p[1] and p[1] < END and not p[2]]
@@ -213,7 +213,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
         total_network_data -- map[src node][target node] -> list of network tuples
         actual_method_latencies -- map of method name to list of latencies
 
-        // ReplyBound = TB2b + MaxQueueTime + ProcessPacketFull(2b) + NoOps(1, 6) + ExecuteFull + D(OH->C)
+        // ReplyBound = TB2b + MaxQueueTime + ProcessPacketFull(2b) + NoOps(1, 6) + ExecuteFull + D(C->A)
     """
     initial_binsize = 1e-3
     tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, initial_binsize)
@@ -221,7 +221,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
-    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, CLIENT, OH, initial_binsize)
+    net_C_A_pdf, min_C_A = network_to_pdf(total_network_data, CLIENT, A, initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -245,8 +245,8 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
             sum_start, executeFull_start, 
             sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-            sum_pdf, net_C_OH_pdf, 
-            sum_start, min_C_OH, 
+            sum_pdf, net_C_A_pdf, 
+            sum_start, min_C_A, 
             sum_binsize, initial_binsize)
     binrange = sum_binsize * len(sum_pdf)
     conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
@@ -266,17 +266,16 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         actual_method_latencies -- map of method name to list of latencies
         // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
     
-        // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + NoOps(0, 10) + D(CA->OH)
-        // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D(C->OH) + D(OH->CA)
+        // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + NoOps(0, 10) + D(A->B)
+        // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D(C->A) + D(A->B)
     """
     processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
     noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
     noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
 
-    net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, CLIENT, OH, initial_binsize)
-    net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, OH, CA, initial_binsize)
-    net_OH_OR_pdf, min_OH_OR = network_to_pdf(total_network_data, OH, OR, initial_binsize)
+    net_C_A_pdf, min_C_A = network_to_pdf(total_network_data, CLIENT, A, initial_binsize)
+    net_A_B_pdf, min_A_B = network_to_pdf(total_network_data, A, B, initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -298,12 +297,12 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_start, noop_0_10_start, 
         sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_C_OH_pdf, 
-        sum_start, min_C_OH, 
+        sum_pdf, net_C_A_pdf, 
+        sum_start, min_C_A, 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_OH_OR_pdf, 
-        sum_start, min_OH_OR, 
+        sum_pdf, net_A_B_pdf, 
+        sum_start, min_A_B, 
         sum_binsize, initial_binsize)
     
     # TB2B
@@ -320,8 +319,8 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_start, noop_0_10_start, 
         sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_OH_OR_pdf, 
-        sum_start, min_OH_OR, 
+        sum_pdf, net_A_B_pdf, 
+        sum_start, min_A_B, 
         sum_binsize, initial_binsize)
 
     return sum_pdf, sum_start, sum_binsize
@@ -404,20 +403,20 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
 
 def predict_f_max_simple(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times, max_queue_time = max_action_times(total_f_node_data)
-    delay_c_oh = max(compute_actual_network(total_network_data, CLIENT, OH))
-    delay_oh_or = max(compute_actual_network(total_network_data, OH, OR))
-    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_oh, oh_or=delay_oh_or)
+    delay_c_a = max(compute_actual_network(total_network_data, CLIENT, A))
+    delay_a_b = max(compute_actual_network(total_network_data, A, B))
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_a, oh_or=delay_a_b)
 
 def predict_f_percentile_simple(total_network_data, total_f_node_data, f, percentile):
     work_actions_times, noop_action_times, max_queue_time = percentile_action_times(total_f_node_data, percentile)
-    delay_c_oh = np.percentile(compute_actual_network(total_network_data, CLIENT, OH), percentile)
-    delay_oh_or = np.percentile(compute_actual_network(total_network_data, OH, OR), percentile)
+    delay_c_oh = np.percentile(compute_actual_network(total_network_data, CLIENT, A), percentile)
+    delay_oh_or = np.percentile(compute_actual_network(total_network_data, A, B), percentile)
     return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_oh, oh_or=delay_oh_or)
 
 def predict_f_mean_simple(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times, max_queue_time = mean_action_times(total_f_node_data)
-    delay_c_oh = mean_network_delay(compute_actual_network(total_network_data, CLIENT, OH))
-    delay_oh_or = mean_network_delay(compute_actual_network(total_network_data, OH, OR))
+    delay_c_oh = mean_network_delay(compute_actual_network(total_network_data, CLIENT, A))
+    delay_oh_or = mean_network_delay(compute_actual_network(total_network_data, A, B))
     return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, c_oh=delay_c_oh, oh_or=delay_oh_or)
 
 
@@ -566,6 +565,8 @@ def get_f_max(total_f_client_data):
     """
     res = 0
     for durs in total_f_client_data.values():
+        if len(durs) == 0:
+            continue
         res = max(res, max(durs[THROW:])) # Ignore the first 100 requests
     return res
 
