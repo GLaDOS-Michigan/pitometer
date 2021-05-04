@@ -1,4 +1,0 @@
-#!/bin/bash
-
-./process_network_results_single
-./process_network_results_wide

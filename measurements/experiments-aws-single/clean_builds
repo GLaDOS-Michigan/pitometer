@@ -1,0 +1,7 @@
+#!/bin/bash
+# This script deletes the executables
+
+# rm -f toylock-main
+rm -f network-aws-main
+rm -f rsl-aws main
+rm -f client.exe
