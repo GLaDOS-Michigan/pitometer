@@ -13,7 +13,7 @@ then
 fi
 
 HOSTS="aws-hosts_single-region.csv"
-EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
+EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single"
 TEMP_DIR="/home/ubuntu/tmp-net_single"  # temporary dir to store output at each node
 
 # First, grab parameters

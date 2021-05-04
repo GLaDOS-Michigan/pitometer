@@ -6,7 +6,7 @@
 
 
 HOSTS="aws-hosts_single-region.csv"
-HOST_TARGET_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
+HOST_TARGET_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single"
 RSL_DIR="../rsl-aws"
 NETWORK_DIR="../network-aws"
 

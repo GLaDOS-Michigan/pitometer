@@ -7,7 +7,7 @@ then
     exit 1
 fi
 
-ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/network_single-region"
+ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/network_single-region"
 GIT_BRANCH="exp"
 NODES_IDS=("1" "2" "3") 
 

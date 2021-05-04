@@ -1,7 +1,7 @@
 #!/bin/bash
 
 HOSTS="aws-hosts_single-region.csv"
-EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
+EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single"
 TEMP_DIR="/home/ubuntu/tmp-net_single"  # temporary dir to store output at each node
 
 # First, grab parameters
@@ -36,5 +36,5 @@ done
 
 # Also send data to skynode 20
 echo "Sending results to Skynode20"
-scp -r $RESULTS_DIR nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws/final_data/network_single-region
+scp -r $RESULTS_DIR nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/final_data/network_single-region
 echo "Done"

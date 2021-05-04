@@ -7,7 +7,7 @@ then
     exit 1
 fi
 
-ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/rsl_single-region"
+ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/rsl_single-region"
 GIT_BRANCH="exp"
 
 CLIENT_ID=1                             # node to use as client
@@ -60,6 +60,6 @@ done
 
 # Copy results to Skynode20
 trial_dir="$ROOT_DIR/$TIMESTAMP-train"
-scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws/data/rsl_single-region
+scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/data/rsl_single-region
 
 echo "RSL training experiment completed at time $(date)"
