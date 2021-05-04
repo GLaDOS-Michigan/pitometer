@@ -1,0 +1,60 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./process_rsl_results <root_dir>
+# Converts each log file in <root_dir>, and its sub-directories into separate csv files 
+# for each rsl stopwatch. It places each resulting csv in the directory of its 
+# corresponding log file. Then, it calls analyze_rsl.py to generate graphs
+
+ROOT_DIR=$1
+
+METHODS=(   "LReplicaNextProcessPacket"
+            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"
+            "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"
+            "LReplicaNextSpontaneousMaybeEnterPhase2"
+            "LReplicaNextSpontaneousMaybeEnterPhase2Noop"
+            "LReplicaNextReadClockMaybeNominateValueAndSend2a"
+            "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"
+            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"
+            "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"
+            "LReplicaNextSpontaneousMaybeMakeDecision"
+            "LReplicaNextSpontaneousMaybeMakeDecisionNoop"
+            "LReplicaNextSpontaneousMaybeExecute"
+            "LReplicaNextSpontaneousMaybeExecuteNoop"
+            "LReplicaNextReadClockCheckForViewTimeout"
+            "LReplicaNextReadClockCheckForViewTimeoutNoop"
+            "LReplicaNextReadClockCheckForQuorumOfViewSuspicions"
+            "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"
+            "LReplicaNextReadClockMaybeSendHeartbeat"
+            "LReplicaNextReadClockMaybeSendHeartbeatNoop"
+            "MaxQueueing"
+        )
+
+# Delete old files
+# find $ROOT_DIR -type f -name "*.pdf" -delete
+
+
+LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
+
+
+echo "Processing results in $ROOT_DIR"
+
+for lf in "${LOGFILES[@]}"
+do :
+    echo "        Converting file $lf"
+    dir=$(dirname "${lf}")      # directory path
+    name=$(basename -- "$lf")
+    ext="${name##*.}"          
+    name="${name%.*}"           # filename without extension
+
+    # Convert to csv
+
+    for m in ${METHODS[@]}
+    do
+        cat $lf | grep "$m," > $dir/"$name"_$m.csv
+    done
+done
+
+python3 analyze_rsl.py $ROOT_DIR
+
+# Delete intermediate csv files
+find $ROOT_DIR -type f -name "*.csv" -delete
