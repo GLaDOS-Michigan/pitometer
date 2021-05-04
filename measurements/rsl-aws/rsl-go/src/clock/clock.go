@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+var ON bool
+var INIT_SIZE int
+
 /*****************************************************************************************
 ************************************* TimePoint ******************************************
 *****************************************************************************************/
@@ -49,20 +52,28 @@ type Stopwatch struct {
 }
 
 // NewStopwatch generates a new log pre-initialized to length n
-func NewStopwatch(n uint, name string) *Stopwatch {
-	var l = make([]TimeInterval, n, n)
+func NewStopwatch(name string) *Stopwatch {
+	var l []TimeInterval
+	if !ON {
+		l = make([]TimeInterval, 0, 0)
+	} else {
+		l = make([]TimeInterval, INIT_SIZE, INIT_SIZE)
+	}
 	var s = &Stopwatch{
 		name:         name,
 		initTime:     time.Now(),
 		log:          &l,
 		currInterval: nil,
 		nextIndex:    0}
-	fmt.Printf("stopwatch init,%s,%v\n", s.name, s.initTime)
+	fmt.Printf("stopwatch init,%s,%v (log cap: %v)\n", s.name, s.initTime, cap(*s.log))
 	return s
 }
 
 // LogStartEvent adds a temp start event to currInterval in the stopwatch
 func (el *Stopwatch) LogStartEvent(name string) {
+	if !ON {
+		return
+	}
 	if el.currInterval != nil {
 		fmt.Printf("Error: Pending interval already present\n")
 		os.Exit(1)
@@ -75,6 +86,9 @@ func (el *Stopwatch) LogStartEvent(name string) {
 
 // LogEndEvent adds a new end event to the log
 func (el *Stopwatch) LogEndEvent(name string) {
+	if !ON {
+		return
+	}
 	if el.currInterval == nil {
 		fmt.Printf("Error: No start time recorded\n")
 		os.Exit(1)
@@ -95,6 +109,9 @@ func (el *Stopwatch) LogEndEvent(name string) {
 
 // PopStartEvent deletes the last event from the log, which must be a start event
 func (el *Stopwatch) PopStartEvent() {
+	if !ON {
+		return
+	}
 	if el.currInterval == nil {
 		fmt.Printf("Error: No start time recorded\n")
 		os.Exit(1)
@@ -103,6 +120,9 @@ func (el *Stopwatch) PopStartEvent() {
 }
 
 func (el *Stopwatch) MakeStartEvent() *TimeInterval {
+	if !ON {
+		return nil
+	}
 	var st = time.Since(el.initTime)
 	var ti = newTimeInterval(0, el.name)
 	ti.logStartTime(st)
@@ -110,6 +130,9 @@ func (el *Stopwatch) MakeStartEvent() *TimeInterval {
 }
 
 func (el *Stopwatch) RecordEndEvent(ti *TimeInterval) {
+	if !ON {
+		return
+	}
 	if el.nextIndex >= cap(*el.log) {
 		ti.logEndTime(time.Since(el.initTime))
 		el.nextIndex++
@@ -122,12 +145,6 @@ func (el *Stopwatch) RecordEndEvent(ti *TimeInterval) {
 	(*el.log)[el.nextIndex] = *ti
 	el.nextIndex++
 	el.currInterval = nil
-}
-
-func (el *Stopwatch) AppendTimeInterval(ti *TimeInterval) {
-	ti.id = el.nextIndex
-	(*el.log)[el.nextIndex] = *ti
-	el.nextIndex++
 }
 
 // PrintLog prints the log line by line

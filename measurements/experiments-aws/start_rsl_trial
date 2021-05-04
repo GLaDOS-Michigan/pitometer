@@ -25,7 +25,7 @@ fi
 HOSTS="aws-hosts.csv"
 EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
 TEMP_DIR="/home/ubuntu/tmp-rsl"  # temporary dir to store output at each node
-FALLOW=600
+FALLOW=500
 
 # First, grab parameters
 
@@ -34,7 +34,8 @@ CLIENT_DURATION=$2
 CLIENT_ID=$3
 CLIENT_THREADS=$4
 BATCH_SIZE=$5
-shift; shift; shift; shift; shift;
+CLOCK_MODE=$6
+shift; shift; shift; shift; shift;shift;
 HOST_ID_LIST=("$@")
  
 HOST_NAME_LIST=()
@@ -115,7 +116,7 @@ do
     ssh ubuntu@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
 
     # Run experiment
-    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $NODE_INET $node_duration $BATCH_SIZE"
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $CLOCK_MODE $NODE_INET $node_duration $BATCH_SIZE"
     # ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration $BATCH_SIZE"  #OG
     ssh ubuntu@$NODE_ADDR "$EXP_DIR/rsl-aws-main $ARGS > $TEMP_DIR/node_$NODE_ID.log" &
 done
@@ -126,10 +127,14 @@ mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $FALLOW
 echo "Run completed"
 
 # Finally, grab results from each node to local machine
-# echo "sleep $(( node_duration ))"
-# sleep $(( node_duration ))    # allow some time for the logs to finish writing to file. These logs are massive
-#                               # so leave plenty of time
-sleep $(( 20 )) 
+if [ "$CLOCK_MODE" = "on" ]; then
+    echo "sleep $(( 3 ))"
+    sleep $(( 3 ))
+else
+    echo "sleep $(( 20 ))"
+    sleep $(( 20 ))     # allow some time for the logs to finish writing to file. These logs are massive
+                        # so leave plenty of time
+fi
 echo "Collecting results..."
 
 for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
