@@ -22,12 +22,12 @@ from plot_constants import *
 
 THROW=100  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "test"
+TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-05-02 00:00:00")
-END = datetime.fromisoformat("2021-05-02 10:00:00")
+START = datetime.fromisoformat("2021-05-03 17:00:00")
+END = datetime.fromisoformat("2021-05-03 19:00:00")
 
 CLIENT = "us-east-2a"
 OH = "us-east-2b"
@@ -164,7 +164,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
-    this_ax.set_title('Latency distributions of an IronRSL instance')
+    # this_ax.set_title('Latency distributions of an IronRSL instance')
+    this_ax.set_title('f=1, aws')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
     this_ax.set_ylim(0, 120)

@@ -21,8 +21,8 @@ PAYLOADS.sort()
 HOSTS = "/home/nudzhang/Documents/pitometer/measurements/experiments-aws/aws-hosts.csv"
 
 
-START = datetime.fromisoformat("2021-05-01 21:13:57")
-END = datetime.fromisoformat("2021-05-01 23:37:19")
+START = datetime.fromisoformat("2021-05-03 17:00:00")
+END = datetime.fromisoformat("2021-05-03 19:00:00")
 
 SAMPLE_EVERY = 1
 
@@ -162,7 +162,7 @@ def plot_time_series(pp, name, root, total_data):
 
             # Statistics
             stats = AnchoredText(
-                generate_statistics(y_vals), 
+                generate_statistics([y for y in y_vals if y != 0]), 
                 loc='upper right',  
                 prop=dict(size=8),
                 bbox_to_anchor=(1.1, 1),
