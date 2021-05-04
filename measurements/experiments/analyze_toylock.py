@@ -171,7 +171,11 @@ def plot_round_delay(name, root, delay, total_round_data):
             # all_nodes = list(total_round_data[size][delay].keys())
             # all_nodes.sort()
             leader_node = 20
-            data = total_round_data[size][delay][leader_node]
+            try:
+                data = total_round_data[size][delay][leader_node]
+            except KeyError:
+                print("No data for size %d delay %d" %(size, delay))
+                continue
             fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
             fig.suptitle("%s, delay %.1f ms, size %d" %(name, delay/1000.0, size), fontweight='bold')
             plot_histogram(axes[0], data)
