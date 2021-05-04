@@ -18,11 +18,11 @@ NODES = [1, 2, 3, 4]
 PAYLOADS = [16]
 NODES.sort()
 PAYLOADS.sort()
-HOSTS = "/home/nudzhang/Documents/pitometer/measurements/experiments-aws/aws-hosts.csv"
+HOSTS = ""
 
 
 START = datetime.fromisoformat("2021-05-03 17:00:00")
-END = datetime.fromisoformat("2021-05-03 19:00:00")
+END = datetime.fromisoformat("2021-05-04 19:00:00")
 
 SAMPLE_EVERY = 1
 
@@ -46,7 +46,8 @@ def main(exp_dir):
                         csv_name = "node_%s-%s.csv" %(src, target)
                         if target not in total_payload_data[src]:
                             total_payload_data[src][target] = []
-                        total_payload_data[src][target].extend(analyze_csv("%s/%s" %(root, csv_name)))
+                        res = analyze_csv("%s/%s" %(root, csv_name))
+                        total_payload_data[src][target].extend(res)
         
         # Save the data
         with open("%s/total_payload%d_data.pickle" %(exp_dir, payload), 'wb') as handle:
@@ -105,7 +106,6 @@ def plot_cdf(pp, name, root, total_data):
         for j in total_data[i].keys():
             i_j_data = [p[0]/2 for p in total_data[i][j] if not p[2]]
             this_ax = axes[row][col]
-
             this_ax.set_title("node%s -> node%s" %(i, j), fontsize=9)
             this_ax.grid()
 
@@ -286,8 +286,10 @@ def parse_go_timestamp(time_str):
 
 if __name__ == "__main__":
     # positional arguments <experiment_dir>
-    if len(sys.argv) < 2 or len(sys.argv) > 2:
-        print("Error: Script takes a single positional argument that is the directory containing the toylock trials")
+    if len(sys.argv) < 3 or len(sys.argv) > 3:
+        print("Error: Wrong number of arguments")
         exit(1)
-    exp_dir =sys.argv[1]
+    HOSTS = sys.argv[1]
+    NODES = range(len(get_hosts()))
+    exp_dir =sys.argv[2]
     main(exp_dir)

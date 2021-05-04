@@ -1,0 +1,55 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./process_network_results <root_dir>
+# Converts each log file in <root_dir>, and its sub-directories into separate csv files 
+# for each network client. It places each resulting csv in the directory of its 
+# corresponding log file. Then, it calls analyze_network.py to generate graphs
+
+HOSTS="aws-hosts.csv"
+
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments-aws/final_data/network"
+
+LOGFILES=(`find $ROOT_DIR -type f -name node_*.log`)
+
+HOST_ID_LIST=()
+HOST_NAME_LIST=()
+HOST_IP_LIST=()
+HOST_PORT_LIST=()
+
+while IFS=, read -r id name address port
+do 
+    HOST_ID_LIST+=("$id")
+    HOST_NAME_LIST+=("$name")
+    HOST_IP_LIST+=("$address")
+    HOST_PORT_LIST+=("$port")
+done < <(tail -n +2 $HOSTS)
+
+echo "Processing results in $ROOT_DIR"
+
+for lf in "${LOGFILES[@]}"
+do :
+    echo "        Converting file $lf"
+    dir=$(dirname "${lf}")      # directory path
+    name=$(basename -- "$lf")
+    ext="${name##*.}"          
+    name="${name%.*}"           # filename without extension
+
+    # Convert to csv. For each node, create 1 csv for each target
+    for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+    do
+        target_name=${HOST_NAME_LIST[i]}
+        target_ip=${HOST_IP_LIST[i]}
+
+        csv=$dir/"$name-$target_name".csv
+        cat $lf | grep "to target,$target_ip"  > $csv
+    done    
+done
+
+
+python3 analyze_network.py $HOSTS $ROOT_DIR
+
+# Delete intermediate csv files
+find $ROOT_DIR -type f -name "*.csv" -delete
+
+# Move pdf files to root
+# find $ROOT_DIR -name '*.pdf' -exec mv '{}' $ROOT_DIR \;
