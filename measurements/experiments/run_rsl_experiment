@@ -1,0 +1,5 @@
+#!/bin/bash
+# Run an RSL experiment
+
+./run_rsl_experiment_train
+./run_rsl_experiment_test

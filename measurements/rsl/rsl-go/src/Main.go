@@ -280,10 +280,10 @@ var _ _615_AbstractServiceRSL__s_Compile.Dummy__
 var _ _620_MarshallProof__i_Compile.Dummy__
 var _ _622_Main__i_Compile.Dummy__
 
-const INIT_SIZE = 150_000
+const INIT_SIZE = 20_000
 
 // This program takes the following positional arguments
-// <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <duration> <batch_size>
+// <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <clock_on> <inet> <duration> <batch_size>
 func main() {
 
 	fmt.Printf("%v\n", os.Args)
@@ -305,39 +305,56 @@ func main() {
 		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-2])
 		os.Exit(1)
 	}
-	os.Args = os.Args[:len(os.Args)-2]
+
+	// Grab the third-to-last argument from os.Args -- that is inet ip address.
+	var inet_str = os.Args[len(os.Args)-3]
+
+	// Grab the fourth-to-last argument from os.Args -- that is whether to turn on logging
+	var clock_mode = os.Args[len(os.Args)-4]
+	switch clock_mode {
+	case "on":
+		clock.ON = true
+	case "off":
+		clock.ON = false
+	default:
+		fmt.Printf("Error: Invalid clock mode %v\n", os.Args[len(os.Args)-4])
+		os.Exit(1)
+	}
+
+	os.Args = os.Args[:len(os.Args)-4]
+	clock.INIT_SIZE = INIT_SIZE
 
 	// Initialize each stopwatch
 	var logs = make(map[string]*clock.Stopwatch)
-	logs["LReplicaNextProcessPacket"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextProcessPacket")
+	logs["LReplicaNextProcessPacket"] = clock.NewStopwatch("LReplicaNextProcessPacket")
 
-	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a") // Done
-	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop")
+	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a") // Done
+	logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop")
 
-	logs["LReplicaNextSpontaneousMaybeEnterPhase2"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeEnterPhase2") // Done
-	logs["LReplicaNextSpontaneousMaybeEnterPhase2Noop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeEnterPhase2Noop")
+	logs["LReplicaNextSpontaneousMaybeEnterPhase2"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeEnterPhase2") // Done
+	logs["LReplicaNextSpontaneousMaybeEnterPhase2Noop"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeEnterPhase2Noop")
 
-	logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockMaybeNominateValueAndSend2a") // Done
-	logs["LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
+	logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"] = clock.NewStopwatch("LReplicaNextReadClockMaybeNominateValueAndSend2a") // Done
+	logs["LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"] = clock.NewStopwatch("LReplicaNextReadClockMaybeNominateValueAndSend2aNoop")
 
-	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints") // Done
-	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
+	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"] = clock.NewStopwatch("LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints") // Done
+	logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"] = clock.NewStopwatch("LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop")
 
-	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeMakeDecision") // Done
-	logs["LReplicaNextSpontaneousMaybeMakeDecisionNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeMakeDecisionNoop")
+	logs["LReplicaNextSpontaneousMaybeMakeDecision"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeMakeDecision") // Done
+	logs["LReplicaNextSpontaneousMaybeMakeDecisionNoop"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeMakeDecisionNoop")
 
-	logs["LReplicaNextSpontaneousMaybeExecute"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeExecute") // Done
-	logs["LReplicaNextSpontaneousMaybeExecuteNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextSpontaneousMaybeExecuteNoop")
+	logs["LReplicaNextSpontaneousMaybeExecute"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeExecute") // Done
+	logs["LReplicaNextSpontaneousMaybeExecuteNoop"] = clock.NewStopwatch("LReplicaNextSpontaneousMaybeExecuteNoop")
 
-	logs["LReplicaNextReadClockCheckForViewTimeout"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockCheckForViewTimeout") // Done
-	logs["LReplicaNextReadClockCheckForViewTimeoutNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockCheckForViewTimeoutNoop")
+	logs["LReplicaNextReadClockCheckForViewTimeout"] = clock.NewStopwatch("LReplicaNextReadClockCheckForViewTimeout") // Done
+	logs["LReplicaNextReadClockCheckForViewTimeoutNoop"] = clock.NewStopwatch("LReplicaNextReadClockCheckForViewTimeoutNoop")
 
-	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockCheckForQuorumOfViewSuspicions") // Done
-	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop")
+	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"] = clock.NewStopwatch("LReplicaNextReadClockCheckForQuorumOfViewSuspicions") // Done
+	logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"] = clock.NewStopwatch("LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop")
 
-	logs["LReplicaNextReadClockMaybeSendHeartbeat"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockMaybeSendHeartbeat")
-	logs["LReplicaNextReadClockMaybeSendHeartbeatNoop"] = clock.NewStopwatch(INIT_SIZE, "LReplicaNextReadClockMaybeSendHeartbeatNoop")
-	logs["MaxQueueing"] = clock.NewStopwatch(INIT_SIZE, "MaxQueueing")
+	logs["LReplicaNextReadClockMaybeSendHeartbeat"] = clock.NewStopwatch("LReplicaNextReadClockMaybeSendHeartbeat")
+	logs["LReplicaNextReadClockMaybeSendHeartbeatNoop"] = clock.NewStopwatch("LReplicaNextReadClockMaybeSendHeartbeatNoop")
+	logs["MaxQueueing"] = clock.NewStopwatch("MaxQueueing")
 
 	fmt.Printf("Starting %v\n", os.Args)
 	_622_Main__i_Compile.HALT = false //set termination flag for _622_Main__i_Compile main loop
@@ -354,5 +371,5 @@ func main() {
 		os.Exit(0)
 	}()
 
-	_622_Main__i_Compile.Companion_Default___.Default_Main_(logs)
+	_622_Main__i_Compile.Companion_Default___.Default_Main_(logs, inet_str)
 }

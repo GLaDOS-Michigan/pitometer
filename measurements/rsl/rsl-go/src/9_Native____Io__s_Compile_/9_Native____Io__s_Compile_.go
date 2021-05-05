@@ -591,9 +591,15 @@ func new_UdpClient_(my_ep *IPEndPoint, conn *net.UDPConn, sw *clock.Stopwatch) *
 }
 
 // TONY : DONE
-func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint, sw *clock.Stopwatch) (bool, *UdpClient) {
+func (comp_udpclient *CompanionStruct_UdpClient_) Construct(localEndpoint *IPEndPoint, sw *clock.Stopwatch, inet_str string) (bool, *UdpClient) {
 	var localEp = localEndpoint.GetUDPAddr()
-	conn, err := net.ListenUDP("udp", localEp)
+	var addr_str = fmt.Sprintf("%s:%v", inet_str, localEp.Port)
+	var localInetEp, err1 = net.ResolveUDPAddr("udp", addr_str)
+	if err1 != nil {
+		fmt.Printf("Error: Failed to resolve inet address %v\n", addr_str)
+		os.Exit(1)
+	}
+	conn, err := net.ListenUDP("udp", localInetEp)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Fatal error %s", err.Error())
 		return false, nil

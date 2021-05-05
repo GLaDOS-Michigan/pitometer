@@ -306,9 +306,9 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 	// make heartbeats infrequent such that they don't interfere with our message queues
 	return ParametersState{ParametersState_ParametersState{
 		// These are units of milliseconds, same as original C# implementation
-		Max__log__length:                uint64(100_000), // basically never truncate
-		Baseline__view__timeout__period: uint64(60_000),  // 60 seconds
-		Heartbeat__period:               uint64(30_000),  // 30 seconds
+		Max__log__length:                uint64(100_000),     // basically never truncate
+		Baseline__view__timeout__period: uint64(30 * 60_000), // 30 minutes
+		Heartbeat__period:               uint64(30 * 60_000), // 30 minutes
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(BatchSize),
 		Max__batch__delay:               uint64(10)}}
