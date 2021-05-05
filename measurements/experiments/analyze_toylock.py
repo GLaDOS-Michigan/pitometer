@@ -11,8 +11,7 @@ import pickle
 
 
 NODES = list(range(1, 21))
-DELAYS = [0, 1_000, 2_000, 4_000]  # units of microseconds
-
+DELAYS = [0, 1_000, 2_500, 5_000]  # units of microseconds
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)

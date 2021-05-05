@@ -13,6 +13,7 @@ NETWORK_DIR="../network"
 
 # Do local build
 ./clean_builds
+go version
 ./$TOYLOCK_DIR/build
 ./$RSL_DIR/build
 ./$NETWORK_DIR/build

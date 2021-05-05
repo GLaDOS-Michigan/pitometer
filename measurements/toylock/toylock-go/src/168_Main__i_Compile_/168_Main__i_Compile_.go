@@ -209,9 +209,8 @@ func (_this *CompanionStruct_Default___) Default_Main_(numRounds int, delay int)
 		_1762_host__state = _out112
 		{
 		}
+		// fmt.Printf("nodeGrantCounter.GetCount() = %v\n", nodeGrantCounter.GetCount())
 		if nodeGrantCounter.GetCount() == numRounds {
-			// nodeAcceptLog.PopStartEvent()
-			nodeGrantLog.PopStartEvent()
 			// Dump the event log
 			nodeGrantLog.PrintLog()
 			nodeAcceptLog.PrintLog()
