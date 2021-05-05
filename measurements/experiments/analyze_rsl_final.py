@@ -124,7 +124,8 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
             actual_method_latencies = compute_actual_node(total_node_data[f]) 
             actual_network_latencies = compute_actual_network(total_network_data)
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
+            # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
+            fig.subplots_adjust(right=0.96, bottom=0.18 )
             plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
@@ -200,7 +201,7 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
-    this_ax.set_title(name)
+    # this_ax.set_title(name)
     this_ax.set_ylim(0, 50)
     this_ax.set_xlim(0, 1)
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
