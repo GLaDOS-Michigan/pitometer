@@ -3,8 +3,8 @@
 
 BRANCH=$1
 WORKING_DIR="/home/ubuntu/pitometer"
-HOSTS="aws-hosts.csv"
-HOSTS_SR="aws-hosts_single-region.csv"
+HOSTS="/home/ubuntu/pitometer/measurements/experiments-aws/aws-hosts.csv"
+HOSTS_SR="/home/ubuntu/pitometer/measurements/experiments-aws-single/aws-hosts_single-region.csv"
 
 echo "Starting kill experiment on all hosts"
 
