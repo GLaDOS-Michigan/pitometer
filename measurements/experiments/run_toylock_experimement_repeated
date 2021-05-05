@@ -7,9 +7,9 @@ then
     exit 1
 fi
 
-REPEATS=5
+REPEATS=3
 
 for ((i=0;i<$[ $REPEATS ];i++))
 do
-    ./run_toylock_experimement > "tmp/toy_exp_$i.log"
+    ./run_toylock_experimement
 done
