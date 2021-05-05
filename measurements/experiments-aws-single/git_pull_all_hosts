@@ -4,7 +4,7 @@
 
 BRANCH=$1
 WORKING_DIR="/home/ubuntu/pitometer"
-HOSTS="aws-hosts.csv"
+HOSTS="aws-hosts_single-region.csv"
 
 echo "Starting git pull for branch $BRANCH on all hosts"
 

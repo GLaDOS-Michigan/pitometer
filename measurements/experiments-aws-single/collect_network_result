@@ -36,5 +36,5 @@ done
 
 # Also send data to skynode 20
 echo "Sending results to Skynode20"
-scp -r $RESULTS_DIR nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/final_data/network_single-region
+scp -r $RESULTS_DIR nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/final_data/network
 echo "Done"
