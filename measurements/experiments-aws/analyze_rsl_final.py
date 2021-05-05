@@ -97,7 +97,7 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions (simple)", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_distributions("Paxos Distributions (simple, NA)", exp_dir, total_network_data, total_node_data, total_client_data)
     plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
@@ -132,7 +132,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i][THROW:-THROW]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])   
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
+            fig.subplots_adjust(right=0.96, bottom=0.18 )
             plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, total_network_data, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
@@ -165,12 +165,11 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
     # this_ax.set_title('Latency distributions of an IronRSL instance')
-    this_ax.set_title('f=1, aws')
+    this_ax.set_title('North America cross-region')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
-    this_ax.set_ylim(0, 120)
+    this_ax.set_ylim(0, 100)
     this_ax.set_xlim(0, 1)
-    # this_ax.grid()
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
     this_ax.legend()

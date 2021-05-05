@@ -13,7 +13,7 @@ GIT_BRANCH="exp"
 NUM_ROUNDS=100
 ITERATIONS=40
 DELAYS=("0" "1000" "2500" "5000")   # delays are in microseconds
-RING_SIZES=("2" "4" "6" "8")
+RING_SIZES=("2" "4" "6" "8" "10")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 echo "Starting new Toylock experiment at time $TIMESTAMP"
