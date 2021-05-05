@@ -34,7 +34,7 @@ do
     done
 
     # Build locally and send executables to the target machines
-    ./build_to_hosts_single $CLIENT_ID ${node_ids[@]} 
+    ./build_to_hosts_single-region $CLIENT_ID ${node_ids[@]} 
     echo ""
 
     trial_duration=$(( $BASE_TRIAL_DURATION ))  # Make trial duration a variable
