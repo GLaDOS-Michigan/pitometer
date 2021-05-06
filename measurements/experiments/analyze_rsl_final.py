@@ -21,7 +21,7 @@ from plot_constants import *
 
 THROW=0  # Ignore the first THROW requests in computing client latencies
 
-TRAIN_SET = "test"
+TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1, 2, 3, 4, 5]
 

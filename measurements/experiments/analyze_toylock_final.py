@@ -54,8 +54,8 @@ def main(exp_dir):
     # Plot Rounds
     # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    # plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -248,11 +248,13 @@ def plot_micro_1_distr_fidelity_ax(
     predict_pdf, predict_bins = compute_predicted_toylock_pdf(ring_size, actual_grant_latencies, actual_accept_latencies, actual_network_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
     print('name: ' + name)
-    print('Pred average '+  str(np.average(predict_bins, weights=predict_pdf)))
-    print('Real average ' + str(sum(actual_round_latencies)/ len(actual_round_latencies)))
+    # print('Pred average '+  str(np.average(predict_bins, weights=predict_pdf)))
+    # print('Real average ' + str(sum(actual_round_latencies)/ len(actual_round_latencies)))
+    print("Pred max %.3f" %get_percentile(predict_cdf, predict_bins, 100))
+    print("Real max %.3f" %max(actual_round_latencies))
     print()
-    this_ax.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    this_ax.plot(round_cdf, round_bins, label='actual performance', color='navy')
+    this_ax.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
+    this_ax.plot(round_cdf, round_bins, label='observed performance', color='navy')
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
