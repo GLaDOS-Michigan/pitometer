@@ -450,47 +450,19 @@ func (_this *CompanionStruct_Default___) HostInitImpl(maxQueueSw *clock.Stopwatc
 }
 func (_this *CompanionStruct_Default___) HostNextImpl(host__state CScheduler, logs map[string]*clock.Stopwatch) (bool, CScheduler) {
 	var ok bool = false
-	var _ = ok
 	var host__state_k CScheduler = Type_CScheduler_().Default().(CScheduler)
-	var _ = host__state_k
-	var _5340_lschedule _126_LiveRSL____Replica__i_Compile.LScheduler = _126_LiveRSL____Replica__i_Compile.Type_LScheduler_().Default().(_126_LiveRSL____Replica__i_Compile.LScheduler)
-	var _ = _5340_lschedule
 	var _5341_repImpl *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl
-	var _ = _5341_repImpl
 	var _nw18 = _383_LiveRSL____ReplicaImplClass__i_Compile.New_ReplicaImpl_()
-	var _ = _nw18
 	_nw18.Ctor__()
 	_5341_repImpl = _nw18
 	host__state_k = CScheduler{CScheduler_CScheduler{_5341_repImpl}}
 	var _5342_okay bool
-	var _ = _5342_okay
-	var _out532 bool
-	var _ = _out532
-	_out532 = _454_LiveRSL____ReplicaImplMain__i_Compile.Companion_Default___.Replica__Next__main((host__state).Dtor_replica__impl(), logs)
-	_5342_okay = _out532
+	_5342_okay = _454_LiveRSL____ReplicaImplMain__i_Compile.Companion_Default___.Replica__Next__main((host__state).Dtor_replica__impl(), logs)
 	if _5342_okay {
-		{
-		}
-		{
-		}
-		{
-		}
-		{
-		}
-		{
-		}
-		{
-		}
-		{
-		}
 		host__state_k = CScheduler{CScheduler_CScheduler{(host__state).Dtor_replica__impl()}}
 	} else {
 	}
 	ok = _5342_okay
-	{
-	}
-	{
-	}
 	return ok, host__state_k
 }
 

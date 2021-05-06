@@ -327,28 +327,16 @@ func (_this type_Default___) String() string {
 }
 func (_this *CompanionStruct_Default___) Default_Main_(logs map[string]*clock.Stopwatch, inet_str string) _dafny.Int {
 	var exitCode _dafny.Int = _dafny.Zero
-	var _ = exitCode
 	var _5343_ok bool
-	var _ = _5343_ok
 	var _5344_host__state _466_Host__i_Compile.CScheduler
-	var _ = _5344_host__state
-	var _5345_config _240_LiveRSL____ConstantsState__i_Compile.ConstantsState
-	var _ = _5345_config
-	var _5346_id _9_Native____Io__s_Compile.EndPoint
-	var _ = _5346_id
 	var _out533 bool
-	var _ = _out533
 	var _out534 _466_Host__i_Compile.CScheduler
-	var _ = _out534
 	var _out535 _240_LiveRSL____ConstantsState__i_Compile.ConstantsState
-	var _ = _out535
 	var _out536 _9_Native____Io__s_Compile.EndPoint
-	var _ = _out536
+	_, _ = _out535, _out536
 	_out533, _out534, _out535, _out536 = _466_Host__i_Compile.Companion_Default___.HostInitImpl(logs["MaxQueueing"], inet_str)
 	_5343_ok = _out533
 	_5344_host__state = _out534
-	_5345_config = _out535
-	_5346_id = _out536
 	{
 	}
 	for _5343_ok {
@@ -359,9 +347,7 @@ func (_this *CompanionStruct_Default___) Default_Main_(logs map[string]*clock.St
 		{
 		}
 		var _out537 bool
-		var _ = _out537
 		var _out538 _466_Host__i_Compile.CScheduler
-		var _ = _out538
 		_out537, _out538 = _466_Host__i_Compile.Companion_Default___.HostNextImpl(_5344_host__state, logs)
 		_5343_ok = _out537
 		_5344_host__state = _out538

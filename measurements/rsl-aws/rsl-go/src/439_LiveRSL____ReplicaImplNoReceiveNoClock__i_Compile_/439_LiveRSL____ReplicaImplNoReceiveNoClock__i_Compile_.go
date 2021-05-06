@@ -527,34 +527,21 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveNoClockNextSpontaneousM
 	return ok
 }
 func (_this *CompanionStruct_Default___) Replica__NoReceive__NoClock__Next(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
-	goto TAIL_CALL_START
-TAIL_CALL_START:
 	var ok bool = false
-	var _ = ok
 	if (r.NextActionIndex) == (uint64(1)) {
-		var _out487 bool
-		var _ = _out487
-		_out487 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterNewViewAndSend1a(r, logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"], logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"])
+		var _out487 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterNewViewAndSend1a(r, logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a"], logs["LReplicaNextSpontaneousMaybeEnterNewViewAndSend1aNoop"])
 		ok = _out487
 	} else if (r.NextActionIndex) == (uint64(2)) {
-		var _out488 bool
-		var _ = _out488
-		_out488 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterPhase2(r, logs["LReplicaNextSpontaneousMaybeEnterPhase2"], logs["LReplicaNextSpontaneousMaybeEnterPhase2Noop"])
+		var _out488 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeEnterPhase2(r, logs["LReplicaNextSpontaneousMaybeEnterPhase2"], logs["LReplicaNextSpontaneousMaybeEnterPhase2Noop"])
 		ok = _out488
 	} else if (r.NextActionIndex) == (uint64(4)) {
-		var _out489 bool
-		var _ = _out489
-		_out489 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousTruncateLogBasedOnCheckpoints(r, logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"], logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"])
+		var _out489 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousTruncateLogBasedOnCheckpoints(r, logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpoints"], logs["LReplicaNextSpontaneousTruncateLogBasedOnCheckpointsNoop"])
 		ok = _out489
 	} else if (r.NextActionIndex) == (uint64(5)) {
-		var _out490 bool
-		var _ = _out490
-		_out490 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeMakeDecision(r, logs["LReplicaNextSpontaneousMaybeMakeDecision"], logs["LReplicaNextSpontaneousMaybeMakeDecisionNoop"])
+		var _out490 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeMakeDecision(r, logs["LReplicaNextSpontaneousMaybeMakeDecision"], logs["LReplicaNextSpontaneousMaybeMakeDecisionNoop"])
 		ok = _out490
 	} else if (r.NextActionIndex) == (uint64(6)) {
-		var _out491 bool
-		var _ = _out491
-		_out491 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeExecute(r, logs["LReplicaNextSpontaneousMaybeExecute"], logs["LReplicaNextSpontaneousMaybeExecuteNoop"])
+		var _out491 = Companion_Default___.ReplicaNoReceiveNoClockNextSpontaneousMaybeExecute(r, logs["LReplicaNextSpontaneousMaybeExecute"], logs["LReplicaNextSpontaneousMaybeExecuteNoop"])
 		ok = _out491
 	}
 	return ok

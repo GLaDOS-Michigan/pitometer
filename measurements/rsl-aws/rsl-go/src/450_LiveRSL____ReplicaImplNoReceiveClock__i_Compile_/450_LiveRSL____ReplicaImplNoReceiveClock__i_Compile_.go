@@ -517,18 +517,6 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendH
 		}
 		return ok
 	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
 	if noop {
 		LReplicaNextReadClockMaybeSendHeartbeatNoopLog.LogEndEvent("LReplicaNextReadClockMaybeSendHeartbeatNoop")
 		LReplicaNextReadClockMaybeSendHeartbeatLog.PopStartEvent()
@@ -540,29 +528,18 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeSendH
 }
 
 func (_this *CompanionStruct_Default___) Replica__NoReceive__ReadClock__Next(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
-	goto TAIL_CALL_START
-TAIL_CALL_START:
 	var ok bool = false
-	var _ = ok
 	if (r.NextActionIndex) == (uint64(3)) {
-		var _out508 bool
-		var _ = _out508
-		_out508 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r, logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"], logs["LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"])
+		var _out508 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeNominateValueAndSend2a(r, logs["LReplicaNextReadClockMaybeNominateValueAndSend2a"], logs["LReplicaNextReadClockMaybeNominateValueAndSend2aNoop"])
 		ok = _out508
 	} else if (r.NextActionIndex) == (uint64(7)) {
-		var _out509 bool
-		var _ = _out509
-		_out509 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForViewTimeout(r, logs["LReplicaNextReadClockCheckForViewTimeout"], logs["LReplicaNextReadClockCheckForViewTimeoutNoop"])
+		var _out509 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForViewTimeout(r, logs["LReplicaNextReadClockCheckForViewTimeout"], logs["LReplicaNextReadClockCheckForViewTimeoutNoop"])
 		ok = _out509
 	} else if (r.NextActionIndex) == (uint64(8)) {
-		var _out510 bool
-		var _ = _out510
-		_out510 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForQuorumOfViewSuspicions(r, logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"], logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"])
+		var _out510 = Companion_Default___.ReplicaNoReceiveReadClockNextCheckForQuorumOfViewSuspicions(r, logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicions"], logs["LReplicaNextReadClockCheckForQuorumOfViewSuspicionsNoop"])
 		ok = _out510
 	} else if (r.NextActionIndex) == (uint64(9)) {
-		var _out511 bool
-		var _ = _out511
-		_out511 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeSendHeartbat(r, logs["LReplicaNextReadClockMaybeSendHeartbeat"], logs["LReplicaNextReadClockMaybeSendHeartbeatNoop"])
+		var _out511 = Companion_Default___.ReplicaNoReceiveReadClockNextMaybeSendHeartbat(r, logs["LReplicaNextReadClockMaybeSendHeartbeat"], logs["LReplicaNextReadClockMaybeSendHeartbeatNoop"])
 		ok = _out511
 	}
 	return ok

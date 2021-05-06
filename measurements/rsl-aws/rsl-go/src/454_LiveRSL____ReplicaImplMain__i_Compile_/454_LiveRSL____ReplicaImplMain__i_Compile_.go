@@ -273,173 +273,48 @@ TAIL_CALL_START:
 }
 func (_this *CompanionStruct_Default___) ReplicaNextMainProcessPacketX(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, LReplicaNextProcessPacketLog *clock.Stopwatch) bool {
 	var ok bool = false
-	var _ = ok
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	var _out512 bool
-	var _ = _out512
-	_out512 = _428_LiveRSL____ReplicaImplProcessPacketX__i_Compile.Companion_Default___.Replica__Next__ProcessPacketX(r, LReplicaNextProcessPacketLog)
-	ok = _out512
+	ok = _428_LiveRSL____ReplicaImplProcessPacketX__i_Compile.Companion_Default___.Replica__Next__ProcessPacketX(r, LReplicaNextProcessPacketLog)
 	if !(ok) {
 		return ok
 	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
 	(r).NextActionIndex = uint64(1)
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
 	return ok
 }
 func (_this *CompanionStruct_Default___) ReplicaNextMainNoClock(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
 	var ok bool = false
-	var _ = ok
-	var _5278_curActionIndex uint64
-	var _ = _5278_curActionIndex
-	_5278_curActionIndex = r.NextActionIndex
-	{
-	}
-	{
-	}
-	{
-	}
-	var _out513 bool
-	var _ = _out513
-	_out513 = _439_LiveRSL____ReplicaImplNoReceiveNoClock__i_Compile.Companion_Default___.Replica__NoReceive__NoClock__Next(r, logs)
+	var _out513 = _439_LiveRSL____ReplicaImplNoReceiveNoClock__i_Compile.Companion_Default___.Replica__NoReceive__NoClock__Next(r, logs)
 	ok = _out513
 	if !(ok) {
 		return ok
 	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
 	var _5279_nextActionIndex_k uint64
-	var _ = _5279_nextActionIndex_k
 	_5279_nextActionIndex_k = (r.NextActionIndex) + (uint64(1))
 	(r).NextActionIndex = _5279_nextActionIndex_k
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
 	return ok
 }
+
 func (_this *CompanionStruct_Default___) ReplicaNextMainReadClock(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
 	var ok bool = false
-	var _ = ok
-	var _5280_curActionIndex uint64
-	var _ = _5280_curActionIndex
-	_5280_curActionIndex = r.NextActionIndex
-	{
-	}
-	{
-	}
-	{
-	}
-	var _out514 bool
-	var _ = _out514
-	_out514 = _450_LiveRSL____ReplicaImplNoReceiveClock__i_Compile.Companion_Default___.Replica__NoReceive__ReadClock__Next(r, logs)
+	var _out514 = _450_LiveRSL____ReplicaImplNoReceiveClock__i_Compile.Companion_Default___.Replica__NoReceive__ReadClock__Next(r, logs)
 	ok = _out514
 	if !(ok) {
 		return ok
 	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	var _5281_nextActionIndex_k uint64
-	var _ = _5281_nextActionIndex_k
-	var _out515 uint64
-	var _ = _out515
-	_out515 = Companion_Default___.RollActionIndex(r.NextActionIndex)
-	_5281_nextActionIndex_k = _out515
+	var _5281_nextActionIndex_k = Companion_Default___.RollActionIndex(r.NextActionIndex)
 	(r).NextActionIndex = _5281_nextActionIndex_k
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
-	{
-	}
 	return ok
 }
+
 func (_this *CompanionStruct_Default___) Replica__Next__main(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
-	goto TAIL_CALL_START
-TAIL_CALL_START:
 	var ok bool = false
-	var _ = ok
 	if (r.NextActionIndex) == (uint64(0)) {
-		var _out516 bool
-		var _ = _out516
-		_out516 = Companion_Default___.ReplicaNextMainProcessPacketX(r, logs["LReplicaNextProcessPacket"])
+		var _out516 = Companion_Default___.ReplicaNextMainProcessPacketX(r, logs["LReplicaNextProcessPacket"])
 		ok = _out516
 	} else if (((((r.NextActionIndex) == (uint64(1))) || ((r.NextActionIndex) == (uint64(2)))) || ((r.NextActionIndex) == (uint64(4)))) || ((r.NextActionIndex) == (uint64(5)))) || ((r.NextActionIndex) == (uint64(6))) {
-		var _out517 bool
-		var _ = _out517
-		_out517 = Companion_Default___.ReplicaNextMainNoClock(r, logs)
+		var _out517 = Companion_Default___.ReplicaNextMainNoClock(r, logs)
 		ok = _out517
 	} else if ((r.NextActionIndex) == (uint64(3))) || (((uint64(7)) <= (r.NextActionIndex)) && ((r.NextActionIndex) <= (uint64(9)))) {
-		var _out518 bool
-		var _ = _out518
-		_out518 = Companion_Default___.ReplicaNextMainReadClock(r, logs)
+		var _out518 = Companion_Default___.ReplicaNextMainReadClock(r, logs)
 		ok = _out518
 	}
 	return ok
