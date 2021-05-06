@@ -217,7 +217,6 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     initial_binsize = 1e-3
     tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, initial_binsize)
     (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
-    noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, CLIENT, OH, initial_binsize)
@@ -271,7 +270,7 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
     processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
     noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
-    noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
+    # noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
 
     net_C_OH_pdf, min_C_OH = network_to_pdf(total_network_data, CLIENT, OH, initial_binsize)
     net_OH_CA_pdf, min_OH_CA = network_to_pdf(total_network_data, OH, CA, initial_binsize)
@@ -292,10 +291,14 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_pdf, nominateValueFull_pdf, 
         sum_start, min(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"]), 
         sum_binsize, initial_binsize)
+    # sum_pdf, sum_start, sum_binsize = add_histograms(
+    #     sum_pdf, noop_0_10_pdf, 
+    #     sum_start, noop_0_10_start, 
+    #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, noop_0_10_pdf, 
-        sum_start, noop_0_10_start, 
-        sum_binsize, noop_0_10_binsize)
+        sum_pdf, maxQ_pdf, 
+        sum_start, maxQ_start, 
+        sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, net_C_OH_pdf, 
         sum_start, min_C_OH, 
@@ -314,10 +317,10 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_pdf, maxQ_pdf, 
         sum_start, maxQ_start, 
         sum_binsize, initial_binsize)
-    sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, noop_0_10_pdf, 
-        sum_start, noop_0_10_start, 
-        sum_binsize, noop_0_10_binsize)
+    # sum_pdf, sum_start, sum_binsize = add_histograms(
+    #     sum_pdf, noop_0_10_pdf, 
+    #     sum_start, noop_0_10_start, 
+    #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, net_OH_OR_pdf, 
         sum_start, min_OH_OR, 
@@ -524,8 +527,8 @@ def sum_from_action_times_simple(work_actions_times, noop_action_times, max_queu
     Arguments:
         actions_times -- Map from each action id to the time it uses
     """
-    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + c_oh * 2
-    TB2b = TB2a + max_queue_time + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + oh_or
+    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + max_queue_time + c_oh * 2
+    TB2b = TB2a + max_queue_time + work_actions_times[0] + oh_or
     res = TB2b + max_queue_time + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6] + oh_or
     return res
 

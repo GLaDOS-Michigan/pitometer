@@ -218,7 +218,6 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     initial_binsize = 1e-3
     tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, initial_binsize)
     (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
-    noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
     net_C_A_pdf, min_C_A = network_to_pdf(total_network_data, CLIENT, A, initial_binsize)
@@ -266,13 +265,13 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         actual_method_latencies -- map of method name to list of latencies
         // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
     
-        // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + NoOps(0, 10) + D(A->B)
-        // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D(C->A) + D(A->B)
+        // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + D(A->B)
+        // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + MaxQ + D(C->A) + D(A->B)
     """
     processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
     noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
-    noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
+    # noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
 
     net_C_A_pdf, min_C_A = network_to_pdf(total_network_data, CLIENT, A, initial_binsize)
     net_A_B_pdf, min_A_B = network_to_pdf(total_network_data, A, B, initial_binsize)
@@ -292,10 +291,14 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_pdf, nominateValueFull_pdf, 
         sum_start, min(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"]), 
         sum_binsize, initial_binsize)
+    # sum_pdf, sum_start, sum_binsize = add_histograms(
+    #     sum_pdf, noop_0_10_pdf, 
+    #     sum_start, noop_0_10_start, 
+    #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, noop_0_10_pdf, 
-        sum_start, noop_0_10_start, 
-        sum_binsize, noop_0_10_binsize)
+        sum_pdf, maxQ_pdf, 
+        sum_start, maxQ_start, 
+        sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, net_C_A_pdf, 
         sum_start, min_C_A, 
@@ -314,10 +317,10 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_pdf, maxQ_pdf, 
         sum_start, maxQ_start, 
         sum_binsize, initial_binsize)
-    sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, noop_0_10_pdf, 
-        sum_start, noop_0_10_start, 
-        sum_binsize, noop_0_10_binsize)
+    # sum_pdf, sum_start, sum_binsize = add_histograms(
+    #     sum_pdf, noop_0_10_pdf, 
+    #     sum_start, noop_0_10_start, 
+    #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, net_A_B_pdf, 
         sum_start, min_A_B, 

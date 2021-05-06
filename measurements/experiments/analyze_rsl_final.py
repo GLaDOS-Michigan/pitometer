@@ -89,8 +89,8 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
-    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
@@ -515,7 +515,7 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies
         actual_method_latencies -- map of method name to list of latencies
 
         // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + NoOps(0, 10) + D
-        // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D + D
+        // TB2a = ProcessPacketFull(request) + MaxQ + NoOps(1, 3) + NominateValueFull + D + D
     """
     processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
     noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
@@ -533,10 +533,14 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies
         sum_pdf, nominateValueFull_pdf, 
         sum_start, min(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"]), 
         sum_binsize, initial_binsize)
+    # sum_pdf, sum_start, sum_binsize = add_histograms(
+    #     sum_pdf, noop_0_10_pdf, 
+    #     sum_start, noop_0_10_start, 
+    #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, noop_0_10_pdf, 
-        sum_start, noop_0_10_start, 
-        sum_binsize, noop_0_10_binsize)
+        sum_pdf, maxQ_pdf, 
+        sum_start, maxQ_start, 
+        sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, net_pdf, 
         sum_start, min(actual_network_latencies), 
@@ -555,10 +559,10 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies
         sum_pdf, maxQ_pdf, 
         sum_start, maxQ_start, 
         sum_binsize, initial_binsize)
-    sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, noop_0_10_pdf, 
-        sum_start, noop_0_10_start, 
-        sum_binsize, noop_0_10_binsize)
+    # sum_pdf, sum_start, sum_binsize = add_histograms(
+    #     sum_pdf, noop_0_10_pdf, 
+    #     sum_start, noop_0_10_start, 
+    #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
         sum_pdf, net_pdf, 
         sum_start, min(actual_network_latencies), 
@@ -677,14 +681,14 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.16 )
         # this_ax.set_title("Predictions of IronRSL performance")
         
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed',markerfacecolor='none')
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed',mfc='none')
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
         # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='green')
         
-        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed',markerfacecolor='none')
+        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed',mfc='none')
         this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
 
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed',markerfacecolor='none')
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed',mfc='none')
         this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick')
         
         # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
@@ -865,13 +869,15 @@ def sum_from_action_times_simple(work_actions_times, noop_action_times, max_queu
     // NoOps(i, j) = no-op-action i + ... +  no-op-action j-1
     
     // ReplyBound = TB2b + MaxQueueTime + NoOps(1, 6) + ExecuteFull + D
-    // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + NoOps(0, 10) + D
-    // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + NoOps(0, 10) + D + D
+    // TB2b = TB2a + MaxQueueTime + ProcessPacketFull(2a) + D
+    // TB2a = ProcessPacketFull(request) + NoOps(1, 3) + NominateValueFull + D + D
     Arguments:
         actions_times -- Map from each action id to the time it uses
     """
-    TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay * 2
-    TB2b = TB2a + max_queue_time + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
+    # TB2a = work_actions_times[0] + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + noop_actions_up_to(noop_action_times, 0, 10) + delay * 2
+    # TB2b = TB2a + max_queue_time + work_actions_times[0] + noop_actions_up_to(noop_action_times, 0, 10) + delay
+    TB2a = work_actions_times[0] + max_queue_time + noop_actions_up_to(noop_action_times, 1, 3) + work_actions_times[3] + delay * 2
+    TB2b = TB2a + max_queue_time + work_actions_times[0] + delay
     res = TB2b + max_queue_time + noop_actions_up_to(noop_action_times, 1, 6) + work_actions_times[6] + delay
     return res
 
