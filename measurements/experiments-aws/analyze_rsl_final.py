@@ -165,7 +165,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
     # this_ax.set_title('Latency distributions of an IronRSL instance')
-    this_ax.set_title('North America cross-region')
+    this_ax.set_title('IronRSL, North America cross-region')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
     this_ax.set_ylim(0, 100)

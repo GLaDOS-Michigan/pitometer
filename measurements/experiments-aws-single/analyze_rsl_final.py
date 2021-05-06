@@ -20,14 +20,14 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=1  # Ignore the first THROW requests in computing client latencies
+THROW=100  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-05-03 23:00:00")
-END = datetime.fromisoformat("2021-05-06 04:00:00")
+START = datetime.fromisoformat("2021-05-06 16:20:00")
+END = datetime.fromisoformat("2021-05-07 04:00:00")
 
 CLIENT = "us-east-2a"
 L = "us-east-2a-L"
@@ -98,7 +98,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions (simple, Ohio)", exp_dir, total_network_data, total_node_data, total_client_data)
-    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -159,13 +159,13 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
-    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    plt.plot(client_cdf, client_bins, label='actual performance', color='navy')
+    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
+    plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
     # this_ax.set_title('Latency distributions of an IronRSL instance')
-    this_ax.set_title('Ohio region')
+    this_ax.set_title('IronRSL, Ohio region')
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
     this_ax.set_ylim(0, 20)
@@ -192,7 +192,7 @@ def sanity_check(actual_client_latencies, total_network_data, actual_method_late
     print("SANITY CHECK")
     print("min/max for end-to-end client latency is %.3f/%.3f" %(min(actual_client_latencies), max(actual_client_latencies)))
     print()
-    nodes = [A, B, C]
+    nodes = [L, B, C]
     for src in nodes:
         for dst in nodes:
             data = [p[0]/2.0 for p in total_network_data[src][dst] if START < p[1] and p[1] < END and not p[2]]
