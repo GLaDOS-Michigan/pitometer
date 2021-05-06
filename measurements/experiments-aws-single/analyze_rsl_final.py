@@ -220,7 +220,7 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
     (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
-    net_C_A_pdf, min_C_A = network_to_pdf(total_network_data, CLIENT, A, initial_binsize)
+    net_CL_C_pdf, min_CL_C = network_to_pdf(total_network_data, CLIENT, C, initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -244,8 +244,8 @@ def compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latenc
             sum_start, executeFull_start, 
             sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-            sum_pdf, net_C_A_pdf, 
-            sum_start, min_C_A, 
+            sum_pdf, net_CL_C_pdf, 
+            sum_start, min_CL_C, 
             sum_binsize, initial_binsize)
     binrange = sum_binsize * len(sum_pdf)
     conv_bins = np.linspace(sum_start + sum_binsize, sum_start + binrange, len(sum_pdf))
@@ -273,8 +273,8 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
     # noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
 
-    net_C_A_pdf, min_C_A = network_to_pdf(total_network_data, CLIENT, A, initial_binsize)
-    net_A_B_pdf, min_A_B = network_to_pdf(total_network_data, A, B, initial_binsize)
+    net_CL_C_pdf, min_CL_C = network_to_pdf(total_network_data, CLIENT, C, initial_binsize)
+    net_C_B_pdf, min_C_B = network_to_pdf(total_network_data, C, B, initial_binsize)
 
     q_data = actual_method_latencies["MaxQueueing"]
     # q_data.sort()
@@ -300,12 +300,12 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
         sum_start, maxQ_start, 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_C_A_pdf, 
-        sum_start, min_C_A, 
+        sum_pdf, net_CL_C_pdf, 
+        sum_start, min_CL_C, 
         sum_binsize, initial_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_A_B_pdf, 
-        sum_start, min_A_B, 
+        sum_pdf, net_C_B_pdf, 
+        sum_start, min_C_B, 
         sum_binsize, initial_binsize)
     
     # TB2B
@@ -322,8 +322,8 @@ def compute_TB2b_pdf_simple(f, total_network_data, actual_method_latencies, init
     #     sum_start, noop_0_10_start, 
     #     sum_binsize, noop_0_10_binsize)
     sum_pdf, sum_start, sum_binsize = add_histograms(
-        sum_pdf, net_A_B_pdf, 
-        sum_start, min_A_B, 
+        sum_pdf, net_C_B_pdf, 
+        sum_start, min_C_B, 
         sum_binsize, initial_binsize)
 
     return sum_pdf, sum_start, sum_binsize

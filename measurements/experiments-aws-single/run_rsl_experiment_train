@@ -10,7 +10,7 @@ fi
 ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/rsl"
 GIT_BRANCH="exp"
 
-CLIENT_ID=1                             # node to use as client
+CLIENT_ID=3                             # node to use as client
 CLIENT_THREADS=1                        # number of clients
 BASE_TRIAL_DURATION=$(( 6 ))            # minimum duration in seconds
 ITERATIONS=100                          # repeats of each trial
