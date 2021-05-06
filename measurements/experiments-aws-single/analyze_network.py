@@ -18,11 +18,11 @@ NODES = [1, 2, 3, 4]
 PAYLOADS = [16]
 NODES.sort()
 PAYLOADS.sort()
-HOSTS = ""
+HOSTS = "aws-hosts_single-region.csv"
 
 
-START = datetime.fromisoformat("2021-05-03 23:00:00")
-END = datetime.fromisoformat("2021-05-06 04:00:00")
+START = datetime.fromisoformat("2021-05-06 16:20:00")
+END = datetime.fromisoformat("2021-05-07 04:00:00")
 
 SAMPLE_EVERY = 1
 
@@ -44,6 +44,7 @@ def main(exp_dir):
                         total_payload_data[src] = dict()
                     for target in host_names:
                         csv_name = "node_%s-%s.csv" %(src, target)
+                        # print(csv_name)
                         if target not in total_payload_data[src]:
                             total_payload_data[src][target] = []
                         res = analyze_csv("%s/%s" %(root, csv_name))
