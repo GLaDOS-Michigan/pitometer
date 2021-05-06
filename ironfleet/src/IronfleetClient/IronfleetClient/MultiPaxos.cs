@@ -147,8 +147,8 @@
 
                     // Console.WriteLine("TONY DEBUG: Sleep {0}", sleep_time);
                     Thread.Sleep(sleep_time);
-                    var start_time = HiResTimer.Ticks;
                     this.Send(msg, dest);
+                    var start_time = HiResTimer.Ticks;
                     //foreach (var remote in ClientBase.endpoints)
                     //{
                     //    this.Send(msg, remote);
