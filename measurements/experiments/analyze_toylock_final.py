@@ -52,7 +52,7 @@ def main(exp_dir):
     print("\nComputing graphs")
 
     # Plot Rounds
-    # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
+    plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
@@ -85,14 +85,15 @@ def plot_convolution(name, root, total_grant_data, total_accept_data):
     for delay in DELAYS:
         with PdfPages("%s/%s_%d.pdf" %(root, name, delay)) as pp:
             x_vals_ring_size = sorted(list(total_grant_data.keys()))
-            for ring_size in x_vals_ring_size:
-                actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
-                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                fig.subplots_adjust(left=0.13, right=0.96, top=0.91, bottom=0.15 )
-                # plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
-                plot_convolution_ax(delay, ring_size, this_ax, "Convolution of two CDFs", actual_grant_latencies, actual_accept_latencies)
-                pp.savefig(fig)
-                plt.close(fig)
+            ring_size = 2
+        # for ring_size in x_vals_ring_size:
+            actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            fig.subplots_adjust(left=0.13, right=0.96, top=0.91, bottom=0.15 )
+            # plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
+            plot_convolution_ax(delay, ring_size, this_ax, "Convolution of two CDFs", actual_grant_latencies, actual_accept_latencies)
+            pp.savefig(fig)
+            plt.close(fig)
         
 def plot_convolution_ax(    
     delay,
@@ -113,13 +114,13 @@ def plot_convolution_ax(
     binrange = newbinsize * len(sum_pdf)
     sum_bins = np.linspace(newstart + newbinsize, newstart + binrange, len(sum_pdf))
     
-    this_ax.plot(sum_cdf, sum_bins, color='navy', label="convolution")
-    this_ax.plot(grant_cdf, grant_bins[:-1], color='forestgreen',label="Grant",linestyle='dotted')
-    this_ax.plot(accept_cdf, accept_bins[:-1], color='firebrick',label="Accept",linestyle='dashed')
+    this_ax.plot(sum_cdf, sum_bins, color='navy', label="convolution",linewidth=1.5)
+    this_ax.plot(grant_cdf, grant_bins[:-1], color='forestgreen',label="Grant",linestyle='dotted',linewidth=1)
+    this_ax.plot(accept_cdf, accept_bins[:-1], color='firebrick',label="Accept",linestyle='dashed',linewidth=1)
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
-    # this_ax.set_ylim(max(0, min(actual_round_latencies)-1), np.percentile(actual_round_latencies, 99.9)+1.5)
+    this_ax.set_ylim(0, max(sum_cdf)/10)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))

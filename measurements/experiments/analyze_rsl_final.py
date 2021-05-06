@@ -520,7 +520,7 @@ def compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies
     processPacketFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize)
     noop_1_3_pdf, noop_1_3_start, noop_1_3_binsize = convolve_noop_pdf(actual_method_latencies, 1, 3, initial_binsize)
     nominateValueFull_pdf, _ = raw_data_to_pdf(actual_method_latencies["LReplicaNextReadClockMaybeNominateValueAndSend2a"], initial_binsize)
-    noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
+    # noop_0_10_pdf, noop_0_10_start, noop_0_10_binsize = convolve_noop_pdf(actual_method_latencies, 0, 10, initial_binsize)
     (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies[MAX_QUEUE], initial_binsize), min(actual_method_latencies[MAX_QUEUE])
     net_pdf, _ = raw_data_to_pdf(actual_network_latencies, initial_binsize)
 
@@ -681,15 +681,15 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.16 )
         # this_ax.set_title("Predictions of IronRSL performance")
         
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed',mfc='none')
-        this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='Perf.\'s mean',marker='o',color='blue',linestyle='dashed',mfc='none',ms=4)
+        this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue',ms=4)
         # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='green')
         
-        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed',mfc='none')
-        this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
+        this_ax.plot(x_vals_f, y_vals_predict_999, label='Perf.\'s 99.9%',marker='s', color='orange', linestyle='dashed',mfc='none',ms=4)
+        this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='s', color='orange',ms=4)
 
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed',mfc='none')
-        this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick')
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='Perf.\'s max', marker='x', color='firebrick', linestyle='dashed',mfc='none',ms=4)
+        this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick',ms=4)
         
         # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
         this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=3, columnspacing=0.5, fontsize=6.5)

@@ -159,8 +159,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
-    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    plt.plot(client_cdf, client_bins, label='actual performance', color='navy')
+    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
+    plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
