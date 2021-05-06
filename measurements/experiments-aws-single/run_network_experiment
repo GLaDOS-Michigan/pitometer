@@ -9,7 +9,7 @@ fi
 
 ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/network"
 GIT_BRANCH="exp"
-NODES_IDS=("1" "2" "3") 
+NODES_IDS=("1" "2" "3" "4") 
 
 INTERVAL=1000   # ping interval in ms
 PAYLOAD=16  # payload size variable
