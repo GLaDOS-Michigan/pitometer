@@ -20,14 +20,14 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=200  # Ignore the first THROW requests in computing client latencies
+THROW=1  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-05-03 17:00:00")
-END = datetime.fromisoformat("2021-05-04 19:00:00")
+START = datetime.fromisoformat("2021-05-05 23:00:00")
+END = datetime.fromisoformat("2021-05-06 04:00:00")
 
 CLIENT = "us-east-2a"
 A = "us-east-2a"

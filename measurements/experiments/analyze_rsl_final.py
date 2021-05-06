@@ -19,7 +19,7 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=0  # Ignore the first THROW requests in computing client latencies
+THROW=200  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
@@ -120,15 +120,16 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     print("Plotting graphs for Paxos distributions (simple)")
     with PdfPages("%s/%s (simple).pdf" %(root, name)) as pp:
         for f in F_VALUES:
-            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
-            actual_method_latencies = compute_actual_node(total_node_data[f]) 
-            actual_network_latencies = compute_actual_network(total_network_data)
-            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
-            fig.subplots_adjust(right=0.96, bottom=0.18 )
-            plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
-            pp.savefig(fig)
-            plt.close(fig)
+            if f == 2:
+                actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
+                actual_method_latencies = compute_actual_node(total_node_data[f]) 
+                actual_network_latencies = compute_actual_network(total_network_data)
+                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+                # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
+                fig.subplots_adjust(right=0.96, bottom=0.18 )
+                plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
+                pp.savefig(fig)
+                plt.close(fig)
     print("Plotting graphs for Paxos distributions (advanced)")
     with PdfPages("%s/%s (advanced).pdf" %(root, name)) as pp:
         for f in F_VALUES:
@@ -164,9 +165,9 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     predict_cdf = pdf_to_cdf(predict_pdf)
     # predict_cdf2 = pdf_to_cdf(predict_pdf2)
 
-    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
+    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
     # plt.plot(predict_cdf2, predict_bins2, label='predicted performance (parallel)', color='black', linestyle='dashed')
-    plt.plot(client_cdf, client_bins, label='actual performance', color='navy')
+    plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
     # plt.plot(xnew, ynew, label='actual performance', color='navy')
 
     this_ax.set_xlabel('cumulative probability')
@@ -190,14 +191,14 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
         actual_method_latencies -- map of method name to list of latencies
     """
     print("Plotting distribution for f = %d" %(f))
-    sanity_check(actual_client_latencies, actual_network_latencies, actual_method_latencies)
+    # sanity_check(actual_client_latencies, actual_network_latencies, actual_method_latencies)
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
-    plt.plot(predict_cdf, predict_bins, label='predicted performance', color='firebrick', linestyle='dashed')
-    plt.plot(client_cdf, client_bins, label='actual performance', color='navy')
+    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
+    plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
@@ -673,17 +674,17 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw plot
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-        fig.subplots_adjust(left=0.15, right=0.95, top=0.9, bottom=0.16 )
-        this_ax.set_title("Predictions of IronRSL performance")
+        fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.16 )
+        # this_ax.set_title("Predictions of IronRSL performance")
         
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='pred. mean', marker='o', color='blue', linestyle='dashed',markerfacecolor='none')
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue')
         # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='green')
         
-        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_predict_999, label='pred. 99.9%',marker='v', color='orange', linestyle='dashed',markerfacecolor='none')
         this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='v', color='orange')
 
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed')
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='pred. max', marker='x', color='firebrick', linestyle='dashed',markerfacecolor='none')
         this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick')
         
         # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
