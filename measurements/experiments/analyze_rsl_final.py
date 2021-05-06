@@ -664,14 +664,15 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
     y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
 
-    y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
+    # y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
 
-    y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
+    # y_vals_actual_errors = [get_f_error(total_client_data[f]) for f in x_vals_f]
     
     print("Computing predictions")
     # TONY: Always use total_node_data[1] to make predictions
     y_vals_predict_max = [predict_f_max_simple(total_network_data, total_node_data[f], f) for f in x_vals_f]
     y_vals_predict_999 = [predict_f_percentile_simple(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
+    # y_vals_predict_median = [predict_f_percentile_simple(total_network_data, total_node_data[f], f, 50) for f in x_vals_f]
     y_vals_predict_mean = [predict_f_mean_simple(total_network_data, total_node_data[f], f) for f in x_vals_f]
 
     print("Drawing graphs")
@@ -683,7 +684,8 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         
         this_ax.plot(x_vals_f, y_vals_predict_mean, label='Perf.\'s mean',marker='o',color='blue',linestyle='dashed',mfc='none',ms=4)
         this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue',ms=4)
-        # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='green')
+        # this_ax.plot(x_vals_f, y_vals_predict_median, label='Perf.\'s median',marker='o',color='blue',linestyle='dashed',mfc='none',ms=4)
+        # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='blue',ms=4)
         
         this_ax.plot(x_vals_f, y_vals_predict_999, label='Perf.\'s 99.9%',marker='s', color='orange', linestyle='dashed',mfc='none',ms=4)
         this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='s', color='orange',ms=4)

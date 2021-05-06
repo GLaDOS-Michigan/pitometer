@@ -11,6 +11,8 @@ elif uname -a | grep -q Linux; then
     export GO111MODULE=off
     RSL_DIR='/home/ubuntu/pitometer/measurements/rsl-aws'
     RSL_GO_DIR='/home/ubuntu/pitometer/measurements/rsl-aws/rsl-go'
+    # RSL_DIR='/home/nudzhang/Documents/pitometer/measurements/rsl-aws'
+    # RSL_GO_DIR='/home/nudzhang/Documents/pitometer/measurements/rsl-aws/rsl-go'
     export GOPATH=$RSL_GO_DIR
 
     echo "Starting RSL Linux build"
