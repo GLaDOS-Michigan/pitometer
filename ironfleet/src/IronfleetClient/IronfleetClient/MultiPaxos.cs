@@ -181,8 +181,12 @@
                             if (reply_seq_num == seq_num)
                             {
                                 received_reply = true;
+                                // Time in milliseconds
+                                var start_fine = start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3);
+                                var end_fine = end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3);
+                                Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, start_fine, end_fine, id));
                                 // Report time in milliseconds, since that's what the Python script appears to expect
-                                Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
+                                // Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
                                 seq_num++;
                                 // Console.Out.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
                                 //long n = Interlocked.Increment(ref num_reqs);
