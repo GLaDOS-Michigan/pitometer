@@ -11,7 +11,7 @@ ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/networ
 GIT_BRANCH="exp"
 NODES_IDS=("1" "2" "3" "4") 
 
-INTERVAL=250   # ping interval in ms
+INTERVAL=150   # ping interval in ms
 PAYLOAD=16  # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
