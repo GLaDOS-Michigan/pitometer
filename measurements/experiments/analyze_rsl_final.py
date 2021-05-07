@@ -682,19 +682,18 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.16 )
         # this_ax.set_title("Predictions of IronRSL performance")
         
-        this_ax.plot(x_vals_f, y_vals_predict_mean, label='Perf.\'s mean',marker='o',color='blue',linestyle='dashed',mfc='none',ms=4)
-        this_ax.plot(x_vals_f, y_vals_actual_mean, label='obs. mean', marker='o', color='blue',ms=4)
+        this_ax.plot(x_vals_f, y_vals_predict_max, label='Performal\'s max', marker='x', color='firebrick', linestyle='dashed',mfc='none',ms=4)
+        this_ax.plot(x_vals_f, y_vals_predict_999, label='Performal\'s 99.9%',marker='s', color='orange', linestyle='dashed',mfc='none',ms=4)
+        this_ax.plot(x_vals_f, y_vals_predict_mean, label='Performal\'s mean',marker='o',color='blue',linestyle='dashed',mfc='none',ms=4)
+        
+        this_ax.plot(x_vals_f, y_vals_actual_max, label='observed max', marker='x', color='firebrick',ms=4)
+        this_ax.plot(x_vals_f, y_vals_actual_999, label='observed 99.9%', marker='s', color='orange',ms=4)
+        this_ax.plot(x_vals_f, y_vals_actual_mean, label='observed mean', marker='o', color='blue',ms=4)
         # this_ax.plot(x_vals_f, y_vals_predict_median, label='Perf.\'s median',marker='o',color='blue',linestyle='dashed',mfc='none',ms=4)
         # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='blue',ms=4)
         
-        this_ax.plot(x_vals_f, y_vals_predict_999, label='Perf.\'s 99.9%',marker='s', color='orange', linestyle='dashed',mfc='none',ms=4)
-        this_ax.plot(x_vals_f, y_vals_actual_999, label='obs. 99.9%', marker='s', color='orange',ms=4)
-
-        this_ax.plot(x_vals_f, y_vals_predict_max, label='Perf.\'s max', marker='x', color='firebrick', linestyle='dashed',mfc='none',ms=4)
-        this_ax.plot(x_vals_f, y_vals_actual_max, label='obs. max', marker='x', color='firebrick',ms=4)
-        
         # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
-        this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=3, columnspacing=0.5, fontsize=6.5)
+        this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=2, columnspacing=0.5, fontsize=6.5)
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
         this_ax.xaxis.set_ticks(x_vals_f)
