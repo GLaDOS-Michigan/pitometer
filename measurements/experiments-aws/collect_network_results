@@ -1,6 +1,6 @@
 #!/bin/bash
 
-HOSTS="aws-hosts_single-region.csv"
+HOSTS="aws-hosts.csv"
 EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
 TEMP_DIR="/home/ubuntu/tmp-net"  # temporary dir to store output at each node
 
