@@ -21,7 +21,7 @@ PAYLOADS.sort()
 HOSTS = "aws-hosts_single-region.csv"
 
 
-START = datetime.fromisoformat("2021-05-06 16:20:00")
+START = datetime.fromisoformat("2021-05-06 16:00:00")
 END = datetime.fromisoformat("2021-05-07 04:00:00")
 
 SAMPLE_EVERY = 1
