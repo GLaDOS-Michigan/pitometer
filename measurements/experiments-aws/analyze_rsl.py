@@ -65,9 +65,9 @@ def main(exp_dir):
 
         # Print graphs
         print("\tDrawing charts for f=%d" %f)
+        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
         plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
         plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
-        plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
     print("Done")
 
 
@@ -178,8 +178,8 @@ def analyze_client_csv(filepath):
         for row in csvreader:
             if 'TIMEOUT' in row[0] or 'DEBUG:' in row:
                 continue
-            req_start = int(row[1])
-            req_end = int(row[2])
+            req_start = float(row[1])
+            req_end = float(row[2])
             start = min(start, req_start)   # Note: this is rather inefficient
             end = max(end, req_end)
             durations_milli.append(req_end - req_start)
