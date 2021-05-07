@@ -11,7 +11,7 @@ ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/netwo
 GIT_BRANCH="exp"
 NODES_IDS=("7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20") 
 
-INTERVAL=200                # ping interval in ms
+INTERVAL=100                # ping interval in ms
 DURATION=$(( 10 * 60 ))     # duration for each trial in seconds
 ITERATIONS=3                # How many times to run each payload
 PAYLOADS=("16")             # payload size variable
