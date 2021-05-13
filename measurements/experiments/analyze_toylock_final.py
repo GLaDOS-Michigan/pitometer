@@ -55,7 +55,7 @@ def main(exp_dir):
     plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -120,7 +120,7 @@ def plot_convolution_ax(
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('latency (ms)')
     this_ax.set_title(name)
-    this_ax.set_ylim(0, max(sum_cdf)/10)
+    # this_ax.set_ylim(0, max(sum_cdf)/10)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
