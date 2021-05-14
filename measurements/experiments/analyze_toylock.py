@@ -39,10 +39,10 @@ def main(exp_dir):
     plot_grant_or_accept("nodeGrant", exp_dir, total_grant_data)
 
     # Plot Accept
-    plot_grant_or_accept("nodeAccept", exp_dir, total_accept_data)
+    # plot_grant_or_accept("nodeAccept", exp_dir, total_accept_data)
 
     # Plot Rounds
-    plot_round("rounds", exp_dir, total_round_data)
+    # plot_round("rounds", exp_dir, total_round_data)
     print("Done")
 
 
@@ -138,6 +138,12 @@ def plot_grant_or_accept_delay(name, root, delay, total_data):
         plot_cdf(axes[1], total_aggregate_data)
         pp.savefig(fig)
         plt.close(fig)
+    with PdfPages("%s/delay%d_%s_pmf.pdf" %(root, delay, name)) as pp:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 3), sharex=False)
+        fig.subplots_adjust(left=0.16,right=0.92,top=0.9,bottom=0.18)
+        plot_pmf(ax, total_aggregate_data)
+        pp.savefig(fig)
+        plt.close(fig)
 
 
 def plot_round(name, root, total_round_data):
@@ -223,6 +229,22 @@ def plot_histogram(this_ax, data, title=None, stats=True, kde=False):
         this_ax.set_title(title)
     this_ax.set_xlabel('latency (ms)', fontsize=10)
     this_ax.set_ylabel('count', fontsize=10)
+
+
+def plot_pmf(this_ax, data, title=None, stats=True, kde=False):
+    """Plot a pmf
+    Arguments:
+        this_ax {axes} -- axes on which to plot
+        data {list} -- list of data
+        title {string}  -- title of this_ax
+        stats {bool} -- toggle statistics box
+        kde {bool} -- toggle kde option
+    """
+    sns.histplot(data, ax=this_ax, stat="probability", bins=100)
+    this_ax.grid()
+    this_ax.set_xlim(min(data), max(data)*0.95)
+    this_ax.set_xlabel('exectution time (ms)', fontsize=10)
+    this_ax.set_ylabel('probability', fontsize=10)
 
 
 
