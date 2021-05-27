@@ -194,13 +194,14 @@ def plot_aggregate(pp, name, root, total_data):
     plt.close(fig)
 
     # Next, draw the cdf graph
-    fig, this_ax = plt.subplots(1, 1, figsize=(8.5, 5), sharex=True)
-    fig.suptitle(name)
+    fig, this_ax = plt.subplots(1, 1, figsize=(5, 3), sharex=True)
+    fig.subplots_adjust(left=0.16,right=0.92,bottom=0.15)
+    # fig.suptitle(name)
     
     cdf, bins = raw_data_to_cdf(aggregate_data)
 
     this_ax.plot(cdf, bins)
-    this_ax.set_title("Aggregate cdf across all nodes", fontsize=9)
+    # this_ax.set_title("Aggregate cdf across all nodes", fontsize=9)
     this_ax.grid()
     this_ax.set_xlabel('cumulative probability', fontsize=10)
     this_ax.set_ylabel('round trip time (ms)', fontsize=10)

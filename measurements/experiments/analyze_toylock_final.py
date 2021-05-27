@@ -52,10 +52,10 @@ def main(exp_dir):
     print("\nComputing graphs")
 
     # Plot Rounds
-    plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
+    # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
     # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    # plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
 def merge_maps(map1, map2):
@@ -88,8 +88,8 @@ def plot_convolution(name, root, total_grant_data, total_accept_data):
             ring_size = 2
         # for ring_size in x_vals_ring_size:
             actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
-            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            fig.subplots_adjust(left=0.13, right=0.96, top=0.91, bottom=0.15 )
+            fig, this_ax = plt.subplots(1, 1, figsize=(5, 3), sharex=False)
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.91, bottom=0.15 )
             # plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
             plot_convolution_ax(delay, ring_size, this_ax, "Convolution of two CDFs", actual_grant_latencies, actual_accept_latencies)
             pp.savefig(fig)
@@ -114,17 +114,19 @@ def plot_convolution_ax(
     binrange = newbinsize * len(sum_pdf)
     sum_bins = np.linspace(newstart + newbinsize, newstart + binrange, len(sum_pdf))
     
-    this_ax.plot(sum_cdf, sum_bins, color='navy', label="convolution",linewidth=1.5)
-    this_ax.plot(grant_cdf, grant_bins[:-1], color='forestgreen',label="Grant",linestyle='dotted',linewidth=1)
-    this_ax.plot(accept_cdf, accept_bins[:-1], color='firebrick',label="Accept",linestyle='dashed',linewidth=1)
-    this_ax.set_xlabel('cumulative probability')
-    this_ax.set_ylabel('latency (ms)')
-    this_ax.set_title(name)
+    this_ax.plot(sum_cdf, sum_bins, color='navy', label="convolution",linewidth=2)
+    this_ax.plot(grant_cdf, grant_bins[:-1], color='forestgreen',label="Grant",linestyle='dashed',linewidth=1.5)
+    this_ax.plot(accept_cdf, accept_bins[:-1], color='firebrick',label="Accept",linestyle='dashed',linewidth=1.5)
+    this_ax.set_xlabel('cumulative probability', fontsize=10)
+    this_ax.set_ylabel('latency (ms)', fontsize=10)
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+    # this_ax.set_title(name)
     # this_ax.set_ylim(0, max(sum_cdf)/10)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))
-    this_ax.legend()
+    this_ax.legend(fontsize=10)
 
 
 def plot_micro_1_distr_fidelity(name, root, total_round_data, total_grant_data, total_accept_data, total_network_data):
@@ -163,7 +165,7 @@ def plot_micro_1_distr_fidelity_FINAL(name, root, total_round_data, total_grant_
     print("Plotting graphs for Micro-benchmark 1 FINAL")
     ring_size = FINAL_RING_SIZE
     with PdfPages("%s/%s_size%d.pdf" %(root, name, ring_size)) as pp:
-        fig, axes = plt.subplots(1, len(DELAYS), figsize=(8, 1.4), sharex=False)
+        fig, axes = plt.subplots(1, len(DELAYS), figsize=(8, 1.5), sharex=False)
         fig.subplots_adjust(left=0.05, right=0.98, top=0.88, bottom=0.21 )
         col = 0
         for delay in DELAYS:
@@ -254,8 +256,8 @@ def plot_micro_1_distr_fidelity_ax(
     print("Pred max %.3f" %get_percentile(predict_cdf, predict_bins, 100))
     print("Real max %.3f" %max(actual_round_latencies))
     print()
-    this_ax.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
-    this_ax.plot(round_cdf, round_bins, label='observed performance', color='navy')
+    this_ax.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed',linewidth=1)
+    this_ax.plot(round_cdf, round_bins, label='observed performance', color='navy',linewidth=1.2)
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
@@ -263,7 +265,7 @@ def plot_micro_1_distr_fidelity_ax(
     # this_ax.set_ylabel('round latency (ms)')
     this_ax.set_title(name)
     # this_ax.set_ylim(0, np.percentile(list(actual_round_latencies) + list(predict_bins), 99.9))
-    this_ax.set_ylim(0, np.percentile(list(actual_round_latencies), 100)+30)
+    this_ax.set_ylim(0, np.percentile(list(actual_round_latencies), 100)+20)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))

@@ -89,9 +89,9 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
     # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
-    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -197,8 +197,8 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
-    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
-    plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
+    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed',linewidth=1.5)
+    plt.plot(client_cdf, client_bins, label='observed performance', color='navy',linewidth=1.5)
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
@@ -663,6 +663,7 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
     x_vals_f = sorted(list(total_client_data.keys()))
     y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
     y_vals_actual_999 = [get_f_percentile(total_client_data[f], 99.9) for f in x_vals_f]
+    y_vals_actual_99 = [get_f_percentile(total_client_data[f], 99) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
 
     # y_vals_actual_median = [statistics.median(flatten_map_of_array(total_client_data[f])) for f in x_vals_f]
@@ -673,6 +674,7 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
     # TONY: Always use total_node_data[1] to make predictions
     y_vals_predict_max = [predict_f_max_simple(total_network_data, total_node_data[f], f) for f in x_vals_f]
     y_vals_predict_999 = [predict_f_percentile_simple(total_network_data, total_node_data[f], f, 99.9) for f in x_vals_f]
+    y_vals_predict_99 = [predict_f_percentile_simple(total_network_data, total_node_data[f], f, 99) for f in x_vals_f]
     # y_vals_predict_median = [predict_f_percentile_simple(total_network_data, total_node_data[f], f, 50) for f in x_vals_f]
     y_vals_predict_mean = [predict_f_mean_simple(total_network_data, total_node_data[f], f) for f in x_vals_f]
 
@@ -706,7 +708,10 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
 
         print("Predict max   :" + str(y_vals_predict_max) )
         print("Real max      :" + str(y_vals_actual_max) )
-        # print("Predicted 999 :" + str(y_vals_predict_999) )
+        print("Predicted 999 :" + str(y_vals_predict_999) )
+        print("Real 999      :" + str(y_vals_actual_999) )
+        print("Predicted 99  :" + str(y_vals_predict_99) )
+        print("Real 99       :" + str(y_vals_actual_99) )
         # print("Real median   :" + str(y_vals_actual_median) )
         print("Predict mean  :" + str(y_vals_predict_mean) )
         print("Real mean     :" + str(y_vals_actual_mean) )
@@ -727,12 +732,12 @@ def predict_f_max_simple(total_network_data, total_f_node_data, f):
 def predict_f_percentile(total_network_data, total_f_node_data, f, percentile):
     work_actions_times, noop_action_times, _ = percentile_action_times(total_f_node_data, percentile)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times(work_actions_times, noop_action_times, f, np.percentile(network_delays, 99.9))
+    return sum_from_action_times(work_actions_times, noop_action_times, f, np.percentile(network_delays, percentile))
 
 def predict_f_percentile_simple(total_network_data, total_f_node_data, f, percentile):
     work_actions_times, noop_action_times, max_queue_time = percentile_action_times(total_f_node_data, percentile)
     network_delays = compute_actual_network(total_network_data)
-    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, np.percentile(network_delays, 99.9))
+    return sum_from_action_times_simple(work_actions_times, noop_action_times, max_queue_time, np.percentile(network_delays, percentile))
 
 def predict_f_mean(total_network_data, total_f_node_data, f):
     work_actions_times, noop_action_times, _ = mean_action_times(total_f_node_data)
