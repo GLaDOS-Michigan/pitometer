@@ -40,14 +40,13 @@ func (c *Client) StartClientLoop() {
 	c.active = true
 
 	fmt.Printf("Starting new client at %v targeting %v\n", c.LocalAddr, c.Target)
-	var sendNote = fmt.Sprintf("Send to target,%v", c.Target)
 	var receiveNote = fmt.Sprintf("Receive from target,%v", c.Target)
 	// Main event loop
 	for c.active {
 
 		// Send packet
 		native.Debug(fmt.Sprintf("Client %v sending %v", c.LocalAddr, pack))
-		c.PingLog.LogStartEvent(sendNote)
+		c.PingLog.LogStartEvent()
 		udpClient.Send(pack)
 
 		// Receive packet

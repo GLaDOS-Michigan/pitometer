@@ -7,14 +7,21 @@ then
     exit 1
 fi
 
+if [ $# -lt 3 ];
+then
+    echo "Got args : ${@}"
+    echo "Usage: ./run_network_experiment <interval> <duration> <iterations>"
+    exit 1
+fi
+
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/network"
-GIT_BRANCH="exp"
+GIT_BRANCH="clean"
 NODES_IDS=("7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20") 
 
-INTERVAL=100                # ping interval in ms
-DURATION=$(( 10 * 60 ))     # duration for each trial in seconds
-ITERATIONS=3                # How many times to run each payload
-PAYLOADS=("16")             # payload size variable
+INTERVAL=$1                   # ping interval in ms
+DURATION=$2                   # duration for each trial in seconds
+ITERATIONS=$3                 # How many times to run each payload (irrelevant for non-terminating runs)
+PAYLOADS=("16")               # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 # Max payload size must be <= 4096, as dicated by Go sockets
@@ -40,7 +47,7 @@ do
     for ((trial=0;trial<$ITERATIONS;trial++))
     do
         time=$(date +"%d-%b-%H%M")
-        echo "Starting trial $trial for payload size $payload_size bytes at time $time"
+        echo "Starting trial $trial for payload size $payload_size bytes at time $time, duration $DURATION"
 
         trial_dir="$ROOT_DIR/$TIMESTAMP/payload$payload_size/trial$trial"
         mkdir -p $trial_dir 
