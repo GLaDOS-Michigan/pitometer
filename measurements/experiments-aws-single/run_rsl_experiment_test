@@ -8,14 +8,14 @@ then
 fi
 
 ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/rsl"
-GIT_BRANCH="exp"
+GIT_BRANCH="clean"
 
 CLIENT_ID=4                             # node to use as client
 CLIENT_THREADS=1                        # number of clients
 # BASE_TRIAL_DURATION=$(( 10 * 60 ))      # minimum duration in seconds
 # ITERATIONS=20                           # repeats of each trial
-BASE_TRIAL_DURATION=$(( 10 * 60 ))      # minimum duration in seconds
-ITERATIONS=6                            # repeats of each trial
+BASE_TRIAL_DURATION=$(( 10 ))      # minimum duration in seconds
+ITERATIONS=2                            # repeats of each trial
 BATCH_SIZE=1                            # paxos batch size      
 F_VALUES=("1")
 TIMESTAMP=$(date +"%d-%b-%H%M")
