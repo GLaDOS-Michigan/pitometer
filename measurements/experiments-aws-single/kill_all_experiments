@@ -23,23 +23,6 @@ do
     network_2="ps axf | grep start_network_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
     network_3="ps axf | grep run_network_experiment | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
     ssh -n ubuntu@$address "$network_1 && $network_2 && $network_3"
-done < <(tail -n +2 $HOSTS)
-
-while IFS=, read -r id name address port
-do 
-    echo "    Killing experiments on node $name"
-    rsl_1="ps axf | grep rsl-aws-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    rsl_2="ps axf | grep start_rsl_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    rsl_3="ps axf | grep run_rsl_experiment | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    rsl_4="ps axf | grep run_rsl_experiment_test | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    rsl_5="ps axf | grep run_rsl_experiment_train | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    rsl_6="ps axf | grep run_rsl_throughput_experiment | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    ssh -n ubuntu@$address "$rsl_1 && $rsl_2 && $rsl_3 && $rsl_4 && $rsl_5 && $rsl_6"
-
-    network_1="ps axf | grep network-aws-main | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    network_2="ps axf | grep start_network_trial | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    network_3="ps axf | grep run_network_experiment | grep -v grep | awk '{print \"kill -9 \" \$1}' | sh"
-    ssh -n ubuntu@$address "$network_1 && $network_2 && $network_3"
 done < <(tail -n +2 $HOSTS_SR)
 
 echo "Done kill experiment on all hosts"
