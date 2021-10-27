@@ -25,7 +25,7 @@ fi
 HOSTS="aws-hosts_single-region.csv"
 EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single"
 TEMP_DIR="/home/ubuntu/tmp-rsl_single"  # temporary dir to store output at each node
-FALLOW=600
+FALLOW=500
 
 # First, grab parameters
 
