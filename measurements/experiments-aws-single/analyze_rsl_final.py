@@ -20,16 +20,16 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=200  # Ignore the first THROW requests in computing client latencies
+THROW=5  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-05-06 23:00:00")
-END = datetime.fromisoformat("2021-05-07 04:00:00")
+START = datetime.fromisoformat("2021-10-26 00:00:01")
+END = datetime.fromisoformat("2021-12-15 04:00:00")
 
-CLIENT = "us-east-2a"
+CLIENT = "us-east-2a-C"
 L = "us-east-2a-L"
 B = "us-east-2b"
 C = "us-east-2c"
@@ -197,7 +197,6 @@ def sanity_check(actual_client_latencies, total_network_data, actual_method_late
         for dst in nodes:
             data = [p[0]/2.0 for p in total_network_data[src][dst] if START < p[1] and p[1] < END and not p[2]]
             print("min/max from %s to %s is %.3f/%.3f" %(src, dst, min(data), max(data)))
-    print()
     q_data = actual_method_latencies["MaxQueueing"]
     print(len(q_data))
     print(len(actual_client_latencies))
