@@ -67,7 +67,7 @@ def main(exp_dir):
         print("\tDrawing charts for f=%d" %f)
         plot_client_figures("f_%d_client_plots" %f, exp_dir, total_f_client_data, total_f_client_start_end)
         plot_individual_figures("f_%d_nodes_individual_plots" %f, exp_dir, total_f_node_data)
-        plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
+        # plot_overall_figures("f_%d_nodes_aggregate_plots" %f, exp_dir, total_f_node_data)
     print("Done")
 
 
@@ -105,13 +105,15 @@ def analyze_f(exp_dir, f):
     for trial_dir in trial_dirs:
         trial_num = int(trial_dir.split('trial')[1])
         trial_data, f_client_data[trial_num], f_client_start_end[trial_num] = analyze_trial_dir(trial_dir)
+        # trial_data[node_id][method_name] = list of durations
         for node_id in trial_data:
             if node_id not in f_node_data:
-                f_node_data[node_id] = dict()  # f_data[node_id][method_name] = list of durations
+                f_node_data[node_id] = dict()  # f_data[node_id][method_name][trial] = list of durations
             for method_name in trial_data[node_id]:
                 if method_name not in f_node_data[node_id]:
-                    f_node_data[node_id][method_name] = []
-                f_node_data[node_id][method_name].extend(trial_data[node_id][method_name])
+                    f_node_data[node_id][method_name] = dict()
+                f_node_data[node_id][method_name][trial_num] = []
+                f_node_data[node_id][method_name][trial_num].extend(trial_data[node_id][method_name])
     return f_node_data, f_client_data, f_client_start_end
 
 
@@ -191,26 +193,26 @@ def plot_individual_figures(name, root, data):
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
-        data -- data[node_id][method_name] = list of durations
+        data -- data[node_id][method_name][trial] = list of durations
     """
-
     num_nodes = len(data)               # num rows
-
+    nodes = list(data.keys())
+    nodes.sort()
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
+        # Plot historgrams
         for method in METHODS:
             fig, axes = plt.subplots(num_nodes, 1, figsize=(8.5, 11), sharex=True)
             fig.suptitle(method, fontsize=12, fontweight='bold')
             sns.despine(left=True)
-
             row = 0
-            nodes = list(data.keys())
-            nodes.sort()
             for node in nodes:
                 print("\t\tDrawing individual chart for node %d : %s" %(node, method))
                 try:
-                    durations_milli = data[node][method]
+                    durations_milli = []
+                    for t in data[node][method]:
+                        durations_milli.extend(data[node][method][t])
                 except KeyError:
-                    # print("No data for method %s in node %d" %(method, node))
+                    print("No data for method %s in node %d" %(method, node))
                     continue
 
                 this_ax = axes[row]
@@ -237,6 +239,47 @@ def plot_individual_figures(name, root, data):
             plt.subplots_adjust(hspace=0.2)
             pp.savefig(fig)
             plt.close(fig)
+        
+        # Plot time series
+        for method in METHODS:
+            for node in nodes:
+                num_trials = len(data[node][method])
+                fig, axes = plt.subplots(num_trials, 1, figsize=(8.5, 11), sharex=True)
+                fig.suptitle(method, fontsize=12, fontweight='bold')
+                sns.despine(left=True)
+
+                row = 0
+                print("\t\tDrawing time series chart for node %d : %s" %(node, method))
+                for t in data[node][method]:
+                    try:
+                        durations_milli = data[node][method][t]
+                    except KeyError:
+                        print("No data for method %s in node %d" %(method, node))
+                        continue
+                    this_ax = axes[row]
+                    # Plot the subfigure 
+                    this_ax.grid()
+                    this_ax.scatter(range(len(durations_milli)), durations_milli, marker='.', s=3)
+                    if len(durations_milli) > 5:
+                        stats = AnchoredText(
+                            generate_statistics(durations_milli), 
+                            loc='upper right',  
+                            prop=dict(size=8),
+                            bbox_to_anchor=(1.1, 1),
+                            bbox_transform=this_ax.transAxes
+                        )
+                        this_ax.add_artist(stats)
+                    row += 1
+                pad = 5
+                for ax, row in zip(axes, nodes):
+                    ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                            xycoords=ax.yaxis.label, textcoords='offset points',
+                            fontsize=10, ha='right', va='center')
+                fig.tight_layout()
+                fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
+                plt.subplots_adjust(hspace=0.2)
+                pp.savefig(fig)
+                plt.close(fig)
 
 
 def plot_overall_figures(name, root, data):
