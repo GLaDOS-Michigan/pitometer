@@ -20,7 +20,8 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=5  # Ignore the first THROW requests in computing client latencies
+THROW=1  # Ignore the first THROW requests in computing method latencies
+CTHROW=1  # Ignore the THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
@@ -65,17 +66,15 @@ MAX_QUEUE = "MaxQueueing"
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
-
     """
-    total_node_data[f][node_id][method_name] = list of durations
+    total_node_data[f][node_id][method_name][trial] = list of durations
     total_client_data[f][i] = list of client durations for trial i
     total_client_start_end[f][i] = (start, end) time of trial i, defined from start of first request to end of last request
     """
-
-    total_node_data, total_client_data, total_client_start_end = dict(), dict(), dict()
+    total_node_data, total_client_data = dict(), dict()
     for f in F_VALUES:
         """
-        total_f_node_data[node_id][method_name] = list of durations
+        total_f_node_data[node_id][method_name][trial] = list of durations
         total_f_client_data[i] = list of client durations for trial i
         total_f_client_start_end[i] = (start, end) time of trial i, defined from start of first request to end of last request
         """
@@ -87,13 +86,10 @@ def main(exp_dir):
             print("%s/%s/total_f%d_node_data.pickle not found" %(exp_dir, TRAIN_SET, f))
         with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
             total_client_data[f] = pickle.load(handle)
-        # with open("%s/%s/total_f%d_client_start_end.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
-        #     total_client_start_end[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
     with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
         total_network_data = pickle.load(handle)
-    # Note that total_client_start_end is currently not used in any computation
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
@@ -121,15 +117,14 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     Arguments:
         name -- name of this figure
         root -- directory to save this figure
-        total_node_data -- total_node_data[f][node_id][method_name] = list of durations
+        total_node_data -- total_node_data[f][node_id][method_name][trial] = list of durations
         total_client_data -- total_client_data[f][i] = list of client durations for trial i
     """
     
-    # First attempt to plot client cdfs
     print("Plotting graphs for Paxos distributions")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for f in F_VALUES:
-            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i][THROW:-THROW]]  # simply combine data from all trials
+            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i][CTHROW:-CTHROW]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])   
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(right=0.96, bottom=0.18 )
@@ -549,14 +544,15 @@ def compute_actual_network(total_network_data, src, targ):
 def compute_actual_node(total_node_data_f):
     """maps total_node_data to res: method_name -> list of latencies
     Args:
-        total_node_data : total_node_data_f[node_id][method_name] = list of durations
+        total_node_data : total_node_data_f[node_id][method_name][trial] = list of durations
     """
     res = dict()
     for node in total_node_data_f:
         for method in total_node_data_f[node]:
             if method not in res:
-                res[method] = []
-            res[method].extend(total_node_data_f[node][method])
+                    res[method] = []
+            for t in total_node_data_f[node][method]:
+                res[method].extend(total_node_data_f[node][method][t][THROW:-THROW])
     return res
 
 
