@@ -8,7 +8,7 @@ then
 fi
 
 ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/network"
-GIT_BRANCH="exp"
+GIT_BRANCH="clean"
 NODES_IDS=("1" "2" "3" "4") 
 
 INTERVAL=120   # ping interval in ms
