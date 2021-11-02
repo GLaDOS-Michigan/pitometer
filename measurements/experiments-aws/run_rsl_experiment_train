@@ -8,7 +8,7 @@ then
 fi
 
 ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/rsl"
-GIT_BRANCH="exp"
+GIT_BRANCH="clean"
 
 CLIENT_ID=4                             # node to use as client
 CLIENT_THREADS=1                        # number of clients
