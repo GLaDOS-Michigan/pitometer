@@ -256,7 +256,10 @@ def plot_individual_figures(name, root, data):
                     except KeyError:
                         print("No data for method %s in node %d" %(method, node))
                         continue
-                    this_ax = axes[row]
+                    if num_trials > 1:
+                        this_ax = axes[row]
+                    else:
+                        this_ax = axes
                     # Plot the subfigure 
                     this_ax.grid()
                     this_ax.scatter(range(len(durations_milli)), durations_milli, marker='.', s=3)
@@ -271,10 +274,16 @@ def plot_individual_figures(name, root, data):
                         this_ax.add_artist(stats)
                     row += 1
                 pad = 5
-                for ax, row in zip(axes, nodes):
-                    ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                if num_trials > 1:
+                    for ax, row in zip(axes, nodes):
+                        ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
                             xycoords=ax.yaxis.label, textcoords='offset points',
                             fontsize=10, ha='right', va='center')
+                else:
+                    for row in nodes:
+                        axes.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                                xycoords=ax.yaxis.label, textcoords='offset points',
+                                fontsize=10, ha='right', va='center')
                 fig.tight_layout()
                 fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
                 plt.subplots_adjust(hspace=0.2)
