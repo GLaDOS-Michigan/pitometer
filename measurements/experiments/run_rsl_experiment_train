@@ -8,18 +8,18 @@ then
 fi
 
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/rsl"
-GIT_BRANCH="exp"
+GIT_BRANCH="clean"
 
 CLIENT_ID=20                            # node to use as client
 CLIENT_THREADS=1                        # number of clients
-BASE_TRIAL_DURATION=$(( 10 * 60 ))      # minimum duration in seconds
-ITERATIONS=5                            # repeats of each trial
-BATCH_SIZE=1                            # paxos batch size      
+BASE_TRIAL_DURATION=$(( 6 ))            # minimum duration in seconds
+ITERATIONS=100                          # repeats of each trial
+BATCH_SIZE=1                            # paxos batch size 
 F_VALUES=("1" "2" "3" "4" "5")
 TIMESTAMP=$(date +"%d-%b-%H%M")
-CLOCK_MODE="off"
+CLOCK_MODE="on"
 
-echo "Starting new RSL test experiment at time $TIMESTAMP"
+echo "Starting new RSL train experiment at time $TIMESTAMP"
 echo ""
 ./git_pull_all_hosts $GIT_BRANCH
 echo ""
@@ -42,7 +42,7 @@ do
     for ((trial=0;trial<$ITERATIONS;trial++))
     do
         time=$(date +"%d-%b-%H%M")
-                echo "Starting RSL test trial at time $time"
+                echo "Starting RSL train trial at time $time"
                 echo "    - f          : $f"
                 echo "    - clients    : $CLIENT_THREADS"
                 echo "    - batch size : $BATCH_SIZE"
