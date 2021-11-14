@@ -244,26 +244,39 @@ def plot_individual_figures(name, root, data):
         # Plot time series
         for method in METHODS:
             for node in nodes:
+                trials_to_draw = 3
                 num_trials = len(data[node][method])
-                fig, axes = plt.subplots(num_trials, 1, figsize=(8.5, 11), sharex=True)
-                fig.suptitle(method, fontsize=12, fontweight='bold')
+                fig, axes = plt.subplots(min(num_trials, trials_to_draw), 1, figsize=(8.5, 11), sharex=True)
+                fig.suptitle(method + "__node" + str(node), fontsize=12, fontweight='bold')
                 sns.despine(left=True)
 
                 row = 0
                 print("\t\tDrawing time series chart for node %d : %s" %(node, method))
-                for t in data[node][method]:
+                ordered_trials = list(data[node][method].keys())
+                ordered_trials.sort()
+                for t in ordered_trials:   
+                    if t >= trials_to_draw:
+                        break                 
                     try:
                         durations_milli = data[node][method][t]
                     except KeyError:
                         print("No data for method %s in node %d" %(method, node))
                         continue
+                    # Filter data
+                    if "Noop" in method:
+                        durations_milli = durations_milli[::200]
+                    
                     if num_trials > 1:
                         this_ax = axes[row]
                     else:
                         this_ax = axes
                     # Plot the subfigure 
                     this_ax.grid()
+                    pad = 5
                     this_ax.scatter(range(len(durations_milli)), durations_milli, marker='.', s=3)
+                    # this_ax.annotate("trial %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
+                    #         xycoords=ax.yaxis.label, textcoords='offset points',
+                    #         fontsize=10, ha='right', va='center')
                     if len(durations_milli) > 5:
                         stats = AnchoredText(
                             generate_statistics(durations_milli), 
@@ -274,17 +287,6 @@ def plot_individual_figures(name, root, data):
                         )
                         this_ax.add_artist(stats)
                     row += 1
-                pad = 5
-                if num_trials > 1:
-                    for ax, row in zip(axes, nodes):
-                        ax.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
-                            xycoords=ax.yaxis.label, textcoords='offset points',
-                            fontsize=10, ha='right', va='center')
-                else:
-                    for row in nodes:
-                        axes.annotate("Node %d" %row, xy=(0, 0.5), xytext=(-ax.yaxis.labelpad - pad, 0),
-                                xycoords=ax.yaxis.label, textcoords='offset points',
-                                fontsize=10, ha='right', va='center')
                 fig.tight_layout()
                 fig.subplots_adjust(left=0.2, top=0.92, right=0.85)
                 plt.subplots_adjust(hspace=0.2)
@@ -442,6 +444,10 @@ def plot_client_figures(name, root, data, start_end_data):
             row = 0
             for t in trial_page:
                 durations_milli = data[t]
+                
+                # Filter out anomalous points
+                durations_milli = [x for x in durations_milli if x < 50]
+                
                 if len(trial_page) == 1:
                     this_ax = axes
                 else:
