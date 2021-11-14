@@ -12,8 +12,8 @@ GIT_BRANCH="clean"
 
 CLIENT_ID=20                            # node to use as client
 CLIENT_THREADS=1                        # number of clients
-BASE_TRIAL_DURATION=$(( 30 * 60 ))      # minimum duration in seconds
-ITERATIONS=1                            # repeats of each trial
+BASE_TRIAL_DURATION=$(( 3 * 60 ))      # minimum duration in seconds
+ITERATIONS=5                            # repeats of each trial
 BATCH_SIZE=1                            # paxos batch size      
 # F_VALUES=("1" "2" "3" "4" "5")
 F_VALUES=("1")
@@ -49,7 +49,7 @@ do
                 echo "    - batch size : $BATCH_SIZE"
                 echo "    - duration   : $trial_duration"
                 echo "    - trial      : $trial"
-        trial_dir="$ROOT_DIR/$TIMESTAMP/f_$f/trial$trial"
+        trial_dir="$ROOT_DIR/$TIMESTAMP-test/f_$f/trial$trial"
         mkdir -p $trial_dir 
 
         # Start trial
@@ -62,10 +62,5 @@ done
 
 end_timestamp=$(date +"%d-%b-%H%M")
 echo "RSL experiment completed at time $end_timestamp"
-
-# Process results immediately when done
-sleep 5
-echo "Processing results"
-./../analysis/process_rsl_results $ROOT_DIR/$TIMESTAMP
 echo "Done"
 
