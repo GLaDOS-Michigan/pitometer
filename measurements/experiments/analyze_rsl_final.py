@@ -23,7 +23,7 @@ THROW=1  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
-F_VALUES = [1]
+F_VALUES = [1, 2, 3, 4, 5]
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -89,9 +89,9 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
     # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
-    # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -593,7 +593,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
         total_client_data -- total_client_data[f][i] = list of client durations for trial i
         total_client_start_end -- total_client_start_end[f][i] = (start, end) time of trial i, defined from start of first request to end of last request
     """
-    print("Plotting graphs for Micro-benchmark 1")
+    print("Plotting graphs for Macro-benchmark 1")
 
     # Compute data points
     x_vals_f = sorted(list(total_client_data.keys()))
@@ -766,22 +766,25 @@ def max_action_times(total_f_node_data):
     """
     Returns a dictionary mapping action id to the max completion time
     One dictionary for real and noop
-    total_f_node_data[node_id][method_name] = list of durations
+    total_f_node_data[node_id][method_name][t] = list of durations
     """
     work_res, noop_res = dict(), dict()
     for work_method_id, work_name in WORK_METHODS.items():
         max_time = 0
         for node in total_f_node_data.keys():
-            max_time = max(max_time, max([0] + total_f_node_data[node][work_name]))
+            for t in total_f_node_data[node][work_name]:
+                max_time = max(max_time, max([0] + total_f_node_data[node][work_name][t]))
         work_res[work_method_id] = max_time
     for noop_method_id, noop_name in NOOP_METHODS.items():
         max_time = 0
         for node in total_f_node_data.keys():
-            max_time = max(max_time, max([0] + total_f_node_data[node][noop_name]))
+            for t in total_f_node_data[node][work_name]:
+                max_time = max(max_time, max([0] + total_f_node_data[node][noop_name][t]))
         noop_res[noop_method_id] = max_time
     max_queue_res = 0
     for node in total_f_node_data.keys():
-            max_queue_res = max(max_time, max([0] + total_f_node_data[node][MAX_QUEUE]))
+        for t in total_f_node_data[node][MAX_QUEUE]:
+            max_queue_res = max(max_time, max([0] + total_f_node_data[node][MAX_QUEUE][t]))
     return work_res, noop_res, max_queue_res
 
 def percentile_action_times(total_f_node_data, percentile):
@@ -793,7 +796,8 @@ def percentile_action_times(total_f_node_data, percentile):
     for work_method_id, work_name in WORK_METHODS.items():
         data = []
         for node in total_f_node_data.keys():
-            data.extend(total_f_node_data[node][work_name])
+            for t in total_f_node_data[node][work_name]:
+                data.extend(total_f_node_data[node][work_name][t])
         if len(data) == 0:
             work_res[work_method_id] = 0
         else:
@@ -802,14 +806,16 @@ def percentile_action_times(total_f_node_data, percentile):
     for noop_method_id, noop_name in NOOP_METHODS.items():
         data = []
         for node in total_f_node_data.keys():
-            data.extend(total_f_node_data[node][noop_name])
+            for t in total_f_node_data[node][noop_name]:
+                data.extend(total_f_node_data[node][noop_name][t])
         if len(data) == 0:
             work_res[work_method_id] = 0
         else:
             noop_res[noop_method_id] = np.percentile(data, percentile)
     data = []
     for node in total_f_node_data.keys():
-        data.extend(total_f_node_data[node][MAX_QUEUE])
+        for t in total_f_node_data[node][MAX_QUEUE]:
+            data.extend(total_f_node_data[node][MAX_QUEUE][t])
     max_queue_res = np.percentile(data, percentile)
     return work_res, noop_res, max_queue_res
 
@@ -824,14 +830,16 @@ def mean_action_times(total_f_node_data):
         if method_id == 0:
             aggregate = []
             for node in total_f_node_data.keys():
-                aggregate.extend(total_f_node_data[node][name])
-            work_res[method_id] = np.mean(aggregate) * 10
+                for t in total_f_node_data[node][name]:
+                    aggregate.extend(total_f_node_data[node][name][t])
+            work_res[method_id] = np.mean(aggregate)   # TONY: Why was there a *10 here?
         else:
             sum_times = 0
             count = 0
             for node in total_f_node_data.keys():
-                sum_times += np.sum(total_f_node_data[node][name])
-                count += len(total_f_node_data[node][name])
+                for t in total_f_node_data[node][name]:
+                    sum_times += np.sum(total_f_node_data[node][name][t])
+                    count += len(total_f_node_data[node][name][t])
             if count > 0:
                 work_res[method_id] = sum_times/float(count)
             else:
@@ -840,14 +848,16 @@ def mean_action_times(total_f_node_data):
         sum_times = 0
         count = 0
         for node in total_f_node_data.keys():
-            sum_times += np.sum(total_f_node_data[node][name])
-            count += len(total_f_node_data[node][name])
+            for t in total_f_node_data[node][name]:
+                sum_times += np.sum(total_f_node_data[node][name][t])
+                count += len(total_f_node_data[node][name][t])
         noop_res[method_id] = sum_times/float(count)
     sum_times = 0
     count = 0
     for node in total_f_node_data.keys():
-        sum_times += np.sum(total_f_node_data[node][MAX_QUEUE])
-        count += len(total_f_node_data[node][MAX_QUEUE])
+        for t in total_f_node_data[node][MAX_QUEUE]:
+            sum_times += np.sum(total_f_node_data[node][MAX_QUEUE][t])
+            count += len(total_f_node_data[node][MAX_QUEUE][t])
     max_queue_res = sum_times/float(count)
     return work_res, noop_res, max_queue_res
 
