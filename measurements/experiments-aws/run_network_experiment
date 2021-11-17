@@ -11,8 +11,8 @@ ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws/data/network"
 GIT_BRANCH="clean"
 NODES_IDS=("1" "2" "3" "4") 
 
-INTERVAL=120   # ping interval in ms
-PAYLOAD=16  # payload size variable
+INTERVAL=300    # ping interval in ms
+PAYLOAD=16      # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
 # Max payload size must be <= 4096, as dicated by Go sockets

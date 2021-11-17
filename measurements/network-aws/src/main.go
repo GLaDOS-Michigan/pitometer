@@ -20,7 +20,7 @@ const Debug bool = false
 
 // TimeOut is the period after which a client retries if failed to receive response
 // In all likelihood, the packet is dropped by the network
-var TimeOut time.Duration = 20 * time.Second
+var TimeOut time.Duration = 10 * time.Second
 
 func main() {
 	// This program takes the following positional arguments
