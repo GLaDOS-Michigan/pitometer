@@ -19,11 +19,11 @@ from conv import *
 # Plotting constants
 from plot_constants import *
 
-THROW=200  # Ignore the first THROW requests in computing client latencies
+THROW=1  # Ignore the first THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
-F_VALUES = [1, 2, 3, 4, 5]
+F_VALUES = [1]
 
 
 WORK_METHODS = {0: "LReplicaNextProcessPacket",
@@ -67,7 +67,7 @@ def main(exp_dir):
     total_node_data, total_client_data, total_client_start_end = dict(), dict(), dict()
     for f in F_VALUES:
         """
-        total_f_node_data[node_id][method_name] = list of durations
+        total_f_node_data[node_id][method_name][trial] = list of durations
         total_f_client_data[i] = list of client durations for trial i
         total_f_client_start_end[i] = (start, end) time of trial i, defined from start of first request to end of last request
         """
@@ -120,16 +120,15 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     print("Plotting graphs for Paxos distributions (simple)")
     with PdfPages("%s/%s (simple).pdf" %(root, name)) as pp:
         for f in F_VALUES:
-            if f == 2:
-                actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
-                actual_method_latencies = compute_actual_node(total_node_data[f]) 
-                actual_network_latencies = compute_actual_network(total_network_data)
-                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-                # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
-                fig.subplots_adjust(right=0.96, bottom=0.18 )
-                plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
-                pp.savefig(fig)
-                plt.close(fig)
+            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
+            actual_method_latencies = compute_actual_node(total_node_data[f]) 
+            actual_network_latencies = compute_actual_network(total_network_data)
+            fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
+            # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
+            fig.subplots_adjust(right=0.96, bottom=0.18 )
+            plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
+            pp.savefig(fig)
+            plt.close(fig)
     print("Plotting graphs for Paxos distributions (advanced)")
     with PdfPages("%s/%s (advanced).pdf" %(root, name)) as pp:
         for f in F_VALUES:
@@ -175,7 +174,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     this_ax.set_title(name)
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies) + list(predict_bins), 99.9))
     # this_ax.set_ylim(0, np.percentile(list(actual_client_latencies), 100)+30)
-    this_ax.set_ylim(0, 50)
+    this_ax.set_ylim(0, 100)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
@@ -191,7 +190,7 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
         actual_method_latencies -- map of method name to list of latencies
     """
     print("Plotting distribution for f = %d" %(f))
-    # sanity_check(actual_client_latencies, actual_network_latencies, actual_method_latencies)
+    sanity_check(actual_client_latencies, actual_network_latencies, actual_method_latencies)
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
@@ -223,6 +222,7 @@ def sanity_check(actual_client_latencies, total_network_data, actual_method_late
     print(len(actual_client_latencies))
     print("min/max for queueing is %.3f/%.3f" %(min(q_data), max(q_data)))
     print("percentiles for queueing is p50:%.3f, p90:%.3f, p99:%.3f, p99.9:%.3f," %(np.percentile(q_data, 50), np.percentile(q_data, 90), np.percentile(q_data, 99), np.percentile(q_data, 99.9)))
+    print("mean queuing is %.3f" %np.mean(q_data))
     print()
 
 
@@ -921,7 +921,8 @@ def compute_actual_node(total_node_data_f):
         for method in total_node_data_f[node]:
             if method not in res:
                 res[method] = []
-            res[method].extend(total_node_data_f[node][method])
+            for t in total_node_data_f[node][method]:
+                res[method].extend(total_node_data_f[node][method][t][THROW:-THROW])
     return res
 
 
