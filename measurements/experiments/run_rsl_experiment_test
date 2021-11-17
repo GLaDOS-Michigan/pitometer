@@ -12,11 +12,10 @@ GIT_BRANCH="clean"
 
 CLIENT_ID=20                            # node to use as client
 CLIENT_THREADS=1                        # number of clients
-BASE_TRIAL_DURATION=$(( 90 ))           # minimum duration in seconds
-ITERATIONS=20                           # repeats of each trial
+BASE_TRIAL_DURATION=$(( 60 ))           # minimum duration in seconds
+ITERATIONS=15                           # repeats of each trial
 BATCH_SIZE=1                            # paxos batch size      
-# F_VALUES=("1" "2" "3" "4" "5")
-F_VALUES=("1" "2")
+F_VALUES=("1" "2" "3" "4" "5")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 CLOCK_MODE="off"
 
