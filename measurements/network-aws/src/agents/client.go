@@ -52,21 +52,25 @@ func (c *Client) StartClientLoop() {
 		// Receive packet
 		var remote *native.IPEndPoint = nil
 		var receivedPacket *native.Packet = nil
-		var timedOutChan = make(chan bool, 2)
+		var receivedChan = make(chan bool)
 		go func(c *Client, timedOutChan chan bool) {
 			_, _, remote, receivedPacket = udpClient.Receive()
-			timedOutChan <- false
+			receivedChan <- true
 			native.Debug(fmt.Sprintf("Client %v received response from %v, %v", c.LocalAddr, remote.GetUDPAddr(), receivedPacket))
 			c.PingLog.LogEndEvent(note)
-		}(c, timedOutChan)
-		go func(timedOutChan chan bool) {
-			time.Sleep(ClientTimeOut)
-			timedOutChan <- true
-		}(timedOutChan)
+		}(c, receivedChan)
 
-		var timedOut = <-timedOutChan
-
-		if timedOut {
+		select {
+		case <-receivedChan:
+			if len(receivedPacket.Buffer) != int(c.PacketSize) {
+				fmt.Printf("Error: got packet length %v, expected %v\n",
+					len(receivedPacket.Buffer),
+					c.PacketSize)
+				os.Exit(1)
+			}
+			// Sleep
+			time.Sleep(time.Duration(c.Interval) * time.Millisecond)
+		case <-time.After(ClientTimeOut):
 			native.Debug("Timed out!")
 			ok, err := udpClient.ReceiveQueue.DequeueOrWaitForNextElementCancel()
 			if !ok {
@@ -77,17 +81,7 @@ func (c *Client) StartClientLoop() {
 			// This event is a timeout
 			c.PingLog.LogEndEvent(fmt.Sprintf("TIMEOUT to target,%v", c.Target))
 			c.TimeoutCount.Increment()
-			continue
 		}
-		if len(receivedPacket.Buffer) != int(c.PacketSize) {
-			fmt.Printf("Error: got packet length %v, expected %v\n",
-				len(receivedPacket.Buffer),
-				c.PacketSize)
-			os.Exit(1)
-		}
-
-		// Sleep
-		time.Sleep(time.Duration(c.Interval) * time.Millisecond)
 	}
 	fmt.Printf("Client at %v targeting %v deactivated\n", c.LocalAddr, c.Target)
 }
