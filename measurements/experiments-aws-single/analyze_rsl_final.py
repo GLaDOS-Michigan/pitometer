@@ -27,7 +27,7 @@ TRAIN_SET = "train"
 TEST_SET = "test"
 F_VALUES = [1]
 
-START = datetime.fromisoformat("2021-10-26 00:00:01")
+START = datetime.fromisoformat("2021-11-14 00:00:01")
 END = datetime.fromisoformat("2021-12-15 04:00:00")
 
 CLIENT = "us-east-2a-C"
