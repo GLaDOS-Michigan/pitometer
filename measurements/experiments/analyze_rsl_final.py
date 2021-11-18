@@ -64,7 +64,7 @@ def main(exp_dir):
     total_client_start_end[f][i] = (start, end) time of trial i, defined from start of first request to end of last request
     """
 
-    total_node_data, total_client_data, total_client_start_end = dict(), dict(), dict()
+    total_node_data, total_client_data, total_client_train_data, total_client_start_end = dict(), dict(), dict(), dict()
     for f in F_VALUES:
         """
         total_f_node_data[node_id][method_name][trial] = list of durations
@@ -79,6 +79,8 @@ def main(exp_dir):
             print("%s/%s/total_f%d_node_data.pickle not found" %(exp_dir, TRAIN_SET, f))
         with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
             total_client_data[f] = pickle.load(handle)
+        with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TRAIN_SET, f), 'rb') as handle:
+            total_client_train_data[f] = pickle.load(handle)
         # with open("%s/%s/total_f%d_client_start_end.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
         #     total_client_start_end[f] = pickle.load(handle)
 
@@ -89,7 +91,7 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    # plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_train_data, total_client_data)
     # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
@@ -109,7 +111,7 @@ def plot_client_data(name, root, total_client_data):
                 plt.close(fig)
 
 
-def plot_distributions(name, root, total_network_data, total_node_data, total_client_data):
+def plot_distributions(name, root, total_network_data, total_node_data, total_client_train_data, total_client_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Arguments:
         name -- name of this figure
@@ -121,12 +123,13 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     with PdfPages("%s/%s (simple).pdf" %(root, name)) as pp:
         for f in F_VALUES:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
+            actual_client_train_latencies = [t for i in total_client_train_data[f] for t in total_client_train_data[f][i]]
             actual_method_latencies = compute_actual_node(total_node_data[f]) 
             actual_network_latencies = compute_actual_network(total_network_data)
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
             fig.subplots_adjust(right=0.96, bottom=0.18 )
-            plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_network_latencies, actual_method_latencies)
+            plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_client_train_latencies, actual_network_latencies, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
     print("Plotting graphs for Paxos distributions (advanced)")
@@ -181,7 +184,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_netw
     this_ax.legend()
 
 
-def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actual_network_latencies, actual_method_latencies):
+def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actual_client_train_latencies, actual_network_latencies, actual_method_latencies):
     """ 
     Arguments:
         name -- name of this figure
@@ -193,11 +196,16 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
     sanity_check(actual_client_latencies, actual_network_latencies, actual_method_latencies)
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
+    
+    client_train_cdf, client_train_bins = raw_data_to_cdf(actual_client_train_latencies)
+    client_train_cdf, client_train_bins = smooth(client_train_cdf, client_train_bins)
+    
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_latencies, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
     plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed',linewidth=1.5)
     plt.plot(client_cdf, client_bins, label='observed performance', color='navy',linewidth=1.5)
+    plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted', linewidth=1.0)
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
@@ -420,7 +428,6 @@ def compute_predicted_rsl_pdf_simple(f, actual_client_latencies, actual_network_
     initial_binsize = 1e-3
     tb2b_pdf, tb2b_start, tb2b_binsize = compute_TB2b_pdf_simple(f, actual_client_latencies, actual_network_latencies, actual_method_latencies, initial_binsize)
     (processPacketFull_pdf, _), processPacketFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextProcessPacket"], initial_binsize), min(actual_method_latencies["LReplicaNextProcessPacket"])
-    noop_1_10_pdf, noop_1_10_start, noop_1_10_binsize = convolve_noop_pdf(actual_method_latencies, 1, 10, initial_binsize)
     noop_1_6_pdf, noop_1_6_start, noop_1_6_binsize = convolve_noop_pdf(actual_method_latencies, 1, 6, initial_binsize)
     (executeFull_pdf, _), executeFull_start = raw_data_to_pdf(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"], initial_binsize), min(actual_method_latencies["LReplicaNextSpontaneousMaybeExecute"])
     (maxQ_pdf, _), maxQ_start = raw_data_to_pdf(actual_method_latencies[MAX_QUEUE], initial_binsize), min(actual_method_latencies[MAX_QUEUE])

@@ -71,7 +71,7 @@ def main(exp_dir):
     total_client_data[f][i] = list of client durations for trial i
     total_client_start_end[f][i] = (start, end) time of trial i, defined from start of first request to end of last request
     """
-    total_node_data, total_client_data = dict(), dict()
+    total_node_data, total_client_data, total_client_train_data = dict(), dict(), dict()
     for f in F_VALUES:
         """
         total_f_node_data[node_id][method_name][trial] = list of durations
@@ -86,6 +86,8 @@ def main(exp_dir):
             print("%s/%s/total_f%d_node_data.pickle not found" %(exp_dir, TRAIN_SET, f))
         with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TEST_SET, f), 'rb') as handle:
             total_client_data[f] = pickle.load(handle)
+        with open("%s/%s/total_f%d_client_data.pickle" %(exp_dir, TRAIN_SET, f), 'rb') as handle:
+            total_client_train_data[f] = pickle.load(handle)
 
     # total_network_data[i][j] is the timings for node i to node j
     with open("%s/../network/%s" %(exp_dir, 'total_payload16_data.pickle'), 'rb') as handle:
@@ -93,7 +95,7 @@ def main(exp_dir):
 
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
-    plot_distributions("Paxos Distributions (simple, Ohio)", exp_dir, total_network_data, total_node_data, total_client_data)
+    plot_distributions("Paxos Distributions (simple, Ohio)", exp_dir, total_network_data, total_node_data, total_client_train_data, total_client_data)
     # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
@@ -112,7 +114,7 @@ def plot_client_data(name, root, total_client_data):
                 plt.close(fig)
 
 
-def plot_distributions(name, root, total_network_data, total_node_data, total_client_data):
+def plot_distributions(name, root, total_network_data, total_node_data, total_client_train_data, total_client_data):
     """ Plot a figure where each subfigure is from an element in total_data
     Arguments:
         name -- name of this figure
@@ -125,10 +127,11 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for f in F_VALUES:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i][CTHROW:-CTHROW]]  # simply combine data from all trials
+            actual_client_train_latencies = [t for i in total_client_train_data[f] for t in total_client_train_data[f][i][CTHROW:-CTHROW]] 
             actual_method_latencies = compute_actual_node(total_node_data[f])   
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             fig.subplots_adjust(right=0.96, bottom=0.18 )
-            plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, total_network_data, actual_method_latencies)
+            plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_client_train_latencies, total_network_data, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
 
@@ -139,7 +142,7 @@ def flatten_map_of_array(l):
     return res
 
 
-def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_network_data, actual_method_latencies):
+def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_client_train_latencies, total_network_data, actual_method_latencies):
     """ 
     Arguments:
         name -- name of this figure
@@ -150,12 +153,15 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, total_netwo
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
+    client_train_cdf, client_train_bins = raw_data_to_cdf(actual_client_train_latencies)
+    client_train_cdf, client_train_bins = smooth(client_train_cdf, client_train_bins)
     sanity_check(actual_client_latencies, total_network_data, actual_method_latencies)
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
     plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
     plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
+    plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted')
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
