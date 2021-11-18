@@ -7,20 +7,13 @@ then
     exit 1
 fi
 
-if [ $# -lt 3 ];
-then
-    echo "Got args : ${@}"
-    echo "Usage: ./run_network_experiment <interval> <duration> <iterations>"
-    exit 1
-fi
-
 ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/network"
 GIT_BRANCH="clean"
 NODES_IDS=("7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20") 
 
 INTERVAL=120                    # ping interval in ms
-DURATION=$(( 60 * 15 ))         # duration for each trial in seconds
-ITERATIONS=4                    # How many times to run each payload (irrelevant for non-terminating runs)
+DURATION=$(( 60 * 10 ))         # duration for each trial in seconds
+ITERATIONS=6                    # How many times to run each payload (irrelevant for non-terminating runs)
 PAYLOADS=("16")                 # payload size variable
 TIMESTAMP=$(date +"%d-%b-%H%M")
 
