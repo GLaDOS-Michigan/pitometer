@@ -359,7 +359,7 @@ lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, j:int,
       var p := ios[0].r;
       if p.src in s.constants.config.replica_ids {
         var sender_index := GetReplicaIndex(p.src, s.constants.config);
-        lemma_GetReplicaIndexIsUnique
+        // lemma_GetReplicaIndexIsUnique
         if sender_index == idx {
           assume false;
         } else {
