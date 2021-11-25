@@ -39,6 +39,7 @@ namespace IronfleetTestDriver
 
         public static List<IPEndPoint> endpoints;
         public static IPAddress my_addr;
+        public static int sleep_time;
 
         public static uint encodedClientAddress()
         {

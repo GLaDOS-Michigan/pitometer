@@ -1,0 +1,40 @@
+#!/bin/bash
+
+HOSTS="aws-hosts.csv"
+EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws"
+TEMP_DIR="/home/ubuntu/tmp-net"  # temporary dir to store output at each node
+
+# First, grab parameters
+
+RESULTS_DIR=$1
+
+HOST_ID_LIST=()
+HOST_NAME_LIST=()
+HOST_IP_LIST=()
+HOST_PORT_LIST=()
+
+while IFS=, read -r id name address netport rslport
+do 
+    # echo "TONY: $id $name $address $netport"
+    HOST_ID_LIST+=("$id")
+    HOST_NAME_LIST+=("$name")
+    HOST_IP_LIST+=("$address")
+    HOST_PORT_LIST+=("$netport")
+done < <(tail -n +2 $HOSTS)
+
+
+# Grab results from each node to local machine
+echo "Collecting results..."
+
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+
+    scp $NODE_ADDR:$TEMP_DIR/node_$NODE_NAME.log $RESULTS_DIR/payload16
+done
+
+# Also send data to skynode 20
+echo "Sending results to Skynode20"
+scp -r $RESULTS_DIR nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws/final_data/network
+echo "Done"

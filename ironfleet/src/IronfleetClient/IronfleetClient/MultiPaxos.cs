@@ -116,7 +116,7 @@
         {
             ulong seq_num = 0;            
 
-            this.udpClient = new System.Net.Sockets.UdpClient(6000+(int)id);
+            this.udpClient = new System.Net.Sockets.UdpClient(6500+(int)id);
             // Timeout value for waiting to receive response from service, in milliseconds
             this.udpClient.Client.ReceiveTimeout = 1000; 
             ulong myaddr = MyAddress64();
@@ -128,8 +128,7 @@
                 // Console.WriteLine("Client send first request time: " + DateTime.Now);
                 while (true)
                 {
-                    Thread.Sleep(100);
-                    Console.WriteLine("TONY DEBUG: Sleep 100");
+                    // Console.WriteLine("TONY DEBUG: Sleep 100");
                     // Make the sequence number a time stamp
                     //var newSeqNum = (ulong) HiResTimer.UtcNow.Ticks;
                     //if (newSeqNum == seqNum) {
@@ -146,9 +145,10 @@
                     var dest = ClientBase.endpoints[serverIdx];
                     Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + dest);
 
-                    Thread.Sleep(150);
-                    var start_time = HiResTimer.Ticks;
+                    // Console.WriteLine("TONY DEBUG: Sleep {0}", sleep_time);
+                    Thread.Sleep(sleep_time);
                     this.Send(msg, dest);
+                    var start_time = HiResTimer.Ticks;
                     //foreach (var remote in ClientBase.endpoints)
                     //{
                     //    this.Send(msg, remote);
@@ -181,8 +181,12 @@
                             if (reply_seq_num == seq_num)
                             {
                                 received_reply = true;
+                                // Time in milliseconds
+                                var start_fine = start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3);
+                                var end_fine = end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3);
+                                Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, start_fine, end_fine, id));
                                 // Report time in milliseconds, since that's what the Python script appears to expect
-                                Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
+                                // Console.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
                                 seq_num++;
                                 // Console.Out.WriteLine(string.Format("#req{0} {1} {2} {3}", seq_num, (ulong)(start_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), (ulong)(end_time * 1.0 / Stopwatch.Frequency * Math.Pow(10, 3)), id));
                                 //long n = Interlocked.Increment(ref num_reqs);

@@ -11,22 +11,21 @@ import pickle
 
 
 NODES = list(range(1, 21))
-DELAYS = [0, 200, 1_000, 5_000]  # units of microseconds
-
+DELAYS = [0, 1_000, 2_500, 5_000]  # units of microseconds
 
 def main(exp_dir):
     exp_dir = os.path.abspath(exp_dir)
     print("\nAnalyzing data for experiment %s" %exp_dir)
 
     # each data is dict of (size -> delay -> node -> [ durs ])
-    total_grant_data, total_accept_data, total_round_data = parse_files(exp_dir)  
+    # total_grant_data, total_accept_data, total_round_data = parse_files(exp_dir)  
     
-    with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'wb') as handle:
-        pickle.dump(total_grant_data, handle)
-    with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'wb') as handle:
-        pickle.dump(total_accept_data, handle)
-    with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'wb') as handle:
-        pickle.dump(total_round_data, handle)
+    # with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'wb') as handle:
+    #     pickle.dump(total_grant_data, handle)
+    # with open("%s/%s" %(exp_dir, 'total_accept_data.pickle'), 'wb') as handle:
+    #     pickle.dump(total_accept_data, handle)
+    # with open("%s/%s" %(exp_dir, 'total_round_data.pickle'), 'wb') as handle:
+    #     pickle.dump(total_round_data, handle)
 
     with open("%s/%s" %(exp_dir, 'total_grant_data.pickle'), 'rb') as handle:
         total_grant_data = pickle.load(handle)
@@ -43,7 +42,7 @@ def main(exp_dir):
     plot_grant_or_accept("nodeAccept", exp_dir, total_accept_data)
 
     # Plot Rounds
-    plot_round("rounds", exp_dir, total_round_data)
+    # plot_round("rounds", exp_dir, total_round_data)
     print("Done")
 
 
@@ -133,10 +132,17 @@ def plot_grant_or_accept_delay(name, root, delay, total_data):
             total_aggregate_data.extend(total_data[size][delay][node])
     # Plot graph
     with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
-        fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
+        fig, axes = plt.subplots(2, 1, figsize=(5, 6.5), sharex=False)
         fig.suptitle("%s, delay %.1f ms" %(name, delay/1000.0), fontweight='bold')
         plot_histogram(axes[0], total_aggregate_data)
         plot_cdf(axes[1], total_aggregate_data)
+        fig.subplots_adjust(left=0.16,right=0.92,bottom=0.08)
+        pp.savefig(fig)
+        plt.close(fig)
+    with PdfPages("%s/delay%d_%s_pmf.pdf" %(root, delay, name)) as pp:
+        fig, ax = plt.subplots(1, 1, figsize=(5, 3), sharex=False)
+        fig.subplots_adjust(left=0.16,right=0.92,top=0.9,bottom=0.18)
+        plot_pmf(ax, total_aggregate_data)
         pp.savefig(fig)
         plt.close(fig)
 
@@ -168,10 +174,14 @@ def plot_round_delay(name, root, delay, total_round_data):
 
     with PdfPages("%s/delay%d_%s.pdf" %(root, delay, name)) as pp:
         for size in sizes:
-            all_nodes = list(total_round_data[size][delay].keys())
-            all_nodes.sort()
-            leader_node = all_nodes[0]
-            data = total_round_data[size][delay][leader_node]
+            # all_nodes = list(total_round_data[size][delay].keys())
+            # all_nodes.sort()
+            leader_node = 20
+            try:
+                data = total_round_data[size][delay][leader_node]
+            except KeyError:
+                print("No data for size %d delay %d" %(size, delay))
+                continue
             fig, axes = plt.subplots(2, 1, figsize=(8.5, 11), sharex=False)
             fig.suptitle("%s, delay %.1f ms, size %d" %(name, delay/1000.0, size), fontweight='bold')
             plot_histogram(axes[0], data)
@@ -187,7 +197,7 @@ def plot_cdf(this_ax, data, title=None):
         data {list} -- list of data
     """
     kwargs = {'cumulative': True}
-    sns.distplot(data, hist_kws=kwargs, kde_kws=kwargs, vertical=True)
+    sns.distplot(data, hist_kws=kwargs, kde_kws=kwargs, vertical=True, hist=False)
     this_ax.set_xlim(0, 1)
     this_ax.xaxis.set_ticks(np.arange(0, 1, 0.1))
     this_ax.grid()
@@ -220,6 +230,22 @@ def plot_histogram(this_ax, data, title=None, stats=True, kde=False):
         this_ax.set_title(title)
     this_ax.set_xlabel('latency (ms)', fontsize=10)
     this_ax.set_ylabel('count', fontsize=10)
+
+
+def plot_pmf(this_ax, data, title=None, stats=True, kde=False):
+    """Plot a pmf
+    Arguments:
+        this_ax {axes} -- axes on which to plot
+        data {list} -- list of data
+        title {string}  -- title of this_ax
+        stats {bool} -- toggle statistics box
+        kde {bool} -- toggle kde option
+    """
+    sns.histplot(data, ax=this_ax, stat="probability", bins=100)
+    this_ax.grid()
+    this_ax.set_xlim(min(data), max(data)*0.95)
+    this_ax.set_xlabel('exectution time (ms)', fontsize=10)
+    this_ax.set_ylabel('probability', fontsize=10)
 
 
 

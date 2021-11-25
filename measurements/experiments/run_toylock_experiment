@@ -1,0 +1,60 @@
+#!/bin/bash
+# Run a Toylock experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/nudzhang/Documents/pitometer/measurements/experiments/data/toylock"
+GIT_BRANCH="exp"
+
+NUM_ROUNDS=100
+ITERATIONS=40
+DELAYS=("0" "1000" "2500" "5000")   # delays are in microseconds
+RING_SIZES=("2" "4" "6" "8" "10")
+TIMESTAMP=$(date +"%d-%b-%H%M")
+
+echo "Starting new Toylock experiment at time $TIMESTAMP"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+for ring_size in "${RING_SIZES[@]}"
+do
+    # Generate node id's to use
+    node_ids=()
+    for ((id=20;id>$[ 20 - $ring_size ];id--))
+    do
+        node_ids+=("$id")
+    done
+    # echo ${node_ids[@]}
+
+    # Build locally and send executables to the target machines
+    ./build_to_hosts ${node_ids[@]}
+    echo ""
+
+    for delay in "${DELAYS[@]}"
+    do
+        for ((trial=0;trial<$ITERATIONS;trial++))
+        do
+            time=$(date +"%d-%b-%H%M")
+            time_limit=$(( $ring_size * 1 * $NUM_ROUNDS / 10 ))
+            echo "Starting trial $trial for ring-size $ring_size and delay $delay at time $time, time limit is $time_limit s"
+
+            trial_dir="$ROOT_DIR/$TIMESTAMP/size$ring_size/delay$delay/trial$trial"
+            mkdir -p $trial_dir 
+
+            # Start trial
+            timeout $time_limit ./start_toylock_trial $trial_dir $NUM_ROUNDS $delay ${node_ids[@]} > $trial_dir/info.log
+            if [ $? == 124 ]; then 
+                echo "Timed-out!"
+            fi
+            sleep 1
+        done
+    done
+done
+
+end_timestamp=$(date +"%d-%b-%H%M")
+echo "Toylock experiment completed at time $end_timestamp"

@@ -1,0 +1,99 @@
+#!/bin/bash
+# This script starts a distributed network agent job. It records the directional RTT 
+# between every host pair in HOSTS. 
+# It takes the following positional arguments:
+# ./start_network_trial <results_dir> <interval> <payload_sz>
+
+# NOTE: This script assumes that the executables are in place
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+HOSTS="aws-hosts_single-region.csv"
+EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single"
+TEMP_DIR="/home/ubuntu/tmp-net_single"  # temporary dir to store output at each node
+
+# First, grab parameters
+
+RESULTS_DIR=$1
+INTERVAL=$2
+PAYLOAD_SZ=$3  
+
+HOST_ID_LIST=()
+HOST_NAME_LIST=()
+HOST_IP_LIST=()
+HOST_PORT_LIST=()
+
+while IFS=, read -r id name address netport rslport
+do 
+    # echo "TONY: $id $name $address $netport"
+    HOST_ID_LIST+=("$id")
+    HOST_NAME_LIST+=("$name")
+    HOST_IP_LIST+=("$address")
+    HOST_PORT_LIST+=("$netport")
+done < <(tail -n +2 $HOSTS)
+
+date
+echo "Starting Network trial with parameters:"
+echo "  - Interval     : $INTERVAL milliseconds"
+echo "  - Payload size : $PAYLOAD_SZ bytes"
+echo "  - Participants : ${HOST_NAME_LIST[@]}"
+
+
+# Build list of target endpoints to the each main program
+ENDPOINTS=""  
+i="0"
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    ENDPOINTS+="${HOST_IP_LIST[$i]}:${HOST_PORT_LIST[$i]} "
+done
+
+# Run the experiments on each note via ssh
+
+for ((i=$[ ${#HOST_NAME_LIST[@]} - 1];i>=0;i--))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ID=${HOST_ID_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+    NODE_PORT=${HOST_PORT_LIST[$i]}
+    echo "Starting Network Agent $NODE_ID, $NODE_NAME, $NODE_ADDR:$NODE_PORT"
+
+    # Make dir to store local output
+    ssh ubuntu@$NODE_ADDR "mkdir -p $TEMP_DIR"  
+
+    # Kill any processes using the required port
+    ssh ubuntu@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
+
+    # Get the inet
+    # xargs trims leading whitespace, cut returns the desired slice
+    NODE_INET=$(ssh ubuntu@$NODE_ADDR "ifconfig | grep -m 1 'inet' | xargs | cut -d' ' -f 2")
+
+    # Run experiment
+    ARGS="$ENDPOINTS $NODE_INET:$NODE_PORT $INTERVAL $PAYLOAD_SZ"
+    if [ $i -gt 0 ] 
+    then 
+        ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-aws-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"  &
+    else
+        # Wait on the last node
+        ssh ubuntu@$NODE_ADDR "$EXP_DIR/network-aws-main $ARGS > $TEMP_DIR/node_$NODE_NAME.log"
+    fi
+done
+sleep 5
+echo "Run completed"
+
+# Finally, grab results from each node to local machine
+echo "Collecting results..."
+
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+
+    scp $NODE_ADDR:$TEMP_DIR/node_$NODE_NAME.log $RESULTS_DIR
+done
+
+echo "Network trial completed"
+date

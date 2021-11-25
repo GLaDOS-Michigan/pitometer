@@ -253,14 +253,12 @@ TAIL_CALL_START:
 
 // TONY: This is the method that we want to time
 func (_this *CompanionStruct_Default___) NodeGrantImpl(s CNode, delay int, nodeGrantCounter *clock.Counter) (CNode, _44_Logic____Option__i_Compile.Option) {
-	time.Sleep(time.Duration(delay) * time.Microsecond)
-	goto TAIL_CALL_START
-TAIL_CALL_START:
 	var s_k CNode = Type_CNode_().Default().(CNode)
 	var _ = s_k
 	var packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
 	var _ = packet
 	if ((s).Dtor_held()) && (((s).Dtor_epoch()) < (uint64(18446744073709551615))) {
+		time.Sleep(time.Duration(delay) * time.Microsecond)
 		var _1669_ssss CNode
 		var _ = _1669_ssss
 		_1669_ssss = CNode{CNode_CNode{false, (s).Dtor_epoch(), (s).Dtor_my__index(), (s).Dtor_config()}}
@@ -286,9 +284,6 @@ TAIL_CALL_START:
 }
 
 func (_this *CompanionStruct_Default___) NodeAcceptImpl(s CNode, transfer__packet _7_Environment__s_Compile.LPacket, delay int) (CNode, _44_Logic____Option__i_Compile.Option) {
-	time.Sleep(time.Duration(delay) * time.Microsecond)
-	goto TAIL_CALL_START
-TAIL_CALL_START:
 	var s_k CNode = Type_CNode_().Default().(CNode)
 	var _ = s_k
 	var locked__packet _44_Logic____Option__i_Compile.Option = _44_Logic____Option__i_Compile.Type_Option_().Default().(_44_Logic____Option__i_Compile.Option)
@@ -296,6 +291,7 @@ TAIL_CALL_START:
 	{
 	}
 	if (((!((s).Dtor_held())) && (((s).Dtor_config()).Contains((transfer__packet).Dtor_src().(_9_Native____Io__s_Compile.EndPoint)))) && (((transfer__packet).Dtor_msg().(_39_Message__i_Compile.CMessage)).Is_CTransfer())) && ((((transfer__packet).Dtor_msg().(_39_Message__i_Compile.CMessage)).Dtor_transfer__epoch()) > ((s).Dtor_epoch())) {
+		time.Sleep(time.Duration(delay) * time.Microsecond)
 		var _1671_ssss CNode
 		var _ = _1671_ssss
 		_1671_ssss = CNode{CNode_CNode{true, ((transfer__packet).Dtor_msg().(_39_Message__i_Compile.CMessage)).Dtor_transfer__epoch(), (s).Dtor_my__index(), (s).Dtor_config()}}

@@ -304,24 +304,23 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 
 	// Tune for rsl measurements: make log length really long to avoid it happening during an execution
 	// make heartbeats infrequent such that they don't interfere with our message queues
-	// return ParametersState{ParametersState_ParametersState{
-	// 	// These are units of milliseconds, same as original C# implementation
-	// 	//
-	// 	Max__log__length:                uint64(10_000),
-	// 	Baseline__view__timeout__period: uint64(10_000),
-	// 	Heartbeat__period:               uint64(30_000),
-	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
-	// 	Max__batch__size:                uint64(BatchSize),
-	// 	Max__batch__delay:               uint64(10)}}
-
-	// Tune for rsl latency-throughput measurements: restore to C# default
 	return ParametersState{ParametersState_ParametersState{
-		Max__log__length:                uint64(7),
-		Baseline__view__timeout__period: uint64(1000),
-		Heartbeat__period:               uint64(100),
+		// These are units of milliseconds, same as original C# implementation
+		Max__log__length:                uint64(2_000),      // basically never truncate
+		Baseline__view__timeout__period: uint64(5 * 60_000), // 5 minutes
+		Heartbeat__period:               uint64(5 * 60_000), // 5 minutes
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(BatchSize),
 		Max__batch__delay:               uint64(10)}}
+
+	// Tune for rsl latency-throughput measurements: restore to C# default
+	// return ParametersState{ParametersState_ParametersState{
+	// 	Max__log__length:                uint64(7),
+	// 	Baseline__view__timeout__period: uint64(1000),
+	// 	Heartbeat__period:               uint64(100),
+	// 	Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
+	// 	Max__batch__size:                uint64(BatchSize),
+	// 	Max__batch__delay:               uint64(10)}}
 }
 
 // End of class Default__

@@ -35,8 +35,9 @@ func main() {
 
 	// Pop the last argument from os.Args -- that is the duration to run this server in seconds
 	// After this duration, the process exits.
+	// A negative value indicates to run forever
 	var duration, err1 = strconv.ParseInt(os.Args[len(os.Args)-1], 10, 64)
-	if int(duration) < 0 || err1 != nil {
+	if err1 != nil {
 		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-1])
 		os.Exit(1)
 	}
@@ -122,7 +123,7 @@ func main() {
 			Target:       targetAddr,       // remote address to send packet
 			Interval:     uint64(interval), // milliseconds to sleep in between pings
 			PacketSize:   uint64(payloadSz),
-			PingLog:      clock.NewStopwatch(INIT_SIZE, fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP)),
+			PingLog:      clock.NewStopwatch(fmt.Sprintf("Ping Stopwatch from %v to %v", clientAddr.IP, targetAddr.IP)),
 			TimeoutCount: clock.NewCounter("Timeouts")}
 		clientsMap[clientPort] = localClientAgent
 	}
@@ -132,7 +133,16 @@ func main() {
 		go clientAgent.StartClientLoop()
 	}
 
-	// Start experiment timer
+	if duration < 0 {
+		// Run forever
+		fmt.Printf("Starting non-terminating experiment at %v\n", time.Now())
+		for true {
+			time.Sleep(30 * time.Second)
+		}
+		return
+	}
+
+	// Start bounded experiment timer
 	fmt.Printf("Starting experiment for duration %v seconds at %v\n", duration, time.Now())
 	experimentTimer := time.NewTimer(time.Duration(duration) * time.Second)
 
@@ -143,8 +153,8 @@ func main() {
 	}
 	time.Sleep(1 * time.Second)
 	for _, clientAgent := range clientsMap {
-		fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
+		// fmt.Printf("\nLog of pings from %v to %v\n", clientAgent.LocalAddr, clientAgent.Target)
 		fmt.Printf("Timeouts from %v to %v: %v\n", clientAgent.LocalAddr, clientAgent.Target, clientAgent.TimeoutCount)
-		clientAgent.PingLog.PrintLog()
+		// clientAgent.PingLog.PrintLog()
 	}
 }

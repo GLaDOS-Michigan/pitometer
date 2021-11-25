@@ -1,0 +1,43 @@
+#!/bin/bash
+# Run a Network experiment
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+ROOT_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-single/data/network"
+GIT_BRANCH="clean"
+NODES_IDS=("1" "2" "3" "4") 
+
+INTERVAL=120    # ping interval in ms
+PAYLOAD=16      # payload size variable
+TIMESTAMP=$(date +"%d-%b-%H%M")
+
+# Max payload size must be <= 4096, as dicated by Go sockets
+if [ $PAYLOAD -gt 4096 ]
+then
+    echo "Error: Payload size cannot be larger than 4096 bytes"
+    exit 1
+fi
+
+echo "Starting new Network AWS (single region) experiment at time $(date)"
+echo ""
+./git_pull_all_hosts $GIT_BRANCH
+echo ""
+
+# Build locally and send executables to the target machines
+./build_to_hosts_single-region ${NODES_IDS[@]}
+
+time=$(date)
+echo "Starting payload size $PAYLOAD bytes at time $time"
+
+trial_dir="$ROOT_DIR/$TIMESTAMP/payload$PAYLOAD"
+mkdir -p $trial_dir 
+
+# Start trial
+./start_network_trial $trial_dir $INTERVAL $PAYLOAD > $trial_dir/info.log
+
+end_timestamp=$(date +"%d-%b-%H%M")
+echo "Network single region experiment completed at time $end_timestamp"
