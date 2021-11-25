@@ -166,7 +166,6 @@ predicate NewLeaderInvariant(s:TimestampedRslState)
       ns == LMinQuorumSize(s.constants.config)) ==>
         TimeLe(s.t_replicas[1].ts, TBFirstSuspectingHB())
     )
-
 }
 
 predicate NodeFDInvariant(s:TimestampedRslState, idx:int)
@@ -318,22 +317,62 @@ lemma NonSuspector_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, i
   }
 }
 
-lemma Suspector_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+lemma Suspector_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= idx < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|;
+  requires j != 1;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(7) // on step 7, we might become a suspector
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires NodeIsNotSuspector(s, j);
-  ensures  NodeIsNotSuspector(s', j) || (NodeIsSuspector(s', j) && HBUnsent(s', j));
+  requires HBEnRoute(s, idx);
+  ensures HBEnRoute(s', idx); // || NodeIsKnownSuspector(s, j);
 {
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
+}
+
+lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= idx < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires j == 1;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires HBEnRoute(s, idx);
+  ensures HBEnRoute(s', idx) || NodeIsKnownSuspector(s, j);
+{
+  if s.t_environment.nextStep.nodeStep == RslStep(0) {
+    var ios := s.t_environment.nextStep.ios;
+    assert |ios| > 0;
+    if ios[0].LIoOpReceive? && ios[0].r.msg.v.RslMessage_Heartbeat? {
+      var p := ios[0].r;
+      if p.src in s.constants.config.replica_ids {
+        var sender_index := GetReplicaIndex(p.src, s.constants.config);
+        // lemma_GetReplicaIndexIsUnique
+        if sender_index == idx {
+          assume false;
+        } else {
+          assert HBEnRoute(s', idx);
+        }
+      } else{
+        assert HBEnRoute(s', idx);
+      }
+    }
+  } else{
+    assert HBEnRoute(s', idx);
+  }
+}
 
 lemma FDInductive(s:TimestampedRslState, s':TimestampedRslState, j:int)
   requires RslAssumption2(s, s')

@@ -111,3 +111,10 @@ else if s.t_environment.nextStep.nodeStep == RslStep(8) {
 }
 else if s.t_environment.nextStep.nodeStep == RslStep(9) {
 }
+
+=
+* Phase 2 (first leader)
+* Phase 1 (second leader)
+* Phase 2 (second leader)
+
+Phase2Invariant()
