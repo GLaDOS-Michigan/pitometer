@@ -82,26 +82,73 @@
     * Not sure why we can say that it is always empty though. 
 
 
-## Flow of Client Request
+* Who does client send requests to?
+    * Client sends request to server 0. When server 0 fails, it tries server 1.
+* The question becomes, after server 0 fails, how does server 1 learn of a pending request? Is it solely through client re-transmission?
+
+
+## Flow of Client Request in Phase 2
 
 ### Leader Receiving a Request
 
 1. Client sends request to server 0
-2. Replica runs `LSchedulerNext`, and the sub-clause `LReplicaNextProcessPacket`
+2. Leader runs `LSchedulerNext`, and the sub-clause `LReplicaNextProcessPacket`
 3. If packet is not a heartbeat, it runs `LReplicaNextProcessPacketWithoutReadingClock`
 4. Replica runs `LReplicaNextProcessRequest` for a client request.
 5. If request is already in reply cache, then executor processes the request `LExecutorProcessRequest`. Otherwise, run `LProposerProcessRequest`
 6. If I am the leader, update `election_state`, `request_queue`, and `highest_seqno_requested_by_client_this_view`
 7. Now the request is part of the request queue, ready to be proposed.
 
-### Leader Proposing a Request, and a Server Receiving it
+### Leader Proposing a Request as 2a Message
 
-1. 
+1. Leader runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
+2. The action of interest is number 3: `LReplicaNextReadClockMaybeNominateValueAndSend2a`
+3. There are two paths to take here:
+    * I saw that acceptors have previously accepted some value for this slot. Then `LProposerNominateOldValueAndSend2a`.
+    * Else, nothing could have been chosen for this slot. Then `LProposerNominateNewValueAndSend2a`.
+4. For the purposes of the failure proof, the longest path would be that the old leader got the value chosen, learned the value, and failed just before responding to the client. So the new leader will see the chosen value. 
+5. Let's explore the `LProposerNominateOldValueAndSend2a` path.
+    * Leader simply broadcasts the highest numbered proposal as a 2a message to everyone. 
+6. What about `LProposerNominateNewValueAndSend2a`? 
+    * Each proposed value is a batch of requests that is a prefix of `request_queue`
+    * `request_queue` gets truncated as appropriate
+    * Leader broadcasts new proposal as a 2a message to everyone. 
+
+### Server Receiving a 2a Message
+
+1. Server runs `LSchedulerNext`, and enters the sub-clause `LReplicaNextProcess2a`
+2. If 2a message has ballot at least as large as my last promised ballot, then run `LAcceptorProcess2a`
+3. Acceptor broadcasts 2b message to everyone, updates promised ballot `max_bal`
+
+### Server Learning a Request
+
+1. Server runs `LSchedulerNext`, and enters the sub-clause `LReplicaNextProcess2b`
+2. If this 2b message is for a slot that I have yet learned, then run `LLearnerProcess2b`
+3. Note that learner state consists of a `unexecuted_learner_state` map. This maps slot numbers to the pair
+    * set of acceptors that accepted this ballot
+    * value accepted for the slot with the current ballot
+4. `LLearnerProcess2b` has a few cases depending on the ballot of the received 2b message
+    * If packet ballot is stale, then ignore the packet.
+    * If packet ballot is larger than the largest I've seen, then update `max_ballot_seen`, and set `unexecuted_learner_state` for this slot to `LearnerTuple({packet.src}, m.val_2b)`
+    * If packet ballot is current, and is the first I've seen for this slot, set `unexecuted_learner_state` for this slot to `LearnerTuple({packet.src}, m.val_2b)`.
+    * If packet ballot is current, but this is a duplicate from a previously seen acceptor, then ignore.
+    * If packet ballot is current, and from a new source for this slot, then add the new source to the set of sources tracked in `unexecuted_learner_state` for this slot. 
+
+### Server Deciding Executing a Request
+
+1. Server runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
+2. The first action of interest is number 5: `LReplicaNextSpontaneousMaybeMakeDecision`
+3. Examines the next undecided slot `s.executor.ops_complete` in `s.learner.unexecuted_learner_state`
+4. If this slot has amassed a quorum of 2b replies, then run `LExecutorGetDecision`
+5. Server sets the next operation to execute to this slot's value `next_op_to_execute := OutstandingOpKnown(v, bal)`
+
+1. The second action of interest is number 6: `LReplicaNextSpontaneousMaybeExecute`
+2. If next operation to execute is decided, `s.executor.next_op_to_execute.OutstandingOpKnown?`, then run `LExecutorExecute`.
+3. Run `HandleRequestBatch` to generate new state and client responses
+4. Set application state to new state, send replies to client, and update reply cache
+5. Reset next slot to execute `s'.next_op_to_execute == OutstandingOpUnknown()`
 
 
-* Who does client send requests to?
-    * Client sends request to server 0. When server 0 fails, it tries server 1.
-* The question becomes, after server 0 fails, how does server 1 learn of a pending request? Is it solely through client re-transmission?
+## Flow of Client Request in Phase 1
 
-
-|s.t_replicas[0].v.replica.proposer.request_queue| == 0
+### Server Becoming a Leader and Learning of Maybe Chosen Values
