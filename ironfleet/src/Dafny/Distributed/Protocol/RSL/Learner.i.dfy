@@ -32,17 +32,22 @@ predicate LLearnerProcess2b(s:LLearner, s':LLearner, packet:RslPacket)
     var m := packet.msg;
     var opn := m.opn_2b;
     if packet.src !in s.constants.all.config.replica_ids || BalLt(m.bal_2b, s.max_ballot_seen) then
+        // stale 2b message
         s' == s
     else if BalLt(s.max_ballot_seen, m.bal_2b) then
+        // 2b message for a new ballot
         var tup' := LearnerTuple({packet.src}, m.val_2b);
         s' == s.(max_ballot_seen := m.bal_2b,
                  unexecuted_learner_state := map[opn := tup'])
     else if opn !in s.unexecuted_learner_state then
+        // 2b message for a current ballot, but is the first one for this slot
         var tup' := LearnerTuple({packet.src}, m.val_2b);
         s' == s.(unexecuted_learner_state := s.unexecuted_learner_state[opn := tup'])
     else if packet.src in s.unexecuted_learner_state[opn].received_2b_message_senders then
+        // 2b message for a current ballot, but is a duplicate packet
         s' == s
     else
+        // 2b message for a current ballot, from a new source
         var tup := s.unexecuted_learner_state[opn];
         var tup' := tup.(received_2b_message_senders := tup.received_2b_message_senders + {packet.src});
         s' == s.(unexecuted_learner_state := s.unexecuted_learner_state[opn := tup'])
