@@ -89,7 +89,7 @@
 
 ## Flow of Client Request in Phase 2
 
-### Leader Receiving a Request
+### Leader Receiving a Request from Client
 
 1. Client sends request to server 0
 2. Leader runs `LSchedulerNext`, and the sub-clause `LReplicaNextProcessPacket`
@@ -104,7 +104,7 @@
 1. Leader runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
 2. The action of interest is number 3: `LReplicaNextReadClockMaybeNominateValueAndSend2a`
 3. There are two paths to take here:
-    * I saw that acceptors have previously accepted some value for this slot. Then `LProposerNominateOldValueAndSend2a`.
+    * I saw that acceptors have previously accepted some value for this slot, by looking into my set of 1b messages I received for this view. Then `LProposerNominateOldValueAndSend2a`.
     * Else, nothing could have been chosen for this slot. Then `LProposerNominateNewValueAndSend2a`.
 4. For the purposes of the failure proof, the longest path would be that the old leader got the value chosen, learned the value, and failed just before responding to the client. So the new leader will see the chosen value. 
 5. Let's explore the `LProposerNominateOldValueAndSend2a` path.
@@ -118,7 +118,8 @@
 
 1. Server runs `LSchedulerNext`, and enters the sub-clause `LReplicaNextProcess2a`
 2. If 2a message has ballot at least as large as my last promised ballot, then run `LAcceptorProcess2a`
-3. Acceptor broadcasts 2b message to everyone, updates promised ballot `max_bal`
+3. Add `(bal, val)` to my `votes` map for this slot.
+4. Acceptor broadcasts 2b message to everyone, updates promised ballot `max_bal`
 
 ### Server Learning a Request
 
@@ -151,4 +152,42 @@
 
 ## Flow of Client Request in Phase 1
 
-### Server Becoming a Leader and Learning of Maybe Chosen Values
+### Leader Entering New View 
+
+1. Server runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
+2. The action of interest is number 1: `LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a`
+3. If the new election indicates that I should become the leader, `s.election_state.current_view.proposer_id == s.constants.my_index`, then 
+    * Enter Phase 1
+    * Set `max_ballot_i_sent_1a` to this new view
+    * Set `received_1b_packets` to the empty set
+    * Set `highest_seqno_requested_by_client_this_view` to the empty map
+    * Update `request_queue`
+    * Broadcast new 1a message to everyone
+
+### Server Receiving a 1a Message
+
+1. Server runs `LSchedulerNext`, and enters the sub-clause `LReplicaNextProcess1a`
+2. If this 1a message has a ballot strictly larger than what I've seen, then send a 1b response containing all of my votes.
+
+### Leader Discovering Accepted Values in 1b Messages
+
+1. Server runs `LSchedulerNext`, and enters the sub-clause `LReplicaNextProcess1b`
+2. If I am in Phase 1, and the 1b packet matches the 1a ballot I sent `max_ballot_i_sent_1a`, and this 1b is not a duplicate, then run `LProposerProcess1b`.
+3. This adds the source of the 1b packet to my `received_1b_packets` set.
+4. Next, run `LAcceptorTruncateLog`
+
+### Leader Entering Phase 2
+
+1. Server runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
+2. The action of interest is number 2: `LReplicaNextSpontaneousMaybeEnterPhase2`
+3. If I amass a quorum of 1b messages, then
+    * Enter Phase 2
+    * Broadcast `RslMessage_StartingPhase2` message to everyone
+
+1. Servers receiving this message run `LReplicaNextProcessStartingPhase2`
+2. They broadcast `RslMessage_AppStateRequest` to everyone
+3. Servers receiving this state request runs `LReplicaNextProcessAppStateRequest`
+4. They respond with `RslMessage_AppStateSupply`
+5. Servers receiving this state suppy runs `LExecutorProcessAppStateSupply`
+
+
