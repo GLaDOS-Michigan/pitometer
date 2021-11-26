@@ -13,19 +13,15 @@ module RslPhase2Proof_simple_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
-predicate LeaderAlwaysZero(s:TimestampedRslState)
+predicate LeaderAlwaysOne(s:TimestampedRslState)
 {
-  && (forall idx:: 0 <= idx < |s.t_replicas|
-    ==>
-    && s.t_replicas[idx].v.replica.proposer.election_state.current_view == Ballot(1, 0)
-    && (idx > 0 ==> s.t_replicas[idx].v.replica.proposer.current_state == 0)
-    && s.t_replicas[idx].v.replica.proposer.election_state.current_view == s.t_replicas[0].v.replica.proposer.max_ballot_i_sent_1a
+  && (forall idx | 0 <= idx < |s.t_replicas| && idx != 1
+    :: s.t_replicas[idx].v.replica.proposer.current_state == 0)
+  && (0 < |s.t_replicas|
+  ==>
+  && s.t_replicas[1].v.replica.proposer.current_state == 2
+  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
   )
-
-    && (0 < |s.t_replicas|
-    ==>
-    s.t_replicas[0].v.replica.proposer.current_state == 2
-    )
 }
 
 
