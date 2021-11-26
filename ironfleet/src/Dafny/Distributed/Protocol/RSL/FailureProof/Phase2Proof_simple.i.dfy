@@ -288,8 +288,7 @@ predicate GenericPhase2Invariant(s:TimestampedRslState, req_time:Timestamp, opn:
   && (forall id :: id in progresses.Keys <==> id in s.constants.config.replica_ids)
   && (0 < |s.t_replicas|
     ==>
-    |s.t_replicas[0].v.replica.proposer.request_queue| == 0
-
+    && |s.t_replicas[0].v.replica.proposer.request_queue| == 0
     && GenericPhase2UndeliveredPacketInvariant(s.undeliveredPackets, s.constants, req_time, opn, t2a, progresses)
   )
 
@@ -390,8 +389,8 @@ predicate Phase2AcceptedLeaderInvariant(s:TimestampedRslState, req_time:Timestam
     )
 
     && (opn in s.t_replicas[0].v.replica.learner.unexecuted_learner_state ==>
-    && s.t_replicas[0].v.replica.learner.max_ballot_seen == Ballot(1, 0)
-    && (forall id :: id in s.t_replicas[0].v.replica.learner.unexecuted_learner_state[opn].received_2b_message_senders ==> id in s.constants.config.replica_ids)
+      && s.t_replicas[0].v.replica.learner.max_ballot_seen == Ballot(1, 0)
+      && (forall id :: id in s.t_replicas[0].v.replica.learner.unexecuted_learner_state[opn].received_2b_message_senders ==> id in s.constants.config.replica_ids)
       && (forall id :: id in s.t_replicas[0].v.replica.learner.unexecuted_learner_state[opn].received_2b_message_senders ==> progresses[id] == P2done)
     )
 
@@ -409,434 +408,434 @@ predicate Phase2CompletedInvariant(s:TimestampedRslState, req_time:Timestamp, op
     )
 }
 
-lemma {:verify false} lemma_leader_3_Pre2aGoesToPhase2UnacceptedLeader(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber) returns
-  (progresses':map<NodeIdentity,Phase2Progress>, t2a:Timestamp)
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
+// lemma {:verify false} lemma_leader_3_Pre2aGoesToPhase2UnacceptedLeader(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber) returns
+//   (progresses':map<NodeIdentity,Phase2Progress>, t2a:Timestamp)
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
 
-  requires j == 0;
+//   requires j == 0;
 
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(3);
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep == RslStep(3);
 
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires Pre2aInvariant(s, req_time, opn)
-  ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  var t_ios := s.t_environment.nextStep.ios;
-  var ios := UntagLIoOpSeq(t_ios);
-  var sent_packets := ExtractSentPacketsFromIos(ios);
+//   requires Pre2aInvariant(s, req_time, opn)
+//   ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   var t_ios := s.t_environment.nextStep.ios;
+//   var ios := UntagLIoOpSeq(t_ios);
+//   var sent_packets := ExtractSentPacketsFromIos(ios);
 
-  // assert exists pkt :: LIoOpSend(pkt) in t_ios;
-  // assert exists pkt:TimestampedRslPacket :: pkt.msg.v.RslMessage_2a? && pkt.dst == s.constants.config.replica_ids[j] && LIoOpSend(pkt) in t_ios;
+//   // assert exists pkt :: LIoOpSend(pkt) in t_ios;
+//   // assert exists pkt:TimestampedRslPacket :: pkt.msg.v.RslMessage_2a? && pkt.dst == s.constants.config.replica_ids[j] && LIoOpSend(pkt) in t_ios;
 
-  var i := 0;
-  progresses' := map[];
+//   var i := 0;
+//   progresses' := map[];
   
-  while i < |s.constants.config.replica_ids|
-    invariant 0 <= i <= |s.constants.config.replica_ids|;
-    invariant (forall id :: id in progresses'.Keys <==> id in s.constants.config.replica_ids[..i]);
-    invariant (forall id :: id in progresses'
-      ==>
-      && progresses'[id].P2a? && progresses'[id].pkt in s'.undeliveredPackets
-      && progresses'[id].pkt.msg.v.RslMessage_2a? && progresses'[id].pkt.dst == id
-    );
-  {
-    var untagged_pkt := sent_packets[i];
-    var k:int :| 0 <= k < |ios| && ios[k] == LIoOpSend(sent_packets[i]);
-    var pkt := t_ios[k].s;
-
-    progresses' := progresses'[s.constants.config.replica_ids[i] := P2a(pkt)];
-    i := i + 1;
-  }
-  t2a := s'.t_replicas[0].ts;
-}
-
-lemma lemma_notleader_notreceive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j > 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep != RslStep(0);
-  // requires s.t_environment.nextStep.nodeStep == RslStep(6);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-  var t_ios := s.t_environment.nextStep.ios;
-  var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(t_ios));
-  assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
-
-
-  if (LExecutorExecute.requires(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)
-  && LExecutorExecute(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)) {
-    var e := s.t_replicas[j].v.replica.executor;
-    var e' := s'.t_replicas[j].v.replica.executor;
-    var batch := e.next_op_to_execute.v;
-    var temp := HandleRequestBatch(e.app, batch);
-    var new_state := temp.0[|temp.0|-1];
-    var replies := temp.1;
-
-    assert sent_packets == GetPacketsFromReplies(e.constants.all.config.replica_ids[e.constants.my_index], batch, replies);
-
-    forall i | 0 <= i < |sent_packets|
-      ensures sent_packets[i].dst in s.constants.config.clientIds
-      ensures sent_packets[i].dst !in s.constants.config.replica_ids
-    {
-      lemma_SizeOfGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets);
-      lemma_SpecificPacketInGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets, i);
-      assert sent_packets[i] == LPacket(batch[i].client, s.constants.config.replica_ids[j], RslMessage_Reply(batch[i].seqno, replies[i].reply));
-    }
-  } else {}
-}
-
-lemma lemma_notleader_receive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j > 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(0);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_PacketDeliveredInOrder();
-  reveal_Progress2aProperty();
-
-  progresses' := progresses;
-
-  var ios := s.t_environment.nextStep.ios;
-  assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
-  progresses' := progresses;
-  SelectiveProgress2aProperty(progresses, s.constants.config.replica_ids[j], s.undeliveredPackets);
-  if !progresses[s.constants.config.replica_ids[j]].P2a? {
-    progresses' := progresses;
-  }
-  else {
-    if ios[0].LIoOpReceive? {
-      var pkt_2a := progresses[s.constants.config.replica_ids[j]].pkt;
-
-      if ios[0].r.msg.v.RslMessage_2b? {
-        assert ios[0].r.msg.ts <= pkt_2a.msg.ts;
-        assert pkt_2a.msg.ts < t2a + D;
-        assert t2a + 2*minD < ios[0].r.msg.ts;
-        assert false;
-      }
-
-      assert (ios[0].r.msg.v.RslMessage_2a?);
-      // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
-      progresses' := progresses[s.constants.config.replica_ids[j] := P2b];
-
-      assert Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
-    }
-  }
-}
-
-lemma lemma_leader_notreceive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j == 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep != RslStep(0);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-}
-
-lemma lemma_leader_receive_P2UnacceptedGoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j == 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(0);
-  // this is a LReplicaNextProcessPacket(s.replica, s'.replica, ios) step
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses') || Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-
-  reveal_PacketDeliveredInOrder();
-  var ios := s.t_environment.nextStep.ios;
-  var pkt_2a := progresses[s.constants.config.replica_ids[0]].pkt;
-  if ios[0].LIoOpReceive? {
-    if ios[0].r.msg.v.RslMessage_2b? {
-      assert ios[0].r.msg.ts <= pkt_2a.msg.ts;
-      assert pkt_2a.msg.ts <= t2a + D;
-      assert t2a + 2*minD < ios[0].r.msg.ts;
-      assert false;
-    }
-    assert ios[0].r == pkt_2a;
-    assert ios[0].r.src == s.constants.config.replica_ids[0];
-    // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0) + TimeActionRange(0));
-    progresses' := progresses[s.constants.config.replica_ids[0] := P2b];
-    // assert s.t_replicas[0].ts <= s.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex);
-    // assert s'.t_replicas[0].ts <= s'.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
-    assert s'.t_replicas[0].ts <= ios[0].r.msg.ts + MaxQueueTime + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
-    assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
-
-  } else {
-    progresses' := progresses;
-  }
-}
-
-lemma lemma_notleader_notreceive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j > 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep != RslStep(0);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-  var t_ios := s.t_environment.nextStep.ios;
-  var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(t_ios));
-  assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
-
-  if (LExecutorExecute.requires(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)
-  && LExecutorExecute(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)) {
-    var e := s.t_replicas[j].v.replica.executor;
-    var e' := s'.t_replicas[j].v.replica.executor;
-    var batch := e.next_op_to_execute.v;
-    var temp := HandleRequestBatch(e.app, batch);
-    var new_state := temp.0[|temp.0|-1];
-    var replies := temp.1;
-
-    assert sent_packets == GetPacketsFromReplies(e.constants.all.config.replica_ids[e.constants.my_index], batch, replies);
-
-    forall i |
-      0 <= i < |sent_packets|
-
-      ensures sent_packets[i].dst in s.constants.config.clientIds
-      ensures sent_packets[i].dst !in s.constants.config.replica_ids
-    {
-      lemma_SizeOfGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets);
-      lemma_SpecificPacketInGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets, i);
-      assert sent_packets[i].dst == batch[i].client;
-      assert batch[i].client in s.constants.config.clientIds;
-    }
-  } else {
-  }
-}
-
-lemma lemma_notleader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j > 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(0);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_PacketDeliveredInOrder();
-  reveal_Progress2aProperty();
-
-  progresses' := progresses;
-
-  var ios := s.t_environment.nextStep.ios;
-  assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
-  progresses' := progresses;
-  SelectiveProgress2aProperty(progresses, s.constants.config.replica_ids[j], s.undeliveredPackets);
-  if !progresses[s.constants.config.replica_ids[j]].P2a? {
-    progresses' := progresses;
-  }
-  else {
-    if ios[0].LIoOpReceive? {
-      var pkt_2a := progresses[s.constants.config.replica_ids[j]].pkt;
-
-      if ios[0].r.msg.v.RslMessage_2b? {
-        assert ios[0].r.msg.ts <= pkt_2a.msg.ts;
-        assert pkt_2a.msg.ts < t2a + D;
-        assert t2a + 2*minD < ios[0].r.msg.ts;
-        assert false;
-      }
-
-      assert (ios[0].r.msg.v.RslMessage_2a?);
-      // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
-      progresses' := progresses[s.constants.config.replica_ids[j] := P2b];
-      assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
-    }
-  }
-}
-
-lemma lemma_leader_notreceiveOrExecute_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j == 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep != RslStep(0);
-  requires s.t_environment.nextStep.nodeStep != RslStep(6);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-}
-
-lemma lemma_leader_execute_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j == 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(6);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses') || Phase2CompletedInvariant(s', req_time, opn)
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-
-  if (Get2bCount(s.t_replicas[0].v.replica, opn) >= LMinQuorumSize(s.constants.config)) {
-    assert Get2bCount(s.t_replicas[0].v.replica, opn) == LMinQuorumSize(s.constants.config);
-    assert TimeLe(s.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s.t_replicas[0].v.nextActionIndex));
-    assert TimeLe(s'.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s'.t_replicas[0].v.nextActionIndex));
-    assert s'.t_replicas[0].v.nextActionIndex == 7;
-    assert s'.t_replicas[0].ts <= TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7);
-    assert Phase2CompletedInvariant(s', req_time, opn);
-  } else {
-    assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
-  }
-}
-
-
-lemma lemma_leader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
-  returns (progresses':map<NodeIdentity,Phase2Progress>)
-
-  requires RslAssumption(s);
-  requires RslAssumption(s');
-  requires RslConsistency(s);
-  requires RslConsistency(s');
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires j == 0;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-  requires s.t_environment.nextStep.nodeStep == RslStep(0);
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
-  ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
-{
-  reveal_Progress2aProperty();
-  progresses' := progresses;
-
-  var ios := s.t_environment.nextStep.ios;
-  if ios[0].LIoOpReceive? {
-    assert ios[0].r.msg.v.RslMessage_2b?;
-    var size := Get2bCount(s.t_replicas[0].v.replica, opn);
-    var size' := Get2bCount(s'.t_replicas[0].v.replica, opn);
-    assert size' == size + 1;
+//   while i < |s.constants.config.replica_ids|
+//     invariant 0 <= i <= |s.constants.config.replica_ids|;
+//     invariant (forall id :: id in progresses'.Keys <==> id in s.constants.config.replica_ids[..i]);
+//     invariant (forall id :: id in progresses'
+//       ==>
+//       && progresses'[id].P2a? && progresses'[id].pkt in s'.undeliveredPackets
+//       && progresses'[id].pkt.msg.v.RslMessage_2a? && progresses'[id].pkt.dst == id
+//     );
+//   {
+//     var untagged_pkt := sent_packets[i];
+//     var k:int :| 0 <= k < |ios| && ios[k] == LIoOpSend(sent_packets[i]);
+//     var pkt := t_ios[k].s;
+
+//     progresses' := progresses'[s.constants.config.replica_ids[i] := P2a(pkt)];
+//     i := i + 1;
+//   }
+//   t2a := s'.t_replicas[0].ts;
+// }
+
+// lemma lemma_notleader_notreceive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j > 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep != RslStep(0);
+//   // requires s.t_environment.nextStep.nodeStep == RslStep(6);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+//   var t_ios := s.t_environment.nextStep.ios;
+//   var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(t_ios));
+//   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
+
+
+//   if (LExecutorExecute.requires(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)
+//   && LExecutorExecute(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)) {
+//     var e := s.t_replicas[j].v.replica.executor;
+//     var e' := s'.t_replicas[j].v.replica.executor;
+//     var batch := e.next_op_to_execute.v;
+//     var temp := HandleRequestBatch(e.app, batch);
+//     var new_state := temp.0[|temp.0|-1];
+//     var replies := temp.1;
+
+//     assert sent_packets == GetPacketsFromReplies(e.constants.all.config.replica_ids[e.constants.my_index], batch, replies);
+
+//     forall i | 0 <= i < |sent_packets|
+//       ensures sent_packets[i].dst in s.constants.config.clientIds
+//       ensures sent_packets[i].dst !in s.constants.config.replica_ids
+//     {
+//       lemma_SizeOfGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets);
+//       lemma_SpecificPacketInGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets, i);
+//       assert sent_packets[i] == LPacket(batch[i].client, s.constants.config.replica_ids[j], RslMessage_Reply(batch[i].seqno, replies[i].reply));
+//     }
+//   } else {}
+// }
+
+// lemma lemma_notleader_receive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j > 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep == RslStep(0);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_PacketDeliveredInOrder();
+//   reveal_Progress2aProperty();
+
+//   progresses' := progresses;
+
+//   var ios := s.t_environment.nextStep.ios;
+//   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
+//   progresses' := progresses;
+//   SelectiveProgress2aProperty(progresses, s.constants.config.replica_ids[j], s.undeliveredPackets);
+//   if !progresses[s.constants.config.replica_ids[j]].P2a? {
+//     progresses' := progresses;
+//   }
+//   else {
+//     if ios[0].LIoOpReceive? {
+//       var pkt_2a := progresses[s.constants.config.replica_ids[j]].pkt;
+
+//       if ios[0].r.msg.v.RslMessage_2b? {
+//         assert ios[0].r.msg.ts <= pkt_2a.msg.ts;
+//         assert pkt_2a.msg.ts < t2a + D;
+//         assert t2a + 2*minD < ios[0].r.msg.ts;
+//         assert false;
+//       }
+
+//       assert (ios[0].r.msg.v.RslMessage_2a?);
+//       // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
+//       progresses' := progresses[s.constants.config.replica_ids[j] := P2b];
+
+//       assert Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
+//     }
+//   }
+// }
+
+// lemma lemma_leader_notreceive_P2UnacceptedGoesToP2Unaccepted(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j == 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep != RslStep(0);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+// }
+
+// lemma lemma_leader_receive_P2UnacceptedGoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j == 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep == RslStep(0);
+//   // this is a LReplicaNextProcessPacket(s.replica, s'.replica, ios) step
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2UnacceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2UnacceptedLeaderInvariant(s', req_time, opn, t2a, progresses') || Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+
+//   reveal_PacketDeliveredInOrder();
+//   var ios := s.t_environment.nextStep.ios;
+//   var pkt_2a := progresses[s.constants.config.replica_ids[0]].pkt;
+//   if ios[0].LIoOpReceive? {
+//     if ios[0].r.msg.v.RslMessage_2b? {
+//       assert ios[0].r.msg.ts <= pkt_2a.msg.ts;
+//       assert pkt_2a.msg.ts <= t2a + D;
+//       assert t2a + 2*minD < ios[0].r.msg.ts;
+//       assert false;
+//     }
+//     assert ios[0].r == pkt_2a;
+//     assert ios[0].r.src == s.constants.config.replica_ids[0];
+//     // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0) + TimeActionRange(0));
+//     progresses' := progresses[s.constants.config.replica_ids[0] := P2b];
+//     // assert s.t_replicas[0].ts <= s.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(s.t_replicas[0].v.nextActionIndex);
+//     // assert s'.t_replicas[0].ts <= s'.t_replicas[0].dts + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
+//     assert s'.t_replicas[0].ts <= ios[0].r.msg.ts + MaxQueueTime + TimeActionRange(0) + TimeActionRange(0) + ProcessPacket;
+//     assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
+
+//   } else {
+//     progresses' := progresses;
+//   }
+// }
+
+// lemma lemma_notleader_notreceive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j > 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep != RslStep(0);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+//   var t_ios := s.t_environment.nextStep.ios;
+//   var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(t_ios));
+//   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
+
+//   if (LExecutorExecute.requires(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)
+//   && LExecutorExecute(s.t_replicas[j].v.replica.executor, s'.t_replicas[j].v.replica.executor, sent_packets)) {
+//     var e := s.t_replicas[j].v.replica.executor;
+//     var e' := s'.t_replicas[j].v.replica.executor;
+//     var batch := e.next_op_to_execute.v;
+//     var temp := HandleRequestBatch(e.app, batch);
+//     var new_state := temp.0[|temp.0|-1];
+//     var replies := temp.1;
+
+//     assert sent_packets == GetPacketsFromReplies(e.constants.all.config.replica_ids[e.constants.my_index], batch, replies);
+
+//     forall i |
+//       0 <= i < |sent_packets|
+
+//       ensures sent_packets[i].dst in s.constants.config.clientIds
+//       ensures sent_packets[i].dst !in s.constants.config.replica_ids
+//     {
+//       lemma_SizeOfGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets);
+//       lemma_SpecificPacketInGetPacketsFromReplies(s.constants.config.replica_ids[j], batch, replies, sent_packets, i);
+//       assert sent_packets[i].dst == batch[i].client;
+//       assert batch[i].client in s.constants.config.clientIds;
+//     }
+//   } else {
+//   }
+// }
+
+// lemma lemma_notleader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j > 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep == RslStep(0);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_PacketDeliveredInOrder();
+//   reveal_Progress2aProperty();
+
+//   progresses' := progresses;
+
+//   var ios := s.t_environment.nextStep.ios;
+//   assert ReplicasDistinct(s.constants.config.replica_ids, 0, j);
+//   progresses' := progresses;
+//   SelectiveProgress2aProperty(progresses, s.constants.config.replica_ids[j], s.undeliveredPackets);
+//   if !progresses[s.constants.config.replica_ids[j]].P2a? {
+//     progresses' := progresses;
+//   }
+//   else {
+//     if ios[0].LIoOpReceive? {
+//       var pkt_2a := progresses[s.constants.config.replica_ids[j]].pkt;
+
+//       if ios[0].r.msg.v.RslMessage_2b? {
+//         assert ios[0].r.msg.ts <= pkt_2a.msg.ts;
+//         assert pkt_2a.msg.ts < t2a + D;
+//         assert t2a + 2*minD < ios[0].r.msg.ts;
+//         assert false;
+//       }
+
+//       assert (ios[0].r.msg.v.RslMessage_2a?);
+//       // BoundedLagImpliesBoundedProcessingTime(s.t_replicas[j].dts, s.t_replicas[j].ts, ios[0].r.msg.ts, s'.t_replicas[j].ts, TimeActionRange(0));
+//       progresses' := progresses[s.constants.config.replica_ids[j] := P2b];
+//       assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
+//     }
+//   }
+// }
+
+// lemma lemma_leader_notreceiveOrExecute_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j == 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep != RslStep(0);
+//   requires s.t_environment.nextStep.nodeStep != RslStep(6);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+// }
+
+// lemma lemma_leader_execute_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j == 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep == RslStep(6);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses') || Phase2CompletedInvariant(s', req_time, opn)
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+
+//   if (Get2bCount(s.t_replicas[0].v.replica, opn) >= LMinQuorumSize(s.constants.config)) {
+//     assert Get2bCount(s.t_replicas[0].v.replica, opn) == LMinQuorumSize(s.constants.config);
+//     assert TimeLe(s.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s.t_replicas[0].v.nextActionIndex));
+//     assert TimeLe(s'.t_replicas[0].ts, TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), s'.t_replicas[0].v.nextActionIndex));
+//     assert s'.t_replicas[0].v.nextActionIndex == 7;
+//     assert s'.t_replicas[0].ts <= TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7);
+//     assert Phase2CompletedInvariant(s', req_time, opn);
+//   } else {
+//     assert Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses');
+//   }
+// }
+
+
+// lemma lemma_leader_receive_P2GoesToP2(s:TimestampedRslState, s':TimestampedRslState, j:int, req_time:Timestamp, opn:OperationNumber, t2a:Timestamp, progresses:map<NodeIdentity, Phase2Progress>)
+//   returns (progresses':map<NodeIdentity,Phase2Progress>)
+
+//   requires RslAssumption(s);
+//   requires RslAssumption(s');
+//   requires RslConsistency(s);
+//   requires RslConsistency(s');
+//   requires 0 <= j < |s.constants.config.replica_ids|;
+
+//   requires j == 0;
+
+//   requires s.t_environment.nextStep.LEnvStepHostIos?;
+//   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+//   requires s.t_environment.nextStep.nodeStep == RslStep(0);
+
+//   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+//   requires Phase2AcceptedLeaderInvariant(s, req_time, opn, t2a, progresses)
+//   ensures Phase2AcceptedLeaderInvariant(s', req_time, opn, t2a, progresses')
+// {
+//   reveal_Progress2aProperty();
+//   progresses' := progresses;
+
+//   var ios := s.t_environment.nextStep.ios;
+//   if ios[0].LIoOpReceive? {
+//     assert ios[0].r.msg.v.RslMessage_2b?;
+//     var size := Get2bCount(s.t_replicas[0].v.replica, opn);
+//     var size' := Get2bCount(s'.t_replicas[0].v.replica, opn);
+//     assert size' == size + 1;
     
-    // BoundedSizeLagImpliesBoundedProcessingTime(s.t_replicas[0].dts,
-    //   s.t_replicas[0].ts,
-    //   ios[0].r.msg.ts,
-    //   s'.t_replicas[0].ts,
-    //   size + 2
-    //   );
-    progresses' := progresses[ios[0].r.src := P2done];
-  } else {
-    progresses' := progresses;
-    // LeaderTimeoutPreservesPhase2Invariant(s'.t_replicas[0].dts, s'.t_replicas[0].v.nextActionIndex);
-  }
-}
+//     // BoundedSizeLagImpliesBoundedProcessingTime(s.t_replicas[0].dts,
+//     //   s.t_replicas[0].ts,
+//     //   ios[0].r.msg.ts,
+//     //   s'.t_replicas[0].ts,
+//     //   size + 2
+//     //   );
+//     progresses' := progresses[ios[0].r.src := P2done];
+//   } else {
+//     progresses' := progresses;
+//     // LeaderTimeoutPreservesPhase2Invariant(s'.t_replicas[0].dts, s'.t_replicas[0].v.nextActionIndex);
+//   }
+// }
 
 }
