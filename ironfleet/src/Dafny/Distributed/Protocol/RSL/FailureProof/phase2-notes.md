@@ -1,4 +1,4 @@
-## Preconditions
+## Old Invariant
 
 * `RslAssumption`
     * `RslConsistency`
@@ -67,26 +67,6 @@
         * `ProposedLeaderNextOperationNumberInvariant`
 
 
-## Notes
-
-* What ballot comes after the initial Ballot `(0, 1)`?
-    * Ballot is of type `Ballot(seqno:int, proposer_id:int)`
-    * The function `ComputeSuccessorView` increases the `proposer_id` field if the resulting number is a valid replica. Else, it increases `seqno` while resetting `proposer_id` to zero.
-    * Hence, the Ballot after `(0, 1)` is `(1, 1)`.
-* What is `proposer.request_queue`?
-    * As defined in proposer, it is "Values that clients have requested that I need to eventually
-    propose, in the order I should propose them"
-* Why is it part of the old invariant that the leader always has an empty `request_queue`? Shouldn't it get filled up when it gets a client request?
-    * `request_queue` gets appended to when a new client request is received.
-    * When are items removed from the queue? When the leader sends 2a messages
-    * Not sure why we can say that it is always empty though. 
-
-
-* Who does client send requests to?
-    * Client sends request to server 0. When server 0 fails, it tries server 1.
-* The question becomes, after server 0 fails, how does server 1 learn of a pending request? Is it solely through client re-transmission?
-
-
 ## Flow of Client Request in Phase 2
 
 ### Leader Receiving a Request from Client
@@ -152,7 +132,7 @@
 
 ## Flow of Client Request in Phase 1
 
-### Leader Entering New View 
+### Leader Starting His Reign
 
 1. Server runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
 2. The action of interest is number 1: `LReplicaNextSpontaneousMaybeEnterNewViewAndSend1a`
@@ -191,3 +171,70 @@
 5. Servers receiving this state suppy runs `LExecutorProcessAppStateSupply`
 
 
+## Failure Detection
+
+### Server Sending and Receiving Heartbeats
+
+1. Server runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
+2. The action of interest is number 9: `LReplicaNextReadClockMaybeSendHeartbeat`
+3. Heartbeat contains
+    * `election_state.current_view`
+    * Boolean indicating if I suspect the current view
+    * `s.executor.ops_complete`
+
+1. Server runs `LSchedulerNext`, and enters the sub-clause `LReplicaNextProcessHeartbeat`
+2. First, server runs `LProposerProcessHeartbeat`. This runs `ElectionStateProcessHeartbeat` to update election state
+    * If heartbeat indicates that sender suspects the current view, add the source to `es.current_view_suspectors`
+    * If heartbeat indicates that sender is in a larger view, then update my current view to match
+3. If current view is increased, then set `current_state == 0` to downgrade to follower status, and reset `request_queue`
+4. Next, server runs `LAcceptorProcessHeartbeat`. This does some checkpointing stuff
+
+### Server Triggering View Change
+     
+1. Server runs `LSchedulerNext`, of the `LReplicaNoReceiveNext` variety.
+2. The action of interest is number 8: `LReplicaNextReadClockCheckForQuorumOfViewSuspicions`.
+3. This runs `ElectionStateCheckForQuorumOfViewSuspicions`. If I amassed a quorum of suspectors, then 
+    * Increment view to `ComputeSuccessorView(es.current_view, es.constants.all)`
+    * Set `current_view_suspectors` to empty
+    * Update `requests_received_prev_epochs` and `requests_received_this_epoch`
+4. If current view is increased, then set `current_state == 0` to downgrade to follower status, and reset `request_queue`
+
+
+At what point will I suspect the current leader?
+
+## New Initial State
+
+* Leader's set of 1b packets have the original client request to be proposed
+* Every packet at genesis has some initial time bound. By simple rules, no need such bound for nodes
+* Every 2a packet has ballot (1, 1) or (1, 0).
+* Leader has election state and view (1, 1).
+
+
+## Goal: First Figure Out TimeBound2aDelivery
+
+
+## Notes
+
+* What ballot comes after the initial Ballot `(0, 1)`?
+    * Ballot is of type `Ballot(seqno:int, proposer_id:int)`
+    * The function `ComputeSuccessorView` increases the `proposer_id` field if the resulting number is a valid replica. Else, it increases `seqno` while resetting `proposer_id` to zero.
+    * Hence, the Ballot after `(0, 1)` is `(1, 1)`.
+* What is `proposer.request_queue`?
+    * As defined in proposer, it is "Values that clients have requested that I need to eventually
+    propose, in the order I should propose them"
+* Why is it part of the old invariant that the leader always has an empty `request_queue`? Shouldn't it get filled up when it gets a client request?
+    * `request_queue` gets appended to when a new client request is received.
+    * When are items removed from the queue? When the leader sends 2a messages
+    * Not sure why we can say that it is always empty though. 
+
+
+* Who does client send requests to?
+    * Client sends request to server 0. When server 0 fails, it tries server 1.
+* The question becomes, after server 0 fails, how does server 1 learn of a pending request? Is it solely through client re-transmission?
+    * That, *and* it can maybe see it accepted by some acceptor through phase 1.
+
+
+
+## Misc 
+
+/home/nudzhang/Documents/pitometer/ironfleet/src/Dafny/Distributed/Protocol/RSL/FailureProof
