@@ -18,13 +18,13 @@ import opened CommonProof__Constants_i
 *****************************************************************************************/
 
 /* Main performance guarantee for phase 2 post-failure */
-predicate PerformanceGuarantee(s:TimestampedRslState, req_time:Timestamp){
-    && PerformanceGuarantee_Response(s, req_time)
-    && PerformanceGuarantee_2b(s, req_time)
-    && PerformanceGuarantee_2a(s, req_time)
+predicate PerformanceGuarantee(s:TimestampedRslState){
+    && PerformanceGuarantee_Response(s)
+    && PerformanceGuarantee_2b(s)
+    && PerformanceGuarantee_2a(s)
 }
 
-predicate PerformanceGuarantee_Response(s:TimestampedRslState, req_time:Timestamp) {
+predicate PerformanceGuarantee_Response(s:TimestampedRslState) {
     // 0 < |s.constants.config.replica_ids|
     //     && (forall pkt :: 
     //             && pkt in s.undeliveredPackets
@@ -33,18 +33,25 @@ predicate PerformanceGuarantee_Response(s:TimestampedRslState, req_time:Timestam
     //             ==>
     //             TimeLe(pkt.msg.ts, TimeBoundReply(req_time, s.constants))
     //     )
-    false
-    // TODO
+    //TODO
+    true
 }
 
-predicate PerformanceGuarantee_2b(b:TimestampedRslState, req_time:Timestamp) {
+predicate PerformanceGuarantee_2b(b:TimestampedRslState) {
     // TODO
-    false
+    true
 }
 
-predicate PerformanceGuarantee_2a(s:TimestampedRslState, req_time:Timestamp) {
-    // TODO
-    false
+predicate PerformanceGuarantee_2a(s:TimestampedRslState) {
+    forall pkt {:trigger pkt.msg.v.RslMessage_2a?} | 
+        && pkt in s.undeliveredPackets 
+        && pkt.msg.v.RslMessage_2a?
+        && pkt.msg.v.bal_2a == Ballot(1, 1)
+    :: TimeLe(pkt.msg.ts, TimeBound2aDeliveryPost())
+}
+
+function TimeBound2aDeliveryPost() : Timestamp {
+    NewLeaderInitTS + TimeActionRange(0) + TimeActionRange(4) + D
 }
 
 /*****************************************************************************************
@@ -54,6 +61,7 @@ predicate PerformanceGuarantee_2a(s:TimestampedRslState, req_time:Timestamp) {
 /* Conjunction of all assumptions */
 predicate RslAssumption(s:TimestampedRslState)
 {
+    && RelationsAssumptions()
     && RslConsistency(s)
     && NoPacketDuplication(s)
     && |s.t_replicas| > 2  // For failure to be meaningful
@@ -70,6 +78,12 @@ predicate RslAssumption(s:TimestampedRslState)
     && BoundedQueueingAssumption(s)
 }
 
+predicate RelationsAssumptions() {
+    && TimeLe(req_time, NewLeaderInitTS)
+    && TimeLe(Old_1aTS + MaxQueueTime + ProcessPacket + D, Old_1bTS)
+    && TimeLe(Old_2aTS + MaxQueueTime + ProcessPacket + TimeActionRange(0) + D, Old_2bTS)
+}
+
 predicate LeaderAlwaysOne(s:TimestampedRslState) 
     requires |s.t_replicas| > 2
 {
@@ -78,6 +92,7 @@ predicate LeaderAlwaysOne(s:TimestampedRslState)
     && s.t_replicas[1].v.replica.proposer.current_state == 2
     && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
 }
+
 predicate NoExternalPackets(s:TimestampedRslState) {
     forall pkt | pkt in s.undeliveredPackets ::
         && pkt in s.t_environment.sentPackets
@@ -132,32 +147,46 @@ ghost const Old_2aTS:Timestamp
 ghost const Old_2bTS:Timestamp
 ghost const Old_1aTS:Timestamp
 ghost const Old_1bTS:Timestamp
-ghost const Old_hbTS:Timestamp
 /* Initial timestamp of replica 1 */
 ghost const NewLeaderInitTS:Timestamp
 
 
+predicate RslPerfInvariant(s:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+    requires |s.t_replicas| > 2
+{
+    && RslConsistency(s)
+    && BoundaryConditionInvariant(s)
+    && PerformanceGuarantee(s)
+}
 
 
+//  Invariant of starting state of Phase2 proof
 predicate BoundaryConditionInvariant(s:TimestampedRslState) 
     requires |s.t_replicas| > 2
 {
     && BoundaryConditionInvariant_ExistingPacketsBallot(s)
     && BoundaryConditionInvariant_ExistingPacketsTS(s)
-    && BoundaryConditionInvariant_NewLeader(s)
+    // && BoundaryConditionInvariant_NewLeader(s)
 }
 
 predicate BoundaryConditionInvariant_ExistingPacketsTS(s:TimestampedRslState) {
-    forall pkt | pkt in s.undeliveredPackets :: 
+    forall pkt | pkt in s.undeliveredPackets :: Boundary_ExistingPacketsTS(pkt)
+}
+
+predicate BoundaryConditionInvariant_ExistingPacketsBallot(s:TimestampedRslState) {
+    forall pkt | pkt in s.undeliveredPackets :: Boundary_ExistingPacketsBallot(pkt)
+}
+
+predicate Boundary_ExistingPacketsTS(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
     match pkt.msg.v {
         case RslMessage_1a(_)               => TimeLe(pkt.msg.ts, Old_1aTS) 
         case RslMessage_1b(_,_,_)           => TimeLe(pkt.msg.ts, Old_1bTS) 
         case RslMessage_2a(bal_2a,_,_)      => bal_2a == Ballot(1, 0)  ==> TimeLe(pkt.msg.ts, Old_2aTS) 
         case RslMessage_2b(bal_2b,_,_)      => bal_2b == Ballot(1, 0)  ==> TimeLe(pkt.msg.ts, Old_2bTS) 
-        case RslMessage_Heartbeat(_,_,_)    => TimeLe(pkt.msg.ts, Old_hbTS) 
         case RslMessage_Request(_,_)        => TimeLe(pkt.msg.ts, req_time) 
 
         // Cases where I don't care
+        case RslMessage_Heartbeat(_,_,_)        => true
         case RslMessage_Invalid                 => true
         case RslMessage_Reply(_,_)              => true
         case RslMessage_AppStateRequest(_,_)    => true
@@ -166,8 +195,7 @@ predicate BoundaryConditionInvariant_ExistingPacketsTS(s:TimestampedRslState) {
     }
 }
 
-predicate BoundaryConditionInvariant_ExistingPacketsBallot(s:TimestampedRslState) {
-    forall pkt | pkt in s.undeliveredPackets :: 
+predicate Boundary_ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
     match pkt.msg.v {
         // All 1a and 1b packets have Ballot (1, 1)
         case RslMessage_1a(bal_1a)              => bal_1a == Ballot(1, 1) 
@@ -175,10 +203,9 @@ predicate BoundaryConditionInvariant_ExistingPacketsBallot(s:TimestampedRslState
         // All 2a and 2b messages have Ballot(1, 0) or (1, 1)
         case RslMessage_2a(bal_2a,_,_)          => bal_2a == Ballot(1, 0) || bal_2a == Ballot(1, 1)
         case RslMessage_2b(bal_2b,_,_)          => bal_2b == Ballot(1, 0) || bal_2b == Ballot(1, 1)
-        // All heartbeat messages have Ballot(1, 0)
-        case RslMessage_Heartbeat(bal_hb,_,_)   => bal_hb == Ballot(1, 0)
 
         // Cases where I don't care
+        case RslMessage_Heartbeat(_,_,_)   => true
         case RslMessage_Invalid                 => true
         case RslMessage_Request(_,_)            => true
         case RslMessage_Reply(_,_)              => true
@@ -189,11 +216,10 @@ predicate BoundaryConditionInvariant_ExistingPacketsBallot(s:TimestampedRslState
 }
 
 
-predicate BoundaryConditionInvariant_NewLeader(s:TimestampedRslState) 
+predicate LeaderYetReceived2b(s:TimestampedRslState) 
     requires |s.t_replicas| > 2
 {
-    TimeLe(s.t_replicas[1].ts, NewLeaderInitTS)
+    s.t_replicas[1].v.replica.proposer.received_1b_packets == {}
 }
-
 
 }
