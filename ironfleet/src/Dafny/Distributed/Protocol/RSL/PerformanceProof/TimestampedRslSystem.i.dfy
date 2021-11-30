@@ -123,7 +123,7 @@ predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRs
     && ps'.t_replicas == ps.t_replicas[idx := ps'.t_replicas[idx]]
 
     && var hstep := ps.t_environment.nextStep.nodeStep;
-    (if |ios| > 0 && ios[0].LIoOpReceive? then
+    && (if |ios| > 0 && ios[0].LIoOpReceive? then
       && ios[0] in ios
       && ps'.t_replicas[idx].ts == Rsl_RecvPerfUpdate(ps.t_replicas[idx].ts, ios[0].r.msg.ts, hstep)
       && (ps.t_replicas[idx].dts <= ios[0].r.msg.ts <= ps.t_replicas[idx].ts + Timeout())
@@ -134,9 +134,9 @@ predicate TimestampedRslNextOneReplica(ps:TimestampedRslState, ps':TimestampedRs
     else
       && ps'.t_replicas[idx].ts == Rsl_NoRecvPerfUpdate(ps.t_replicas[idx].ts, hstep)
       && ps'.t_replicas[idx].dts == ps.t_replicas[idx].dts
-      )
-
-      && (forall io :: io in ios && io.LIoOpSend? ==>
+    )
+    
+    && (forall io :: io in ios && io.LIoOpSend? ==>
           io.s.msg.ts  ==
           (if io.s.src == io.s.dst then ps'.t_replicas[idx].ts + SelfDelivery else ps'.t_replicas[idx].ts + D)
       )
