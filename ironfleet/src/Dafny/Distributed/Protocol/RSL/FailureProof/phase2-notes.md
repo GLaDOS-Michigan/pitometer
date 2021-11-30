@@ -208,12 +208,15 @@ At what point will I suspect the current leader?
 * Every packet at genesis has some initial time bound. By simple rules, no need such bound for nodes
 * Every 2a packet has ballot (1, 1) or (1, 0).
 * Leader has election state and view (1, 1).
+* No response to client in the system.
 
 
 ## Goal: First Figure Out TimeBound2aDelivery
 
 
 ## Notes
+
+### Resolved
 
 * What ballot comes after the initial Ballot `(0, 1)`?
     * Ballot is of type `Ballot(seqno:int, proposer_id:int)`
@@ -226,15 +229,52 @@ At what point will I suspect the current leader?
     * `request_queue` gets appended to when a new client request is received.
     * When are items removed from the queue? When the leader sends 2a messages
     * Not sure why we can say that it is always empty though. 
-
-
 * Who does client send requests to?
     * Client sends request to server 0. When server 0 fails, it tries server 1.
 * The question becomes, after server 0 fails, how does server 1 learn of a pending request? Is it solely through client re-transmission?
     * That, *and* it can maybe see it accepted by some acceptor through phase 1.
+
+### Pending
+
+* What happens when I get a timeout `LIoOpTimeoutReceive`?
+* acceptor and nodes highest ballot is (1, 1) should be some kind of invariant?
+* May want to say that `Old_1bTS` is `Old_1aTS + proc_1a + D` 
+* May want to say that `Old_2bTS` is `Old_2aTS + proc_2a + D` 
 
 
 
 ## Misc 
 
 /home/nudzhang/Documents/pitometer/ironfleet/src/Dafny/Distributed/Protocol/RSL/FailureProof
+
+
+```
+var idx, ios :| TimestampedRslNextOneReplica(s, s', idx, ios);
+var us, us', uios := UntimestampRslState(s), UntimestampRslState(s'), UntagLIoOpSeq(ios);
+var nextActionIndex := us.replicas[idx].nextActionIndex;
+
+if nextActionIndex == 0 {
+    assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+} else {
+    var r, r' := us.replicas[idx], us'.replicas[idx];
+    if nextActionIndex == 1 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    } else if nextActionIndex == 2 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    } else if nextActionIndex == 3 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }else if nextActionIndex == 4 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }else if nextActionIndex == 5 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }else if nextActionIndex == 6 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }else if nextActionIndex == 7 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }else if nextActionIndex == 8 {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }else {
+        assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
+    }
+}
+```
