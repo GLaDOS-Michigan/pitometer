@@ -6,6 +6,7 @@ import opened RslPhase2Proof_postFail_i
 import opened Rs2Phase2Proof_Helper
 
 
+
 lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req_time:Timestamp, opn:OperationNumber)
     requires RslAssumption(s) && RslConsistency(s)
     requires RslAssumption(s') && RslConsistency(s')
@@ -13,9 +14,12 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
     requires RslPerfInvariant(s, req_time, opn)
     ensures RslPerfInvariant(s', req_time, opn)
 {   
-    BoundaryInvariantsMaintained(s, s', req_time, opn);
-    assert BoundaryConditionInvariant(s');
+    PacketsBallotInvariantMaintained(s, s', req_time, opn);
+    assert PacketsBallotInvariant(s');
+    
     assume false;
+    assert PerformanceGuarantee_2a(s');
+    assert PerformanceGuarantee(s');
 }
 
 
@@ -23,25 +27,23 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
 *                                         Lemmas                                         *
 *****************************************************************************************/
 
-lemma BoundaryInvariantsMaintained(ts:TimestampedRslState, ts':TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+lemma PacketsBallotInvariantMaintained(ts:TimestampedRslState, ts':TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
     requires RslAssumption(ts) && RslConsistency(ts)
     requires RslAssumption(ts') && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, req_time, opn)
-    ensures BoundaryConditionInvariant(ts')
+    ensures PacketsBallotInvariant(ts')
 {
     if TimestampedRslNextEnvironment(ts, ts') {
-        assert BoundaryConditionInvariant(ts');
+        assert PacketsBallotInvariant(ts');
         return;
     }
     var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
     var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
     if nextActionIndex == 0 {
-        BoundaryInvariantsMaintained_ReceiveStep_ExistingPacketsBallot(ts, ts', req_time, opn, idx, tios);
-        BoundaryInvariantsMaintained_ReceiveStep_ExistingPacketsTS(ts, ts', req_time, opn, idx, tios);
+        PacketsBallotInvariant_ReceiveStep(ts, ts', req_time, opn, idx, tios);
     } else {
-        BoundaryInvariantsMaintained_NoReceiveStep_ExistingPacketsBallot(ts, ts', req_time, opn, idx, tios);
-        BoundaryInvariantsMaintained_NoReceiveStep_ExistingPacketsTS(ts, ts', req_time, opn, idx, tios);
+        PacketsBallotInvariant_NoReceiveStep(ts, ts', req_time, opn, idx, tios);
     }
 }
 
