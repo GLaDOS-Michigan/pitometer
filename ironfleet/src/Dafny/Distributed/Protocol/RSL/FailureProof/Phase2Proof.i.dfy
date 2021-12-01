@@ -66,8 +66,9 @@ predicate RslAssumption(s:TimestampedRslState)
     && |s.t_replicas| > 2  // For failure to be meaningful
     && s.constants.params.max_batch_size == 1
 
-    && (var nextStep := s.t_environment.nextStep; nextStep.LEnvStepHostIos? ==>
-    (forall io :: io in nextStep.ios && io.LIoOpReceive? ==> !io.r.msg.v.RslMessage_Heartbeat?))
+    && (var nextStep := s.t_environment.nextStep; 
+    nextStep.LEnvStepHostIos? ==>
+    (forall io | io in nextStep.ios && io.LIoOpReceive? :: !io.r.msg.v.RslMessage_Heartbeat? && !io.r.msg.v.RslMessage_Request?))
     && LeaderAlwaysOne(s)
     && minD < SelfDelivery < D < 2*minD
     && ProcessPacket > 0
@@ -122,17 +123,6 @@ predicate RslConsistency(s:TimestampedRslState)
         && WellFormedLConfiguration(s.constants.config)
 }
 
-predicate ServersAreNotClients(s:TimestampedRslState)
-{
-    forall id :: id in s.constants.config.clientIds && id in s.constants.config.replica_ids
-        ==> false
-}
-
-predicate RequestBatchSrcInClientIds(s:TimestampedRslState, v:RequestBatch)
-{
-    forall r :: r in v ==> r.client in s.constants.config.clientIds
-}
-
 
 /*****************************************************************************************
 *                                    Boundary State                                      *
@@ -162,6 +152,7 @@ predicate BoundaryCond_NewLeader(s:TimestampedRslState, opn:OperationNumber)
     && opn == r.proposer.next_operation_number_to_propose - 1
     && opn == r.executor.ops_complete
     && LeaderSet1bContainsRequest(s)
+    && s.t_replicas[1].v.replica.proposer.request_queue == []
 }
 
 predicate LeaderSet1bContainsRequest(s:TimestampedRslState) 
@@ -212,10 +203,48 @@ predicate RslPerfInvariant(s:TimestampedRslState, opn:OperationNumber)
     requires |s.t_replicas| > 2
 {
     && RslConsistency(s)
+    && AlwaysInvariant(s)
     && PerformanceGuarantee(s, opn)
     && PacketsBallotInvariant(s)
-    && Before_2a_Sent_Invariant(s, opn)
+    && (|| Before_2a_Sent_Invariant(s, opn)
+        || After_2a_Sent_Invariant(s, opn)
+    )
 }
+
+
+predicate ServersAreNotClients(s:TimestampedRslState)
+{
+  forall id :: id in s.constants.config.clientIds && id in s.constants.config.replica_ids
+    ==> false
+}
+
+predicate RequestBatchSrcInClientIds(s:TimestampedRslState, v:RequestBatch)
+{
+  forall r :: r in v ==> r.client in s.constants.config.clientIds
+}
+
+predicate AlwaysInvariant(s:TimestampedRslState)
+    requires |s.t_replicas| > 2
+{
+    && ServersAreNotClients(s)
+    && s.t_replicas[1].v.replica.proposer.request_queue == []
+    && (forall pkt | pkt in s.undeliveredPackets :: pkt in s.t_environment.sentPackets)
+    && (forall pkt | pkt in s.undeliveredPackets && pkt.msg.v.RslMessage_2a? :: RequestBatchSrcInClientIds(s, pkt.msg.v.val_2a))
+    && (forall pkt | pkt in s.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: RequestBatchSrcInClientIds(s, pkt.msg.v.val_2b))
+    && (forall pkt | pkt in s.t_replicas[1].v.replica.proposer.received_1b_packets && pkt.msg.RslMessage_1b? :: forall op | op in pkt.msg.votes :: RequestBatchSrcInClientIds(s, pkt.msg.votes[op].max_val))
+
+    && (forall idx | 0 <= idx < |s.t_replicas|
+        ::
+        && (var uls := s.t_replicas[idx].v.replica.learner.unexecuted_learner_state;
+            forall opn | opn in uls :: RequestBatchSrcInClientIds(s, uls[opn].candidate_learned_value)
+            )
+        && (s.t_replicas[idx].v.replica.executor.next_op_to_execute.OutstandingOpKnown?
+            ==> RequestBatchSrcInClientIds(s, s.t_replicas[idx].v.replica.executor.next_op_to_execute.v)
+    )
+    )
+}
+
+
 
 predicate PacketsBallotInvariant(s:TimestampedRslState) {
     forall pkt | pkt in s.undeliveredPackets :: ExistingPacketsBallot(pkt)
@@ -247,28 +276,26 @@ predicate Before_2a_Sent_Invariant(s:TimestampedRslState, opn:OperationNumber)
 {
     var l := s.t_replicas[1];
     var r := l.v.replica;
-    if (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
-    then
-        && TimeLe(l.ts, L)              // leader timestamp is L
-        && l.v.nextActionIndex == 3     // leader action index is 3
-        && LeaderSet1bContainsRequest(s)
-        && BoundaryCond_NewLeader(s, opn)
-    else 
-        && r.proposer.next_operation_number_to_propose >= opn
+    && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
+    && TimeLe(l.ts, NewLeaderInitTS)     // leader timestamp
+    && l.v.nextActionIndex == 3          // leader action index is 3
+    && LeaderSet1bContainsRequest(s)
+    && s.t_replicas[1].v.nextActionIndex == 3
+    && r.proposer.current_state == 2
+    && r.proposer.election_state.current_view == Ballot(1, 1)
+    && opn == r.proposer.next_operation_number_to_propose - 1
 }
 
-
-predicate New2aTS_Invariant (s:TimestampedRslState) {
-    // TODO
-    false
-    /* L + LReplicaNextReadClockMaybeNominateValueAndSend2a + D */
-}
-
-predicate New2bTS_Invariant (s:TimestampedRslState) {
-    // TODO
-    false
-    /* L + LReplicaNextReadClockMaybeNominateValueAndSend2a + D
-    + AllAction (due to one round of round robin at acceptor) + Process Packet + D*/
+// Things that are true after 2a packets are sent out by the leader
+predicate After_2a_Sent_Invariant(s:TimestampedRslState, opn:OperationNumber) 
+    requires |s.t_replicas| > 2
+{
+    var l := s.t_replicas[1];
+    var r := l.v.replica;
+    && (exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
+    && PerformanceGuarantee_2a(s, opn)
+    && r.proposer.current_state == 2
+    && r.proposer.next_operation_number_to_propose >= opn
 }
 
 

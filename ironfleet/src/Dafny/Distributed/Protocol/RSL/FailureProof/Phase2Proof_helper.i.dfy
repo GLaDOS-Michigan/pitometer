@@ -25,4 +25,22 @@ lemma PacketsBallotInvariant_NoReceiveStep(ts:TimestampedRslState, ts':Timestamp
     ensures PacketsBallotInvariant(ts')
 {}
 
+lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+    requires RslAssumption(ts) && RslAssumption(ts')
+    requires RslConsistency(ts) && RslConsistency(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires RslPerfInvariant(ts, opn)
+    ensures AlwaysInvariant(ts')
+{
+
+    assert ts'.t_replicas[1].v.replica.proposer.request_queue == [];
+    assert forall pkt | pkt in ts'.t_replicas[1].v.replica.proposer.received_1b_packets && pkt.msg.RslMessage_1b? :: forall op | op in pkt.msg.votes :: RequestBatchSrcInClientIds(ts', pkt.msg.votes[op].max_val);
+    forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2a? 
+    ensures RequestBatchSrcInClientIds(ts', pkt.msg.v.val_2a)
+    {}
+    forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2b? 
+    ensures RequestBatchSrcInClientIds(ts', pkt.msg.v.val_2b)
+    {}
+}
+
 }
