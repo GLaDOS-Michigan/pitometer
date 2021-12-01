@@ -18,10 +18,10 @@ import opened CommonProof__Constants_i
 *****************************************************************************************/
 
 /* Main performance guarantee for phase 2 post-failure */
-predicate PerformanceGuarantee(s:TimestampedRslState){
+predicate PerformanceGuarantee(s:TimestampedRslState, opn:OperationNumber){
     && PerformanceGuarantee_Response(s)
     && PerformanceGuarantee_2b(s)
-    && PerformanceGuarantee_2a(s)
+    && PerformanceGuarantee_2a(s, opn)
 }
 
 predicate PerformanceGuarantee_Response(s:TimestampedRslState) {
@@ -42,16 +42,15 @@ predicate PerformanceGuarantee_2b(b:TimestampedRslState) {
     true
 }
 
-predicate PerformanceGuarantee_2a(s:TimestampedRslState) {
+predicate PerformanceGuarantee_2a(s:TimestampedRslState, opn:OperationNumber) {
     forall pkt {:trigger pkt.msg.v.RslMessage_2a?} | 
         && pkt in s.undeliveredPackets 
-        && pkt.msg.v.RslMessage_2a?
-        && pkt.msg.v.bal_2a == Ballot(1, 1)
+        && IsNew2aPacket(pkt, opn)
     :: TimeLe(pkt.msg.ts, TimeBound2aDeliveryPost())
 }
 
 function TimeBound2aDeliveryPost() : Timestamp {
-    NewLeaderInitTS + TimeActionRange(0) + TimeActionRange(4) + D
+    NewLeaderInitTS + MbeP2a + D
 }
 
 /*****************************************************************************************
@@ -145,21 +144,36 @@ ghost const req_time:Timestamp
 ghost const NewLeaderInitTS:Timestamp
 
 //  Invariant of starting state of Phase2 proof
-predicate BoundaryCondition(s:TimestampedRslState) 
+predicate BoundaryCond(s:TimestampedRslState, opn:OperationNumber) 
     requires |s.t_replicas| > 2
 {
-    && BoundaryCondition_ExistingPacketsBallot(s)
-    && BoundaryCondition_NewLeader(s)
+    && BoundaryCond_ExistingPacketsBallot(s)
+    && BoundaryCond_NewLeader(s, opn)
 }
 
 
-predicate BoundaryCondition_NewLeader(s:TimestampedRslState) {
-    // TODO
-    true
+predicate BoundaryCond_NewLeader(s:TimestampedRslState, opn:OperationNumber) 
+    requires |s.t_replicas| > 2
+{
+    var r := s.t_replicas[1].v.replica;
+    && s.t_replicas[1].v.nextActionIndex == 3
+    && r.proposer.current_state == 2
+    && r.proposer.election_state.current_view == Ballot(1, 1)
+    && opn == r.proposer.next_operation_number_to_propose - 1
+    && opn == r.executor.ops_complete
+    && LeaderSet1bContainsRequest(s)
+}
+
+predicate LeaderSet1bContainsRequest(s:TimestampedRslState) 
+    requires |s.t_replicas| > 2
+{
+    var r := s.t_replicas[1].v.replica;
+    && LProposerCanNominateUsingOperationNumber(r.proposer, r.acceptor.log_truncation_point, r.proposer.next_operation_number_to_propose)
+    && !LAllAcceptorsHadNoProposal(r.proposer.received_1b_packets, r.proposer.next_operation_number_to_propose)
 }
 
 
-predicate BoundaryCondition_ExistingPacketsBallot(s:TimestampedRslState) {
+predicate BoundaryCond_ExistingPacketsBallot(s:TimestampedRslState) {
     forall pkt | pkt in s.undeliveredPackets :: Boundary_ExistingPacketsBallot(pkt)
 }
 predicate Boundary_ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
@@ -186,18 +200,21 @@ predicate Boundary_ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMes
 
 
 
+
+
 /*****************************************************************************************
 *                                     Invariants                                        *
 *****************************************************************************************/
 
 
 // Main invariant 
-predicate RslPerfInvariant(s:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+predicate RslPerfInvariant(s:TimestampedRslState, opn:OperationNumber) 
     requires |s.t_replicas| > 2
 {
     && RslConsistency(s)
-    && PerformanceGuarantee(s)
+    && PerformanceGuarantee(s, opn)
     && PacketsBallotInvariant(s)
+    && Before_2a_Sent_Invariant(s, opn)
 }
 
 predicate PacketsBallotInvariant(s:TimestampedRslState) {
@@ -223,4 +240,48 @@ predicate ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
         case RslMessage_StartingPhase2(_,_)     => true
     }
 }
+
+// Things that are true before 2a packets are sent out by the leader
+predicate Before_2a_Sent_Invariant(s:TimestampedRslState, opn:OperationNumber) 
+    requires |s.t_replicas| > 2
+{
+    var l := s.t_replicas[1];
+    var r := l.v.replica;
+    if (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
+    then
+        && TimeLe(l.ts, L)              // leader timestamp is L
+        && l.v.nextActionIndex == 3     // leader action index is 3
+        && LeaderSet1bContainsRequest(s)
+        && BoundaryCond_NewLeader(s, opn)
+    else 
+        && r.proposer.next_operation_number_to_propose >= opn
+}
+
+
+predicate New2aTS_Invariant (s:TimestampedRslState) {
+    // TODO
+    false
+    /* L + LReplicaNextReadClockMaybeNominateValueAndSend2a + D */
+}
+
+predicate New2bTS_Invariant (s:TimestampedRslState) {
+    // TODO
+    false
+    /* L + LReplicaNextReadClockMaybeNominateValueAndSend2a + D
+    + AllAction (due to one round of round robin at acceptor) + Process Packet + D*/
+}
+
+
+
+
+/*****************************************************************************************
+*                                  Misc Definitions                                      *
+*****************************************************************************************/
+
+predicate IsNew2aPacket(pkt:TimestampedRslPacket, opn:OperationNumber) {
+    && pkt.msg.v.RslMessage_2a?
+    && pkt.msg.v.bal_2a == Ballot(1, 1)
+    && pkt.msg.v.opn_2a == opn
+}
+
 }
