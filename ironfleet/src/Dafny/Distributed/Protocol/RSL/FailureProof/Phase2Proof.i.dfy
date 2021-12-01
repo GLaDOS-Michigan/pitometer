@@ -149,7 +149,8 @@ predicate BoundaryCond_NewLeader(s:TimestampedRslState, opn:OperationNumber)
     && s.t_replicas[1].v.nextActionIndex == 3
     && r.proposer.current_state == 2
     && r.proposer.election_state.current_view == Ballot(1, 1)
-    && opn == r.proposer.next_operation_number_to_propose - 1
+    && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
+    && opn == r.proposer.next_operation_number_to_propose
     && opn == r.executor.ops_complete
     && LeaderSet1bContainsRequest(s)
     && s.t_replicas[1].v.replica.proposer.request_queue == []
@@ -283,7 +284,8 @@ predicate Before_2a_Sent_Invariant(s:TimestampedRslState, opn:OperationNumber)
     && s.t_replicas[1].v.nextActionIndex == 3
     && r.proposer.current_state == 2
     && r.proposer.election_state.current_view == Ballot(1, 1)
-    && opn == r.proposer.next_operation_number_to_propose - 1
+    && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
+    && opn == r.proposer.next_operation_number_to_propose
 }
 
 // Things that are true after 2a packets are sent out by the leader
@@ -295,7 +297,7 @@ predicate After_2a_Sent_Invariant(s:TimestampedRslState, opn:OperationNumber)
     && (exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
     && PerformanceGuarantee_2a(s, opn)
     && r.proposer.current_state == 2
-    && r.proposer.next_operation_number_to_propose >= opn
+    && r.proposer.next_operation_number_to_propose > opn
 }
 
 

@@ -61,46 +61,20 @@ lemma Before2a_to_BeforeOrAfter2a(ts:TimestampedRslState, ts':TimestampedRslStat
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
+    requires Before_2a_Sent_Invariant(ts, opn);
     ensures Before_2a_Sent_Invariant(ts', opn) || After_2a_Sent_Invariant(ts', opn);
 {
-    assume false;
     if TimestampedRslNextEnvironment(ts, ts') {
-        assert PerformanceGuarantee_2a(ts', opn);
+        assert Before_2a_Sent_Invariant(ts', opn);
         return;
     }
-
     var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
     var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
     if idx != 1 {
-        assert PerformanceGuarantee_2a(ts', opn);
+        assert Before_2a_Sent_Invariant(ts', opn);
         return;
     }
-    // Actor is the leader now
-    if exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2aPacket(pkt, opn) {
-        /* TODO: If I enter this clause, then any new 2a packets I sent out can't be of opn */
-
-        if nextActionIndex == 3 {
-            assert PerformanceGuarantee_2a(ts', opn);
-        } else {
-            forall pkt | pkt in ts'.undeliveredPackets && IsNew2aPacket(pkt, opn)
-            ensures pkt in ts.undeliveredPackets
-            {}
-            assert PerformanceGuarantee_2a(ts', opn);
-        }   
-
-
-
-        // forall pkt | pkt in ts'.undeliveredPackets && IsNew2aPacket(pkt, opn)
-        // ensures TimeLe(pkt.msg.ts, TimeBound2aDeliveryPost())
-        // {}
-        // assert PerformanceGuarantee_2a(ts', opn);
-        return;
-    }
-    
-    
-    
-    assert nextActionIndex == 3;
-    assert PerformanceGuarantee_2a(ts', opn);
+    Before2a_to_After2a(ts, ts', opn, tios);
 }
 
 }
