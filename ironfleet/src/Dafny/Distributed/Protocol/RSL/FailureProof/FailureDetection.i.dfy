@@ -98,19 +98,57 @@ lemma EpochTimeoutQDInductive(s:TimestampedRslState, s':TimestampedRslState, j:i
   }
 }
 
-predicate NodeIsNotSuspector(s:TimestampedRslState, j:int)
+// Hearbeat delay invariant; self-contained
+predicate HeartbeatDelayInv(s:TimestampedRslState)
+{
+  && (forall idx :: && 0 <= idx < |s.t_replicas| ==>
+    s.t_replicas[idx].v.replica.nextHeartbeatTime >= 0 // so it's a valid Timestamp
+    && TimeLe(s.t_replicas[idx].v.replica.nextHeartbeatTime, s.t_replicas[idx].ts + HBPeriod)
+    )
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Main invariants
+////////////////////////////////////////////////////////////////////////////////
+
+
+predicate NodeIsNotSuspectorInFirstEpoch(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires j < |s.t_replicas|
   requires j < |s.constants.config.replica_ids|
 {
   // all HBs are unsuspecting
-  // Either in first epoch, or in second epoch
-  // TODO: for now, assume we're in the second epoch
   var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
   s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
   HBUnsent(s, j)
+  // Not a suspector ourselves, and no heartbeats sent indicating that we are one.
+  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch != []
+  && true
+  // TODO: can't have exceeded FailTime + EpochLength + AllActions()
+}
+
+predicate NodeIsNotSuspectorInSecondEpoch(s:TimestampedRslState, j:int)
+  requires RslConsistency(s)
+  requires j < |s.t_replicas|
+  requires j < |s.constants.config.replica_ids|
+{
+  // all HBs are unsuspecting
+  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
+  s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
+  HBUnsent(s, j)
+  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs != []
   // Not a suspector ourselves, and no heartbeats sent indicating that we are
   // one.
+  // TODO: can't have exceeded (FailTime + EpochLength + AllActions()) + EpochLength + AllActions()
+}
+
+predicate NodeIsNotSuspector(s:TimestampedRslState, j:int)
+  requires RslConsistency(s)
+  requires j < |s.t_replicas|
+  requires j < |s.constants.config.replica_ids|
+{
+  NodeIsNotSuspectorInFirstEpoch(s, j) ||
+  NodeIsNotSuspectorInSecondEpoch(s, j)
 }
 
 predicate NodeIsSuspector(s:TimestampedRslState, j:int)
@@ -126,7 +164,7 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires j < |s.constants.config.replica_ids|
 {
-  // All HBs are unsuspecting (and the node is a suspector)
+  // All HBs are unsuspecting
   forall pkt ::
   pkt in s.undeliveredPackets ==>
   pkt.msg.v.RslMessage_Heartbeat? ==>
@@ -163,6 +201,7 @@ predicate NewLeaderInvariant(s:TimestampedRslState)
   1 < |s.t_replicas| ==>
     (s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0) ==>
       (var ns := |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors|;
+      // TODO: add nextAction inv here
       ns == LMinQuorumSize(s.constants.config)) ==>
         TimeLe(s.t_replicas[1].ts, TBFirstSuspectingHB())
     )

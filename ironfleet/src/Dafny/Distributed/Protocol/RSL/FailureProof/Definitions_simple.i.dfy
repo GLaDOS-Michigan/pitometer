@@ -29,6 +29,7 @@ ghost const CheckViewTimeout:Timestamp
 ghost const CheckQuorumOfViewSuspicion:Timestamp
 ghost const MbeSendHeartbeat:Timestamp
 ghost const MaxQueueTime:Timestamp
+ghost const HBPeriod:Timestamp
 
  //ghost const Gs := StepTime(RslStep);
  //ghost const As := StepTime(AcceptStep);
