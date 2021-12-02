@@ -118,7 +118,7 @@ predicate NodeFinishedRequest(s:TimestampedRslState, j:int)
   requires j < |s.constants.config.replica_ids|
 {
   s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == []
-  s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
+  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
 }
 
 predicate NodeIsNotSuspectorInFirstEpoch(s:TimestampedRslState, j:int)
