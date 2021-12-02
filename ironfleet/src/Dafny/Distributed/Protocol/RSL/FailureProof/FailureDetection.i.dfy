@@ -111,6 +111,15 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
 
+// can enter this after processing request
+predicate NodeFinishedRequest(s:TimestampedRslState, j:int)
+  requires RslConsistency(s)
+  requires j < |s.t_replicas|
+  requires j < |s.constants.config.replica_ids|
+{
+  s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == []
+  s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
+}
 
 predicate NodeIsNotSuspectorInFirstEpoch(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
@@ -122,7 +131,8 @@ predicate NodeIsNotSuspectorInFirstEpoch(s:TimestampedRslState, j:int)
   s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
   HBUnsent(s, j)
   // Not a suspector ourselves, and no heartbeats sent indicating that we are one.
-  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch != []
+  && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch| == 1
+  && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs| == 0
   && true
   // TODO: can't have exceeded FailTime + EpochLength + AllActions()
 }
@@ -207,15 +217,24 @@ predicate NewLeaderInvariant(s:TimestampedRslState)
     )
 }
 
+predicate HBtimeInv(s:TimestampedRslState, idx:int)
+  requires RslConsistency(s)
+  requires 0 <= idx && idx < |s.t_replicas|
+{
+  s.t_replicas[idx].v.replica.nextHeartbeatTime >= 0
+  && TimeLe(s.t_replicas[idx].v.replica.nextHeartbeatTime, 0)
+  // FIXME: put real upper bound here
+}
+
 predicate NodeFDInvariant(s:TimestampedRslState, idx:int)
   requires RslConsistency(s)
   requires 0 <= idx && idx < |s.t_replicas|
 {
   NodeIsNotSuspector(s, idx) ||
   (NodeIsSuspector(s, idx) && (
-     HBUnsent(s, idx) ||
-     HBEnRoute(s, idx) ||
-     NodeIsKnownSuspector(s, idx)
+    (HBUnsent(s, idx) && HBtimeInv(s,idx))
+    || HBEnRoute(s, idx)
+    || NodeIsKnownSuspector(s, idx)
     )
   )
 }
@@ -231,50 +250,50 @@ predicate FDInvariant(s:TimestampedRslState)
   && NewLeaderInvariant(s)
 }
 
-// if node j != idx takes a step, then NodeIsNotSuspector(s, idx) is unaffected
-lemma FDInd_noninterf(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+////////////////////////////////////////////////////////////////////////////////
+// PF_NONSUSP
+////////////////////////////////////////////////////////////////////////////////
+
+
+lemma NonSuspectorFirst_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= idx < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|;
-  requires j != 1;
-  requires j != idx;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires s.t_environment.nextStep.nodeStep != RslStep(7) // on step 7, we might start new epoch
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-
-  ensures NodeIsNotSuspector(s, idx) ==> NodeIsNotSuspector(s', idx)
-  ensures NodeIsSuspector(s, idx) ==> NodeIsSuspector(s', idx)
-  ensures HBUnsent(s, idx) ==> HBUnsent(s', idx)
-  ensures HBEnRoute(s, idx) ==> HBEnRoute(s', idx)
-  ensures NodeIsKnownSuspector(s, idx) ==> NodeIsKnownSuspector(s', idx)
+  requires NodeIsNotSuspectorInFirstEpoch(s, j);
+  ensures  NodeIsNotSuspectorInFirstEpoch(s', j);
 {
-  assert ReplicasDistinct(s.constants.config.replica_ids, j, idx);
-  assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
-}
-
-lemma FDInd_noninterf_full(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
-  requires RslAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
-  requires 0 <= idx < |s.t_replicas|
-  requires 0 <= j < |s.constants.config.replica_ids|;
-  requires j != 1;
-  requires j != idx;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires NodeFDInvariant(s, idx)
-  ensures NodeFDInvariant(s', idx)
-{
-  FDInd_noninterf(s, s', j, idx);
+  if s.t_environment.nextStep.nodeStep == RslStep(0) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(1) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(2) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(3) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(4) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(5) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(6) {
+    if s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [] {
+      assert NodeFinishedRequest(s, j);
+    }
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(7) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(8) {
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(9) {
+  }
 }
 
 lemma NonSuspector_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
@@ -354,6 +373,53 @@ lemma NonSuspector_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, i
     assert HBUnsent(s', j);
     assert NodeIsSuspector(s', j);
   }
+}
+
+
+// if node j != idx takes a step, then NodeIsNotSuspector(s, idx) is unaffected
+lemma FDInd_noninterf(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= idx < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires j != 1;
+  requires j != idx;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+
+  ensures NodeIsNotSuspector(s, idx) ==> NodeIsNotSuspector(s', idx)
+  ensures NodeIsSuspector(s, idx) ==> NodeIsSuspector(s', idx)
+  ensures HBUnsent(s, idx) ==> HBUnsent(s', idx)
+  ensures HBEnRoute(s, idx) ==> HBEnRoute(s', idx)
+  ensures NodeIsKnownSuspector(s, idx) ==> NodeIsKnownSuspector(s', idx)
+{
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, idx);
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
+}
+
+lemma FDInd_noninterf_full(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= idx < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires j != 1;
+  requires j != idx;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires NodeFDInvariant(s, idx)
+  ensures NodeFDInvariant(s', idx)
+{
+  FDInd_noninterf(s, s', j, idx);
 }
 
 lemma Suspector_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
