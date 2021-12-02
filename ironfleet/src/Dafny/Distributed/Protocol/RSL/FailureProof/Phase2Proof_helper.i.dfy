@@ -43,7 +43,7 @@ lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState
 }
 
 
-lemma Before2a_to_After2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+lemma Before2a_to_Before2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires RslAssumption(ts) && RslConsistency(ts)
     requires RslAssumption(ts') && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
@@ -52,7 +52,7 @@ lemma Before2a_to_After2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:O
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios);
     requires RslPerfInvariant(ts, opn)
     requires Before_2a_Sent_Invariant(ts, opn);
-    ensures After_2a_Sent_Invariant(ts', opn);
+    ensures Before_2b_Sent_Invariant(ts', opn);
 {
     var s, s', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
     var r, r' := s.replicas[1].replica, s'.replicas[1].replica;
@@ -66,6 +66,25 @@ lemma Before2a_to_After2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:O
     assert sent_packets[0] == LPacket(r.proposer.constants.all.config.replica_ids[0], r.proposer.constants.all.config.replica_ids[1], m);
     var pkt_witness := sent_packets[0];
     assert LIoOpSend(pkt_witness) in ios;
-    assert After_2a_Sent_Invariant(ts', opn);
+}
+
+lemma Before2a_to_Before2a_NonLeaderAction(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts) && RslConsistency(ts)
+    requires RslAssumption(ts') && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires idx != 1;
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    requires RslPerfInvariant(ts, opn)
+    requires Before_2a_Sent_Invariant(ts, opn);
+    ensures Before_2a_Sent_Invariant(ts', opn);
+{
+    forall pkt | pkt in ts'.t_environment.sentPackets && IsNew2aPacket(pkt, opn) 
+    ensures pkt in ts.t_environment.sentPackets
+    {}
+    forall pkt | pkt in ts'.t_environment.sentPackets && IsNew2bPacket(pkt, opn) 
+    ensures pkt in ts.t_environment.sentPackets
+    {}
 }
 }
