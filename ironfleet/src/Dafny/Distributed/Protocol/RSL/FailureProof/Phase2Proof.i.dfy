@@ -20,7 +20,7 @@ import opened CommonProof__Constants_i
 /* Main performance guarantee for phase 2 post-failure */
 predicate PerformanceGuarantee(ts:TimestampedRslState, opn:OperationNumber){
     && PerformanceGuarantee_Response(ts)
-    && PerformanceGuarantee_2b(ts)
+    && PerformanceGuarantee_2b(ts, opn)
     && PerformanceGuarantee_2a(ts, opn)
 }
 
@@ -37,9 +37,11 @@ predicate PerformanceGuarantee_Response(ts:TimestampedRslState) {
     true
 }
 
-predicate PerformanceGuarantee_2b(b:TimestampedRslState) {
-    // TODO
-    true
+predicate PerformanceGuarantee_2b(ts:TimestampedRslState, opn:OperationNumber) {
+    forall pkt {:trigger pkt.msg.v.RslMessage_2a?} | 
+        && pkt in ts.undeliveredPackets 
+        && IsNew2aPacket(pkt, opn)
+    :: TimeLe(pkt.msg.ts, TimeBound2bDeliveryPost())
 }
 
 predicate PerformanceGuarantee_2a(ts:TimestampedRslState, opn:OperationNumber) {
@@ -51,6 +53,10 @@ predicate PerformanceGuarantee_2a(ts:TimestampedRslState, opn:OperationNumber) {
 
 function TimeBound2aDeliveryPost() : Timestamp {
     NewLeaderInitTS + MbeP2a + D
+}
+
+function TimeBound2bDeliveryPost() : Timestamp {
+    TimeBound2aDeliveryPost() + ProcessPacket + MaxQueueTime + D
 }
 
 /*****************************************************************************************
@@ -300,6 +306,7 @@ predicate Before_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
     && PerformanceGuarantee_2a(ts, opn)
     && r.proposer.current_state == 2
+    && 0 <= ts.t_replicas[1].v.nextActionIndex <= 9
     && r.proposer.next_operation_number_to_propose > opn
 }
 
@@ -310,6 +317,7 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     var r := l.v.replica;
     && exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn)
     && PerformanceGuarantee_2a(ts, opn)
+    && PerformanceGuarantee_2b(ts, opn)
     && r.proposer.current_state == 2
     && r.proposer.next_operation_number_to_propose > opn
 }
