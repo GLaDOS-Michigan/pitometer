@@ -6,9 +6,9 @@ import opened RslPhase2Proof_postFail_i
 import opened Rs2Phase2Proof_Helper
 
 
-/**** MAIN INVARIANT ****/
+/**** MAIN INVARIANT THEOREM ****/
 lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req_time:Timestamp, opn:OperationNumber)
-    requires RslAssumption(s) && RslAssumption(s')
+    requires RslAssumption(s, opn) && RslAssumption(s', opn)
     requires RslConsistency(s) && RslConsistency(s')
     requires TimestampedRslNext(s, s')
     requires RslPerfInvariant(s, opn)
@@ -17,21 +17,18 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
     PacketsBallotInvariant_Maintained(s, s', opn);
     AlwaysInvariant_Maintained(s, s', opn);
     
-    if (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
-    && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn)) 
+    if  && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
+        && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn)) 
     {
         Before2a_to_MaybeBefore2b(s, s', opn);
     } else if (exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
         && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn))  
     {
         Before2b_to_MaybeAfter2b(s, s', opn);
+    } else {
+        assert After_2b_Sent_Invariant(s, opn);
+        After2b_to_After2b(s, s', opn);
     }
-
-    assert AlwaysInvariant(s');        
-    assert PacketsBallotInvariant(s');
-    
-    assume false;
-    assert PerformanceGuarantee(s', opn);   // TODO
     assert RslPerfInvariant(s', opn);
 }
 
@@ -40,10 +37,10 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
 *                                         Lemmas                                         *
 *****************************************************************************************/
 
-/****  MAIN THEOREM ****
-* Proof that PacketsBallotInvariant is maintained */
+
+/* Proof that PacketsBallotInvariant is maintained */
 lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts) && RslAssumption(ts')
+    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts') && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
@@ -66,13 +63,13 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
 /* Proof that a Before_2a_Sent state transitions to a Before_2a_Sent state or 
 * Before_2b_Sent state */
 lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts) && RslConsistency(ts)
-    requires RslAssumption(ts') && RslConsistency(ts')
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
-    requires Before_2a_Sent_Invariant(ts, opn);
-    ensures Before_2a_Sent_Invariant(ts', opn) || Before_2b_Sent_Invariant(ts', opn);
+    requires Before_2a_Sent_Invariant(ts, opn)
+    ensures Before_2a_Sent_Invariant(ts', opn) || Before_2b_Sent_Invariant(ts', opn)
 {
     if TimestampedRslNextEnvironment(ts, ts') {
         assert Before_2a_Sent_Invariant(ts', opn);
@@ -91,13 +88,13 @@ lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState,
 /* Proof that a Before_2b_Sent state transitions to a Before_2b_Sent state or 
 * After_2b_Sent state */
 lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts) && RslConsistency(ts)
-    requires RslAssumption(ts') && RslConsistency(ts')
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
-    requires Before_2b_Sent_Invariant(ts, opn);
-    ensures Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn);
+    requires Before_2b_Sent_Invariant(ts, opn)
+    ensures Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn)
 {
     if TimestampedRslNextEnvironment(ts, ts') {
         assert Before_2b_Sent_Invariant(ts', opn);
@@ -108,7 +105,9 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
     if nextActionIndex != 0 {
         Before2b_to_Before2b_NonReceive(ts, ts', opn, idx, tios);
         return;
-    } 
+    }
+
+    // From this point on, nextActionIndex == 0
     var s, s', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
     var r, r' := s.replicas[idx].replica, s'.replicas[idx].replica;
     if ios[0].LIoOpTimeoutReceive? {
@@ -132,6 +131,14 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
             Before2b_to_After2b(ts, ts', opn, idx, tios, s, s', ios);
         } else {
             assert forall p | p in sent_packets && p.msg.RslMessage_2b? :: p.msg.bal_2b != Ballot(1, 1);
+            assert forall p | p in sent_packets :: !p.msg.RslMessage_2a?;
+            reveal_ExtractSentPacketsFromIos();
+            reveal_UntagLIoOpSeq();
+            forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2a? 
+            ensures pkt in ts.undeliveredPackets
+            {}
+            assert m.bal_2a == Ballot(1, 0);
+            assert All2bPackets_BalLeq_Opn(ts', Ballot(1, 0), opn);
             assert Before_2b_Sent_Invariant(ts', opn);
         }
     } else {
@@ -139,8 +146,29 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
         reveal_ExtractSentPacketsFromIos();
         assert forall io | io in ios :: !io.LIoOpSend?;
         forall tio | tio in tios 
-        ensures !tio.LIoOpSend? {}
+        ensures !tio.LIoOpSend? {
+            if tio.LIoOpSend? {
+                reveal_UntagLIoOpSeq();
+                assert UntagLIoOp(tio) in ios;
+                assert UntagLIoOp(tio).LIoOpSend?;
+            }
+        }
         assert Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn);
     }
+}
+
+
+/* Proof that a After_2b_Sent state transitions to a After_2b_Sent state */
+lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires RslPerfInvariant(ts, opn)
+    requires After_2b_Sent_Invariant(ts, opn)
+    ensures After_2b_Sent_Invariant(ts', opn)
+{
+    // TOOD
+    assume false;
 }
 }
