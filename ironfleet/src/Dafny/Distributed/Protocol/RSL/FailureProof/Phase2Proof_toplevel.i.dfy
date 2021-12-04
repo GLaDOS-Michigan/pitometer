@@ -67,6 +67,7 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
 lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires AlwaysInvariant(ts', opn)
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
@@ -93,6 +94,7 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
@@ -131,6 +133,7 @@ lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:Op
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires RslPerfInvariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
@@ -146,48 +149,7 @@ lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:Op
         assume false;
         assert After_2b_Sent_Invariant(ts', opn);
     } else {
-        var lr, lr' := ts.t_replicas[1].v.replica, ts'.t_replicas[1].v.replica;
-
-        assert All2aPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
-        assert All2bPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
-        assert (exists pkt :: pkt in ts'.t_environment.sentPackets && IsNew2bPacket(pkt, opn));
-        assert PerformanceGuarantee_2a(ts', opn);
-        assert PerformanceGuarantee_2b(ts', opn);
-        assert PerformanceGuarantee_Response(ts');
-        assert 0 <= ts'.t_replicas[1].v.nextActionIndex <= 9;
-        assert lr'.proposer.current_state == 2;
-        assert lr'.proposer.next_operation_number_to_propose > opn;
-
-        // Learner and Executor states
-        assert opn == lr'.executor.ops_complete;
-        assert lr'.executor.next_op_to_execute == OutstandingOpUnknown();
-        assert BalLeq(lr'.learner.max_ballot_seen, Ballot(1, 1));
-
-        assert Get2bCount(lr', opn, Ballot(1, 1)) <= LMinQuorumSize(ts'.constants.config);
-
-        assert (Get2bCount(lr', opn, Ballot(1, 1)) < LMinQuorumSize(ts'.constants.config)
-        ==> lr'.executor.next_op_to_execute.OutstandingOpUnknown?);
-
-        assert (Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
-        ==> TimeLe(ts'.t_replicas[1].ts, TimeBoundPhase2LeaderPost(ts'.t_replicas[1].v.nextActionIndex)));
-
-        assert (ts'.t_replicas[1].v.nextActionIndex == 6
-            && Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
-            ==> 
-            lr'.executor.next_op_to_execute.OutstandingOpKnown?
-        );
-
-        assert (lr'.executor.next_op_to_execute.OutstandingOpKnown?
-        ==> Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
-        );
-
-        assert (forall opn' | opn' in lr'.learner.unexecuted_learner_state :: opn' == opn);
-
-        assert After_2b_Sent_Invariant(ts', opn);
+        After2b_to_After2b_NonLeaderAction(ts, ts', opn, idx, tios);
     }
-    
-    
-    // var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
-
 }
 }

@@ -47,6 +47,7 @@ lemma Before2a_to_Before2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios);
@@ -75,6 +76,7 @@ lemma Before2a_to_Before2a_NonLeaderAction(ts:TimestampedRslState, ts':Timestamp
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    // requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires idx != 1;
@@ -112,6 +114,7 @@ lemma Before2b_to_Before2b_NonReceive(ts:TimestampedRslState, ts':TimestampedRsl
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    // requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires RslPerfInvariant(ts, opn)
@@ -137,6 +140,7 @@ lemma Before2b_to_Before2b_NonReceive(ts:TimestampedRslState, ts':TimestampedRsl
         {}
         assert Before_2b_Sent_Invariant(ts', opn);
     } else {
+        assert ts'.t_replicas[1].v.replica.learner.unexecuted_learner_state == map[];
         assert forall opn' | opn' in ts.t_replicas[1].v.replica.learner.unexecuted_learner_state
         ::  |ts.t_replicas[1].v.replica.learner.unexecuted_learner_state[opn].received_2b_message_senders| < LMinQuorumSize(ts.t_replicas[1].v.replica.learner.constants.all.config);
         assert ts'.t_replicas[1].v.replica.executor == ts.t_replicas[1].v.replica.executor;
@@ -147,6 +151,7 @@ lemma Before2b_to_Before2b_NonReceive(ts:TimestampedRslState, ts':TimestampedRsl
         forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
         ensures pkt in ts.t_environment.sentPackets
         {}
+        assert Before_2b_Sent_Invariant(ts', opn);
     }
 }
 
@@ -154,6 +159,7 @@ lemma Before2b_to_Before2b_Receive(ts:TimestampedRslState, ts':TimestampedRslSta
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    // requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires RslPerfInvariant(ts, opn)
@@ -164,6 +170,8 @@ lemma Before2b_to_Before2b_Receive(ts:TimestampedRslState, ts':TimestampedRslSta
     requires !tios[0].r.msg.v.RslMessage_2a?
     ensures Before_2b_Sent_Invariant(ts', opn)
 {
+    reveal_ExtractSentPacketsFromIos();
+    reveal_UntagLIoOpSeq();
     var ios := UntagLIoOpSeq(tios);
     var sent_packets := ExtractSentPacketsFromIos(ios);
     assert forall p | p in sent_packets :: !p.msg.RslMessage_2b?;
@@ -174,8 +182,9 @@ lemma Before2b_to_Before2b_Receive(ts:TimestampedRslState, ts':TimestampedRslSta
             assert false;
         }
     }
-    forall pkt | pkt in ts'.t_environment.sentPackets && IsNew2aPacket(pkt, opn) 
-    ensures pkt in ts.t_environment.sentPackets {}
+    forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a?
+    ensures pkt in ts.t_environment.sentPackets
+    {}
     assert opn == ts'.t_replicas[1].v.replica.executor.ops_complete;   // Can be changed by LExecutorProcessAppStateSupply packet
     assert BalLt(ts'.t_replicas[1].v.replica.learner.max_ballot_seen, Ballot(1, 1)); 
     forall pkt | pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt) 
