@@ -123,71 +123,88 @@ lemma After2b_to_After2b_NonLeaderAction(ts:TimestampedRslState, ts':Timestamped
     requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
     requires RslPerfInvariant(ts, opn)
     requires idx != 1;
     requires After_2b_Sent_Invariant(ts, opn)
     ensures After_2b_Sent_Invariant(ts', opn)
 {
-    var lr, lr' := ts.t_replicas[1].v.replica, ts'.t_replicas[1].v.replica;
-    // No 2a gets sent out
-    forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a?
-    ensures pkt in ts.t_environment.sentPackets
-    {}
+    assert ts'.t_replicas[1] == ts.t_replicas[1];
+    After2b_to_After2b_NonLeaderAction_2bBalOpn(ts, ts', opn, idx, tios);
 
+    forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, opn)
+    ensures p in ts.undeliveredPackets {
+        if p !in ts.undeliveredPackets{
+            reveal_ExtractSentPacketsFromIos();
+            reveal_UntagLIoOpSeq();
+            var sr, sr', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
+            var sent_packets := ExtractSentPacketsFromIos(ios);
+            forall p' | p' in sent_packets 
+            ensures !p'.msg.RslMessage_2a?
+            {}
+            assert false;
+        }
+    }
+    forall p | p in ts'.undeliveredPackets && p !in ts.undeliveredPackets
+    ensures p.src == ts'.constants.config.replica_ids[idx]
+    {}
+    assert ReplicasDistinct(ts'.constants.config.replica_ids, 1, idx);
+    forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p)
+    ensures p in ts.undeliveredPackets
+    {}
+}
+
+
+lemma After2b_to_After2b_NonLeaderAction_2bBalOpn(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires AlwaysInvariant(ts', opn)
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires RslPerfInvariant(ts, opn)
+    requires idx != 1;
+    requires After_2b_Sent_Invariant(ts, opn)
+    ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: BalLeq(pkt.msg.v.bal_2b, Ballot(1, 1)) && pkt.msg.v.opn_2b == opn
+{
     // Any 2b sent must have opn and ballot matching existing 2a's
     forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
     ensures BalLeq(pkt.msg.v.bal_2b, Ballot(1, 1)) && pkt.msg.v.opn_2b == opn
     {
-        if pkt !in ts.t_environment.sentPackets {
-            reveal_ExtractSentPacketsFromIos();
-            reveal_UntagLIoOpSeq();
-            assert forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a?
-                :: BalLeq(pkt.msg.v.bal_2a, Ballot(1, 1)) && pkt.msg.v.opn_2a == opn;
+        var sr, sr', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
+        var r, r' := sr.replicas[idx].replica, sr'.replicas[idx].replica;
+        if sr.replicas[idx].nextActionIndex == 0 {
+            var msg := tios[0].r.msg;
+            if msg.v.RslMessage_2a? {
+                if tios[0].r.src in r.acceptor.constants.all.config.replica_ids
+                    && BalLeq(r.acceptor.max_bal, msg.v.bal_2a)
+                    && LeqUpperBound(msg.v.opn_2a, r.acceptor.constants.all.params.max_integer_val)
+                {
+                    var sent_packets := ExtractSentPacketsFromIos(ios);
+                    forall sp | sp in sent_packets 
+                    ensures  && sp.msg.RslMessage_2b? 
+                        && sp.msg.opn_2b == msg.v.opn_2a
+                        && sp.msg.bal_2b == msg.v.bal_2a
+                    {}
+                } else {
+                    assert forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2b? 
+                    :: p in ts.t_environment.sentPackets;
+                }
+            } else {
+                var sent_packets := ExtractSentPacketsFromIos(ios);
+                forall p | p in sent_packets 
+                ensures !p.msg.RslMessage_2b? {}
+            }
+        } else {
+            var sent_packets := ExtractSentPacketsFromIos(ios);
+            forall p | p in sent_packets 
+            ensures !p.msg.RslMessage_2b?
+            {}
+            assert forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2b? 
+            :: p in ts.t_environment.sentPackets;
         }
     }
-    assert All2aPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
-    assert All2bPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
-    assert (exists pkt :: pkt in ts'.t_environment.sentPackets && IsNew2bPacket(pkt, opn));
-    
-    forall pkt | pkt in ts'.undeliveredPackets && IsNew2aPacket(pkt, opn) 
-    ensures pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a?
-    {}
-
-    // TODO
-    assume false;
-    assert PerformanceGuarantee_2a(ts', opn);
-    assert PerformanceGuarantee_2b(ts', opn);
-    assert PerformanceGuarantee_Response(ts');
-    assert 0 <= ts'.t_replicas[1].v.nextActionIndex <= 9;
-    assert lr'.proposer.current_state == 2;
-    assert lr'.proposer.next_operation_number_to_propose > opn;
-
-    // Learner and Executor states
-    assert opn == lr'.executor.ops_complete;
-    assert lr'.executor.next_op_to_execute == OutstandingOpUnknown();
-    assert BalLeq(lr'.learner.max_ballot_seen, Ballot(1, 1));
-
-    assert Get2bCount(lr', opn, Ballot(1, 1)) <= LMinQuorumSize(ts'.constants.config);
-
-    assert (Get2bCount(lr', opn, Ballot(1, 1)) < LMinQuorumSize(ts'.constants.config)
-    ==> lr'.executor.next_op_to_execute.OutstandingOpUnknown?);
-
-    assert (Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
-    ==> TimeLe(ts'.t_replicas[1].ts, TimeBoundPhase2LeaderPost(ts'.t_replicas[1].v.nextActionIndex)));
-
-    assert (ts'.t_replicas[1].v.nextActionIndex == 6
-        && Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
-        ==> 
-        lr'.executor.next_op_to_execute.OutstandingOpKnown?
-    );
-
-    assert (lr'.executor.next_op_to_execute.OutstandingOpKnown?
-    ==> Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
-    );
-
-    assert (forall opn' | opn' in lr'.learner.unexecuted_learner_state :: opn' == opn);
-
-    assert After_2b_Sent_Invariant(ts', opn);
 }
 
 }
