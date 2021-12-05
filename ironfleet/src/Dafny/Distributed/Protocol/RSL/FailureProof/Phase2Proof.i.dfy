@@ -40,7 +40,7 @@ predicate PerformanceGuarantee_Response(ts:TimestampedRslState)
 predicate PerformanceGuarantee_2b(ts:TimestampedRslState, opn:OperationNumber) {
     forall pkt {:trigger pkt.msg.v.RslMessage_2b?} | 
         && pkt in ts.undeliveredPackets 
-        && IsNew2aPacket(pkt, opn)
+        && IsNew2bPacket(pkt, opn)
     :: TimeLe(pkt.msg.ts, TimeBound2bDeliveryPost())
 }
 
@@ -387,27 +387,16 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && r.proposer.next_operation_number_to_propose > opn
 
     // Learner and Executor states
-    && opn == r.executor.ops_complete
-    && r.executor.next_op_to_execute == OutstandingOpUnknown()
     && BalLeq(r.learner.max_ballot_seen, Ballot(1, 1))
+    && r.executor.ops_complete >= opn
 
-    && Get2bCount(r, opn, Ballot(1, 1)) <= LMinQuorumSize(ts.constants.config)
 
-    && (Get2bCount(r, opn, Ballot(1, 1)) < LMinQuorumSize(ts.constants.config)
-    ==> r.executor.next_op_to_execute.OutstandingOpUnknown?)
-
-    && (Get2bCount(r, opn, Ballot(1, 1)) == LMinQuorumSize(ts.constants.config)
-    ==> TimeLe(l.ts, TimeBoundPhase2LeaderPost(l.v.nextActionIndex)))
-
-    && (l.v.nextActionIndex == 6
-        && Get2bCount(r, opn, Ballot(1, 1)) == LMinQuorumSize(ts.constants.config)
-        ==> 
-        r.executor.next_op_to_execute.OutstandingOpKnown?
+    && (r.executor.ops_complete == opn
+        ==> Before_Request_Executed(ts, l, opn)
     )
 
-    && (r.executor.next_op_to_execute.OutstandingOpKnown?
-    ==> Get2bCount(r, opn, Ballot(1, 1)) == LMinQuorumSize(ts.constants.config)
-    )
+    && ((exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
+    ==> && r.executor.ops_complete > opn)
 
     && (forall opn' | opn' in r.learner.unexecuted_learner_state :: opn' == opn)
 
@@ -418,8 +407,47 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     )
 }
 
+predicate Before_Request_Executed(ts:TimestampedRslState, l:TimestampedLScheduler, opn:OperationNumber)
+    requires |ts.t_replicas| > 2
+    requires RslConsistency(ts)
+    requires 0 <= l.v.nextActionIndex <= 9
+{
+    var r := l.v.replica;
+    && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
+    && (Get2bCount(r, opn, Ballot(1, 1)) < LMinQuorumSize(ts.constants.config)
+        ==> Count2b_Lt_Quorum(ts, r, opn))
+    && (Get2bCount(r, opn, Ballot(1, 1)) == LMinQuorumSize(ts.constants.config)
+        ==> TimeLe(l.ts, TimeBoundPhase2LeaderPost(l.v.nextActionIndex)))
+    && (Get2bCount(r, opn, Ballot(1, 1)) == LMinQuorumSize(ts.constants.config)
+            ==> Count2b_Eq_Quorum(ts, l, r, opn))
+}
 
 
+predicate Count2b_Lt_Quorum(ts:TimestampedRslState, r:LReplica, opn:OperationNumber) 
+    requires |ts.t_replicas| > 2
+    requires RslConsistency(ts)
+{
+    && r.executor.next_op_to_execute.OutstandingOpUnknown?
+    && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
+}
+
+predicate Count2b_Eq_Quorum(ts:TimestampedRslState, l:TimestampedLScheduler, r:LReplica, opn:OperationNumber) 
+    requires r == l.v.replica
+    requires |ts.t_replicas| > 2
+    requires RslConsistency(ts)
+{
+    || (&& l.v.nextActionIndex < 6 
+        && r.executor.next_op_to_execute.OutstandingOpUnknown?
+        && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))    
+    )
+    || (&& l.v.nextActionIndex == 6 
+        && r.executor.next_op_to_execute.OutstandingOpKnown?
+        && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
+    )
+    || (&& l.v.nextActionIndex > 6
+        && (exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
+    )
+}
 
 /*****************************************************************************************
 *                                  Misc Definitions                                      *
@@ -447,7 +475,7 @@ predicate IsNewReplyPacket(ts:TimestampedRslState, pkt:TimestampedRslPacket)
 
 function Get2bCount(s:LReplica, opn:OperationNumber, ballot:Ballot) : int
 {
-    if s.learner.max_ballot_seen != ballot then 0 else
+    // if s.learner.max_ballot_seen != ballot then 0 else
   if opn !in s.learner.unexecuted_learner_state then
     0
   else
