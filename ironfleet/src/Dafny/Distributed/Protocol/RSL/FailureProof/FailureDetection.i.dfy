@@ -9,12 +9,14 @@ include "TimestampedRslSystem.i.dfy"
 include "FailureHelpers.i.dfy"
 
 include "../CommonProof/Constants.i.dfy"
+// include "../CommonProof/Requests.i.dfy"
 include "PureHelpers.i.dfy"
 
 module FailureDetection_i {
 import opened TimestampedRslSystem_i
 import opened FailureHelpers_i
 import opened PureHelpers_i
+// import opened CommonProof__Requests_i
 
 predicate RslConsistency(s:TimestampedRslState)
 {
@@ -218,6 +220,16 @@ predicate NonSuspector1(s:TimestampedRslState, j:int, req:Request)
   && TimeLe(s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time, TBEpoch1())
 }
 
+predicate NonSuspector2(s:TimestampedRslState, j:int, req:Request)
+  requires RslConsistency(s)
+  requires 0 <= j < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|
+{
+  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == [req]
+  && s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time >= 0
+  && TimeLe(s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time, TBEpoch1())
+}
+
 predicate HBUnsent(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.constants.config.replica_ids|
@@ -330,8 +342,15 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:
   }
 }
 
-/*
-lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+// TODO: this should be used from CommonProof/Requests.i.dfy
+lemma lemma_RemoveExecutedRequestBatchProducesSubsequence(s':seq<Request>, s:seq<Request>, batch:RequestBatch)
+  requires s' == RemoveExecutedRequestBatch(s, batch);
+  ensures  forall x :: x in s' ==> x in s;
+  decreases |batch|;
+{
+}
+
+lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -344,12 +363,39 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires NonSuspector1(s, j);
-  ensures  NonSuspector1(s', j);
+  requires NonSuspector1(s, j, req);
+  ensures  NonSuspector1(s', j, req) || NonSuspector0(s', j);
 {
-    if s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [] {
-      assert NonSuspector0(s, j);
+  if s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpKnown? {
+    var es := s.t_replicas[j].v.replica.proposer.election_state;
+    var es' := s'.t_replicas[j].v.replica.proposer.election_state;
+    var batch := s.t_replicas[j].v.replica.executor.next_op_to_execute.v;
+    if ElectionStateReflectExecutedRequestBatch(es, es', batch) {
+      // FIXME: things can only get removed; this should be easy to prove
+      // This works if we assume that reqs' <= reqs, which is true because the
+      // sequence has at most one elt in it
+      lemma_RemoveExecutedRequestBatchProducesSubsequence(
+      es'.requests_received_this_epoch,
+      es.requests_received_this_epoch,
+      batch);
+      lemma_RemoveExecutedRequestBatchProducesSubsequence(
+      es'.requests_received_prev_epochs,
+      es.requests_received_prev_epochs,
+      batch);
+
+      assert es'.requests_received_prev_epochs == [];
+
+      if s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [] {
+        assert NonSuspector0(s', j);
+      } else{
+        assert NonSuspector1(s', j, req);
+      }
+    } else {
+      assert NonSuspector1(s', j, req);
     }
+  } else {
+    assert NonSuspector1(s', j, req);
+  }
 }
 
 lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
@@ -370,7 +416,7 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 {
 }
 
-
+/*
 lemma NonSuspector_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
