@@ -13,6 +13,10 @@ module FailureHelpers_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
+function {:opaque} TBEpoch1() : Timestamp
+{
+  0
+}
 
 // TODO: move these to a different file
 function {:opaque} EpochQD(nextActionIndex:int) : Timestamp

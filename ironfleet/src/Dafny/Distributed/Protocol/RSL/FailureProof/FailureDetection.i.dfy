@@ -36,6 +36,8 @@ predicate BoundedQueueingAssumption(s:TimestampedRslState)
 
 predicate ClockAssumption(s:TimestampedRslState, s':TimestampedRslState)
   requires RslConsistency(s)
+  requires RslConsistency(s')
+  requires s.constants.config.replica_ids == s'.constants.config.replica_ids
 {
   forall idx, ios :: (
     && 0 <= idx < |s.constants.config.replica_ids|
@@ -59,6 +61,8 @@ predicate RslAssumption2(s:TimestampedRslState, s':TimestampedRslState)
 {
   && RslAssumption(s)
   && RslAssumption(s')
+  // FIXME: shouldn't need to assume this, pretty trivial
+  && s.constants.config.replica_ids == s'.constants.config.replica_ids
   && ClockAssumption(s, s')
 }
 
@@ -111,68 +115,44 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
 
-// can enter this after processing request
-predicate NodeFinishedRequest(s:TimestampedRslState, j:int)
+predicate NonSuspector(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
-  requires j < |s.t_replicas|
-  requires j < |s.constants.config.replica_ids|
+  requires 0 <= j < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|
+{
+  // Not a suspector ourselves, and no heartbeats sent indicating that we are one.
+  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
+  s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
+  HBUnsent(s, j)
+  // NOTE: can also add that no one thinks we're a suspector
+}
+
+// start out in this state initially
+// can also enter this after processing request
+predicate NonSuspector0(s:TimestampedRslState, j:int)
+  requires RslConsistency(s)
+  requires 0 <= j < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|
 {
   s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == []
   && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
 }
 
-predicate NodeIsNotSuspectorInFirstEpoch(s:TimestampedRslState, j:int)
+predicate NonSuspector1(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
-  requires j < |s.t_replicas|
-  requires j < |s.constants.config.replica_ids|
+  requires 0 <= j < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|
 {
-  // all HBs are unsuspecting
-  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
-  s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
-  HBUnsent(s, j)
-  // Not a suspector ourselves, and no heartbeats sent indicating that we are one.
   && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch| == 1
   && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs| == 0
-  && true
-  // TODO: can't have exceeded FailTime + EpochLength + AllActions()
-}
-
-predicate NodeIsNotSuspectorInSecondEpoch(s:TimestampedRslState, j:int)
-  requires RslConsistency(s)
-  requires j < |s.t_replicas|
-  requires j < |s.constants.config.replica_ids|
-{
-  // all HBs are unsuspecting
-  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
-  s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
-  HBUnsent(s, j)
-  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs != []
-  // Not a suspector ourselves, and no heartbeats sent indicating that we are
-  // one.
-  // TODO: can't have exceeded (FailTime + EpochLength + AllActions()) + EpochLength + AllActions()
-}
-
-predicate NodeIsNotSuspector(s:TimestampedRslState, j:int)
-  requires RslConsistency(s)
-  requires j < |s.t_replicas|
-  requires j < |s.constants.config.replica_ids|
-{
-  NodeIsNotSuspectorInFirstEpoch(s, j) ||
-  NodeIsNotSuspectorInSecondEpoch(s, j)
-}
-
-predicate NodeIsSuspector(s:TimestampedRslState, j:int)
-  requires RslConsistency(s)
-  requires j < |s.constants.config.replica_ids|
-{
-  // Node j is a suspector
-  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
-  s.t_replicas[j].v.replica.constants.my_index in suspectors
+  && s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time >= 0
+  && TimeLe(s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time, TBEpoch1())
+  // TODO: can't have exceeded ClientDeliveryTime + EpochLength + AllActions()
 }
 
 predicate HBUnsent(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
-  requires j < |s.constants.config.replica_ids|
+  requires 0 <= j < |s.constants.config.replica_ids|
 {
   // All HBs are unsuspecting
   forall pkt ::
@@ -182,80 +162,11 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
   pkt.msg.v.suspicious == false
 }
 
-predicate HBEnRoute(s:TimestampedRslState, j:int)
-  requires RslConsistency(s)
-  requires j < |s.constants.config.replica_ids|
-{
-  |s.constants.config.replica_ids| > 1 ==>
-  // There exists an HB in route with the designated TS
-  exists pkt ::
-  pkt in s.undeliveredPackets &&
-  pkt.msg.v.RslMessage_Heartbeat? &&
-  pkt.src == s.constants.config.replica_ids[j] &&
-  pkt.dst == s.constants.config.replica_ids[1] &&
-  pkt.msg.v.suspicious == true &&
-  pkt.msg.v.bal_heartbeat == Ballot(1, 0) && // suspicious about initial ballot
-  TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
-}
-
-predicate NodeIsKnownSuspector(s:TimestampedRslState, j:int)
-  requires RslConsistency(s)
-{
-  1 < |s.t_replicas| ==>
-    var suspectors := s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
-    j in suspectors
-}
-
-predicate NewLeaderInvariant(s:TimestampedRslState)
-{
-  1 < |s.t_replicas| ==>
-    (s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0) ==>
-      (var ns := |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors|;
-      // TODO: add nextAction inv here
-      ns == LMinQuorumSize(s.constants.config)) ==>
-        TimeLe(s.t_replicas[1].ts, TBFirstSuspectingHB())
-    )
-}
-
-predicate HBtimeInv(s:TimestampedRslState, idx:int)
-  requires RslConsistency(s)
-  requires 0 <= idx && idx < |s.t_replicas|
-{
-  s.t_replicas[idx].v.replica.nextHeartbeatTime >= 0
-  && TimeLe(s.t_replicas[idx].v.replica.nextHeartbeatTime, 0)
-  // FIXME: put real upper bound here
-}
-
-predicate NodeFDInvariant(s:TimestampedRslState, idx:int)
-  requires RslConsistency(s)
-  requires 0 <= idx && idx < |s.t_replicas|
-{
-  NodeIsNotSuspector(s, idx) ||
-  (NodeIsSuspector(s, idx) && (
-    (HBUnsent(s, idx) && HBtimeInv(s,idx))
-    || HBEnRoute(s, idx)
-    || NodeIsKnownSuspector(s, idx)
-    )
-  )
-}
-
-predicate FDInvariant(s:TimestampedRslState)
-  requires RslConsistency(s)
-  requires EpochTimeoutQDInv(s) // keeping this here just as reminder that the EpochQD invariant should be assumed in proving that this is inductive
-{
-  && (forall idx :: 0 <= idx < |s.t_replicas| ==>
-    // s.t_replicas[idx].
-    NodeFDInvariant(s, idx)
-  )
-  && NewLeaderInvariant(s)
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // PF_NONSUSP
 ////////////////////////////////////////////////////////////////////////////////
 
-
-lemma NonSuspectorFirst_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -264,38 +175,89 @@ lemma NonSuspectorFirst_ind(s:TimestampedRslState, s':TimestampedRslState, j:int
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires s.t_environment.nextStep.nodeStep != RslStep(0) // on step 0, we might just enter a new view because of HB
   requires s.t_environment.nextStep.nodeStep != RslStep(7) // on step 7, we might start new epoch
+  requires s.t_environment.nextStep.nodeStep != RslStep(6) // on step 6, we might go to NS0(j)
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires NodeIsNotSuspectorInFirstEpoch(s, j);
-  ensures  NodeIsNotSuspectorInFirstEpoch(s', j);
+  requires NonSuspector1(s, j);
+  ensures  NonSuspector1(s', j);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
+    assert false;
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(1) {
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(2) {
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(3) {
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(4) {
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(5) {
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(6) {
-    if s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [] {
-      assert NodeFinishedRequest(s, j);
-    }
+    assert false;
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(7) {
+    assert false;
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(8) {
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(9) {
+    assert NonSuspector1(s', j);
   }
 }
 
+lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= idx < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires s.t_environment.nextStep.nodeStep == RslStep(6) // on step 6, we might go to NS0(j)
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires NonSuspector1(s, j);
+  ensures  NonSuspector1(s', j);
+{
+    if s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [] {
+      assert NonSuspector0(s, j);
+    }
+}
+
+lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= idx < |s.t_replicas|
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires s.t_environment.nextStep.nodeStep == RslStep(7)
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires NonSuspector1(s, j);
+  ensures  NonSuspector1(s', j);
+{
+}
+
+
+/*
 lemma NonSuspector_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
@@ -494,5 +456,5 @@ lemma FDInductive(s:TimestampedRslState, s':TimestampedRslState, j:int)
   ensures FDInvariant(s')
 {
 }
-
+*/
 }
