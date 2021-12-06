@@ -128,6 +128,22 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
 
+//
+predicate OneAndOnlyOneRequest(s:TimestampedRslState, req:Request)
+  requires RslConsistency(s)
+{
+  && (forall pkt :: pkt in s.t_environment.sentPackets ==>
+    pkt.msg.v.RslMessage_Request? ==>
+    && pkt.msg.v.seqno_req == req.seqno
+    && pkt.msg.v.val == req.request
+    && pkt.src == req.client)
+  && (forall j :: 0 <= j < |s.t_replicas| ==>
+    var es := s.t_replicas[j].v.replica.proposer.election_state;
+    (forall req' :: req' in es.requests_received_prev_epochs ==> req' == req)
+    && (forall req' :: req' in es.requests_received_this_epoch ==> req' == req)
+    )
+}
+
 // "suspecting_replicas"
 predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<int>)
 {
@@ -142,12 +158,12 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   SuspectingReplicaInv(s, suspecting_replicas)
   && |suspecting_replicas| < LMinQuorumSize(s.constants.config)
   && (forall pkt ::
-     pkt in s.undeliveredPackets ==>
+     pkt in s.t_environment.sentPackets ==>
      pkt.msg.v.RslMessage_Heartbeat? ==>
      pkt.msg.v.bal_heartbeat == Ballot(1, 0)
   )
   && (forall pkt ::
-     pkt in s.undeliveredPackets ==>
+     pkt in s.t_environment.sentPackets ==>
      && (pkt.msg.v.RslMessage_2a? ==>
      pkt.msg.v.bal_2a == Ballot(1, 0))
      && (pkt.msg.v.RslMessage_2b? ==>
@@ -191,13 +207,13 @@ predicate NonSuspector0(s:TimestampedRslState, j:int)
   && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
 }
 
-predicate NonSuspector1(s:TimestampedRslState, j:int)
+predicate NonSuspector1(s:TimestampedRslState, j:int, req:Request)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|
 {
-  && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch| == 1
-  && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs| == 0
+  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [req]
+  && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
   && s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time >= 0
   && TimeLe(s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time, TBEpoch1())
 }
@@ -208,7 +224,7 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
 {
   // All HBs are unsuspecting
   forall pkt ::
-  pkt in s.undeliveredPackets ==>
+  pkt in s.t_environment.sentPackets ==>
   pkt.msg.v.RslMessage_Heartbeat? ==>
   pkt.src == s.constants.config.replica_ids[j] ==>
   pkt.msg.v.suspicious == false
@@ -218,7 +234,7 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
 // PF_NONSUSP
 ////////////////////////////////////////////////////////////////////////////////
 
-lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -234,8 +250,9 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
-  requires NonSuspector1(s, j);
-  ensures  NonSuspector1(s', j);
+  requires OneAndOnlyOneRequest(s, req)
+  requires NonSuspector1(s, j, req);
+  ensures  NonSuspector1(s', j, req);
   // ensures InView1(s', sr);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
@@ -243,44 +260,55 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
     if ios[0].LIoOpReceive?  {
       if ios[0].r.msg.v.RslMessage_Heartbeat? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_1a? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_1b? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_2b? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_2a? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
+      } else if ios[0].r.msg.v.RslMessage_Request? {
+        var es := s.t_replicas[j].v.replica.proposer.election_state;
+        var newReq := Request(ios[0].r.src, ios[0].r.msg.v.seqno_req, ios[0].r.msg.v.val);
+        assert ios[0].r in s.t_environment.sentPackets;
+        assert ios[0].r.src == req.client;
+        assert ios[0].r.msg.v.seqno_req == req.seqno;
+        assert (req in es.requests_received_this_epoch) && RequestsMatch(req, newReq);
+
+        assert s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch ==
+          s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch;
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_Reply? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_AppStateRequest? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_AppStateSupply? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else if ios[0].r.msg.v.RslMessage_StartingPhase2? {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       } else{
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
       }
     } else {
-        assert NonSuspector1(s', j);
+        assert NonSuspector1(s', j, req);
     }
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(1) {
-    assert NonSuspector1(s', j);
+    assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(2) {
-    assert NonSuspector1(s', j);
+    assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(3) {
-    assert NonSuspector1(s', j);
+    assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(4) {
-    assert NonSuspector1(s', j);
+    assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(5) {
-    assert NonSuspector1(s', j);
+    assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(6) {
     assert false;
@@ -295,13 +323,14 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
     // assert |r.proposer.election_state.current_view_suspectors| <= |sr|;
     // assert |sr| < LMinQuorumSize(s.constants.config);
     // assert |r.proposer.election_state.current_view_suspectors| < LMinQuorumSize(s.constants.config);
-    // assert NonSuspector1(s', j);
+    // assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(9) {
-    assert NonSuspector1(s', j);
+    assert NonSuspector1(s', j, req);
   }
 }
 
+/*
 lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
@@ -342,7 +371,6 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 }
 
 
-/*
 lemma NonSuspector_ind(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
