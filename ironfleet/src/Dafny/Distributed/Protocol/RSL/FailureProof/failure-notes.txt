@@ -1,0 +1,79 @@
+Failover proof plan.
+
+Want to prove bound on when nodes[1] enters new view.
+
+For all nodes:
+- not a suspector:
+  * send no suspecting heartbeats to anyone
+- not a suspector, don't know about any requests. stay here forever until
+  receive a request.
+  * when receive a/the client request, enter the first epoch.
+- not a suspector, in first epoch
+  * in first epoch, then node.epoch_end < approximately(client_packet.deliveryTime + epoch_length)
+- not a suspector, in second epoch
+  * in second epoch, then node.epoch_end < approx(2*epoch_length + client_pkt.deliveryTime)
+- can go from non-suspector with request to non-suspector+don't know about
+  request at any time
+  As soon as a node enters new view, we don't care about them anymore. We just
+  had to prove that they sent a heartbeat early enough. I.e. if node is a
+  suspector and has sent HB, then there exists a HB pkt with the right timestamp.
+
+- nodes[1] time bounds:
+  eventually will take step that goes from non-quorum to quorum of view suspicions.
+  This step will involve receiving a packet from someone that we haven't gotten
+  a packet from before. (if j ∉ nodes[1].known_suspectors then if there are any
+  suspecting HBs from nodes[j], there is one that has timestamp < blah blah)
+
+- if suspector,
+  * when become suspector, know that heartbeat will be sent within HBPeriod time (this is always true)
+  * remember that nextHBTime <= approx(secondEpochExpiration + HBPeriod)
+  * round-robin schedule bounds "queuing" delay between timer expiring and
+    actually sending the packet
+
+Plan:
+define from NonSuspector0() (i.e. don't know about client req)
+start from NonSuspector1() (i.e. know about client req)
+
+Inductive step starting from NonSuspector1(j):
+  * If execute, might become NS1
+  * If epoch expires, might become NS3
+  * Else, stay NS2
+
+Inductive step starting from NonSuspector2(j):
+  * If execute, might become NS1
+  * If epoch expires, might become Suspector(j)
+  * Else, stay NS2
+
+Inductive step starting from Suspector(j):
+  * If send HB, might become SuspectorFinished(j)
+
+Inductive step for SuspectorFinished(j):
+  * Either nodes[1] knows that we are a suspector, or our first packet is en
+    route.
+  * When nodes[1] takes a receive step, might get to a quorum of suspectors, in
+    which case we can bound the time on the new leader by the bound on that
+    first suspecting HB packet.
+
+Inductive step for LeaderSuspectorInv():
+  * Exists some minority that nodes[1] knows are suspecting.
+  * If become a suspector (whatever step that is), might now have a quorum
+  * If receive a HB packet, might have a quorum
+  * If receive a HB packet, might directly find out about new view
+    - Perhaps just assume this doesn't happen for now?
+  * Otherwise, still have the same minority
+
+Inductive step for LeaderSuspectorQuorum():
+  * This is the end of the proof probably.
+
+= Issues with approach
+What happens if a node enters a new view via heartbeat from someone else?
+We want to be able to bound the next heartbeat that they're going to send.
+Or, I guess we can just use the fact that *someone* has a quorum of suspectors
+to know that the leader will get a HB from that someone in time.
+
+Might also get a quorum of view suspicions while node is still in first epoch!
+What then?
+
+Really, this should be two separate things, then.
+One proof: any suspecting HBs I send have such-and-such bound tagged with them.
+Another proof: when I get a quorum of suspecting HBs,
