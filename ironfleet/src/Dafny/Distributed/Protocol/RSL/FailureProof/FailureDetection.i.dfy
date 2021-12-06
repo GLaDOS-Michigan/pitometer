@@ -9,10 +9,12 @@ include "TimestampedRslSystem.i.dfy"
 include "FailureHelpers.i.dfy"
 
 include "../CommonProof/Constants.i.dfy"
+include "PureHelpers.i.dfy"
 
 module FailureDetection_i {
 import opened TimestampedRslSystem_i
 import opened FailureHelpers_i
+import opened PureHelpers_i
 
 predicate RslConsistency(s:TimestampedRslState)
 {
@@ -51,10 +53,21 @@ predicate ClockAssumption(s:TimestampedRslState, s':TimestampedRslState)
   )
 }
 
+predicate NoStateTransfer(s:TimestampedRslState)
+{
+  s.t_environment.nextStep.LEnvStepHostIos? ==>
+    (forall io :: io in s.t_environment.nextStep.ios && io.LIoOpReceive? ==>
+    && !io.r.msg.v.RslMessage_AppStateRequest?
+    && !io.r.msg.v.RslMessage_AppStateSupply?
+    && !io.r.msg.v.RslMessage_StartingPhase2?
+    )
+}
+
 predicate RslAssumption(s:TimestampedRslState)
 {
   && RslConsistency(s)
   && BoundedQueueingAssumption(s)
+  && NoStateTransfer(s)
 }
 
 predicate RslAssumption2(s:TimestampedRslState, s':TimestampedRslState)
@@ -115,6 +128,46 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
 
+// "suspecting_replicas"
+predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<int>)
+{
+  && (forall j :: j in suspecting_replicas ==> 0 <= j < |s.t_replicas|)
+  && (forall j :: 0 <= j < |s.t_replicas| ==>
+        s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors <= suspecting_replicas
+    )
+}
+
+predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
+{
+  SuspectingReplicaInv(s, suspecting_replicas)
+  && |suspecting_replicas| < LMinQuorumSize(s.constants.config)
+  && (forall pkt ::
+     pkt in s.undeliveredPackets ==>
+     pkt.msg.v.RslMessage_Heartbeat? ==>
+     pkt.msg.v.bal_heartbeat == Ballot(1, 0)
+  )
+  && (forall pkt ::
+     pkt in s.undeliveredPackets ==>
+     && (pkt.msg.v.RslMessage_2a? ==>
+     pkt.msg.v.bal_2a == Ballot(1, 0))
+     && (pkt.msg.v.RslMessage_2b? ==>
+     pkt.msg.v.bal_2b == Ballot(1, 0))
+     && (pkt.msg.v.RslMessage_1a? ==>
+     pkt.msg.v.bal_1a == Ballot(1, 0))
+     && (pkt.msg.v.RslMessage_1b? ==>
+     pkt.msg.v.bal_1b == Ballot(1, 0))
+  )
+
+  && (
+  forall j :: 0 <= j < |s.t_replicas| ==>
+    s.t_replicas[j].v.replica.proposer.election_state.current_view == Ballot(1,0)
+    && if (j in suspecting_replicas) then
+      true // FIXME: HB sent
+    else
+      true // FIXME: HB unsent and no one thinks j is a suspector
+  )
+}
+
 predicate NonSuspector(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
@@ -147,7 +200,6 @@ predicate NonSuspector1(s:TimestampedRslState, j:int)
   && |s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs| == 0
   && s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time >= 0
   && TimeLe(s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time, TBEpoch1())
-  // TODO: can't have exceeded ClientDeliveryTime + EpochLength + AllActions()
 }
 
 predicate HBUnsent(s:TimestampedRslState, j:int)
@@ -166,27 +218,54 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
 // PF_NONSUSP
 ////////////////////////////////////////////////////////////////////////////////
 
-lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, j:int, idx:int)
+lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
-  requires 0 <= idx < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
 
-  requires s.t_environment.nextStep.nodeStep != RslStep(0) // on step 0, we might just enter a new view because of HB
+  // requires s.t_environment.nextStep.nodeStep != RslStep(0) // on step 0, we might just enter a new view because of HB
   requires s.t_environment.nextStep.nodeStep != RslStep(7) // on step 7, we might start new epoch
   requires s.t_environment.nextStep.nodeStep != RslStep(6) // on step 6, we might go to NS0(j)
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
+  requires InView1(s, sr);
   requires NonSuspector1(s, j);
   ensures  NonSuspector1(s', j);
+  // ensures InView1(s', sr);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
-    assert false;
+    var ios := s.t_environment.nextStep.ios;
+
+    if ios[0].LIoOpReceive?  {
+      if ios[0].r.msg.v.RslMessage_Heartbeat? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_1a? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_1b? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_2b? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_2a? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_Reply? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_AppStateRequest? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_AppStateSupply? {
+        assert NonSuspector1(s', j);
+      } else if ios[0].r.msg.v.RslMessage_StartingPhase2? {
+        assert NonSuspector1(s', j);
+      } else{
+        assert NonSuspector1(s', j);
+      }
+    } else {
+        assert NonSuspector1(s', j);
+    }
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(1) {
     assert NonSuspector1(s', j);
@@ -210,7 +289,13 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, j:in
     assert false;
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(8) {
-    assert NonSuspector1(s', j);
+    var r := s.t_replicas[j].v.replica;
+    // assert r.proposer.election_state.current_view_suspectors <= sr;
+    SubsetCardinality(r.proposer.election_state.current_view_suspectors, sr);
+    // assert |r.proposer.election_state.current_view_suspectors| <= |sr|;
+    // assert |sr| < LMinQuorumSize(s.constants.config);
+    // assert |r.proposer.election_state.current_view_suspectors| < LMinQuorumSize(s.constants.config);
+    // assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(9) {
     assert NonSuspector1(s', j);

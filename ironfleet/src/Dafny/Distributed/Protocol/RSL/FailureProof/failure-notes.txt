@@ -77,3 +77,13 @@ What then?
 Really, this should be two separate things, then.
 One proof: any suspecting HBs I send have such-and-such bound tagged with them.
 Another proof: when I get a quorum of suspecting HBs,
+
+
+Can maintain that there are no new-view hearbeats until there is a quorum of
+suspecting heartbeats. At that point, can prove bound on when leader will enter
+new view.
+
+= Better plan
+Inductive step for NonSuspector1()
+  * Do this in context where a minority of suspecting HBs have been sent.
+  *
