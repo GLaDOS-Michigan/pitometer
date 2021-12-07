@@ -13,6 +13,15 @@ module FailureHelpers_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
+function {:opaque} TBEpoch1() : Timestamp
+{
+  0
+}
+
+function {:opaque} TBEpoch2() : Timestamp
+{
+  0
+}
 
 // TODO: move these to a different file
 function {:opaque} EpochQD(nextActionIndex:int) : Timestamp
@@ -20,19 +29,19 @@ function {:opaque} EpochQD(nextActionIndex:int) : Timestamp
   0
 }
 
-function {:opaque} FirstEpochEnd(nextActionIndex:int) : Timestamp
+function {:opaque} FirstEpochEnd() : Timestamp
 {
   0
 }
 
-function {:opaque} SecondEpochEnd(nextActionIndex:int) : Timestamp
+function {:opaque} SecondEpochEnd() : Timestamp
 {
-  0
+  FirstEpochEnd() // + EpochLength() + TimeActionRange(0)
 }
 
 function {:opaque} TBFirstSuspectingHB() : Timestamp
 {
-  0
+  SecondEpochEnd() // + HBPeriod() + TimeActionRange(0)
 }
 
 lemma EpochQDHelper()
