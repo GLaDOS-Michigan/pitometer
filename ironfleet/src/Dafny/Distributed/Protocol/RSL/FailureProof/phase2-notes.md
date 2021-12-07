@@ -277,4 +277,60 @@ if nextActionIndex == 0 {
         assert BoundaryConditionInvariant_ExistingPacketsBallot(s');
     }
 }
+
+
+
+
+var lr, lr' := ts.t_replicas[1].v.replica, ts'.t_replicas[1].v.replica;
+assert All2aPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
+assert All2bPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
+assert (exists pkt :: pkt in ts'.t_environment.sentPackets && IsNew2bPacket(pkt, opn));
+assert PerformanceGuarantee_2a(ts', opn);
+assert PerformanceGuarantee_2b(ts', opn);
+assert PerformanceGuarantee_Response(ts');
+assert 0 <= ts'.t_replicas[1].v.nextActionIndex <= 9;
+assert lr'.proposer.current_state == 2;
+assert lr'.proposer.next_operation_number_to_propose > opn;
+
+// Learner and Executor states
+assert BalLeq(lr'.learner.max_ballot_seen, Ballot(1, 1));
+
+assert (Get2bCount(lr', opn, Ballot(1, 1)) < LMinQuorumSize(ts.constants.config)
+==> && lr'.executor.next_op_to_execute.OutstandingOpUnknown?
+    && lr'.executor.ops_complete == opn
+    && (!exists pkt :: pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt))
+);
+
+assert (Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
+    ==> TimeLe(ts'.t_replicas[1].ts, TimeBoundPhase2LeaderPost(nextActionIndex')));
+
+assert (Get2bCount(lr', opn, Ballot(1, 1)) == LMinQuorumSize(ts'.constants.config)
+    ==> && (nextActionIndex' < 6 ==> 
+            && lr'.executor.ops_complete == opn 
+            && lr'.executor.next_op_to_execute.OutstandingOpUnknown?
+            && (!exists pkt :: pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt))
+        )
+        && (nextActionIndex' == 6 ==> 
+            && lr'.executor.ops_complete == opn 
+            && lr'.executor.next_op_to_execute.OutstandingOpKnown?
+            && (!exists pkt :: pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt))
+        )
+        && (nextActionIndex' > 6 ==> 
+            && lr'.executor.ops_complete > opn
+            && (exists pkt :: pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt))
+        )
+    );
+
+assert ((exists pkt :: pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt))
+==> && lr'.executor.ops_complete > opn);
+
+assert (forall opn' | opn' in lr'.learner.unexecuted_learner_state :: opn' == opn);
+
+assert (opn in lr'.learner.unexecuted_learner_state 
+    ==>
+    && lr'.learner.max_ballot_seen == Ballot(1, 1)
+    && (forall id :: id in lr'.learner.unexecuted_learner_state[opn].received_2b_message_senders ==> id in ts'.constants.config.replica_ids)
+);
+
+assert After_2b_Sent_Invariant(ts', opn);
 ```

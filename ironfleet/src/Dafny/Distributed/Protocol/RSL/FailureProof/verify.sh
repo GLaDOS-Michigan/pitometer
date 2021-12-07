@@ -1,5 +1,8 @@
 #!/bin/bash -li
 
+echo "Verifying (long) Phase2Proof_helper0.i.dfy"
+dafnylong Phase2Proof_helper0.i.dfy | grep -iv "Warning"
+
 echo "Verifying (long) Phase2Proof_helper1.i.dfy"
 dafnylong Phase2Proof_helper1.i.dfy | grep -iv "Warning"
 

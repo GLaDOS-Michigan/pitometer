@@ -205,7 +205,8 @@ predicate LReplicaNextSpontaneousMaybeExecute(s:LReplica, s':LReplica, sent_pack
 {
     if    s.executor.next_op_to_execute.OutstandingOpKnown?
         && LtUpperBound(s.executor.ops_complete, s.executor.constants.all.params.max_integer_val)
-        && LReplicaConstantsValid(s.executor.constants) then
+        && LReplicaConstantsValid(s.executor.constants) 
+    then
         var v := s.executor.next_op_to_execute.v;
            LProposerResetViewTimerDueToExecution(s.proposer, s'.proposer, v)
         && LLearnerForgetDecision(s.learner, s'.learner, s.executor.ops_complete)

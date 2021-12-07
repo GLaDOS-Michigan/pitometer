@@ -1,9 +1,11 @@
 include "Phase2Proof.i.dfy"
+include "Phase2Proof_helper0.i.dfy"
 include "Phase2Proof_helper1.i.dfy"
 include "Phase2Proof_helper2.i.dfy"
 
 module Rs2Phase2Proof_Top {
 import opened RslPhase2Proof_postFail_i
+import opened Rs2Phase2Proof_Helper_0
 import opened Rs2Phase2Proof_Helper_1
 import opened Rs2Phase2Proof_Helper_2
 
@@ -145,9 +147,7 @@ lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:Op
     }
     var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
     if idx == 1 {
-        // TODO
-        assume false;
-        assert After_2b_Sent_Invariant(ts', opn);
+        After2b_to_After2b_LeaderAction(ts, ts', opn, idx, tios);
     } else {
         After2b_to_After2b_NonLeaderAction(ts, ts', opn, idx, tios);
     }
