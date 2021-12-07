@@ -67,6 +67,7 @@ predicate NoStateTransfer(s:TimestampedRslState)
 
 predicate NoExternalSteps(s:TimestampedRslState)
 {
+  s.t_environment.nextStep.LEnvStepHostIos? ==>
   s.t_environment.nextStep.actor in s.constants.config.replica_ids
 }
 
@@ -159,14 +160,6 @@ predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<in
   && (forall j :: 0 <= j < |s.t_replicas| ==>
         s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors <= suspecting_replicas
     )
-  // All HBs from replica is
-  && (
-  true
-  // forall pkt ::
-  // pkt in s.t_environment.sentPackets ==>
-  // pkt.msg.v.RslMessage_Heartbeat? ==>
-  // pkt.src !in suspecting_replicas
-  )
 }
 
 // no one is in view 2
@@ -195,10 +188,13 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>, req:Reque
   )
 
   && (
-  forall j :: 0 <= j < |s.t_replicas| ==>
+    forall j :: 0 <= j < |s.t_replicas| ==>
     s.t_replicas[j].v.replica.proposer.election_state.current_view == Ballot(1,0)
-    && if (j in suspecting_replicas) then
-      HBSent(s, j)
+    )
+  && (
+    forall j :: 0 <= j < |s.t_replicas| ==>
+    if (j in suspecting_replicas) then
+      Suspector(s, j) // Steps of j and of the leader affect this
     else
       // HB unsent and no one thinks j is a suspector
       NonSuspector(s, j) &&
@@ -262,7 +258,7 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
   pkt.msg.v.suspicious == false
 }
 
-predicate HBSent(s:TimestampedRslState, j:int)
+predicate Suspector(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.constants.config.replica_ids|
 {
@@ -300,7 +296,7 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:
   requires OneAndOnlyOneRequest(s, req)
   requires NonSuspector1(s, j, req);
   ensures  NonSuspector1(s', j, req);
-  // ensures InView1(s', sr);
+  // ensures InView1(s', sr, req);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
     var ios := s.t_environment.nextStep.ios;
@@ -451,6 +447,21 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 {
 }
 
+lemma NonSuspector1_ind_InView1(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires InView1(s, sr, req);
+  ensures  InView1(s', sr', req);
+{
+}
+
 lemma InView1_ind_j(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
@@ -464,6 +475,21 @@ lemma InView1_ind_j(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set
   requires InView1(s, sr, req);
   ensures  InView1(s', sr', req);
 {
+  if j == 1 { // step of the leader
+    // need to do something special about Suspector(s, j)
+  }
+
+  if j in sr {
+    assert false; // TODO: deal with this case
+  } else {
+    if NonSuspector0(s, j) {
+      assert false; // TODO: deal with this (trivial) case
+    } else if NonSuspector1(s, j, req) {
+      assert false; // TODO: deal with this case
+    } else if NonSuspector2(s, j, req) {
+      assert false; // TODO: deal with this case
+    }
+  }
 }
 
 lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, req:Request) returns (sr':set<int>)

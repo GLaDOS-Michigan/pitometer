@@ -87,3 +87,7 @@ new view.
 Inductive step for NonSuspector1()
   * Do this in context where a minority of suspecting HBs have been sent.
   *
+
+=
+If a NS1() node takes a step that doesn't result in it entering a different NS
+state, we know that it will not se
