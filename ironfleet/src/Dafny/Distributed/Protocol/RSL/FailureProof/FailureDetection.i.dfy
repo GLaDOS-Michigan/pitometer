@@ -164,19 +164,15 @@ predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<in
 
 // no one is in view 2
 // This invariant becomes untrue as soon as |sr| >= MinQuorumSize
-predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>, req:Request)
+
+predicate InView1Packets(s:TimestampedRslState)
   requires RslConsistency(s)
 {
-  SuspectingReplicaInv(s, suspecting_replicas)
-  && |suspecting_replicas| < LMinQuorumSize(s.constants.config)
+  && (forall pkt ::
+     pkt in s.t_environment.sentPackets ==>
 
-  && (forall pkt ::
-     pkt in s.t_environment.sentPackets ==>
-     pkt.msg.v.RslMessage_Heartbeat? ==>
-     pkt.msg.v.bal_heartbeat == Ballot(1, 0)
-  )
-  && (forall pkt ::
-     pkt in s.t_environment.sentPackets ==>
+     && (pkt.msg.v.RslMessage_Heartbeat? ==>
+     pkt.msg.v.bal_heartbeat == Ballot(1, 0))
      && (pkt.msg.v.RslMessage_2a? ==>
      pkt.msg.v.bal_2a == Ballot(1, 0))
      && (pkt.msg.v.RslMessage_2b? ==>
@@ -186,20 +182,43 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>, req:Reque
      && (pkt.msg.v.RslMessage_1b? ==>
      pkt.msg.v.bal_1b == Ballot(1, 0))
   )
+}
+
+predicate InView1Local(s:TimestampedRslState, j:int, sus:bool, req:Request)
+  requires RslConsistency(s)
+{
+  if sus then
+    Suspector(s, j) // Steps of j and of the leader affect this
+  else
+    // HB unsent and no one thinks j is a suspector
+    NonSuspector(s, j) &&
+    (NonSuspector0(s,j) || NonSuspector1(s,j,req) || NonSuspector2(s, j, req))
+}
+
+
+predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>, req:Request)
+  requires RslConsistency(s)
+{
+  SuspectingReplicaInv(s, suspecting_replicas)
+  && |suspecting_replicas| < LMinQuorumSize(s.constants.config)
+
+  && InView1Packets(s)
 
   && (
     forall j :: 0 <= j < |s.t_replicas| ==>
     s.t_replicas[j].v.replica.proposer.election_state.current_view == Ballot(1,0)
     )
+
   && (
-    forall j :: 0 <= j < |s.t_replicas| ==>
-    if (j in suspecting_replicas) then
-      Suspector(s, j) // Steps of j and of the leader affect this
-    else
-      // HB unsent and no one thinks j is a suspector
-      NonSuspector(s, j) &&
-      (NonSuspector0(s,j) || NonSuspector1(s,j,req) || NonSuspector2(s, j, req))
+    forall j :: 0 <= j < |s.t_replicas| ==> InView1_node(s, j, j in suspecting_replicas, req)
   )
+}
+
+predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>, req:Request)
+  requires RslConsistency(s)
+{
+  SuspectingReplicaInv(s, suspecting_replicas)
+  && |suspecting_replicas| >= LMinQuorumSize(s.constants.config)
 }
 
 predicate NonSuspector(s:TimestampedRslState, j:int)
@@ -210,8 +229,9 @@ predicate NonSuspector(s:TimestampedRslState, j:int)
   // Not a suspector ourselves, and no heartbeats sent indicating that we are one.
   var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
   s.t_replicas[j].v.replica.constants.my_index !in suspectors &&
-  HBUnsent(s, j)
-  // NOTE: can also add that no one thinks we're a suspector
+  HBUnsent(s, j) &&
+  // leader doesn't suspect this node
+  s.t_replicas[j].v.replica.constants.my_index !in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors
 }
 
 // start out in this state initially
@@ -445,6 +465,45 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 
   requires NonSuspector1(s, j, req);
   ensures  NonSuspector1(s', j, req);
+{
+}
+
+lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int)
+  requires RslAssumption2(s, s')
+  // requires EpochTimeoutQDInv(s)
+  // requires EpochTimeoutQDInv(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires InView1(s, sr, req);
+  requires OneAndOnlyOneRequest(s, req);
+  requires j !in sr;
+
+  ensures InView1Local(s, j, sus, req);
+{
+}
+
+lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int)
+  requires RslAssumption2(s, s')
+  // requires EpochTimeoutQDInv(s)
+  // requires EpochTimeoutQDInv(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[1];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires InView1(s, sr, req);
+  requires OneAndOnlyOneRequest(s, req);
+
+  // FIXME: this only needs to be proved if the leader hasn't just entered the
+  // new view
+  ensures InView1_node(s, j, sus, req);
 {
 }
 
