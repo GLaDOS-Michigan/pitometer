@@ -137,7 +137,7 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
 
-//
+// This should be a self-contained invariant; maybe even an assumption
 predicate OneAndOnlyOneRequest(s:TimestampedRslState, req:Request)
   requires RslConsistency(s)
 {
@@ -267,6 +267,7 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && pkt in s.t_environment.sentPackets
   && pkt.msg.v.RslMessage_Heartbeat?
   && pkt.src == s.constants.config.replica_ids[j]
+  && pkt.dst == s.constants.config.replica_ids[1]
   && pkt.msg.v.suspicious == true
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
   ) ||
@@ -457,9 +458,38 @@ lemma NonSuspector1_ind_InView1(s:TimestampedRslState, s':TimestampedRslState, j
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
+  requires s.t_environment.nextStep.nodeStep != RslStep(7) // on step 7, we might start new epoch
+  requires s.t_environment.nextStep.nodeStep != RslStep(6) // on step 6, we might go to NS0(j)
+
   requires InView1(s, sr, req);
-  ensures  InView1(s', sr', req);
+  requires OneAndOnlyOneRequest(s, req)
+  requires NonSuspector1(s, j, req);
+  requires NonSuspector1(s', j, req);
+
+  requires j != 1;
+  requires j !in sr;
+
+  ensures  InView1(s', sr, req);
 {
+  forall k | 0 <= k < |s.t_replicas|
+    ensures
+      if (k in sr) then
+        Suspector(s, k) // Steps of j and of the leader affect this
+      else
+        // HB unsent and no one thinks j is a suspector
+        NonSuspector(s, k) &&
+        (NonSuspector0(s,k) || NonSuspector1(s, k, req) || NonSuspector2(s, k, req))
+  {
+    if k != j { // In this case, neither node 1 nor k take a step; so trivially true
+      if k in sr {
+        assert Suspector(s', k);
+      }
+      else {
+        assert NonSuspector(s', k) &&
+        (NonSuspector0(s',k) || NonSuspector1(s',k,req) || NonSuspector2(s', k, req));
+      }
+    }
+  }
 }
 
 lemma InView1_ind_j(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request) returns (sr':set<int>)
