@@ -1,15 +1,12 @@
-include "../DistributedSystem.i.dfy"
+include "../../DistributedSystem.i.dfy"
+include "../../../../Common/Collections/Maps2.i.dfy"
+include "../../Constants.i.dfy"
+include "../../Environment.i.dfy"
+include "../../Replica.i.dfy"
+include "../TimestampedRslSystem.i.dfy"
+include "../../CommonProof/Constants.i.dfy"
 
-include "../../../Common/Collections/Maps2.i.dfy"
-include "../Constants.i.dfy"
-include "../Environment.i.dfy"
-include "../Replica.i.dfy"
-
-include "TimestampedRslSystem.i.dfy"
-
-include "../CommonProof/Constants.i.dfy"
-
-module RslPhase2Proof_postFail_i {
+module RslPhase2Proof_PostFail_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 

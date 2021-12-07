@@ -3,11 +3,11 @@ include "Phase2Proof_helper0.i.dfy"
 include "Phase2Proof_helper1.i.dfy"
 include "Phase2Proof_helper2.i.dfy"
 
-module Rs2Phase2Proof_Top {
-import opened RslPhase2Proof_postFail_i
-import opened Rs2Phase2Proof_Helper_0
-import opened Rs2Phase2Proof_Helper_1
-import opened Rs2Phase2Proof_Helper_2
+module Rs2Phase2Proof_PostFail_Top {
+import opened RslPhase2Proof_PostFail_i
+import opened Rs2Phase2Proof_PostFail_Helper0
+import opened Rs2Phase2Proof_PostFail_Helper1
+import opened Rs2Phase2Proof_PostFail_Helper2
 
 
 /**** MAIN INVARIANT THEOREM ****/

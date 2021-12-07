@@ -1,7 +1,7 @@
 include "Phase2Proof.i.dfy"
 
-module Rs2Phase2Proof_Helper_0 {
-import opened RslPhase2Proof_postFail_i
+module Rs2Phase2Proof_PostFail_Helper0 {
+import opened RslPhase2Proof_PostFail_i
 
 /* WARNING: this file a timeout of 60s to verify */
 

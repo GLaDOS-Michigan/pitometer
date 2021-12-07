@@ -1,7 +1,7 @@
 include "Phase2Proof.i.dfy"
 
-module Rs2Phase2Proof_Helper_2 {
-import opened RslPhase2Proof_postFail_i
+module Rs2Phase2Proof_PostFail_Helper2 {
+import opened RslPhase2Proof_PostFail_i
 
 /* WARNING: this file a timeout of 60s to verify */
 
@@ -105,6 +105,8 @@ lemma Before2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:O
         reveal_UntagLIoOpSeq();
         assert forall p | p in sent_packets :: !p.msg.RslMessage_Reply?;
         assert LIoOpSend(pkt_witness) in iops;
+        assert rs.replicas[1].replica.learner == rs'.replicas[1].replica.learner;
+        assert BalLeq(rs'.replicas[1].replica.learner.max_ballot_seen, Ballot(1, 1));
         assert After_2b_Sent_Invariant(ts', opn);          
     } else {
         assert forall p | p in sent_packets && p.msg.RslMessage_2b? :: p.msg.opn_2b != opn;
@@ -230,6 +232,7 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
     ensures TimeLe(p.msg.ts, TimeBound2bDeliveryPost())
     {}
 
+    After2b_to_After2b_LeaderAction_TimeBoundReply(ts, ts', opn, tios);
     forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p)
     ensures TimeLe(p.msg.ts, TimeBoundReplyFailure())
     {}
@@ -241,10 +244,30 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
 
     After2b_to_After2b_LeaderAction_LearnedBatchNotEmpty(ts, ts', opn, tios);
 
+    assert lr'.proposer.next_operation_number_to_propose > opn;
+
     forall opn' | opn' in lr'.learner.unexecuted_learner_state 
     ensures opn' == opn && |lr'.learner.unexecuted_learner_state[opn'].received_2b_message_senders| > 0
     {}
 }
+
+lemma After2b_to_After2b_LeaderAction_TimeBoundReply(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
+    requires RslPerfInvariant(ts, opn)
+    requires After_2b_Sent_Invariant(ts, opn)
+    requires All2aPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
+    requires All2bPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
+    requires PerformanceGuarantee_2a(ts, opn)
+    requires PerformanceGuarantee_2b(ts, opn)
+    requires PerformanceGuarantee_Response(ts)
+    ensures forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p) 
+            :: TimeLe(p.msg.ts, TimeBoundReplyFailure())
+{}
 
 
 lemma After2b_to_After2b_LeaderAction_TimeBound2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
