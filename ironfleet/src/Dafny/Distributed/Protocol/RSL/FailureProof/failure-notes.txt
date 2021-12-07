@@ -91,3 +91,13 @@ Inductive step for NonSuspector1()
 =
 If a NS1() node takes a step that doesn't result in it entering a different NS
 state, we know that it will not se
+
+=
+InView1Basic() &&
+InView1Packets() &&
+InView1Suspicion()
+
+Start with InView1Basic()
+
+NonSuspector(j) is affected by node 1 taking a step and by node j taking a step.
+Otherwise, it should be "trivial" (because the relevant state is unchanged).
