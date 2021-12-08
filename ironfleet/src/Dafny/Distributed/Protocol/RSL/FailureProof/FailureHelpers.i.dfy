@@ -39,9 +39,14 @@ function {:opaque} SecondEpochEnd() : Timestamp
   FirstEpochEnd() // + EpochLength() + TimeActionRange(0)
 }
 
+function {:opaque} HBPeriodEnd() : Timestamp
+{
+  SecondEpochEnd() // + HBPeriod()
+}
+
 function {:opaque} TBFirstSuspectingHB() : Timestamp
 {
-  SecondEpochEnd() // + HBPeriod() + TimeActionRange(0)
+  SecondEpochEnd() // + HBPeriod() + TimeActionRange(0) + D
 }
 
 lemma EpochQDHelper()
