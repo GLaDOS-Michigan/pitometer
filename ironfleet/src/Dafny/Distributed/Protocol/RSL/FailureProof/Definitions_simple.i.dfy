@@ -161,7 +161,7 @@ function TimeBoundPhase2Leader(t2bDelivery:Timestamp, nextActionIndex:int) : Tim
   t2bDelivery + MaxQueueTime + TimeActionRange(nextActionIndex)
 }
 
-function TimeBoundReply(req_time:Timestamp, c:LConstants) : Timestamp
+function TimeBoundReply(req_time:Timestamp) : Timestamp
 {
   TimeBoundPhase2Leader(TimeBound2bDelivery(req_time), 7) + D
 }
