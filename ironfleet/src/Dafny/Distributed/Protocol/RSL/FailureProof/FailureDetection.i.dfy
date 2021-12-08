@@ -9,6 +9,7 @@ include "TimestampedRslSystem.i.dfy"
 include "FailureHelpers.i.dfy"
 include "FailureDetection_defns.i.dfy"
 include "FailureDetection_helper0.i.dfy"
+include "FailureDetection_helper1.i.dfy"
 
 include "../CommonProof/Constants.i.dfy"
 
@@ -17,6 +18,7 @@ import opened TimestampedRslSystem_i
 import opened FailureHelpers_i
 import opened FailureDetection_defns_i
 import opened FailureDetection_helper0_i
+import opened FailureDetection_helper1_i
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -118,14 +120,6 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
   else if s.t_environment.nextStep.nodeStep == RslStep(9) {
     assert NonSuspector1(s', j);
   }
-}
-
-// TODO: this should be used from CommonProof/Requests.i.dfy
-lemma lemma_RemoveExecutedRequestBatchProducesSubsequence(s':seq<Request>, s:seq<Request>, batch:RequestBatch)
-  requires s' == RemoveExecutedRequestBatch(s, batch);
-  ensures  forall x :: x in s' ==> x in s;
-  decreases |batch|;
-{
 }
 
 lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
@@ -262,16 +256,16 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   }
   // else, non-sus
   if NonSuspector0(s, j) {
-    // TODO: write lemmas for this?
-    assert false;
+    NonSuspector0_ind(s, s', sr, j);
   } else if NonSuspector1(s, j) {
     NonSuspector1_ind(s, s', sr, j);
   } else if NonSuspector2(s,j) {
-    assert false;
+    assert false; // TODO: write lemma
   } else {
     assert InternalSuspector3(s, j);
     // NOTE: j has a change of becoming a suspector in this case
     assert false;
+    // TODO: write lemma
   }
 }
 
@@ -290,6 +284,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires InView1(s, sr);
   ensures InView1Local(s', k, k in sr)
 {
+  // FIXME: involves maintaining Suspector(j)
   assert false;
 }
 

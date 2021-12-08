@@ -66,5 +66,13 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
     )
 }
 
+// TODO: this should be used from CommonProof/Requests.i.dfy
+lemma lemma_RemoveExecutedRequestBatchProducesSubsequence(s':seq<Request>, s:seq<Request>, batch:RequestBatch)
+  requires s' == RemoveExecutedRequestBatch(s, batch);
+  ensures  forall x :: x in s' ==> x in s;
+  ensures |s'| <= |s|;
+  decreases |batch|;
+{
+}
 
 }
