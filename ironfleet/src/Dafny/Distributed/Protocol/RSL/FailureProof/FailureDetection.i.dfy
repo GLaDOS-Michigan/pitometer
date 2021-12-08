@@ -575,7 +575,53 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, req:Re
 {
   // Use InV1L_self_ind
   // Also use InV1L_leader_ind
-  assert false;
+  if j == 1 {
+    assert false;
+    return;
+  }
+
+  sr' := InView1Local_self_ind(s, s', req, sr, j);
+  forall k | 0 <= k < |s'.t_replicas|
+    ensures InView1Local(s', k, k in sr', req)
+  {
+    if k == j {
+      // lemma above finishes this.
+    } else { // trivial; the state of node k is unchanged, and j is not a
+      // leader. So, inv for k should be maintained
+      assert ReplicasDistinct(s.constants.config.replica_ids, j, k);
+      // assert k in sr <==> k in sr';
+      // assert InView1Local(s, k, k in sr, req);
+      // assert InView1Local(s', k, k in sr', req);
+    }
+  }
+}
+
+lemma InView1Local_noninter(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int, k:int, sus:bool)
+  requires RslAssumption2(s, s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires 0 <= k < |s'.t_replicas|;
+  requires j != k;
+  requires 0 != j;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires sus == (k in sr);
+  requires InView1(s, sr, req);
+  requires InView1Local(s, k, sus, req);
+  ensures  InView1Local(s', k, sus, req);
+{
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, k);
+  // if !sus {
+    // assert HBUnsent(s, k);
+    // assert HBUnsent(s', k);
+    // assert forall pkt ::
+      // pkt in s'.t_environment.sentPackets ==>
+      // pkt.src == s.constants.config.replica_ids[k] ==>
+      // pkt in s.t_environment.sentPackets;
+  // }
 }
 
 lemma InView1_to_Packets(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request)
