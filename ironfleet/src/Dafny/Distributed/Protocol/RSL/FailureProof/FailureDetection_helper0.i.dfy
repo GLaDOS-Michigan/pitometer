@@ -43,6 +43,7 @@ lemma EpochTimeoutQDInductive(s:TimestampedRslState, s':TimestampedRslState, j:i
   requires EpochTimeoutQDInv(s)
   ensures EpochTimeoutQDInv(s')
 {
+  reveal_EpochQD();
   var r' := s'.t_replicas[j];
   if s.t_environment.nextStep.nodeStep != RslStep(7) {
     assert r'.v.replica.proposer.election_state.epoch_end_time >= 0; // so it's a valid Timestamp

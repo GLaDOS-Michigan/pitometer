@@ -19,6 +19,10 @@ import opened FailureHelpers_i
 import opened FailureDetection_defns_i
 import opened FailureDetection_helper0_i
 
+////////////////////////////////////////////////////////////////////////////////
+// NonSuspector0 inductive
+////////////////////////////////////////////////////////////////////////////////
+
 lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
@@ -106,6 +110,60 @@ lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
     assert NonSuspector0(s', j);
   } else {
     assert NonSuspector0(s', j);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// NonSuspector2 inductive
+////////////////////////////////////////////////////////////////////////////////
+
+lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires InView1(s, sr);
+  requires j !in sr;
+  requires NonSuspector2(s, j);
+
+  ensures  NonSuspector2(s', j) || NonSuspector0(s', j)
+    || InternalSuspector3(s', j);
+  ensures NotKnownSuspector(s', j);
+{
+  var step := s.t_environment.nextStep.nodeStep;
+  if step == RslStep(6) {
+    if s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpKnown? {
+      var es := s.t_replicas[j].v.replica.proposer.election_state;
+      var es' := s'.t_replicas[j].v.replica.proposer.election_state;
+      var batch := s.t_replicas[j].v.replica.executor.next_op_to_execute.v;
+      if ElectionStateReflectExecutedRequestBatch(es, es', batch) {
+        lemma_RemoveExecutedRequestBatchProducesSubsequence(
+          es'.requests_received_this_epoch,
+          es.requests_received_this_epoch,
+          batch);
+        lemma_RemoveExecutedRequestBatchProducesSubsequence(
+          es'.requests_received_prev_epochs,
+          es.requests_received_prev_epochs,
+          batch);
+
+        // assert (req in es.requests_received_this_epoch) && RequestsMatch(req, newReq);
+        assert es'.requests_received_prev_epochs == [];
+        assert es'.requests_received_this_epoch == [];
+        assert NonSuspector0(s', j);
+        return;
+      }
+    }
+    assert NonSuspector2(s', j);
+  } else if step == RslStep(7) {
+    assert false;
+  } else {
+    assert NonSuspector2(s', j);
   }
 }
 
