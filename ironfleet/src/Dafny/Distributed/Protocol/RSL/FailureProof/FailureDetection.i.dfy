@@ -40,9 +40,10 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
   requires InView1(s, sr);
 
+  requires j !in sr;
   requires NonSuspector1(s, j);
   ensures  NonSuspector1(s', j);
-  // ensures InView1(s', sr, req);
+  ensures NotKnownSuspector(s', j);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
     var ios := s.t_environment.nextStep.ios;
@@ -140,7 +141,9 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires NonSuspector1(s, j);
+  requires NotKnownSuspector(s, j);
   ensures  NonSuspector1(s', j) || NonSuspector0(s', j);
+  ensures NotKnownSuspector(s', j);
 {
   if s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpKnown? {
     var es := s.t_replicas[j].v.replica.proposer.election_state;
@@ -189,8 +192,38 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
 
   requires NonSuspector1(s, j);
   ensures  NonSuspector1(s', j);
+  ensures NotKnownSuspector(s', j);
 {
+  // epoch might expire, and we might enter NonSuspector2()
   assert false; // TODO
+}
+
+lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires InView1(s, sr);
+  requires j !in sr;
+  requires NonSuspector1(s, j);
+
+  ensures  NonSuspector1(s', j) || NonSuspector0(s', j) || NonSuspector2(s', j);
+  ensures NotKnownSuspector(s', j);
+{
+  var step := s.t_environment.nextStep.nodeStep;
+  if step == RslStep(7) {
+    NonSuspector1_ind_7(s, s', j);
+  } else if step == RslStep(6) {
+    NonSuspector1_ind_6(s, s', j);
+  } else {
+    NonSuspector1_ind_most(s, s', sr, j);
+  }
 }
 
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
@@ -222,14 +255,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
     // TODO: write lemmas for this?
     assert false;
   } else if NonSuspector1(s, j) {
-    var step := s.t_environment.nextStep.nodeStep;
-    if step == RslStep(7) {
-      NonSuspector1_ind_7(s, s', j);
-    } else if step == RslStep(6) {
-      NonSuspector1_ind_6(s, s', j);
-    } else {
-      NonSuspector1_ind_most(s, s', sr, j);
-    }
+    NonSuspector1_ind(s, s', sr, j);
   } else if NonSuspector2(s,j) {
     assert false;
   } else {
