@@ -6,7 +6,7 @@ include "../../Replica.i.dfy"
 include "../TimestampedRslSystem.i.dfy"
 include "../../CommonProof/Constants.i.dfy"
 
-module RslPhase2Proof_Pre_i {
+module RslPhase2Proof_PreFail_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
@@ -15,33 +15,33 @@ import opened CommonProof__Constants_i
 *****************************************************************************************/
 
 /* Main performance guarantee for phase 2 post-failure */
-predicate PerformanceGuarantee(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber)
+predicate PerformanceGuarantee(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
     && PerformanceGuarantee_Response(ts, req_time)
-    && PerformanceGuarantee_2b(ts, req_time, opn)
-    && PerformanceGuarantee_2a(ts, req_time, opn)
+    && PerformanceGuarantee_2b(ts, opn)
+    && PerformanceGuarantee_2a(ts, opn)
 }
 
 predicate PerformanceGuarantee_Response(ts:TimestampedRslState, req_time:Timestamp) 
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
-    forall pkt | 
+    forall pkt |
         && pkt in ts.undeliveredPackets 
         && IsPreFailReplyPacket(ts, pkt)
     :: TimeLe(pkt.msg.ts, TimeBoundReply(req_time))
 }
 
-predicate PerformanceGuarantee_2b(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) {
+predicate PerformanceGuarantee_2b(ts:TimestampedRslState, opn:OperationNumber) {
     forall pkt {:trigger pkt.msg.v.RslMessage_2b?} | 
         && pkt in ts.undeliveredPackets 
         && IsPreFail2bPacket(pkt, opn)
     :: TimeLe(pkt.msg.ts, TimeBound2bDelivery(req_time))
 }
 
-predicate PerformanceGuarantee_2a(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) {
+predicate PerformanceGuarantee_2a(ts:TimestampedRslState, opn:OperationNumber) {
     forall pkt {:trigger pkt.msg.v.RslMessage_2a?} | 
         && pkt in ts.undeliveredPackets 
         && IsPreFail2aPacket(pkt, opn)
@@ -150,16 +150,16 @@ predicate LeaderRequestQueueContainsRequest(ts:TimestampedRslState)
 
 
 // Main invariant 
-predicate RslPerfInvariant(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+predicate RslPerfInvariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
 {
     && RslConsistency(ts)
     && AlwaysInvariant(ts, opn)
-    && PerformanceGuarantee(ts, req_time, opn)
+    && PerformanceGuarantee(ts, opn)
     && PacketsBallotInvariant(ts)
-    && (|| Before_2a_Sent_Invariant(ts, req_time, opn)
-        || Before_2b_Sent_Invariant(ts, req_time, opn)
-        || After_2b_Sent_Invariant(ts, req_time, opn)
+    && (|| Before_2a_Sent_Invariant(ts, opn)
+        || Before_2b_Sent_Invariant(ts, opn)
+        || After_2b_Sent_Invariant(ts, opn)
     )
 }
 
@@ -232,7 +232,7 @@ predicate All2bPackets_BalEq_Opn(ts:TimestampedRslState, ballot:Ballot, opn:Oper
 }
 
 // Things that are true before 2a packets are sent out by the leader
-predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
@@ -257,7 +257,7 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, o
 }
 
 // Things that are true after 2a packets are sent out by the leader
-predicate Before_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+predicate Before_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
@@ -268,7 +268,7 @@ predicate Before_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, o
     && (exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFail2aPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFail2bPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFailReplyPacket(ts, pkt))
-    && PerformanceGuarantee_2a(ts, req_time, opn)
+    && PerformanceGuarantee_2a(ts, opn)
     && PerformanceGuarantee_Response(ts, req_time)
     && 0 <= ts.t_replicas[0].v.nextActionIndex <= 9
     && r.proposer.current_state == 2
@@ -282,7 +282,7 @@ predicate Before_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, o
     && BalLt(r.learner.max_ballot_seen, Ballot(1, 0))
 }
 
-predicate After_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, opn:OperationNumber) 
+predicate After_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
@@ -291,8 +291,8 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, op
     && All2aPackets_BalEq_Opn(ts, Ballot(1, 0), opn)
     && All2bPackets_BalEq_Opn(ts, Ballot(1, 0), opn)
     && (exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFail2bPacket(pkt, opn))
-    && PerformanceGuarantee_2a(ts, req_time, opn)
-    && PerformanceGuarantee_2b(ts, req_time, opn)
+    && PerformanceGuarantee_2a(ts, opn)
+    && PerformanceGuarantee_2b(ts, opn)
     && PerformanceGuarantee_Response(ts, req_time)
     && 0 <= ts.t_replicas[0].v.nextActionIndex <= 9
     && r.proposer.current_state == 2
@@ -304,7 +304,7 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, op
 
 
     && (r.executor.ops_complete == opn
-        ==> Before_Request_Executed(ts, l, req_time, opn)
+        ==> Before_Request_Executed(ts, l, opn)
     )
 
     && (r.executor.ops_complete > opn
@@ -329,7 +329,7 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, req_time:Timestamp, op
     )
 }
 
-predicate Before_Request_Executed(ts:TimestampedRslState, l:TimestampedLScheduler, req_time:Timestamp, opn:OperationNumber)
+predicate Before_Request_Executed(ts:TimestampedRslState, l:TimestampedLScheduler, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
     requires 0 <= l.v.nextActionIndex <= 9
@@ -397,7 +397,7 @@ predicate IsPreFailReplyPacket(ts:TimestampedRslState, pkt:TimestampedRslPacket)
     requires RslConsistency(ts)
 {
     && pkt.msg.v.RslMessage_Reply?
-    && pkt.src == ts.constants.config.replica_ids[1]
+    && pkt.src == ts.constants.config.replica_ids[0]
 }
 
 function Get2bCount(s:LReplica, opn:OperationNumber, ballot:Ballot) : int
