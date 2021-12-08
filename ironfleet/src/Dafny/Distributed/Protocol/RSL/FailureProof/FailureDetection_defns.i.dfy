@@ -88,6 +88,8 @@ predicate OneAndOnlyOneRequest(s:TimestampedRslState)
     var es := s.t_replicas[j].v.replica.proposer.election_state;
     (forall req' :: req' in es.requests_received_prev_epochs ==> req' == req)
     && (forall req' :: req' in es.requests_received_this_epoch ==> req' == req)
+    && (|es.requests_received_this_epoch| <= 1)
+    && (|es.requests_received_prev_epochs| <= 1)
     )
 }
 

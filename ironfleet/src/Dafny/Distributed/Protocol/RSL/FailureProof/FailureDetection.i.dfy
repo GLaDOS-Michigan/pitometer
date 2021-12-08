@@ -263,7 +263,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
     assert false; // TODO: write lemma
   } else {
     assert InternalSuspector3(s, j);
-    // NOTE: j has a change of becoming a suspector in this case
+    // NOTE: j has a change of becoming a known suspector in this case
     assert false;
     // TODO: write lemma
   }
