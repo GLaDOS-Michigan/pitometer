@@ -93,8 +93,7 @@ lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState,
         if nextActionIndex == 3 {
             Before2a_to_Before2b(ts, ts', opn, tios);
         } else {
-            assume false;
-            // Before2a_to_Before2a_LeaderAction(ts, ts', opn, tios);
+            Before2a_to_Before2a_LeaderAction(ts, ts', opn, tios);
         }
     }
 }

@@ -111,6 +111,20 @@ lemma Before2a_to_Before2a_NonLeaderAction(ts:TimestampedRslState, ts':Timestamp
     lemma_NonLeaderDoesNotSendReply(ts, ts', opn, idx, tios);
 }
 
+lemma Before2a_to_Before2a_LeaderAction(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', 0, tios);
+    requires RslPerfInvariant(ts, opn)
+    requires Before_2a_Sent_Invariant(ts, opn);
+    ensures Before_2a_Sent_Invariant(ts', opn);
+{
+    lemma_No2bBefore2aSent(ts, ts', opn, 0, tios);
+}
+
 
 // lemma Before2b_to_Before2b_NonReceive(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
 //     requires RslAssumption(ts, opn) && RslConsistency(ts)

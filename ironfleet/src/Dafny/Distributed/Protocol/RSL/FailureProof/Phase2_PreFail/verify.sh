@@ -1,6 +1,6 @@
 #!/bin/bash -li
 
-
+echo ""
 echo "Verifying GenericLemmas.i.dfy"
 dafny GenericLemmas.i.dfy | grep -iv "Warning"
 
