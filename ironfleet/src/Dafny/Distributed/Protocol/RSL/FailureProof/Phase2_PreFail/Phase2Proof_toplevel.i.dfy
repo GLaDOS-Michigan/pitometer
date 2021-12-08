@@ -130,10 +130,7 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
     }
     var sent_packets := ExtractSentPacketsFromIos(ios);
     if !ios[0].r.msg.RslMessage_2a? {
-
-        // TODO
-        assume false;
-        // Before2b_to_Before2b_Receive(ts, ts', opn, idx, tios);
+        Before2b_to_Before2b_ReceiveNot2a(ts, ts', opn, idx, tios);
         return;
     }
 

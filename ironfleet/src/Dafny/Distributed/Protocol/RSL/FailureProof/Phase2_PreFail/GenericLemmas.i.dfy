@@ -123,4 +123,31 @@ lemma lemma_No2bSentInNonReceiveStep(ts:TimestampedRslState, ts':TimestampedRslS
     }
 }
 
+/* There can be no 2a messages sent in a Receive step  */
+lemma lemma_No2aSentInReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires RslPerfInvariant(ts, opn)
+    requires ts.t_replicas[idx].v.nextActionIndex == 0
+    ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: pkt in ts.t_environment.sentPackets
+{}
+
+
+/* There can be no Reply messages sent in a Receive step  */
+lemma lemma_NoRepliesSentInReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires RslPerfInvariant(ts, opn)
+    requires ts.t_replicas[idx].v.nextActionIndex == 0
+    ensures forall pkt | pkt in ts'.t_environment.sentPackets && IsPreFailReplyPacket(ts', pkt) :: pkt in ts.t_environment.sentPackets
+{}
+
 }

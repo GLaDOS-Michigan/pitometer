@@ -206,57 +206,38 @@ lemma Before2b_to_Before2b_NonReceive_NoReply(ts:TimestampedRslState, ts':Timest
 }
 
 
+lemma Before2b_to_Before2b_ReceiveNot2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires RslPerfInvariant(ts, opn)
+    requires Before_2b_Sent_Invariant(ts, opn)
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    requires ts.t_replicas[idx].v.nextActionIndex == 0
+    requires !tios[0].LIoOpTimeoutReceive?
+    requires !tios[0].r.msg.v.RslMessage_2a?
+    ensures Before_2b_Sent_Invariant(ts', opn)
+{
+    reveal_ExtractSentPacketsFromIos();
+    reveal_UntagLIoOpSeq();
+    var ios := UntagLIoOpSeq(tios);
+    var sent_packets := ExtractSentPacketsFromIos(ios);
+    assert forall p | p in sent_packets :: !p.msg.RslMessage_2b?;
+    forall pkt | pkt in ts'.t_environment.sentPackets && IsPreFail2bPacket(pkt, opn) 
+    ensures pkt in ts.t_environment.sentPackets {
+        if pkt !in ts.t_environment.sentPackets {
+            assert UntagLPacket(pkt) in sent_packets;
+            assert false;
+        }
+    }
+    lemma_No2aSentInReceiveStep(ts, ts', opn, idx, tios);
+    lemma_NoRepliesSentInReceiveStep(ts, ts', opn, idx, tios);
 
-
-
-
-// lemma Before2b_to_Before2b_Receive(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-//     requires RslAssumption(ts, opn) && RslConsistency(ts)
-//     requires RslAssumption(ts', opn) && RslConsistency(ts')
-//     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-//     requires TimestampedRslNext(ts, ts')
-//     requires !TimestampedRslNextEnvironment(ts, ts')
-//     requires RslPerfInvariant(ts, opn)
-//     requires Before_2b_Sent_Invariant(ts, opn)
-//     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-//     requires ts.t_replicas[idx].v.nextActionIndex == 0
-//     requires !tios[0].LIoOpTimeoutReceive?
-//     requires !tios[0].r.msg.v.RslMessage_2a?
-//     ensures Before_2b_Sent_Invariant(ts', opn)
-// {
-//     reveal_ExtractSentPacketsFromIos();
-//     reveal_UntagLIoOpSeq();
-//     var ios := UntagLIoOpSeq(tios);
-//     var sent_packets := ExtractSentPacketsFromIos(ios);
-//     assert forall p | p in sent_packets :: !p.msg.RslMessage_2b?;
-//     forall pkt | pkt in ts'.t_environment.sentPackets && IsNew2bPacket(pkt, opn) 
-//     ensures pkt in ts.t_environment.sentPackets {
-//         if pkt !in ts.t_environment.sentPackets {
-//             assert UntagLPacket(pkt) in sent_packets;
-//             assert false;
-//         }
-//     }
-//     forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a?
-//     ensures pkt in ts.t_environment.sentPackets
-//     {}
-//     assert opn == ts'.t_replicas[0].v.replica.executor.ops_complete;   // Can be changed by LExecutorProcessAppStateSupply packet
-//     assert BalLt(ts'.t_replicas[0].v.replica.learner.max_ballot_seen, Ballot(1, 1)); 
-//     forall pkt | pkt in ts'.t_environment.sentPackets && IsNewReplyPacket(ts', pkt) 
-//     ensures pkt in ts.t_environment.sentPackets
-//     {}
-
-//     forall pkt | pkt in ts'.undeliveredPackets && IsNew2aPacket(pkt, opn)
-//     ensures TimeLe(pkt.msg.ts, TimeBound2aDeliveryPost())
-//     {
-//         if pkt !in ts.undeliveredPackets {
-//             forall io | io in tios && io.LIoOpSend?
-//             ensures !io.s.msg.v.RslMessage_2a?
-//             assert false;
-//         }
-//     }
-
-//     assert Before_2b_Sent_Invariant(ts', opn);
-// }
+    assert opn == ts'.t_replicas[0].v.replica.executor.ops_complete;
+    assert Before_2b_Sent_Invariant(ts', opn);
+}
 
 
 }
