@@ -72,12 +72,15 @@ predicate NoExternalSteps(s:TimestampedRslState)
   s.t_environment.nextStep.actor in s.constants.config.replica_ids
 }
 
+ghost const req:Request
+
 predicate RslAssumption(s:TimestampedRslState)
 {
   && RslConsistency(s)
   && BoundedQueueingAssumption(s)
   && NoStateTransfer(s)
   && NoExternalSteps(s)
+  && OneAndOnlyOneRequest(s)
 }
 
 predicate RslAssumption2(s:TimestampedRslState, s':TimestampedRslState)
@@ -139,7 +142,7 @@ predicate HeartbeatDelayInv(s:TimestampedRslState)
 ////////////////////////////////////////////////////////////////////////////////
 
 // This should be a self-contained invariant; maybe even an assumption
-predicate OneAndOnlyOneRequest(s:TimestampedRslState, req:Request)
+predicate OneAndOnlyOneRequest(s:TimestampedRslState)
   requires RslConsistency(s)
 {
   && (forall pkt :: pkt in s.t_environment.sentPackets ==>
@@ -185,7 +188,8 @@ predicate InView1Packets(s:TimestampedRslState)
   )
 }
 
-predicate InView1Local(s:TimestampedRslState, j:int, sus:bool, req:Request)
+// TODO: probably want a InV2Local without the else case
+predicate InView1Local(s:TimestampedRslState, j:int, sus:bool)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
 {
@@ -194,7 +198,7 @@ predicate InView1Local(s:TimestampedRslState, j:int, sus:bool, req:Request)
   else
     // HB unsent and no one thinks j is a suspector
     NonSuspector(s, j) &&
-    (NonSuspector0(s,j) || NonSuspector1(s,j,req) || NonSuspector2(s, j, req))
+    (NonSuspector0(s,j) || NonSuspector1(s,j) || NonSuspector2(s, j))
 }
 
 predicate CurrView(s:TimestampedRslState)
@@ -206,7 +210,7 @@ predicate CurrView(s:TimestampedRslState)
 }
 
 
-predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>, req:Request)
+predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
@@ -215,11 +219,11 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>, req:Reque
   && InView1Packets(s)
   && CurrView(s)
   && (
-    forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas, req)
+    forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
   )
 }
 
-predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>, req:Request)
+predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
@@ -251,7 +255,7 @@ predicate NonSuspector0(s:TimestampedRslState, j:int)
   && s.t_replicas[j].v.replica.proposer.election_state.requests_received_prev_epochs == []
 }
 
-predicate NonSuspector1(s:TimestampedRslState, j:int, req:Request)
+predicate NonSuspector1(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|
@@ -262,7 +266,7 @@ predicate NonSuspector1(s:TimestampedRslState, j:int, req:Request)
   && TimeLe(s.t_replicas[j].v.replica.proposer.election_state.epoch_end_time, TBEpoch1())
 }
 
-predicate NonSuspector2(s:TimestampedRslState, j:int, req:Request)
+predicate NonSuspector2(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|
@@ -304,7 +308,7 @@ predicate Suspector(s:TimestampedRslState, j:int)
 // PF_NONSUSP
 ////////////////////////////////////////////////////////////////////////////////
 
-lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int)
+lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires RslAssumption2(s, s')
   // requires EpochTimeoutQDInv(s)
   // requires EpochTimeoutQDInv(s')
@@ -319,10 +323,10 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires InView1(s, sr, req);
-  requires OneAndOnlyOneRequest(s, req)
-  requires NonSuspector1(s, j, req);
-  ensures  NonSuspector1(s', j, req);
+  requires InView1(s, sr);
+
+  requires NonSuspector1(s, j);
+  ensures  NonSuspector1(s', j);
   // ensures InView1(s', sr, req);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
@@ -330,15 +334,15 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:
 
     if ios[0].LIoOpReceive?  {
       if ios[0].r.msg.v.RslMessage_Heartbeat? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_1a? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_1b? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_2b? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_2a? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_Request? {
         var es := s.t_replicas[j].v.replica.proposer.election_state;
         var newReq := Request(ios[0].r.src, ios[0].r.msg.v.seqno_req, ios[0].r.msg.v.val);
@@ -349,36 +353,36 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:
 
         assert s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch ==
           s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch;
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_Reply? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_AppStateRequest? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_AppStateSupply? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else if ios[0].r.msg.v.RslMessage_StartingPhase2? {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       } else{
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       }
     } else {
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
     }
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(1) {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(2) {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(3) {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(4) {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(5) {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(6) {
     assert false;
@@ -396,7 +400,7 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, req:
     // assert NonSuspector1(s', j, req);
   }
   else if s.t_environment.nextStep.nodeStep == RslStep(9) {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
 }
 
@@ -408,11 +412,10 @@ lemma lemma_RemoveExecutedRequestBatchProducesSubsequence(s':seq<Request>, s:seq
 {
 }
 
-lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int, idx:int)
+lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
   requires RslAssumption2(s, s')
   // requires EpochTimeoutQDInv(s)
   // requires EpochTimeoutQDInv(s')
-  requires 0 <= idx < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -421,8 +424,8 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, req:Req
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires NonSuspector1(s, j, req);
-  ensures  NonSuspector1(s', j, req) || NonSuspector0(s', j);
+  requires NonSuspector1(s, j);
+  ensures  NonSuspector1(s', j) || NonSuspector0(s', j);
 {
   if s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpKnown? {
     var es := s.t_replicas[j].v.replica.proposer.election_state;
@@ -447,17 +450,17 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, req:Req
       if s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [] {
         assert NonSuspector0(s', j);
       } else{
-        assert NonSuspector1(s', j, req);
+        assert NonSuspector1(s', j);
       }
     } else {
-      assert NonSuspector1(s', j, req);
+      assert NonSuspector1(s', j);
     }
   } else {
-    assert NonSuspector1(s', j, req);
+    assert NonSuspector1(s', j);
   }
 }
 
-lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, req:Request)
+lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -469,95 +472,75 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires NonSuspector1(s, j, req);
-  ensures  NonSuspector1(s', j, req);
+  requires NonSuspector1(s, j);
+  ensures  NonSuspector1(s', j);
 {
+  assert false; // TODO
 }
 
-lemma NonSuspector1_ind_InView1(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request)
+lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
-
   requires 0 <= j < |s.constants.config.replica_ids|;
+
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires s.t_environment.nextStep.nodeStep != RslStep(7) // on step 7, we might start new epoch
-  requires s.t_environment.nextStep.nodeStep != RslStep(6) // on step 6, we might go to NS0(j)
+  requires InView1(s, sr);
 
-  requires InView1(s, sr, req);
-  requires OneAndOnlyOneRequest(s, req)
-  requires NonSuspector1(s, j, req);
-  requires NonSuspector1(s', j, req);
-
-  requires j != 1;
-  requires j !in sr;
-
-  ensures  InView1(s', sr, req);
+  ensures SuspectingReplicaInv(s', sr');
+  ensures InView1Local(s', j, j in sr');
+  ensures sr' == sr  || sr' == sr + {j};
 {
-  forall k | 0 <= k < |s.t_replicas|
-    ensures
-      if (k in sr) then
-        Suspector(s, k) // Steps of j and of the leader affect this
-      else
-        // HB unsent and no one thinks j is a suspector
-        NonSuspector(s, k) &&
-        (NonSuspector0(s,k) || NonSuspector1(s, k, req) || NonSuspector2(s, k, req))
-  {
-    if k != j { // In this case, neither node 1 nor k take a step; so trivially true
-      if k in sr {
-        assert Suspector(s', k);
-      }
-      else {
-        assert NonSuspector(s', k) &&
-        (NonSuspector0(s',k) || NonSuspector1(s',k,req) || NonSuspector2(s', k, req));
-      }
+  sr' := sr;
+  var sus := j in sr;
+  if sus {
+    assert false;
+    assert Suspector(s', j);
+    return;
+  }
+  // else, non-sus
+  if NonSuspector0(s, j) {
+    // TODO: write lemmas for this?
+    assert false;
+  } else if NonSuspector1(s, j) {
+    var step := s.t_environment.nextStep.nodeStep;
+    if step == RslStep(7) {
+      NonSuspector1_ind_7(s, s', j);
+    } else if step == RslStep(6) {
+      NonSuspector1_ind_6(s, s', j);
+    } else {
+      NonSuspector1_ind_most(s, s', sr, j);
     }
+  } else {
+    assert false;
+    assert NonSuspector2(s, j);
+    // NOTE: j has a change of becoming a suspector in this case
   }
 }
 
-lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int) returns (sr':set<int>)
+lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, k:int)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
-  requires 0 <= j < |s.constants.config.replica_ids|;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires InView1(s, sr, req);
-
-  ensures SuspectingReplicaInv(s', sr');
-  ensures InView1Local(s', j, j in sr', req);
-  ensures sr' == sr  || sr' == sr + {j};
-{
-  assert false;
-}
-
-lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int) returns (sr':set<int>)
-  requires RslAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
-  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires 0 <= k < |s.constants.config.replica_ids|;
+  requires k != 1
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[1];
 
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+  requires TimestampedRslNextOneReplica(s, s', 1, s.t_environment.nextStep.ios);
 
-  requires InView1(s, sr, req);
-
-  ensures  SuspectingReplicaInv(s', sr')
-  ensures InView1Local(s, j, j in sr', req) || InView2(s, sr', req);
+  requires InView1(s, sr);
+  ensures InView1Local(s', k, k in sr)
 {
   assert false;
 }
 
-lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int) returns (sr':set<int>)
+lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -568,63 +551,38 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, req:Re
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires InView1(s, sr, req);
+  requires InView1(s, sr);
 
   ensures  SuspectingReplicaInv(s', sr')
-  ensures  forall k :: 0 <= k < |s'.t_replicas| ==> InView1Local(s', k, k in sr', req);
+  ensures  forall k :: 0 <= k < |s'.t_replicas| ==> InView1Local(s', k, k in sr');
 {
-  // Use InV1L_self_ind
+  sr' := InView1Local_self_ind(s, s', sr, j);
   // Also use InV1L_leader_ind
   if j == 1 {
-    assert false;
+    forall k | 0 <= k < |s'.t_replicas|
+      ensures InView1Local(s', k, k in sr')
+    {
+      if k == j { // lemma above finishes this
+      } else {
+        InView1Local_leader_ind(s, s', sr, k);
+      }
+    }
     return;
   }
 
-  sr' := InView1Local_self_ind(s, s', req, sr, j);
   forall k | 0 <= k < |s'.t_replicas|
-    ensures InView1Local(s', k, k in sr', req)
+    ensures InView1Local(s', k, k in sr')
   {
     if k == j {
       // lemma above finishes this.
     } else { // trivial; the state of node k is unchanged, and j is not a
       // leader. So, inv for k should be maintained
       assert ReplicasDistinct(s.constants.config.replica_ids, j, k);
-      // assert k in sr <==> k in sr';
-      // assert InView1Local(s, k, k in sr, req);
-      // assert InView1Local(s', k, k in sr', req);
     }
   }
 }
 
-lemma InView1Local_noninter(s:TimestampedRslState, s':TimestampedRslState, req:Request, sr:set<int>, j:int, k:int, sus:bool)
-  requires RslAssumption2(s, s')
-  requires 0 <= j < |s.constants.config.replica_ids|;
-  requires 0 <= k < |s'.t_replicas|;
-  requires j != k;
-  requires 0 != j;
-
-  requires s.t_environment.nextStep.LEnvStepHostIos?;
-  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
-
-  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
-
-  requires sus == (k in sr);
-  requires InView1(s, sr, req);
-  requires InView1Local(s, k, sus, req);
-  ensures  InView1Local(s', k, sus, req);
-{
-  assert ReplicasDistinct(s.constants.config.replica_ids, j, k);
-  // if !sus {
-    // assert HBUnsent(s, k);
-    // assert HBUnsent(s', k);
-    // assert forall pkt ::
-      // pkt in s'.t_environment.sentPackets ==>
-      // pkt.src == s.constants.config.replica_ids[k] ==>
-      // pkt in s.t_environment.sentPackets;
-  // }
-}
-
-lemma InView1_to_Packets(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request)
+lemma InView1_to_Packets(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>)
   requires RslAssumption2(s, s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -632,12 +590,12 @@ lemma InView1_to_Packets(s:TimestampedRslState, s':TimestampedRslState, j:int, s
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires InView1(s, sr, req);
+  requires InView1(s, sr);
   ensures  InView1Packets(s');
 { // trivial
 }
 
-lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request)
+lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>)
   requires RslAssumption2(s, s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -645,7 +603,7 @@ lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires InView1(s, sr, req);
+  requires InView1(s, sr);
   ensures  CurrView(s')
 {
   if s.t_environment.nextStep.nodeStep == RslStep(8) {
@@ -655,7 +613,7 @@ lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
   }
 }
 
-lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>, req:Request) returns (sr':set<int>)
+lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -665,37 +623,37 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
-  requires InView1(s, sr, req);
-  ensures  InView1(s', sr', req) || InView2(s', sr', req);
+  requires InView1(s, sr);
+  ensures  InView1(s', sr') || InView2(s', sr');
 {
-  sr' := InView1Local_all_ind(s, s', req, sr, j);
+  sr' := InView1Local_all_ind(s, s', sr, j);
 
   if |sr'| < LMinQuorumSize(s.constants.config) {
-    InView1_to_Packets(s, s', j, sr, req);
-    InView1_to_CurrView(s, s', j, sr, req);
-    assert InView1(s', sr', req);
+    InView1_to_Packets(s, s', j, sr);
+    InView1_to_CurrView(s, s', j, sr);
+    assert InView1(s', sr');
   } else {
-    assert InView2(s', sr', req); // TODO: this will change
+    assert InView2(s', sr'); // TODO: this will change
   }
 }
 
-lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, req:Request) returns (sr':set<int>)
+lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires TimestampedRslNext(s, s');
 
-  requires InView1(s, sr, req);
-  ensures  InView1(s', sr', req) || InView2(s', sr', req);
+  requires InView1(s, sr);
+  ensures  InView1(s', sr') || InView2(s', sr');
 {
   sr' := sr;
   // three cases:
   if TimestampedRslNextEnvironment(s, s') {
-    assert InView1(s', sr', req);
+    assert InView1(s', sr');
   } else if (exists j, ios :: TimestampedRslNextOneReplica(s, s', j, ios)) {
     // XXX: this is where the heavy lifting happens
     var j, ios :| TimestampedRslNextOneReplica(s, s', j, ios);
-    sr' := InView1_ind_hostStep(s, s', j, sr, req);
+    sr' := InView1_ind_hostStep(s, s', j, sr);
   } else {
     var idx, ios :| TimestampedRslNextOneExternal(s, s', idx, ios);
     assert false; // Because we assume no external steps
