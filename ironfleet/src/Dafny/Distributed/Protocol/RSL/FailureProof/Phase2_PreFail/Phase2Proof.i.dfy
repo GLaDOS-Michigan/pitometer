@@ -141,6 +141,8 @@ predicate LeaderRequestQueueContainsRequest(ts:TimestampedRslState)
     var r := ts.t_replicas[0].v.replica;
     && |r.proposer.request_queue| == 1
     && r.proposer.request_queue[0].client in ts.constants.config.clientIds
+    && LProposerCanNominateUsingOperationNumber(r.proposer, r.acceptor.log_truncation_point, r.proposer.next_operation_number_to_propose)
+    && LAllAcceptorsHadNoProposal(r.proposer.received_1b_packets, r.proposer.next_operation_number_to_propose)
 }
 
 
@@ -238,6 +240,9 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
 {
     var l := ts.t_replicas[0];
     var r := l.v.replica;
+    && LeaderRequestQueueContainsRequest(ts) 
+    && All2aPackets_BalEq_Opn(ts, Ballot(1, 0), opn)
+    && All2bPackets_BalEq_Opn(ts, Ballot(1, 0), opn)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFail2aPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFail2bPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsPreFailReplyPacket(ts, pkt))

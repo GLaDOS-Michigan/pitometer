@@ -13,13 +13,13 @@ lemma lemma_No2bBefore2aSent(ts:TimestampedRslState, ts':TimestampedRslState, op
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires Before_2a_Sent_Invariant(ts, opn);
-    ensures !exists pkt :: pkt in ts'.t_environment.sentPackets && IsPreFail2bPacket(pkt, opn)
+    ensures !exists pkt :: pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
     var nextActionIndex := ls.v.nextActionIndex;
     forall p | p in ts'.t_environment.sentPackets 
-    ensures !IsPreFail2bPacket(p, opn) {
-        if IsPreFail2bPacket(p, opn) {
+    ensures !p.msg.v.RslMessage_2b? {
+        if p.msg.v.RslMessage_2b? {
             assert p !in ts.t_environment.sentPackets;
             if nextActionIndex == 0 {
                 assert !tios[0].r.msg.v.RslMessage_2a?;
@@ -44,11 +44,11 @@ lemma lemma_NonLeaderDoesNotSend2a(ts:TimestampedRslState, ts':TimestampedRslSta
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires Before_2a_Sent_Invariant(ts, opn) || Before_2b_Sent_Invariant(ts, opn) || After_2b_Sent_Invariant(ts, opn)
     requires idx != 0
-    ensures forall p | p in ts'.t_environment.sentPackets && IsPreFail2aPacket(p, opn) :: p in ts.t_environment.sentPackets
+    ensures forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2a? :: p in ts.t_environment.sentPackets
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
     var nextActionIndex := ls.v.nextActionIndex;
-    forall p | p in ts'.t_environment.sentPackets && IsPreFail2aPacket(p, opn) 
+    forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2a?
     ensures p in ts.t_environment.sentPackets {
         if p !in ts.t_environment.sentPackets {
             if nextActionIndex == 3 {

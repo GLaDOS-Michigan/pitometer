@@ -35,37 +35,63 @@ lemma PacketsBallotInvariant_NoReceiveStep(ts:TimestampedRslState, ts':Timestamp
     {}
 }
 
-// lemma Before2a_to_Before2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-//     requires RslAssumption(ts, opn) && RslConsistency(ts)
-//     requires RslAssumption(ts', opn) && RslConsistency(ts')
-//     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-//     // requires AlwaysInvariant(ts', opn)
-//     requires TimestampedRslNext(ts, ts')
-//     requires !TimestampedRslNextEnvironment(ts, ts')
-//     requires TimestampedRslNextOneReplica(ts, ts', 1, tios);
-//     requires RslPerfInvariant(ts, opn)
-//     requires Before_2a_Sent_Invariant(ts, opn);
-//     ensures Before_2b_Sent_Invariant(ts', opn);
-// {
-//     var s, s', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
-//     var r, r' := s.replicas[1].replica, s'.replicas[1].replica;
-//     var sent_packets := ExtractSentPacketsFromIos(ios);
-//     var v :| 
-//         (&& LValIsHighestNumberedProposal(v, r.proposer.received_1b_packets, opn)
-//          && LBroadcastToEveryone(r.proposer.constants.all.config, r.proposer.constants.my_index, RslMessage_2a(r.proposer.max_ballot_i_sent_1a, opn, v), sent_packets)
-//     );
-//     assert |sent_packets| > 0;
-//     var m := RslMessage_2a(Ballot(1, 1), opn, v);
-//     assert sent_packets[0] == LPacket(r.proposer.constants.all.config.replica_ids[0], r.proposer.constants.all.config.replica_ids[1], m);
-//     var pkt_witness := sent_packets[0];
-//     assert LIoOpSend(pkt_witness) in ios;
-//     forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
-//     ensures pkt in ts.t_environment.sentPackets
-//     {}
-//     assert forall p | p in sent_packets :: !p.msg.RslMessage_Reply?;
-//     forall io | io in tios && io.LIoOpSend?
-//     ensures !io.s.msg.v.RslMessage_Reply? {}
-// }
+lemma Before2a_to_Before2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', 0, tios);
+    requires RslPerfInvariant(ts, opn)
+    requires ts.t_replicas[0].v.nextActionIndex == 3
+    requires Before_2a_Sent_Invariant(ts, opn);
+    ensures Before_2b_Sent_Invariant(ts', opn);
+{
+    var ls, ls' := ts.t_replicas[0], ts'.t_replicas[0];
+    var nextActionIndex := ls.v.nextActionIndex;
+
+    forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2a?
+    ensures && p.msg.v.bal_2a == Ballot(1, 0)
+            && p.msg.v.opn_2a == opn
+    {
+        if p !in ts.t_environment.sentPackets {
+            var clock := SpontaneousClock(UntagLIoOpSeq(tios)).t;
+            if !LProposerCanNominateUsingOperationNumber(ls.v.replica.proposer, ls.v.replica.acceptor.log_truncation_point, ls.v.replica.proposer.next_operation_number_to_propose) {
+                assert p in ts.t_environment.sentPackets;
+                assert false;
+            } else if !LAllAcceptorsHadNoProposal(ls.v.replica.proposer.received_1b_packets, ls.v.replica.proposer.next_operation_number_to_propose){
+                assert p.msg.v.bal_2a == ls.v.replica.proposer.max_ballot_i_sent_1a == Ballot(1, 0);
+                assert p.msg.v.opn_2a == ls.v.replica.proposer.next_operation_number_to_propose == opn;
+            } else if (exists opn' :: opn' > ls.v.replica.proposer.next_operation_number_to_propose && !LAllAcceptorsHadNoProposal(ls.v.replica.proposer.received_1b_packets, opn'))
+                        || |ls.v.replica.proposer.request_queue| >= ls.v.replica.proposer.constants.all.params.max_batch_size
+                        || (|ls.v.replica.proposer.request_queue| > 0 && ls.v.replica.proposer.incomplete_batch_timer.IncompleteBatchTimerOn? && clock >= ls.v.replica.proposer.incomplete_batch_timer.when) {
+                assert p.msg.v.bal_2a == ls.v.replica.proposer.max_ballot_i_sent_1a == Ballot(1, 0);
+                assert p.msg.v.opn_2a == ls.v.replica.proposer.next_operation_number_to_propose == opn;
+            } else if |ls.v.replica.proposer.request_queue| > 0 && ls.v.replica.proposer.incomplete_batch_timer.IncompleteBatchTimerOff? {
+                assert p in ts.t_environment.sentPackets;
+                assert false;
+            } else {
+                assert p in ts.t_environment.sentPackets;
+                assert false;
+            }
+        } else {
+            assert false;
+        }
+    }
+
+    var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
+    assert LProposerCanNominateUsingOperationNumber(ls.v.replica.proposer, ls.v.replica.acceptor.log_truncation_point, ls.v.replica.proposer.next_operation_number_to_propose);
+    assert LAllAcceptorsHadNoProposal(ls.v.replica.proposer.received_1b_packets, ls.v.replica.proposer.next_operation_number_to_propose);
+    assert (exists opn' :: opn' > ls.v.replica.proposer.next_operation_number_to_propose && !LAllAcceptorsHadNoProposal(ls.v.replica.proposer.received_1b_packets, opn'));
+    assert LProposerCanNominateUsingOperationNumber(ls.v.replica.proposer, ls.v.replica.acceptor.log_truncation_point, ls.v.replica.proposer.next_operation_number_to_propose);
+    assert |sent_packets| > 0;
+    var v := ls.v.replica.proposer.request_queue[..1];
+    var m := RslMessage_2a(Ballot(1, 0), opn, v);
+    assert sent_packets[0] == LPacket(ls.v.replica.proposer.constants.all.config.replica_ids[0], ls.v.replica.proposer.constants.all.config.replica_ids[0], m);
+    var pkt_witness := sent_packets[0];
+    assert LIoOpSend(pkt_witness) in UntagLIoOpSeq(tios);
+    assert (exists pkt :: pkt in ts'.t_environment.sentPackets && IsPreFail2aPacket(pkt, opn));
+}
 
 lemma Before2a_to_Before2a_NonLeaderAction(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires RslAssumption(ts, opn) && RslConsistency(ts)

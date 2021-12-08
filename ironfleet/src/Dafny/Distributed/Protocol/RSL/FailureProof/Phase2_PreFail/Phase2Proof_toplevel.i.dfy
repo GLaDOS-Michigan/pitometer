@@ -87,12 +87,16 @@ lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState,
     var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
     if idx != 0 {
         Before2a_to_Before2a_NonLeaderAction(ts, ts', opn, idx, tios);
-        return;
+    } else {
+        var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
+        var nextActionIndex := ls.v.nextActionIndex;
+        if nextActionIndex == 3 {
+            Before2a_to_Before2b(ts, ts', opn, tios);
+        } else {
+            assume false;
+            // Before2a_to_Before2a_LeaderAction(ts, ts', opn, tios);
+        }
     }
-
-    // TODO
-    assume false;
-    // Before2a_to_Before2b(ts, ts', opn, tios);
 }
 
 
