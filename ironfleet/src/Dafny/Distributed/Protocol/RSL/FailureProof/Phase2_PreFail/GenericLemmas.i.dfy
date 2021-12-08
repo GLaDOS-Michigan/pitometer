@@ -11,8 +11,8 @@ lemma lemma_No2bBefore2aSent(ts:TimestampedRslState, ts':TimestampedRslState, op
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    requires Before_2a_Sent_Invariant(ts, opn);
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires Before_2a_Sent_Invariant(ts, opn)
     ensures !exists pkt :: pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
@@ -41,7 +41,7 @@ lemma lemma_NonLeaderDoesNotSend2a(ts:TimestampedRslState, ts':TimestampedRslSta
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
     requires Before_2a_Sent_Invariant(ts, opn) || Before_2b_Sent_Invariant(ts, opn) || After_2b_Sent_Invariant(ts, opn)
     requires idx != 0
     ensures forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2a? :: p in ts.t_environment.sentPackets
@@ -70,8 +70,8 @@ lemma lemma_NonLeaderDoesNotSendReply(ts:TimestampedRslState, ts':TimestampedRsl
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    requires Before_2a_Sent_Invariant(ts, opn) || Before_2b_Sent_Invariant(ts, opn) || After_2b_Sent_Invariant(ts, opn)
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires RslPerfInvariant(ts, opn)
     requires idx != 0
     ensures forall p | p in ts'.t_environment.sentPackets && IsPreFailReplyPacket(ts, p) :: p in ts.t_environment.sentPackets
 {
@@ -89,6 +89,36 @@ lemma lemma_NonLeaderDoesNotSendReply(ts:TimestampedRslState, ts':TimestampedRsl
                 assert forall io | io in tios && io.LIoOpSend? :: !io.s.msg.v.RslMessage_2a?;
                 assert false;
             }
+        }
+    }
+}
+
+
+/* There can be no 2b messages sent in a Non-Receive step  */
+lemma lemma_No2bSentInNonReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires RslAssumption(ts, opn) && RslConsistency(ts)
+    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires RslPerfInvariant(ts, opn)
+    requires ts.t_replicas[idx].v.nextActionIndex != 0
+    ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.t_environment.sentPackets
+{
+    var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
+    var nextActionIndex := ls.v.nextActionIndex;
+    forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
+    ensures pkt in ts.t_environment.sentPackets 
+    {
+        if pkt !in ts.t_environment.sentPackets {
+            var ios := UntagLIoOpSeq(tios);
+            var sent_packets := ExtractSentPacketsFromIos(ios);
+            assert LReplicaNoReceiveNext(ls.v.replica, nextActionIndex, ls'.v.replica, ios);
+            assert forall p | p in sent_packets :: !p.msg.RslMessage_2b?;
+            forall io | io in tios && io.LIoOpSend?
+            ensures !io.s.msg.v.RslMessage_2b? {}
+            assert false;
         }
     }
 }
