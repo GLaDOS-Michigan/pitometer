@@ -78,7 +78,7 @@ lemma Before2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:O
     ensures Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn)
 {
     lemma_NoRepliesSentInNonExecutionStep(ts, ts', opn, idx, tios);
-    lemma_No2aSentInReceiveStep(ts, ts', opn, idx, tios);
+    lemma_No2aSentInNon2aStep(ts, ts', opn, idx, tios);
     var m := iops[0].r.msg;
     var sent_packets := ExtractSentPacketsFromIos(iops);
     assert LAcceptorProcess2a(rs.replicas[idx].replica.acceptor, rs'.replicas[idx].replica.acceptor, iops[0].r, sent_packets);

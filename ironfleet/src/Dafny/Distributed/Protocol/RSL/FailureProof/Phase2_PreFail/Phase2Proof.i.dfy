@@ -183,6 +183,8 @@ predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
     && ServersAreNotClients(ts)
     && |ts.t_replicas[0].v.replica.proposer.received_1b_packets| == 0
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
+    && (forall pkt | pkt in ts.undeliveredPackets :: !pkt.msg.v.RslMessage_1a?)
+    && (forall pkt | pkt in ts.undeliveredPackets :: !pkt.msg.v.RslMessage_1b?)
     && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2a? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2a))
     && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2b))
     && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: |pkt.msg.v.val_2a| > 0)
@@ -190,8 +192,8 @@ predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
 
     && var uls := ts.t_replicas[0].v.replica.learner.unexecuted_learner_state;
     && (forall opn | opn in uls :: RequestBatchSrcInClientIds(ts, uls[opn].candidate_learned_value))
-    && (ts.t_replicas[1].v.replica.executor.next_op_to_execute.OutstandingOpKnown?
-        ==> RequestBatchSrcInClientIds(ts, ts.t_replicas[1].v.replica.executor.next_op_to_execute.v))
+    && (ts.t_replicas[0].v.replica.executor.next_op_to_execute.OutstandingOpKnown?
+        ==> RequestBatchSrcInClientIds(ts, ts.t_replicas[0].v.replica.executor.next_op_to_execute.v))
 }
 
 
@@ -250,7 +252,6 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     &&  1 <= l.v.nextActionIndex <= 3   
     && TimeLe(l.ts, req_time + TimeActionRange(0) + TimeActionRange(l.v.nextActionIndex))     // leader timestamp                  
     && r.proposer.current_state == 2
-    && r.proposer.election_state.current_view == Ballot(1, 0)
     && r.proposer.max_ballot_i_sent_1a == Ballot(1, 0)
     && opn == r.proposer.next_operation_number_to_propose
     

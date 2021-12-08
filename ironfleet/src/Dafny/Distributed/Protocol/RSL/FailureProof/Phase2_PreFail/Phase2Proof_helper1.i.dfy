@@ -232,7 +232,7 @@ lemma Before2b_to_Before2b_ReceiveNot2a(ts:TimestampedRslState, ts':TimestampedR
             assert false;
         }
     }
-    lemma_No2aSentInReceiveStep(ts, ts', opn, idx, tios);
+    lemma_No2aSentInNon2aStep(ts, ts', opn, idx, tios);
     lemma_NoRepliesSentInNonExecutionStep(ts, ts', opn, idx, tios);
 
     assert opn == ts'.t_replicas[0].v.replica.executor.ops_complete;

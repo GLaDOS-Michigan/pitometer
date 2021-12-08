@@ -1,12 +1,12 @@
 #!/bin/bash -li
 
 echo ""
-echo "Verifying GenericLemmas.i.dfy"
-dafny GenericLemmas.i.dfy | grep -iv "Warning"
+echo "Verifying (long) GenericLemmas.i.dfy"
+dafnylong GenericLemmas.i.dfy | grep -iv "Warning"
 
-# echo ""
-# echo "Verifying (long) Phase2Proof_helper0.i.dfy"
-# dafnylong Phase2Proof_helper0.i.dfy | grep -iv "Warning"
+echo ""
+echo "Verifying (long) Phase2Proof_helper0.i.dfy"
+dafnylong Phase2Proof_helper0.i.dfy | grep -iv "Warning"
 
 echo ""
 echo "Verifying Phase2Proof_helper1.i.dfy"
