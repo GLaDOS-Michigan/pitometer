@@ -190,12 +190,22 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
 
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
+  requires NotKnownSuspector(s, j);
   requires NonSuspector1(s, j);
-  ensures  NonSuspector1(s', j);
+  ensures  NonSuspector1(s', j) || NonSuspector2(s', j);
   ensures NotKnownSuspector(s', j);
 {
   // epoch might expire, and we might enter NonSuspector2()
-  assert false; // TODO
+
+  var ios := s.t_environment.nextStep.ios;
+  var clock := SpontaneousClock(UntagLIoOpSeq(ios));
+  var es := s.t_replicas[j].v.replica.proposer.election_state;
+  if clock.t < es.epoch_end_time {
+    assert NonSuspector1(s', j);
+  } else {
+    assert NonSuspector2(s', j);
+    // FIXME: prove TimeLe() using EpochQD
+  }
 }
 
 lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
