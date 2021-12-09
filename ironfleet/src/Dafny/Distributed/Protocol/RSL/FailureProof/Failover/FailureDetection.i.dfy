@@ -231,6 +231,18 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   }
 }
 
+lemma BadExample(s:TimestampedRslState, sr:set<int>, j:int)
+  requires RslAssumption(s)
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires j !in sr;
+  requires SuspectingReplicaInv(s, sr)
+
+  requires InternalSuspector3(s, j)
+{
+  assert false;
+}
+
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)

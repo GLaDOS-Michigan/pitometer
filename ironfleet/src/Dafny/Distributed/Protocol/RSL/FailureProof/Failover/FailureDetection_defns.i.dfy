@@ -121,8 +121,9 @@ predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<in
 {
   && (forall j :: j in suspecting_replicas ==> 0 <= j < |s.t_replicas|)
   && (forall j :: 0 <= j < |s.t_replicas| ==>
-        s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors <= suspecting_replicas
+  s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors <= suspecting_replicas + {j}
     )
+    // FIXME: decide what to do about this issue
 }
 
 // no one is in view 2
@@ -271,8 +272,8 @@ predicate InternalSuspector3(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
 {
-  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
-  && s.t_replicas[j].v.replica.constants.my_index in suspectors
+  var suspectors2 := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
+  && s.t_replicas[j].v.replica.constants.my_index in suspectors2
   // && s.t_replicas[j].v.replica.nextHeartbeatTime >= 0
   // && TimeLe(s.t_replicas[j].v.replica.nextHeartbeatTime, HBPeriodEnd())
 }
