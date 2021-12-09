@@ -182,12 +182,25 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   )
 }
 
+predicate InView2Local(s:TimestampedRslState, j:int, sus:bool)
+  requires RslConsistency(s)
+{
+  if sus then
+    Suspector(s, j)
+  else
+    true
+}
+
 predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
   && |suspecting_replicas| >= LMinQuorumSize(s.constants.config)
-  // TODO: this should also have a majority with Suspector(j) true
+  && (
+    forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
+  )
+  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
+  // TODO: the leader will be in its "final state" as soon as it enters a new ballot
 }
 
 predicate HBUnsent(s:TimestampedRslState, j:int)
