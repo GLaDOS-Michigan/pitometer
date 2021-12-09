@@ -215,4 +215,52 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// InternalSuspector3 inductive
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// Suspector inductive
+////////////////////////////////////////////////////////////////////////////////
+
+// self-step
+lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  // requires InView1(s, sr);
+  // requires j in sr;
+  requires Suspector(s, j);
+
+  ensures Suspector(s, j);
+{
+}
+
+// leader-step
+lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+  requires RslAssumption2(s, s')
+  requires EpochTimeoutQDInv(s)
+  requires EpochTimeoutQDInv(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[1];
+
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  // requires InView1(s, sr);
+  // requires j in sr;
+  requires Suspector(s, j);
+
+  ensures Suspector(s, j);
+{
+}
+
 }
