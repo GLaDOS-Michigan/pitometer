@@ -12,7 +12,7 @@ include "FailureDetection_defns.i.dfy"
 include "FailureDetection_helper0.i.dfy"
 include "FailureDetection_helper1.i.dfy"
 
-include "../CommonProof/Constants.i.dfy"
+include "../../CommonProof/Constants.i.dfy"
 module FailureDetection_i {
 import opened TimestampedRslSystem_i
 import opened FailureHelpers_i
@@ -25,7 +25,7 @@ function {:opaque} FailoverTime() : Timestamp
   0
 }
 
-function FailoverFinal(s:TimestampedRslState)
+predicate FailoverFinal(s:TimestampedRslState)
 {
   && (forall pkt ::
      pkt in s.t_environment.sentPackets ==>
@@ -50,7 +50,7 @@ function FailoverFinal(s:TimestampedRslState)
 
   && 1 < |s.t_replicas| // this is actually part of an assumption of the failure proof
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
-  && s.t_replicas[1].v.replica.nextAction == 9 // just checked for quorum of views, and got one
+  && s.t_replicas[1].v.nextActionIndex == 9 // just checked for quorum of views, and got one
   && TimeLe(s.t_replicas[1].ts, FailoverTime())
 }
 
