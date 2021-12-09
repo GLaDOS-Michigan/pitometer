@@ -86,10 +86,10 @@ predicate OneAndOnlyOneRequest(s:TimestampedRslState)
     && pkt.src == req.client)
   && (forall j :: 0 <= j < |s.t_replicas| ==>
     var es := s.t_replicas[j].v.replica.proposer.election_state;
-    (forall req' :: req' in es.requests_received_prev_epochs ==> req' == req)
-    && (forall req' :: req' in es.requests_received_this_epoch ==> req' == req)
-    && (|es.requests_received_this_epoch| <= 1)
-    && (|es.requests_received_prev_epochs| <= 1)
+    && (es.requests_received_this_epoch == [req] ||
+       es.requests_received_this_epoch == [])
+    && (es.requests_received_prev_epochs == [req] ||
+       es.requests_received_prev_epochs == [])
     )
 }
 
@@ -208,9 +208,10 @@ predicate NotKnownSuspector(s:TimestampedRslState, j:int)
   requires 0 <= j < |s.constants.config.replica_ids|
 {
   // No heartbeats sent indicating that we are one, and leader doesn't think we are.
-  HBUnsent(s, j) &&
-  // leader doesn't suspect this node
-  s.t_replicas[j].v.replica.constants.my_index !in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors
+  HBUnsent(s, j)
+  // leader doesn't know about this node being a suspector
+  && (s.t_replicas[j].v.replica.constants.my_index !in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
+  // but the leader might be a 
 }
 
 // start out in this state initially
