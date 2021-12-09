@@ -260,7 +260,10 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   } else if NonSuspector1(s, j) {
     NonSuspector1_ind(s, s', sr, j);
   } else if NonSuspector2(s,j) {
-    assert false; // TODO: write lemma
+    sr' := NonSuspector2_ind(s, s', sr, j);
+    // assume j != 1;
+    assert SuspectingReplicaInv(s', sr');
+    // FIXME: possibility of leader becoming a suspecting replica
   } else {
     assert InternalSuspector3(s, j);
     // NOTE: j has a change of becoming a known suspector in this case

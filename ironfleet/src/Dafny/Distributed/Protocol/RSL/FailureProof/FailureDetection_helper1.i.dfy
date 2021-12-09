@@ -155,7 +155,7 @@ lemma NonSuspector2_ind_7(s:TimestampedRslState, s':TimestampedRslState, sr:set<
   }
 }
 
-lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires RslAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
@@ -174,7 +174,11 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
     || InternalSuspector3(s', j);
 
   ensures NotKnownSuspector(s', j);
+  ensures SuspectingReplicaInv(s', sr')
+  ensures sr' == sr  || sr' == sr + {j};
 {
+  sr' := sr;
+
   var step := s.t_environment.nextStep.nodeStep;
   if step == RslStep(6) {
     assert NotKnownSuspector(s', j);
