@@ -1,14 +1,14 @@
-include "../DistributedSystem.i.dfy"
+include "../../DistributedSystem.i.dfy"
 
-include "../../../Common/Collections/Maps2.i.dfy"
-include "../Constants.i.dfy"
-include "../Environment.i.dfy"
-include "../Replica.i.dfy"
+include "../../../../Common/Collections/Maps2.i.dfy"
+include "../../Constants.i.dfy"
+include "../../Environment.i.dfy"
+include "../../Replica.i.dfy"
 
-include "TimestampedRslSystem.i.dfy"
+include "../TimestampedRslSystem.i.dfy"
 include "FailureHelpers.i.dfy"
 
-include "../CommonProof/Constants.i.dfy"
+include "../../CommonProof/Constants.i.dfy"
 // include "../CommonProof/Requests.i.dfy"
 
 module FailureDetection_defns_i {

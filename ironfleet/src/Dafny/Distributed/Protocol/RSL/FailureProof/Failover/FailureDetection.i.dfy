@@ -1,17 +1,18 @@
-include "../DistributedSystem.i.dfy"
+include "../../DistributedSystem.i.dfy"
 
-include "../../../Common/Collections/Maps2.i.dfy"
-include "../Constants.i.dfy"
-include "../Environment.i.dfy"
-include "../Replica.i.dfy"
+include "../../../../Common/Collections/Maps2.i.dfy"
+include "../../Constants.i.dfy"
+include "../../Environment.i.dfy"
+include "../../Replica.i.dfy"
 
-include "TimestampedRslSystem.i.dfy"
+include "../TimestampedRslSystem.i.dfy"
+
 include "FailureHelpers.i.dfy"
 include "FailureDetection_defns.i.dfy"
 include "FailureDetection_helper0.i.dfy"
 include "FailureDetection_helper1.i.dfy"
 
-include "../CommonProof/Constants.i.dfy"
+include "../../CommonProof/Constants.i.dfy"
 
 module FailureDetection_i {
 import opened TimestampedRslSystem_i

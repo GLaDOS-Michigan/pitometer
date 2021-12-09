@@ -1,11 +1,12 @@
-include "../DistributedSystem.i.dfy"
+include "../../DistributedSystem.i.dfy"
 
-include "../../../Common/Collections/Maps2.i.dfy"
-include "../Constants.i.dfy"
-include "../Environment.i.dfy"
-include "../Replica.i.dfy"
+include "../../../../Common/Collections/Maps2.i.dfy"
+include "../../Constants.i.dfy"
+include "../../Environment.i.dfy"
+include "../../Replica.i.dfy"
 
-include "TimestampedRslSystem.i.dfy"
+include "../TimestampedRslSystem.i.dfy"
+
 include "FailureHelpers.i.dfy"
 include "FailureDetection_defns.i.dfy"
 include "FailureDetection_helper0.i.dfy"
