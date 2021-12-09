@@ -1,14 +1,11 @@
-include "../../DistributedSystem.i.dfy"
-include "../../../../Common/Collections/Maps2.i.dfy"
-include "../../Constants.i.dfy"
-include "../../Environment.i.dfy"
-include "../../Replica.i.dfy"
 include "../TimestampedRslSystem.i.dfy"
 include "../../CommonProof/Constants.i.dfy"
+include "../Common/assumptions.i.dfy"
 
 module RslPhase2Proof_PreFail_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
+import opened Common_Assumptions
 
 /*****************************************************************************************
 *                                      Guarantees                                        *
@@ -56,11 +53,7 @@ predicate PerformanceGuarantee_2a(ts:TimestampedRslState, opn:OperationNumber) {
 /* Conjunction of all assumptions */
 predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber)
 {
-    && RslConsistency(ts)
-    && NoPacketDuplication(ts)
-    && |ts.t_replicas| > 2  // For failure to be meaningful
-    && ts.constants.params.max_batch_size == 1
-
+    && CommonAssumptions(ts)
     && (var nextStep := ts.t_environment.nextStep; 
         && nextStep.LEnvStepHostIos? ==>
             && (forall io | io in nextStep.ios :: !io.LIoOpTimeoutReceive?)
@@ -71,10 +64,6 @@ predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber)
     && minD < SelfDelivery < D < 2*minD
     && ProcessPacket > 0
     && SelfDelivery + TimeActionRange(0) < D
-    && NoExternalPackets(ts)
-    && NoExternalSteps(ts)
-    && BoundedQueueingAssumption(ts)
-    && ts.t_replicas[0].v.replica.proposer.constants.all.params.max_batch_size > 0
 }
 
 predicate LeaderDoesNotProposeFurtherOps(ts:TimestampedRslState, opn:OperationNumber) 
@@ -91,38 +80,6 @@ predicate LeaderAlwaysZero(ts:TimestampedRslState)
         :: ts.t_replicas[idx].v.replica.proposer.current_state == 0)
     && ts.t_replicas[0].v.replica.proposer.current_state == 2
     && ts.t_replicas[0].v.replica.proposer.election_state.current_view == Ballot(1, 0)
-}
-
-predicate NoExternalPackets(ts:TimestampedRslState) {
-    forall pkt | pkt in ts.undeliveredPackets ::
-        && pkt in ts.t_environment.sentPackets
-        && pkt.src in ts.constants.config.replica_ids
-        && pkt.dst in ts.constants.config.replica_ids
-}
-
-predicate NoExternalSteps(ts:TimestampedRslState) {
-    !(exists eid, ios :: ts.t_environment.nextStep == LEnvStepHostIos(eid, ios, ExternalStep()))
-}
-
-// Bounded queueing assumption for simplified RSL
-predicate BoundedQueueingAssumption(ts:TimestampedRslState) 
-    requires RslConsistency(ts)
-{
-    forall idx, ios :: (
-        && 0 <= idx < |ts.constants.config.replica_ids|
-        && ts.t_environment.nextStep == LEnvStepHostIos(ts.constants.config.replica_ids[idx], ios, RslStep(ts.t_replicas[idx].v.nextActionIndex))
-        ==>
-        (forall io | io in ts.t_environment.nextStep.ios && io.LIoOpReceive? ::
-            // this means that max(replica.ts, msg.ts) <= msg.ts + MaxQueueTime
-            ts.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueTime
-        )
-    )
-}
-
-predicate RslConsistency(ts:TimestampedRslState)
-{
-    ConstantsAllConsistentInv(UntimestampRslState(ts))
-        && WellFormedLConfiguration(ts.constants.config)
 }
 
 

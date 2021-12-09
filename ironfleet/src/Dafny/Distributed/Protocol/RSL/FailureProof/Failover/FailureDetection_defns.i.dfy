@@ -4,6 +4,7 @@ include "../../../../Common/Collections/Maps2.i.dfy"
 include "../../Constants.i.dfy"
 include "../../Environment.i.dfy"
 include "../../Replica.i.dfy"
+include "../Common/assumptions.i.dfy"
 
 include "../TimestampedRslSystem.i.dfy"
 include "FailureHelpers.i.dfy"
@@ -14,6 +15,7 @@ include "../../CommonProof/Constants.i.dfy"
 module FailureDetection_defns_i {
 import opened TimestampedRslSystem_i
 import opened FailureHelpers_i
+import opened Common_Assumptions
 
 ////////////////////////////////////////////////////////////////////////////////
 // Assumptions
@@ -96,10 +98,8 @@ predicate OneAndOnlyOneRequest(s:TimestampedRslState)
 
 predicate RslAssumption(s:TimestampedRslState)
 {
-  && RslConsistency(s)
-  && BoundedQueueingAssumption(s)
+  && CommonAssumptions(s)
   && NoStateTransfer(s)
-  && NoExternalSteps(s)
   && OneAndOnlyOneRequest(s)
 }
 

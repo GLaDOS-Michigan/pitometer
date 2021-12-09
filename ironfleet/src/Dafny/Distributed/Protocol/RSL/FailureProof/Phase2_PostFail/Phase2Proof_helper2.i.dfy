@@ -234,7 +234,7 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
 
     After2b_to_After2b_LeaderAction_TimeBoundReply(ts, ts', opn, tios);
     forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p)
-    ensures TimeLe(p.msg.ts, TimeBoundReplyFailure())
+    ensures TimeLe(p.msg.ts, TimeBoundReplyFinal())
     {}
 
 
@@ -266,7 +266,7 @@ lemma After2b_to_After2b_LeaderAction_TimeBoundReply(ts:TimestampedRslState, ts'
     requires PerformanceGuarantee_2b(ts, opn)
     requires PerformanceGuarantee_Response(ts)
     ensures forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p) 
-            :: TimeLe(p.msg.ts, TimeBoundReplyFailure())
+            :: TimeLe(p.msg.ts, TimeBoundReplyFinal())
 {}
 
 
