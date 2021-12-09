@@ -56,14 +56,18 @@ predicate FailoverFinal(s:TimestampedRslState)
 
 lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
   requires exists con :: ValidTimestampedRSLBehavior(con, tglb);
-  // FIXME: also the assumptions have to be met
-  ensures forall s :: s in tglb[..startPhase1Idx] ==>
+  requires forall s :: s in tglb ==> FailureDetection_defns_i.RslConsistency(s);
+  // FIXME: also the 2-step assumptions have to be met
+
+  ensures forall j :: 0 <= j < |tglb| ==> j <= startPhase1Idx ==>
+    var s := tglb[j];
     && CurrView(s) // This means every node is in view (1,0); will rename to be more clear
     && InView1Packets(s); // All packets have Ballot(1,0)
 
   // The idx might be larger than the seq if the behavior given never has
   // failover happen, and never reaches failover final
-  ensures startPhase1Idx <= |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
+  ensures startPhase1Idx >= 0
+  ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
 {
   // TODO:
 }
