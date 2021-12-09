@@ -250,7 +250,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   sr' := sr;
   var sus := j in sr;
   if sus {
-    assert false;
+    assert false; // TODO: write lemma
     assert Suspector(s', j);
     return;
   }

@@ -280,7 +280,7 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && pkt.msg.v.suspicious == true
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
   ) ||
-  true // FIXME: the leader knows us to be a suspector
+  (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
 }
 
 }
