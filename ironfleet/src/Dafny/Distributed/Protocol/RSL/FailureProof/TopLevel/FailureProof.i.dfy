@@ -78,9 +78,23 @@ predicate RslAssumption2(ts:TimestampedRslState, ts':TimestampedRslState)
 
 
 predicate InFailoverStage(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
+}
 
 predicate InPhase1Stage(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    && ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
+    && ts.t_replicas[1].v.replica.proposer.current_state != 2
+}
 
 predicate InPhase2Stage(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    && ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
+    && ts.t_replicas[1].v.replica.proposer.current_state == 2
+}
 
 }

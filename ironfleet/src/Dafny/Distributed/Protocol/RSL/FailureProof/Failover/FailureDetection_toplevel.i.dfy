@@ -45,7 +45,7 @@ predicate FailoverFinal(s:TimestampedRslState)
   && (
     forall j :: 0 <= j < |s.t_replicas| ==>
     s.t_replicas[j].v.replica.proposer.election_state.current_view == Ballot(1,0)
-    || s.t_replicas[j].v.replica.proposer.election_state.current_view == Ballot(1,0)
+    || s.t_replicas[j].v.replica.proposer.election_state.current_view == Ballot(1,1)
     )
 
   && 1 < |s.t_replicas| // this is actually part of an assumption of the failure proof
