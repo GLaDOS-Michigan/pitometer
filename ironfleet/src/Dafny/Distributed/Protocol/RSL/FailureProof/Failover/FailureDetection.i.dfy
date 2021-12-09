@@ -251,10 +251,14 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   sr' := sr;
   var sus := j in sr;
   if sus {
-    assert false; // TODO: write lemma
+    assume false; // TODO: use lemmas
     assert Suspector(s', j);
     return;
   }
+
+  var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
+  assert s.t_replicas[j].v.replica.constants.my_index !in suspectors;
+
   // else, non-sus
   if NonSuspector0(s, j) {
     NonSuspector0_ind(s, s', sr, j);
@@ -262,13 +266,10 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
     NonSuspector1_ind(s, s', sr, j);
   } else if NonSuspector2(s,j) {
     sr' := NonSuspector2_ind(s, s', sr, j);
-    // assume j != 1;
-    assert SuspectingReplicaInv(s', sr');
-    // FIXME: possibility of leader becoming a suspecting replica
   } else {
     assert InternalSuspector3(s, j);
     // NOTE: j has a change of becoming a known suspector in this case
-    assert false;
+    assert false; // FIXME: why is this passing???
     // TODO: write lemma
   }
 }

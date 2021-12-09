@@ -170,12 +170,14 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   requires j !in sr;
   requires NonSuspector2(s, j);
 
-  ensures  NonSuspector2(s', j) || NonSuspector0(s', j)
-    || InternalSuspector3(s', j);
+  // If j is added to sr, then j must be the leader.
+  ensures
+    (sr' == sr && NotKnownSuspector(s', j) && (NonSuspector2(s', j) || NonSuspector0(s', j)
+     || InternalSuspector3(s', j)))
+    || (sr' == sr + {j} && Suspector(s', j))
+    ;
 
-  ensures NotKnownSuspector(s', j);
-  ensures SuspectingReplicaInv(s', sr')
-  ensures sr' == sr  || sr' == sr + {j};
+  ensures SuspectingReplicaInv(s', sr');
 {
   sr' := sr;
 
@@ -243,7 +245,7 @@ lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<i
   // requires j in sr;
   requires Suspector(s, j);
 
-  ensures Suspector(s, j);
+  ensures Suspector(s', j);
 {
 }
 
@@ -263,7 +265,7 @@ lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set
   // requires j in sr;
   requires Suspector(s, j);
 
-  ensures Suspector(s, j);
+  ensures Suspector(s', j);
 {
 }
 

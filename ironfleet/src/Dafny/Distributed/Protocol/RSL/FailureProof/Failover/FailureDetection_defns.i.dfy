@@ -258,7 +258,6 @@ predicate NonSuspector1(s:TimestampedRslState, j:int)
 predicate NonSuspector2(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
-  requires 0 <= j < |s.constants.config.replica_ids|
 {
   var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
   && s.t_replicas[j].v.replica.constants.my_index !in suspectors
@@ -271,18 +270,17 @@ predicate NonSuspector2(s:TimestampedRslState, j:int)
 predicate InternalSuspector3(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
-  requires 0 <= j < |s.constants.config.replica_ids|
 {
   var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
   && s.t_replicas[j].v.replica.constants.my_index in suspectors
-  && s.t_replicas[j].v.replica.nextHeartbeatTime >= 0
-  && TimeLe(s.t_replicas[j].v.replica.nextHeartbeatTime, HBPeriodEnd())
+  // && s.t_replicas[j].v.replica.nextHeartbeatTime >= 0
+  // && TimeLe(s.t_replicas[j].v.replica.nextHeartbeatTime, HBPeriodEnd())
 }
 
 
 predicate Suspector(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
-  requires 0 <= j < |s.constants.config.replica_ids|
+  requires 0 <= j < |s.t_replicas|
 {
   // Either there's a suspecting HB from that node, or the new leader already knows about it
   (exists pkt ::
@@ -292,8 +290,8 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && pkt.dst == s.constants.config.replica_ids[1]
   && pkt.msg.v.suspicious == true
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
-  ) ||
-  (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
+  )
+  || (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
 }
 
 }
