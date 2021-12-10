@@ -1,6 +1,6 @@
 include "Phase1Proof.i.dfy"
 
-module Rs2Phase2Proof_Top {
+module RslPhase1Proof_Top {
 import opened RslPhase1Proof_i
 
 
