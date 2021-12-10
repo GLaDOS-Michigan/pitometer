@@ -1,9 +1,11 @@
 include "../TimestampedRslSystem.i.dfy"
 include "../../CommonProof/Constants.i.dfy"
+include "definitions.i.dfy"
 
 module Common_Assumptions {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
+import opened Common_Definitions
 
 
 
@@ -48,12 +50,6 @@ predicate BoundedQueueingAssumption(ts:TimestampedRslState)
             ts.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueTime
         )
     )
-}
-
-predicate RslConsistency(ts:TimestampedRslState)
-{
-    ConstantsAllConsistentInv(UntimestampRslState(ts))
-        && WellFormedLConfiguration(ts.constants.config)
 }
 
 }
