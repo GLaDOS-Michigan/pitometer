@@ -27,7 +27,7 @@ import opened FailureDetection_helper1_i
 ////////////////////////////////////////////////////////////////////////////////
 
 lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   // requires EpochTimeoutQDInv(s)
   // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -124,7 +124,7 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
 }
 
 lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   // requires EpochTimeoutQDInv(s)
   // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -174,7 +174,7 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
 }
 
 lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -204,7 +204,7 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
 }
 
 lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -232,7 +232,7 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 }
 
 lemma BadExample(s:TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption(s)
+  requires FOAssumption(s)
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires j !in sr;
@@ -244,7 +244,7 @@ lemma BadExample(s:TimestampedRslState, sr:set<int>, j:int)
 }
 
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -287,7 +287,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
 }
 
 lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, k:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= k < |s.constants.config.replica_ids|;
@@ -306,7 +306,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
 }
 
 lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -348,7 +348,7 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set
 }
 
 lemma InView1_to_Packets(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -361,7 +361,7 @@ lemma InView1_to_Packets(s:TimestampedRslState, s':TimestampedRslState, j:int, s
 }
 
 lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -379,7 +379,7 @@ lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 }
 
 lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
 
@@ -404,7 +404,7 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
 }
 
 lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) returns (sr':set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires TimestampedRslNext(s, s');

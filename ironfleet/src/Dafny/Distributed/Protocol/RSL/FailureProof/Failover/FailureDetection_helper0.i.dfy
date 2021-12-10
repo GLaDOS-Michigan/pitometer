@@ -32,7 +32,7 @@ predicate EpochTimeoutQDInv(s:TimestampedRslState)
 }
 
 lemma EpochTimeoutQDInductive(s:TimestampedRslState, s':TimestampedRslState, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;

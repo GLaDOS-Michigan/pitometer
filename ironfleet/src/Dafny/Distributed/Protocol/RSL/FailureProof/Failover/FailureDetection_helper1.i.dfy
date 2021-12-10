@@ -24,7 +24,7 @@ import opened FailureDetection_helper0_i
 ////////////////////////////////////////////////////////////////////////////////
 
 lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -67,7 +67,7 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
 
 lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -118,7 +118,7 @@ lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 ////////////////////////////////////////////////////////////////////////////////
 
 lemma NonSuspector2_ind_7(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -156,7 +156,7 @@ lemma NonSuspector2_ind_7(s:TimestampedRslState, s':TimestampedRslState, sr:set<
 }
 
 lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -231,7 +231,7 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 
 // self-step
 lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -251,7 +251,7 @@ lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<i
 
 // leader-step
 lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
-  requires RslAssumption2(s, s')
+  requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;

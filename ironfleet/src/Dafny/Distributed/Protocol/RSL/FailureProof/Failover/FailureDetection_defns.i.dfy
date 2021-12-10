@@ -96,17 +96,17 @@ predicate OneAndOnlyOneRequest(s:TimestampedRslState)
 }
 
 
-predicate RslAssumption(s:TimestampedRslState)
+predicate FOAssumption(s:TimestampedRslState)
 {
   && CommonAssumptions(s)
   && NoStateTransfer(s)
   && OneAndOnlyOneRequest(s)
 }
 
-predicate RslAssumption2(s:TimestampedRslState, s':TimestampedRslState)
+predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
 {
-  && RslAssumption(s)
-  && RslAssumption(s')
+  && FOAssumption(s)
+  && FOAssumption(s')
   // XXX: shouldn't need to assume this, pretty trivial
   && s.constants.config.replica_ids == s'.constants.config.replica_ids
   && ClockAssumption(s, s')
