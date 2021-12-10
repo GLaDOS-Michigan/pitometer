@@ -15,7 +15,7 @@ import opened Common_Definitions
 *                                     Assumptions                                        *
 *****************************************************************************************/
 
-predicate RslAssumption(s:TimestampedRslState) {
+predicate P1Assumption(s:TimestampedRslState) {
     && CommonAssumptions(s)
     && LeaderAlwaysOne(s)
     && (var nextStep := s.t_environment.nextStep; nextStep.LEnvStepHostIos? ==>

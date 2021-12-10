@@ -73,7 +73,7 @@ predicate ExistingPacketsBallotOpn(ts:TimestampedRslState, opn:OperationNumber) 
 }
 
 // Main invariant 
-predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber) 
+predicate Phase1Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
 {
     && AlwaysInvariant(ts, opn)
@@ -84,10 +84,10 @@ predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber)
 
 lemma Phase1TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber) returns (startPhase2Idx:int)
     requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
-    requires forall i | 0 <= i < |tglb| :: RslAssumption(tglb[i])
+    requires forall i | 0 <= i < |tglb| :: P1Assumption(tglb[i])
     // Phase1 lasts up till right before startPhase2Idx
     // startPhase2Idx is the initial state of phase 2
-    ensures forall j | 0 <= j < |tglb| && j < startPhase2Idx :: Phase2Invariant(tglb[j], opn)
+    ensures forall j | 0 <= j < |tglb| && j < startPhase2Idx :: Phase1Invariant(tglb[j], opn)
     ensures startPhase2Idx >= 0
     ensures startPhase2Idx < |tglb| ==> Phase2Begin(tglb[startPhase2Idx], opn)
 {
