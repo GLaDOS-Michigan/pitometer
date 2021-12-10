@@ -1,6 +1,6 @@
 ## Old Invariant
 
-* `RslAssumption`
+* `P2Assumption`
     * `RslConsistency`
         * `ConstantsAllConsistentInv`
         * `WellFormedLConfiguration`

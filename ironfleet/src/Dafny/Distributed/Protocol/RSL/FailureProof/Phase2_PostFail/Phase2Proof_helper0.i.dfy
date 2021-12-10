@@ -6,7 +6,7 @@ import opened RslPhase2Proof_PostFail_i
 /* WARNING: this file a timeout of 60s to verify */
 
 lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -62,7 +62,7 @@ lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState
 
 
 lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -73,7 +73,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslSt
 
 
 lemma AlwaysInvariant_Maintained_ClientSrc_BatchSize1b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -88,7 +88,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSize1b(ts:TimestampedRslState, t
 
 
 lemma AlwaysInvariant_Maintained_BatchSize2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -147,7 +147,7 @@ lemma AlwaysInvariant_Maintained_BatchSize2a(ts:TimestampedRslState, ts':Timesta
 
 
 lemma AlwaysInvariant_Maintained_ClientSrc2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -174,7 +174,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc2b(ts:TimestampedRslState, ts':Timesta
 }
 
 lemma AlwaysInvariant_Maintained_BatchSize2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -201,7 +201,7 @@ lemma AlwaysInvariant_Maintained_BatchSize2b(ts:TimestampedRslState, ts':Timesta
 }
 
 lemma AlwaysInvariant_Maintained_ClientSrc2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)

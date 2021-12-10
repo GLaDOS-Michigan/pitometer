@@ -11,8 +11,8 @@ import opened Rs2Phase2Proof_PostFail_Helper2
 
 
 /**** MAIN INVARIANT THEOREM ****/
-lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req_time:Timestamp, opn:OperationNumber)
-    requires RslAssumption(s, opn) && RslAssumption(s', opn)
+lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn:OperationNumber)
+    requires P2Assumption(s, opn) && P2Assumption(s', opn)
     requires RslConsistency(s) && RslConsistency(s')
     requires TimestampedRslNext(s, s')
     requires Phase2Invariant(s, opn)
@@ -37,6 +37,24 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
 }
 
 
+lemma Phase2TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
+    requires |tglb| > 0
+    requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
+    requires forall i | 0 <= i < |tglb| :: P2Assumption(tglb[i], opn)
+    requires  Phase2Invariant(tglb[0], opn)
+
+    ensures forall j | 0 <= j < |tglb| :: Phase2Invariant(tglb[j], opn)
+{
+    var i := 1;
+    while i < |tglb| 
+        invariant 1 <= i <= |tglb| 
+        invariant forall k | 0 <= k < i :: Phase2Invariant(tglb[k], opn)
+    {
+        PerfInvariantMaintained(tglb[i-1], tglb[i], opn);
+    }
+}
+
+
 /*****************************************************************************************
 *                                         Lemmas                                         *
 *****************************************************************************************/
@@ -44,7 +62,7 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
 
 /* Proof that PacketsBallotInvariant is maintained */
 lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
+    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts') && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -67,8 +85,8 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
 /* Proof that a Before_2a_Sent state transitions to a Before_2a_Sent state or 
 * Before_2b_Sent state */
 lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslConsistency(ts)
-    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires P2Assumption(ts, opn) && RslConsistency(ts)
+    requires P2Assumption(ts', opn) && RslConsistency(ts')
     requires AlwaysInvariant(ts', opn)
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
@@ -93,8 +111,8 @@ lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState,
 /* Proof that a Before_2b_Sent state transitions to a Before_2b_Sent state or 
 * After_2b_Sent state */
 lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslConsistency(ts)
-    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires P2Assumption(ts, opn) && RslConsistency(ts)
+    requires P2Assumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
@@ -132,8 +150,8 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
 
 /* Proof that a After_2b_Sent state transitions to a After_2b_Sent state */
 lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires RslAssumption(ts, opn) && RslConsistency(ts)
-    requires RslAssumption(ts', opn) && RslConsistency(ts')
+    requires P2Assumption(ts, opn) && RslConsistency(ts)
+    requires P2Assumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')

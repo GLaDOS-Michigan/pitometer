@@ -7,14 +7,9 @@ module RslPhase2Proof_PostFail_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 import opened Common_Assumptions
-import opened Common_definitions
+import opened Common_Definitions
 
 
-
-/* Timestamp of initial client request */
-ghost const req_time:Timestamp
-/* Initial timestamp of replica 1 */
-ghost const NewLeaderInitTS:Timestamp
 
 /*****************************************************************************************
 *                                      Guarantees                                        *
@@ -77,7 +72,7 @@ function TimeBoundReplyFinal() : Timestamp {
 *****************************************************************************************/
 
 /* Conjunction of all assumptions */
-predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber){
+predicate P2Assumption(ts:TimestampedRslState, opn:OperationNumber){
     && CommonAssumptions(ts)
     && (var nextStep := ts.t_environment.nextStep; 
         && nextStep.LEnvStepHostIos? ==>
