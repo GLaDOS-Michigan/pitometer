@@ -12,6 +12,12 @@ import opened CommonProof__Constants_i
 *****************************************************************************************/
 
 
+/* Timestamp of initial client request */
+ghost const req_time:Timestamp
+/* Initial timestamp of replica 1 */
+ghost const NewLeaderInitTS:Timestamp
+
+
 predicate RslConsistency(ts:TimestampedRslState)
 {
     ConstantsAllConsistentInv(UntimestampRslState(ts))

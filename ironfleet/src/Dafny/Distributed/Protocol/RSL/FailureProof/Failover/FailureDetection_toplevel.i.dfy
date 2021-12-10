@@ -70,5 +70,6 @@ lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:in
   ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
 {
   // TODO:
+  assume false;
 }
 }
