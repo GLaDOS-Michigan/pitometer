@@ -17,7 +17,7 @@ lemma Before2b_to_MaybeAfter2b_Process2a(ts:TimestampedRslState, ts':Timestamped
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
     requires ts.t_replicas[idx].v.nextActionIndex == 0
     requires tios[0].r.msg.v.RslMessage_2a?
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     
     requires Before_2b_Sent_Invariant(ts, opn)
     ensures Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn)
@@ -81,7 +81,7 @@ lemma Before2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:O
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires LReplicaNextProcessPacket(rs.replicas[idx].replica, rs'.replicas[idx].replica, iops);
@@ -126,7 +126,7 @@ lemma After2b_to_After2b_NonLeaderAction(ts:TimestampedRslState, ts':Timestamped
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires idx != 1;
     requires After_2b_Sent_Invariant(ts, opn)
     ensures After_2b_Sent_Invariant(ts', opn)
@@ -164,7 +164,7 @@ lemma After2b_to_After2b_2bBalOpn(ts:TimestampedRslState, ts':TimestampedRslStat
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: BalLeq(pkt.msg.v.bal_2b, Ballot(1, 1)) && pkt.msg.v.opn_2b == opn
 {
@@ -214,7 +214,7 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires idx == 1;
     requires After_2b_Sent_Invariant(ts, opn)
     ensures After_2b_Sent_Invariant(ts', opn)
@@ -258,7 +258,7 @@ lemma After2b_to_After2b_LeaderAction_TimeBoundReply(ts:TimestampedRslState, ts'
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     requires All2aPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
     requires All2bPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
@@ -277,7 +277,7 @@ lemma After2b_to_After2b_LeaderAction_TimeBound2b(ts:TimestampedRslState, ts':Ti
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     requires All2aPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
     requires All2bPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
@@ -311,7 +311,7 @@ lemma After2b_to_After2b_LeaderAction_LearnedBatchNotEmpty(ts:TimestampedRslStat
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     requires All2aPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
     requires All2bPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
@@ -359,7 +359,7 @@ lemma After2b_to_After2b_LeaderAction_PostExecution(ts:TimestampedRslState, ts':
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     requires All2aPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
     requires All2bPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
@@ -396,7 +396,7 @@ lemma After2b_to_After2b_LeaderAction_PreExecution(ts:TimestampedRslState, ts':T
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     requires All2aPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)
     requires All2bPackets_BalLeq_Opn(ts, Ballot(1, 1), opn)

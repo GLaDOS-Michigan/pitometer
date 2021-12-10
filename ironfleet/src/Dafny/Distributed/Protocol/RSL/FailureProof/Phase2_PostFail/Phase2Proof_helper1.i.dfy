@@ -9,7 +9,7 @@ lemma PacketsBallotInvariant_ReceiveStep(ts:TimestampedRslState, ts':Timestamped
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires ts.t_replicas[idx].v.nextActionIndex == 0 
     ensures PacketsBallotInvariant(ts')
@@ -23,7 +23,7 @@ lemma PacketsBallotInvariant_NoReceiveStep(ts:TimestampedRslState, ts':Timestamp
     requires RslAssumption(ts, opn) && RslConsistency(ts)
     requires RslAssumption(ts', opn) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires ts.t_replicas[idx].v.nextActionIndex != 0 
     ensures PacketsBallotInvariant(ts')
@@ -41,7 +41,7 @@ lemma Before2a_to_Before2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios);
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2a_Sent_Invariant(ts, opn);
     ensures Before_2b_Sent_Invariant(ts', opn);
 {
@@ -73,7 +73,7 @@ lemma Before2a_to_Before2a_NonLeaderAction(ts:TimestampedRslState, ts':Timestamp
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires idx != 1;
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2a_Sent_Invariant(ts, opn);
     ensures Before_2a_Sent_Invariant(ts', opn);
 {
@@ -128,7 +128,7 @@ lemma Before2b_to_Before2b_NonReceive(ts:TimestampedRslState, ts':TimestampedRsl
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires ts.t_replicas[idx].v.nextActionIndex != 0
@@ -196,7 +196,7 @@ lemma Before2b_to_Before2b_NonReceive_NoNewReply(ts:TimestampedRslState, ts':Tim
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires ts.t_replicas[idx].v.nextActionIndex != 0
@@ -246,7 +246,7 @@ lemma Before2b_to_Before2b_Receive(ts:TimestampedRslState, ts':TimestampedRslSta
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires ts.t_replicas[idx].v.nextActionIndex == 0

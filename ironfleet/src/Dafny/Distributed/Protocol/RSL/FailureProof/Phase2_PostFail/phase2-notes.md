@@ -7,7 +7,7 @@
     * `LeaderAlwaysZero`
     * `BoundedQueueingAssumption`
         * for each replica performing a receive action, we have `s.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueTime`
-* `RslPerfInvariant`
+* `Phase2Invariant`
     * `GenericPhase2Invariant`
         * `AlwaysInvariant`
             * ServersAreNotClients

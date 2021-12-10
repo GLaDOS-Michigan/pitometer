@@ -9,7 +9,7 @@ lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures AlwaysInvariant(ts', opn)
 {   
     assert ts'.t_replicas[1].v.replica.proposer.request_queue == [];
@@ -65,7 +65,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslSt
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures forall idx, opn'| 0 <= idx < |ts'.t_replicas| && opn' in ts'.t_replicas[idx].v.replica.acceptor.votes
         ::  && |ts'.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val| > 0   
             &&  RequestBatchSrcInClientIds(ts', ts'.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val)
@@ -76,7 +76,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSize1b(ts:TimestampedRslState, t
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures forall pkt, opn'| pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_1b? && opn' in pkt.msg.v.votes
         ::  && |pkt.msg.v.votes[opn'].max_val| > 0
             && RequestBatchSrcInClientIds(ts', pkt.msg.v.votes[opn'].max_val)
@@ -91,7 +91,7 @@ lemma AlwaysInvariant_Maintained_BatchSize2a(ts:TimestampedRslState, ts':Timesta
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: |pkt.msg.v.val_2a| > 0 
 {   
     forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? 
@@ -150,7 +150,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc2b(ts:TimestampedRslState, ts':Timesta
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: RequestBatchSrcInClientIds(ts', pkt.msg.v.val_2b)
 {   
     forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2b? 
@@ -177,7 +177,7 @@ lemma AlwaysInvariant_Maintained_BatchSize2b(ts:TimestampedRslState, ts':Timesta
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: |pkt.msg.v.val_2b| > 0 
 {   
     forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? 
@@ -204,7 +204,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc2a(ts:TimestampedRslState, ts':Timesta
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2a? :: RequestBatchSrcInClientIds(ts', pkt.msg.v.val_2a)
 {   
     forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2a? 

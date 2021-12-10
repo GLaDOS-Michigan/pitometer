@@ -1,11 +1,20 @@
 include "../TimestampedRslSystem.i.dfy"
 include "../../CommonProof/Constants.i.dfy"
 include "../Common/assumptions.i.dfy"
+include "../Common/definitions.i.dfy"
 
 module RslPhase2Proof_PostFail_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 import opened Common_Assumptions
+import opened Common_definitions
+
+
+
+/* Timestamp of initial client request */
+ghost const req_time:Timestamp
+/* Initial timestamp of replica 1 */
+ghost const NewLeaderInitTS:Timestamp
 
 /*****************************************************************************************
 *                                      Guarantees                                        *
@@ -68,8 +77,7 @@ function TimeBoundReplyFinal() : Timestamp {
 *****************************************************************************************/
 
 /* Conjunction of all assumptions */
-predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber)
-{
+predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber){
     && CommonAssumptions(ts)
     && (var nextStep := ts.t_environment.nextStep; 
         && nextStep.LEnvStepHostIos? ==>
@@ -111,33 +119,14 @@ predicate LeaderAlwaysOne(ts:TimestampedRslState)
 
 
 /*****************************************************************************************
-*                                    Boundary State                                      *
-*****************************************************************************************/
-
-/* Timestamp of initial client request */
-ghost const req_time:Timestamp
-/* Initial timestamp of replica 1 */
-ghost const NewLeaderInitTS:Timestamp
-
-predicate LeaderSet1bContainsRequest(ts:TimestampedRslState) 
-    requires |ts.t_replicas| > 2
-{
-    var r := ts.t_replicas[1].v.replica;
-    && LProposerCanNominateUsingOperationNumber(r.proposer, r.acceptor.log_truncation_point, r.proposer.next_operation_number_to_propose)
-    && !LAllAcceptorsHadNoProposal(r.proposer.received_1b_packets, r.proposer.next_operation_number_to_propose)
-}
-
-
-/*****************************************************************************************
 *                                     Invariants                                        *
 *****************************************************************************************/
 
 
 // Main invariant 
-predicate RslPerfInvariant(ts:TimestampedRslState, opn:OperationNumber) 
+predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
 {
-    && RslConsistency(ts)
     && AlwaysInvariant(ts, opn)
     && PerformanceGuarantee(ts, opn)
     && PacketsBallotInvariant(ts)
@@ -148,43 +137,36 @@ predicate RslPerfInvariant(ts:TimestampedRslState, opn:OperationNumber)
 }
 
 
-predicate ServersAreNotClients(ts:TimestampedRslState)
-{
-  forall id :: id in ts.constants.config.clientIds && id in ts.constants.config.replica_ids
-    ==> false
-}
-
-predicate RequestBatchSrcInClientIds(ts:TimestampedRslState, v:RequestBatch)
-{
-  forall r :: r in v ==> r.client in ts.constants.config.clientIds
-}
-
 predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
 {
     && ServersAreNotClients(ts)
+    && AlwaysInvariant_RequestSrcAndBatchSize(ts, opn)
     && ts.t_replicas[1].v.replica.proposer.request_queue == []
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
+    && LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
+}
+
+
+predicate AlwaysInvariant_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:OperationNumber)
+    requires |ts.t_replicas| > 2
+    requires LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
+{
     && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2a? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2a))
     && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2b))
-
+    && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: |pkt.msg.v.val_2a| > 0)
+    && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: |pkt.msg.v.val_2b| > 0)
     && (forall pkt, opn'| pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_1b? && opn' in pkt.msg.v.votes
         ::  && |pkt.msg.v.votes[opn'].max_val| > 0
             && RequestBatchSrcInClientIds(ts, pkt.msg.v.votes[opn'].max_val))
-    && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: |pkt.msg.v.val_2a| > 0)
-    && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: |pkt.msg.v.val_2b| > 0)
+    && (forall v | LValIsHighestNumberedProposal(v, ts.t_replicas[1].v.replica.proposer.received_1b_packets, opn)
+        :: |v| > 0)
+    && (forall pkt, op | pkt in ts.t_replicas[1].v.replica.proposer.received_1b_packets && pkt.msg.RslMessage_1b? && op in pkt.msg.votes
+        :: RequestBatchSrcInClientIds(ts, pkt.msg.votes[op].max_val))
     && (forall idx, opn'| 0 <= idx < |ts.t_replicas| && opn' in ts.t_replicas[idx].v.replica.acceptor.votes
         ::  && |ts.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val| > 0   
             &&  RequestBatchSrcInClientIds(ts, ts.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val)
     )
-
-    && LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
-    && (forall pkt, op | pkt in ts.t_replicas[1].v.replica.proposer.received_1b_packets && pkt.msg.RslMessage_1b? && op in pkt.msg.votes
-        :: RequestBatchSrcInClientIds(ts, pkt.msg.votes[op].max_val))
-    
-    && (forall v | LValIsHighestNumberedProposal(v, ts.t_replicas[1].v.replica.proposer.received_1b_packets, opn)
-        :: |v| > 0)
-    
     && var uls := ts.t_replicas[1].v.replica.learner.unexecuted_learner_state;
     && (forall opn | opn in uls :: RequestBatchSrcInClientIds(ts, uls[opn].candidate_learned_value))
     && (ts.t_replicas[1].v.replica.executor.next_op_to_execute.OutstandingOpKnown?
@@ -242,11 +224,9 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
-    && PerformanceGuarantee_Response(ts)
+    // && PerformanceGuarantee_Response(ts)
     && TimeLe(l.ts, NewLeaderInitTS)     // leader timestamp
     && l.v.nextActionIndex == 3          // leader action index is 3
-    && LeaderSet1bContainsRequest(ts)
-    && ts.t_replicas[1].v.nextActionIndex == 3
     && r.proposer.current_state == 2
     && r.proposer.election_state.current_view == Ballot(1, 1)
     && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
@@ -377,38 +357,6 @@ predicate Count2b_Eq_Quorum(ts:TimestampedRslState, l:TimestampedLScheduler, r:L
         && r.executor.next_op_to_execute.OutstandingOpKnown?
         && |r.executor.next_op_to_execute.v| > 0
     )
-}
-
-/*****************************************************************************************
-*                                  Misc Definitions                                      *
-*****************************************************************************************/
-
-predicate IsNew2aPacket(pkt:TimestampedRslPacket, opn:OperationNumber) {
-    && pkt.msg.v.RslMessage_2a?
-    && pkt.msg.v.bal_2a == Ballot(1, 1)
-    && pkt.msg.v.opn_2a == opn
-}
-
-predicate IsNew2bPacket(pkt:TimestampedRslPacket, opn:OperationNumber) {
-    && pkt.msg.v.RslMessage_2b?
-    && pkt.msg.v.bal_2b == Ballot(1, 1)
-    && pkt.msg.v.opn_2b == opn
-}
-
-predicate IsNewReplyPacket(ts:TimestampedRslState, pkt:TimestampedRslPacket) 
-    requires |ts.t_replicas| > 2
-    requires RslConsistency(ts)
-{
-    && pkt.msg.v.RslMessage_Reply?
-    && pkt.src == ts.constants.config.replica_ids[1]
-}
-
-function Get2bCount(s:LReplica, opn:OperationNumber, ballot:Ballot) : int
-{
-  if opn !in s.learner.unexecuted_learner_state then
-    0
-  else
-    |s.learner.unexecuted_learner_state[opn].received_2b_message_senders|
 }
 
 }

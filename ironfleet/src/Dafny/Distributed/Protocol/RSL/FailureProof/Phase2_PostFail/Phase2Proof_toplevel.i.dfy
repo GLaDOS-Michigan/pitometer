@@ -15,8 +15,8 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
     requires RslAssumption(s, opn) && RslAssumption(s', opn)
     requires RslConsistency(s) && RslConsistency(s')
     requires TimestampedRslNext(s, s')
-    requires RslPerfInvariant(s, opn)
-    ensures RslPerfInvariant(s', opn)
+    requires Phase2Invariant(s, opn)
+    ensures Phase2Invariant(s', opn)
 {   
     PacketsBallotInvariant_Maintained(s, s', opn);
     AlwaysInvariant_Maintained(s, s', opn);
@@ -33,7 +33,7 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, req
         assert After_2b_Sent_Invariant(s, opn);
         After2b_to_After2b(s, s', opn);
     }
-    assert RslPerfInvariant(s', opn);
+    assert Phase2Invariant(s', opn);
 }
 
 
@@ -47,7 +47,7 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
     requires RslAssumption(ts, opn) && RslAssumption(ts', opn)
     requires RslConsistency(ts') && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     ensures PacketsBallotInvariant(ts')
 {
     if TimestampedRslNextEnvironment(ts, ts') {
@@ -72,7 +72,7 @@ lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState,
     requires AlwaysInvariant(ts', opn)
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2a_Sent_Invariant(ts, opn)
     ensures Before_2a_Sent_Invariant(ts', opn) || Before_2b_Sent_Invariant(ts', opn)
 {
@@ -98,7 +98,7 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
     ensures Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn)
 {
@@ -137,7 +137,7 @@ lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:Op
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires AlwaysInvariant(ts', opn)
     requires TimestampedRslNext(ts, ts')
-    requires RslPerfInvariant(ts, opn)
+    requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)
     ensures After_2b_Sent_Invariant(ts', opn)
 {
