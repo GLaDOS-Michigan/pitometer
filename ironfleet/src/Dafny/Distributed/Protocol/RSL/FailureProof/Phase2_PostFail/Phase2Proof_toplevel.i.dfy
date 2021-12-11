@@ -45,12 +45,17 @@ lemma Phase2TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
 
     ensures forall j | 0 <= j < |tglb| :: Phase2Invariant(tglb[j], opn)
 {
+    assert Phase2Invariant(tglb[0], opn);
     var i := 1;
     while i < |tglb| 
+        decreases |tglb| - i
         invariant 1 <= i <= |tglb| 
         invariant forall k | 0 <= k < i :: Phase2Invariant(tglb[k], opn)
     {
         PerfInvariantMaintained(tglb[i-1], tglb[i], opn);
+        i := i + 1;
+        var k := i - 1;
+        assert Phase2Invariant(tglb[k], opn);
     }
 }
 
