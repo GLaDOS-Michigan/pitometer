@@ -121,6 +121,7 @@ predicate LeaderAlwaysOne(ts:TimestampedRslState)
 // Main invariant 
 predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
+    requires RslConsistency(ts)
 {
     && AlwaysInvariant(ts, opn)
     && PerformanceGuarantee(ts, opn)
@@ -134,12 +135,13 @@ predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber)
 
 predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
+    requires RslConsistency(ts)
 {
     && ServersAreNotClients(ts)
+    && LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
     && AlwaysInvariant_RequestSrcAndBatchSize(ts, opn)
     && ts.t_replicas[1].v.replica.proposer.request_queue == []
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
-    && LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
 }
 
 
@@ -147,22 +149,30 @@ predicate AlwaysInvariant_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:Ope
     requires |ts.t_replicas| > 2
     requires LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
 {
-    && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2a? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2a))
-    && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2b))
-    && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: |pkt.msg.v.val_2a| > 0)
-    && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: |pkt.msg.v.val_2b| > 0)
-    && (forall pkt, opn'| pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_1b? && opn' in pkt.msg.v.votes
-        ::  && |pkt.msg.v.votes[opn'].max_val| > 0
-            && RequestBatchSrcInClientIds(ts, pkt.msg.v.votes[opn'].max_val))
+    && (forall pkt | IsUndelivered_2aPkt(ts, pkt) :: 
+        && RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2a)
+        && |pkt.msg.v.val_2a| > 0)
+    && (forall pkt | IsUndelivered_2bPkt(ts, pkt) :: 
+        && RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2b)
+        && |pkt.msg.v.val_2b| > 0)
+    && (forall pkt, opn'| IsUndelivered_1bPkt(ts, pkt) && opn' in pkt.msg.v.votes ::  
+        && RequestBatchSrcInClientIds(ts, pkt.msg.v.votes[opn'].max_val)
+        && |pkt.msg.v.votes[opn'].max_val| > 0)
+
+    // Proposer's received_1b_packets
     && (forall v | LValIsHighestNumberedProposal(v, ts.t_replicas[1].v.replica.proposer.received_1b_packets, opn)
         :: |v| > 0)
     && (forall pkt, op | pkt in ts.t_replicas[1].v.replica.proposer.received_1b_packets && pkt.msg.RslMessage_1b? && op in pkt.msg.votes
         :: RequestBatchSrcInClientIds(ts, pkt.msg.votes[op].max_val))
+
+    // Acceptors
     && (forall idx, opn'| 0 <= idx < |ts.t_replicas| && opn' in ts.t_replicas[idx].v.replica.acceptor.votes
         ::  && |ts.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val| > 0   
             &&  RequestBatchSrcInClientIds(ts, ts.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val)
     )
     && var uls := ts.t_replicas[1].v.replica.learner.unexecuted_learner_state;
+
+    // Learner's and executors
     && (forall opn | opn in uls :: RequestBatchSrcInClientIds(ts, uls[opn].candidate_learned_value))
     && (ts.t_replicas[1].v.replica.executor.next_op_to_execute.OutstandingOpKnown?
         ==> RequestBatchSrcInClientIds(ts, ts.t_replicas[1].v.replica.executor.next_op_to_execute.v))

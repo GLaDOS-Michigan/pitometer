@@ -57,8 +57,8 @@ predicate AlwaysInvariant_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:Ope
     requires |ts.t_replicas| > 2
     requires LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
 {
-    && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2a? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2a))
-    && (forall pkt | pkt in ts.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2b))
+    && (forall pkt | IsUndelivered_2aPkt(ts, pkt) :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2a))
+    && (forall pkt | IsUndelivered_2bPkt(ts, pkt) :: RequestBatchSrcInClientIds(ts, pkt.msg.v.val_2b))
     && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: |pkt.msg.v.val_2a| > 0)
     && (forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: |pkt.msg.v.val_2b| > 0)
     && (forall pkt, opn'| pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_1b? && opn' in pkt.msg.v.votes
