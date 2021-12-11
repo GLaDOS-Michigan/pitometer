@@ -232,6 +232,7 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     // && PerformanceGuarantee_Response(ts)
     && TimeLe(l.ts, NewLeaderInitTS)     // leader timestamp
     && l.v.nextActionIndex == 3          // leader action index is 3
+    && LeaderSet1bContainsRequest(ts)
     && r.proposer.current_state == 2
     && r.proposer.election_state.current_view == Ballot(1, 1)
     && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
