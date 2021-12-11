@@ -76,7 +76,7 @@ lemma lemma_NonLeaderDoesNotSend2a(ts:TimestampedRslState, ts':TimestampedRslSta
     requires Before_2a_Sent_Invariant(ts, op) || Before_2b_Sent_Invariant(ts, op) || After_2b_Sent_Invariant(ts, op)
     requires idx != 1
     ensures forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2a? :: p in ts.t_environment.sentPackets
-    ensures forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, op) :: p in ts.undeliveredPackets
+    ensures forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2a? :: p in ts.undeliveredPackets
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
     var nextActionIndex := ls.v.nextActionIndex;
@@ -105,11 +105,11 @@ lemma lemma_NonLeaderDoesNotSend2a_Undelivered(ts:TimestampedRslState, ts':Times
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
     requires Before_2a_Sent_Invariant(ts, op) || Before_2b_Sent_Invariant(ts, op) || After_2b_Sent_Invariant(ts, op)
     requires idx != 1
-    ensures forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, op) :: p in ts.undeliveredPackets
+    ensures forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2a? :: p in ts.undeliveredPackets
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
     var nextActionIndex := ls.v.nextActionIndex;
-    forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, op)
+    forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2a?
     ensures p in ts.undeliveredPackets {
         if p !in ts.undeliveredPackets {
             if nextActionIndex == 3 {
@@ -185,6 +185,36 @@ lemma lemma_NonLeaderDoesNotSendReply_Undelivered(ts:TimestampedRslState, ts':Ti
     }
 }
 
+/* There can be no 1b messages sent in a Non-Receive step  */
+lemma lemma_No1bSentInNonReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires P2Assumption(ts, op) && RslConsistency(ts)
+    requires P2Assumption(ts', op) && RslConsistency(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires Phase2Invariant(ts, op)
+    requires ts.t_replicas[idx].v.nextActionIndex != 0
+    // ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.t_environment.sentPackets
+    ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_1b? :: pkt in ts.undeliveredPackets
+{
+    var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
+    var nextActionIndex := ls.v.nextActionIndex;
+    forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_1b?
+    ensures pkt in ts.t_environment.sentPackets 
+    {
+        if pkt !in ts.t_environment.sentPackets {
+            var ios := UntagLIoOpSeq(tios);
+            var sent_packets := ExtractSentPacketsFromIos(ios);
+            assert LReplicaNoReceiveNext(ls.v.replica, nextActionIndex, ls'.v.replica, ios);
+            assert forall p | p in sent_packets :: !p.msg.RslMessage_1b?;
+            forall io | io in tios && io.LIoOpSend?
+            ensures !io.s.msg.v.RslMessage_1b? {}
+            assert false;
+        }
+    }
+    lemma_No2bSentInNonReceiveStep_Undelivered(ts, ts', op, idx, tios);
+}
+
 
 /* There can be no 2b messages sent in a Non-Receive step  */
 lemma lemma_No2bSentInNonReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
@@ -256,6 +286,7 @@ lemma lemma_No2bSentInReceiveStep_NotReceive2a(ts:TimestampedRslState, ts':Times
     requires ts.t_replicas[idx].v.nextActionIndex == 0
     requires !tios[0].r.msg.v.RslMessage_2a? 
     ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.t_environment.sentPackets
+    ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.undeliveredPackets
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
     forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2b? 
@@ -268,7 +299,44 @@ lemma lemma_No2bSentInReceiveStep_NotReceive2a(ts:TimestampedRslState, ts':Times
             assert false;
         }
     }
+    forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2b?
+    ensures p in ts.undeliveredPackets
+    {
+        if p !in ts.t_environment.sentPackets {
+            var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
+            forall p | p in sent_packets 
+            ensures !p.msg.RslMessage_2b? {}
+            assert false;
+        }
+    }
 }
+
+
+lemma lemma_No1bSentInReceiveStep_NotReceive1a(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires P2Assumption(ts, op) && RslConsistency(ts)
+    requires P2Assumption(ts', op) && RslConsistency(ts')
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires Phase2Invariant(ts, op)
+    requires ts.t_replicas[idx].v.nextActionIndex == 0
+    requires !tios[0].r.msg.v.RslMessage_1a? 
+    // ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.t_environment.sentPackets
+    ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_1b? :: pkt in ts.undeliveredPackets
+{
+    var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
+    forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_1b?
+    ensures p in ts.undeliveredPackets
+    {
+        if p !in ts.t_environment.sentPackets {
+            var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
+            forall p | p in sent_packets 
+            ensures !p.msg.RslMessage_1b? {}
+            assert false;
+        }
+    }
+}
+
 
 /* There can be no 2a messages sent in a Receive step  */
 lemma {:timeLimitMultiplier 2} lemma_No2aSentInNon2aStep(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
@@ -280,7 +348,7 @@ lemma {:timeLimitMultiplier 2} lemma_No2aSentInNon2aStep(ts:TimestampedRslState,
     requires Phase2Invariant(ts, op)
     requires ts.t_replicas[idx].v.nextActionIndex != 3
     ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2a? :: pkt in ts.t_environment.sentPackets
-    ensures forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, op) :: p in ts.undeliveredPackets
+    ensures forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2a? :: p in ts.undeliveredPackets
 {
     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
     var nextActionIndex := ls.v.nextActionIndex;
@@ -297,7 +365,7 @@ lemma {:timeLimitMultiplier 2} lemma_No2aSentInNon2aStep(ts:TimestampedRslState,
             }
         }
     }
-    forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, op)
+    forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2a?
     ensures p in ts.undeliveredPackets {
         if p !in ts.undeliveredPackets {
             if nextActionIndex == 3 {
