@@ -60,6 +60,30 @@ lemma Phase2TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
     }
 }
 
+lemma Phase2TopLevel_Prototype(tglb:seq<TimestampedRslState>, opn:OperationNumber)
+    requires |tglb| > 0
+    requires forall i | 0 < i < |tglb| :: TimestampedRslNext(tglb[i - 1], tglb[i])
+    requires InPhase2(tglb[0])
+    requires forall i | 0 <= i < |tglb| :: InPhase2(tglb[i]) ==> P2Assumption(tglb[i], opn)
+    requires  Phase2Invariant(tglb[0], opn)
+    ensures forall j | 0 <= j < |tglb| :: Phase2Invariant(tglb[j], opn)
+{
+    assume false;
+    // assert Phase2Invariant(tglb[0], opn);
+    // var i := 1;
+    // while i < |tglb| 
+    //     decreases |tglb| - i
+    //     invariant 1 <= i <= |tglb| 
+    //     invariant forall k | 0 <= k < i :: Phase2Invariant(tglb[k], opn)
+    // {
+    //     PerfInvariantMaintained(tglb[i-1], tglb[i], opn);
+    //     i := i + 1;
+    //     var k := i - 1;
+    //     forall j | 0 <= j <= k 
+    //     ensures Phase2Invariant(tglb[j], opn);
+    // }
+}
+
 
 /*****************************************************************************************
 *                                         Lemmas                                         *

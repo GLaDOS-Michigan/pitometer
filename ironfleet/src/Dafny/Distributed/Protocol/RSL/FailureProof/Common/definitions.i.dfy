@@ -6,6 +6,32 @@ import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
 
+/*****************************************************************************************
+*                                   Stage Predicates                                     *
+*****************************************************************************************/
+
+
+predicate InFailover(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
+}
+
+predicate InPhase1(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    && ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
+    && ts.t_replicas[1].v.replica.proposer.current_state != 2
+}
+
+predicate InPhase2(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    && ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
+    && ts.t_replicas[1].v.replica.proposer.current_state == 2
+}
+
+
 
 /*****************************************************************************************
 *                                     Definitions                                        *
@@ -88,6 +114,7 @@ predicate IsUndelivered_2aPkt(ts:TimestampedRslState, p:TimestampedRslPacket) {
 predicate IsUndelivered_2bPkt(ts:TimestampedRslState, p:TimestampedRslPacket) {
   p in ts.undeliveredPackets && p.msg.v.RslMessage_2b?
 }
+
 
 
 }

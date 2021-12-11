@@ -47,6 +47,11 @@ predicate FailoverFinal(s:TimestampedRslState)
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
   && s.t_replicas[1].v.nextActionIndex == 9 // just checked for quorum of views, and got one
   && TimeLe(s.t_replicas[1].ts, FailoverTime())
+
+  && (forall pkt | pkt in s.t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], 
+  
+  
+  pkt))
 }
 
 lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
@@ -68,6 +73,25 @@ lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:in
 
 
   // TODO: Implement these post conditions
+  ensures forall i | 0 <= i < |tglb| :: 
+    forall pkt | pkt in tglb[i].t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], pkt)
+{
+  // TODO:
+  assume false;
+}
+
+
+lemma FailoverTopLevel_Prototype(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
+  requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
+  requires InFailover(tglb[0])
+  requires forall i | 0 <= i < |tglb| :: InFailover(tglb[i]) ==> FOAssumption(tglb[i])
+  requires forall i | 0 <= i < |tglb| :: |tglb[i].t_replicas| > 2
+  ensures forall j :: 0 <= j < |tglb| ==> j < startPhase1Idx ==>
+    var s := tglb[j];
+    && CurrView(s) // This means every node is in view (1,0); will rename to be more clear
+    && InView1Packets(s); // All packets have Ballot(1,0)
+  ensures startPhase1Idx >= 0
+  ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
   ensures forall i | 0 <= i < |tglb| :: 
     forall pkt | pkt in tglb[i].t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], pkt)
 {
