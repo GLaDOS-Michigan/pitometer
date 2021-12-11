@@ -1,16 +1,10 @@
-include "../../DistributedSystem.i.dfy"
-
-include "../../../../Common/Collections/Maps2.i.dfy"
-include "../../Constants.i.dfy"
-include "../../Environment.i.dfy"
-include "../../Replica.i.dfy"
-
 include "../TimestampedRslSystem.i.dfy"
 
 include "FailureHelpers.i.dfy"
 include "FailureDetection_defns.i.dfy"
 include "FailureDetection_helper0.i.dfy"
 include "FailureDetection_helper1.i.dfy"
+include "../Common/assumptions.i.dfy"
 
 include "../../CommonProof/Constants.i.dfy"
 module FailureDetection_i {
@@ -19,6 +13,7 @@ import opened FailureHelpers_i
 import opened FailureDetection_defns_i
 import opened FailureDetection_helper0_i
 import opened FailureDetection_helper1_i
+import opened Common_Assumptions
 
 function {:opaque} FailoverTime() : Timestamp
 {
@@ -55,11 +50,13 @@ predicate FailoverFinal(s:TimestampedRslState)
 }
 
 lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
-  requires exists con :: ValidTimestampedRSLBehavior(con, tglb);
-  requires forall s :: s in tglb ==> FailureDetection_defns_i.RslConsistency(s);
+  requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
+  // requires forall i | 0 <= i < |tglb| :: RslConsistency(tglb[i])
+  requires forall i | 0 <= i < |tglb| :: FOAssumption(tglb[i])
+  requires forall i | 0 <= i < |tglb| :: |tglb[i].t_replicas| > 2
   // FIXME: also the 2-step assumptions have to be met
 
-  ensures forall j :: 0 <= j < |tglb| ==> j <= startPhase1Idx ==>
+  ensures forall j :: 0 <= j < |tglb| ==> j < startPhase1Idx ==>
     var s := tglb[j];
     && CurrView(s) // This means every node is in view (1,0); will rename to be more clear
     && InView1Packets(s); // All packets have Ballot(1,0)
@@ -68,6 +65,11 @@ lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:in
   // failover happen, and never reaches failover final
   ensures startPhase1Idx >= 0
   ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
+
+
+  // TODO: Implement these post conditions
+  ensures forall i | 0 <= i < |tglb| :: 
+    forall pkt | pkt in tglb[i].t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], pkt)
 {
   // TODO:
   assume false;

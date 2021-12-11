@@ -23,26 +23,6 @@ import opened Common_Assumptions
 
 ghost const req:Request
 
-predicate RslConsistency(s:TimestampedRslState)
-{
-  ConstantsAllConsistentInv(UntimestampRslState(s))
-    && WellFormedLConfiguration(s.constants.config)
-    && 1 < |s.t_replicas|
-}
-
-predicate BoundedQueueingAssumption(s:TimestampedRslState)
-  requires RslConsistency(s)
-{
-  forall idx, ios :: (
-    && 0 <= idx < |s.constants.config.replica_ids|
-    && s.t_environment.nextStep == LEnvStepHostIos(s.constants.config.replica_ids[idx], ios, RslStep(s.t_replicas[idx].v.nextActionIndex))
-    ==>
-    (forall io | io in s.t_environment.nextStep.ios && io.LIoOpReceive? ::
-      // this means that max(replica.ts, msg.ts) <= msg.ts + MaxQueueTime
-      s.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueTime
-    )
-  )
-}
 
 predicate ClockAssumption(s:TimestampedRslState, s':TimestampedRslState)
   requires RslConsistency(s)
@@ -71,11 +51,6 @@ predicate NoStateTransfer(s:TimestampedRslState)
     )
 }
 
-predicate NoExternalSteps(s:TimestampedRslState)
-{
-  s.t_environment.nextStep.LEnvStepHostIos? ==>
-  s.t_environment.nextStep.actor in s.constants.config.replica_ids
-}
 
 // This should be a self-contained invariant; could remove this assumption.
 predicate OneAndOnlyOneRequest(s:TimestampedRslState)

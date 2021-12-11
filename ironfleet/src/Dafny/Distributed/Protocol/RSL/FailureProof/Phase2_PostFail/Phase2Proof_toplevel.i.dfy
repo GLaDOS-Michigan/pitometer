@@ -39,7 +39,7 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn
 
 lemma Phase2TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
     requires |tglb| > 0
-    requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
+    requires forall i | 0 < i < |tglb| :: TimestampedRslNext(tglb[i - 1], tglb[i])
     requires forall i | 0 <= i < |tglb| :: P2Assumption(tglb[i], opn)
     requires  Phase2Invariant(tglb[0], opn)
 
