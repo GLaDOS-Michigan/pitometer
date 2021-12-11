@@ -1,9 +1,10 @@
 include "Phase2Proof.i.dfy"
+include "GenericLemmas.i.dfy"
 
 module Rs2Phase2Proof_PostFail_Helper2 {
 import opened RslPhase2Proof_PostFail_i
+import opened RslPhase2Proof_PostFail_Generic
 
-/* WARNING: this file a timeout of 60s to verify */
 
 
 /* Proof that a Before_2b_Sent state transitions to a Before_2b_Sent state or 
@@ -23,8 +24,8 @@ lemma Before2b_to_MaybeAfter2b_Process2a(ts:TimestampedRslState, ts':Timestamped
     ensures Before_2b_Sent_Invariant(ts', opn) || After_2b_Sent_Invariant(ts', opn)
 {
     var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
+    assert nextActionIndex == 0;
 
-    // From this point on, nextActionIndex == 0
     var idx_s, idx_s', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
     var idx_r, idx_r' := idx_s.replicas[idx].replica, idx_s'.replicas[idx].replica;
     var sent_packets := ExtractSentPacketsFromIos(ios);
@@ -39,38 +40,18 @@ lemma Before2b_to_MaybeAfter2b_Process2a(ts:TimestampedRslState, ts':Timestamped
             assert m.bal_2a == Ballot(1, 0);
             assert forall p | p in sent_packets && p.msg.RslMessage_2b? :: p.msg.bal_2b == Ballot(1, 0);
             assert forall p | p in sent_packets && p.msg.RslMessage_2b? :: p.msg.opn_2b == opn;
-            assert forall p | p in sent_packets :: !p.msg.RslMessage_2a?;
-            reveal_ExtractSentPacketsFromIos();
-            reveal_UntagLIoOpSeq();
-            forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2a? 
-            ensures pkt in ts.undeliveredPackets
-            {}
+            lemma_No2aSentInNon2aStep(ts, ts', opn, idx, tios);
             assert All2bPackets_BalLeq_Opn(ts', Ballot(1, 0), opn);
             assert Before_2b_Sent_Invariant(ts', opn);
         }
     } else {
-        assert sent_packets == [];
-        reveal_ExtractSentPacketsFromIos();
-        forall io | io in ios 
-        ensures !io.LIoOpSend? 
-        {}
-        forall tio | tio in tios 
-        ensures !tio.LIoOpSend? {
-            if tio.LIoOpSend? {
-                reveal_UntagLIoOpSeq();
-                assert UntagLIoOp(tio) in ios;
-                assert UntagLIoOp(tio).LIoOpSend?;
-            }
-        }
-        forall p | p in ts'.t_environment.sentPackets 
-        ensures p in ts.t_environment.sentPackets 
-        {}
+        lemma_EmptySentPackets(ts, ts', opn, idx, tios);
         assert Before_2b_Sent_Invariant(ts', opn);
     }
 }
 
 
-lemma Before2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>,
+lemma {:timeLimitMultiplier 2} Before2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>,
     rs:RslState, rs':RslState, iops:seq<RslIo>
 ) 
     requires rs == UntimestampRslState(ts)
@@ -101,9 +82,8 @@ lemma Before2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:O
     assert forall p | p in sent_packets :: LIoOpSend(p) in iops;
     if m.opn_2a == opn {
         var pkt_witness := sent_packets[0];
-        reveal_ExtractSentPacketsFromIos();
-        reveal_UntagLIoOpSeq();
-        assert forall p | p in sent_packets :: !p.msg.RslMessage_Reply?;
+        lemma_NoRepliesSentInNonExecutionStep(ts, ts', opn, idx, tios);
+        lemma_No2aSentInNon2aStep(ts, ts', opn, idx, tios);
         assert LIoOpSend(pkt_witness) in iops;
         assert rs.replicas[1].replica.learner == rs'.replicas[1].replica.learner;
         assert BalLeq(rs'.replicas[1].replica.learner.max_ballot_seen, Ballot(1, 1));
@@ -133,27 +113,8 @@ lemma After2b_to_After2b_NonLeaderAction(ts:TimestampedRslState, ts':Timestamped
 {
     assert ts'.t_replicas[1] == ts.t_replicas[1];
     After2b_to_After2b_2bBalOpn(ts, ts', opn, idx, tios);
-
-    forall p | p in ts'.undeliveredPackets && IsNew2aPacket(p, opn)
-    ensures p in ts.undeliveredPackets {
-        if p !in ts.undeliveredPackets{
-            reveal_ExtractSentPacketsFromIos();
-            reveal_UntagLIoOpSeq();
-            var sr, sr', ios := UntimestampRslState(ts), UntimestampRslState(ts'), UntagLIoOpSeq(tios);
-            var sent_packets := ExtractSentPacketsFromIos(ios);
-            forall p' | p' in sent_packets 
-            ensures !p'.msg.RslMessage_2a?
-            {}
-            assert false;
-        }
-    }
-    forall p | p in ts'.undeliveredPackets && p !in ts.undeliveredPackets
-    ensures p.src == ts'.constants.config.replica_ids[idx]
-    {}
-    assert ReplicasDistinct(ts'.constants.config.replica_ids, 1, idx);
-    forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p)
-    ensures p in ts.undeliveredPackets
-    {}
+    lemma_NonLeaderDoesNotSend2a(ts, ts', opn, idx, tios);
+    lemma_NonLeaderDoesNotSendReply(ts, ts', opn, idx, tios);
 }
 
 
@@ -191,17 +152,10 @@ lemma After2b_to_After2b_2bBalOpn(ts:TimestampedRslState, ts':TimestampedRslStat
                     :: p in ts.t_environment.sentPackets;
                 }
             } else {
-                var sent_packets := ExtractSentPacketsFromIos(ios);
-                forall p | p in sent_packets 
-                ensures !p.msg.RslMessage_2b? {}
+                lemma_No2bSentInReceiveStep_NotReceive2a(ts, ts', opn, idx, tios);
             }
         } else {
-            var sent_packets := ExtractSentPacketsFromIos(ios);
-            forall p | p in sent_packets 
-            ensures !p.msg.RslMessage_2b?
-            {}
-            assert forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2b? 
-            :: p in ts.t_environment.sentPackets;
+            lemma_No2bSentInNonReceiveStep(ts, ts', opn, idx, tios);
         }
     }
 }
@@ -223,25 +177,28 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
     var nextActionIndex, nextActionIndex' := ts.t_replicas[1].v.nextActionIndex, ts'.t_replicas[1].v.nextActionIndex;
 
     After2b_to_After2b_2bBalOpn(ts, ts', opn, idx, tios);
+    forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2a?
+    ensures p in ts.undeliveredPackets
+    {
+        if p !in ts.undeliveredPackets {
+            if nextActionIndex == 3 {   
+                assert !LProposerCanNominateUsingOperationNumber(lr.proposer, lr.acceptor.log_truncation_point, lr.proposer.next_operation_number_to_propose);
+                assert forall io | io in tios && io.LIoOpSend? :: !io.s.msg.v.RslMessage_2a?;
+                assert false;
+            } else {
+                lemma_No2aSentInNon2aStep(ts, ts', opn, 1, tios);
+                assert false;
+            }
+        }
+    }
     assert All2aPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
     assert All2bPackets_BalLeq_Opn(ts', Ballot(1, 1), opn);
     assert PerformanceGuarantee_2a(ts', opn); 
 
     After2b_to_After2b_LeaderAction_TimeBound2b(ts, ts', opn, tios);
-    forall p | p in ts'.undeliveredPackets && IsNew2bPacket(p, opn)
-    ensures TimeLe(p.msg.ts, TimeBound2bDeliveryPost())
-    {}
-
     After2b_to_After2b_LeaderAction_TimeBoundReply(ts, ts', opn, tios);
-    forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p)
-    ensures TimeLe(p.msg.ts, TimeBoundReplyFinal())
-    {}
-
-
     After2b_to_After2b_LeaderAction_PreExecution(ts, ts', opn, tios);
-
     After2b_to_After2b_LeaderAction_PostExecution(ts, ts', opn, tios);
-
     After2b_to_After2b_LeaderAction_LearnedBatchNotEmpty(ts, ts', opn, tios);
 
     assert lr'.proposer.next_operation_number_to_propose > opn;
@@ -250,6 +207,7 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
     ensures opn' == opn && |lr'.learner.unexecuted_learner_state[opn'].received_2b_message_senders| > 0
     {}
 }
+
 
 lemma After2b_to_After2b_LeaderAction_TimeBoundReply(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires P2Assumption(ts, opn) && RslConsistency(ts)
@@ -287,16 +245,21 @@ lemma After2b_to_After2b_LeaderAction_TimeBound2b(ts:TimestampedRslState, ts':Ti
     ensures forall p | p in ts'.undeliveredPackets && IsNew2bPacket(p, opn) :: TimeLe(p.msg.ts, TimeBound2bDeliveryPost())
 {
     var ls, ls' := ts.t_replicas[1], ts'.t_replicas[1];
-    var nextActionIndex, nextActionIndex' := ls.v.nextActionIndex, ls'.v.nextActionIndex;
+    var nextActionIndex := ls.v.nextActionIndex;
     forall p | p in ts'.undeliveredPackets && IsNew2bPacket(p, opn) 
     ensures TimeLe(p.msg.ts, TimeBound2bDeliveryPost())
     {
         if p !in ts.undeliveredPackets {
             if nextActionIndex == 0 {
-                assert TimeLe(p.msg.ts, TimeBound2bDeliveryPost());
+                var msg := tios[0].r.msg;
+                if msg.v.RslMessage_2a? {
+                     assert TimeLe(p.msg.ts, TimeBound2bDeliveryPost()); 
+                } else {
+                    lemma_No2bSentInReceiveStep_NotReceive2a(ts, ts', opn, 1, tios);
+                    assert false;
+                }            
             } else {
-                forall io | io in tios && io.LIoOpSend?
-                ensures !io.s.msg.v.RslMessage_2b? {}
+                lemma_No2bSentInNonReceiveStep(ts, ts', opn, 1, tios);
                 assert false;
             }
         }
@@ -326,6 +289,7 @@ lemma After2b_to_After2b_LeaderAction_LearnedBatchNotEmpty(ts:TimestampedRslStat
         if nextActionIndex == 0 && tios[0].r.msg.v.RslMessage_2b?{
             var op_learnable := ls.v.replica.executor.ops_complete < opn || (ls.v.replica.executor.ops_complete == opn && ls.v.replica.executor.next_op_to_execute.OutstandingOpUnknown?);
             var m := tios[0].r.msg;
+            assert IsUndelivered_2bPkt(ts, tios[0].r);
             if op_learnable {
                 if tios[0].r.src !in ls.v.replica.learner.constants.all.config.replica_ids || BalLt(m.v.bal_2b, ls.v.replica.learner.max_ballot_seen) {
                     assert Get2bCount(ls'.v.replica, opn, Ballot(1, 1)) == 0;
@@ -376,8 +340,6 @@ lemma After2b_to_After2b_LeaderAction_PostExecution(ts:TimestampedRslState, ts':
                 var ios := UntagLIoOpSeq(tios);
                 var sent_packets := ExtractSentPacketsFromIos(ios);
                 assert ls.v.replica.executor.next_op_to_execute.OutstandingOpKnown?;
-                reveal_ExtractSentPacketsFromIos();
-                reveal_UntagLIoOpSeq();
                 assert After_Request_Executed(ts', ts'.t_replicas[1], opn);
             } else {
                 assert ls'.v.replica.executor.ops_complete == opn;
@@ -411,6 +373,7 @@ lemma After2b_to_After2b_LeaderAction_PreExecution(ts:TimestampedRslState, ts':T
     if ls'.v.replica.executor.ops_complete == opn {      
         if Get2bCount(ls.v.replica, opn, Ballot(1, 1)) < LMinQuorumSize(ts.constants.config) {
             if nextActionIndex == 0 {
+                lemma_NoRepliesSentInNonExecutionStep(ts, ts', opn, 1, tios);
                 if tios[0].r.msg.v.RslMessage_2b? && tios[0].r.msg.v.opn_2b == opn {
                     var pkt := tios[0].r;
                     assert nextActionIndex == 0 && nextActionIndex' == 1;
@@ -424,6 +387,11 @@ lemma After2b_to_After2b_LeaderAction_PreExecution(ts:TimestampedRslState, ts':T
                     assert TimeLe(ls'.ts, TimeBound2bDeliveryPost() + MaxQueueTime + TimeActionRange(1));
                     assert TimeLe(ls'.ts, TimeBoundPhase2LeaderPost(nextActionIndex'));
                 } else {
+                    if opn in ls.v.replica.learner.unexecuted_learner_state {
+                        assert ls'.v.replica.learner.unexecuted_learner_state[opn] == ls.v.replica.learner.unexecuted_learner_state[opn];
+                    } else {
+                        assert opn !in ls'.v.replica.learner.unexecuted_learner_state;
+                    }
                     assert Get2bCount(ls'.v.replica, opn, Ballot(1, 1)) <= Get2bCount(ls.v.replica, opn, Ballot(1, 1));
                 }
             } else {
@@ -449,8 +417,6 @@ lemma After2b_to_After2b_LeaderAction_PreExecution(ts:TimestampedRslState, ts':T
         } 
     }   
 }
-
-
 
 
 }

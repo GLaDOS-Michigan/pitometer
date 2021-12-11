@@ -74,19 +74,19 @@ function Get2bCount(s:LReplica, opn:OperationNumber, ballot:Ballot) : int
 
 
 predicate IsUndelivered_1aPkt(ts:TimestampedRslState, p:TimestampedRslPacket) {
-  p !in ts.undeliveredPackets && p.msg.v.RslMessage_1a?
+  p in ts.undeliveredPackets && p.msg.v.RslMessage_1a?
 }
 
 predicate IsUndelivered_1bPkt(ts:TimestampedRslState, p:TimestampedRslPacket) {
-  p !in ts.undeliveredPackets && p.msg.v.RslMessage_1b?
+  p in ts.undeliveredPackets && p.msg.v.RslMessage_1b?
 }
 
 predicate IsUndelivered_2aPkt(ts:TimestampedRslState, p:TimestampedRslPacket) {
-  p !in ts.undeliveredPackets && p.msg.v.RslMessage_2a?
+  p in ts.undeliveredPackets && p.msg.v.RslMessage_2a?
 }
 
 predicate IsUndelivered_2bPkt(ts:TimestampedRslState, p:TimestampedRslPacket) {
-  p !in ts.undeliveredPackets && p.msg.v.RslMessage_2b?
+  p in ts.undeliveredPackets && p.msg.v.RslMessage_2b?
 }
 
 

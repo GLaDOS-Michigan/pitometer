@@ -5,7 +5,6 @@ module Rs2Phase2Proof_PostFail_Helper1 {
 import opened RslPhase2Proof_PostFail_i
 import opened RslPhase2Proof_PostFail_Generic
 
-/* WARNING: this file a timeout of 60s to verify */
 
 lemma PacketsBallotInvariant_ReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires P2Assumption(ts, opn) && RslConsistency(ts)
