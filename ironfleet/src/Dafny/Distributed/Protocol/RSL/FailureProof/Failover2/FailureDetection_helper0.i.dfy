@@ -44,8 +44,44 @@ lemma EpochTimeoutQDInductive(s:TimestampedRslState, s':TimestampedRslState, j:i
   ensures EpochTimeoutQDInv(s')
 {
   reveal_EpochQD();
+  var r := s.t_replicas[j];
   var r' := s'.t_replicas[j];
+
+  if s.t_environment.nextStep.nodeStep == RslStep(0) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(1) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(2) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(3) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(4) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(5) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(6) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(7) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(8) {
+    assert EpochTimeoutQDInv(s');
+  }
+  else if s.t_environment.nextStep.nodeStep == RslStep(9) {
+    assert EpochTimeoutQDInv(s');
+  }
+  return;
+
+
   if s.t_environment.nextStep.nodeStep != RslStep(7) {
+    // assert r'.v.replica.proposer.election_state.epoch_end_time == r.v.replica.proposer.election_state.epoch_end_time;
     assert r'.v.replica.proposer.election_state.epoch_end_time >= 0; // so it's a valid Timestamp
     assert TimeLe(r'.ts, r'.v.replica.proposer.election_state.epoch_end_time + EpochQD(r'.v.nextActionIndex));
   } else {
@@ -79,6 +115,13 @@ predicate HeartbeatQDInv(s:TimestampedRslState)
     s.t_replicas[idx].v.replica.nextHeartbeatTime >= 0 // so it's a valid Timestamp
     && TimeLe(s.t_replicas[idx].ts, s.t_replicas[idx].v.replica.nextHeartbeatTime + HeartbeatQD(s.t_replicas[idx].v.nextActionIndex))
     )
+}
+
+predicate DelayInvs(s:TimestampedRslState)
+{
+  && HeartbeatDelayInv(s)
+  && EpochTimeoutQDInv(s)
+  && HeartbeatQDInv(s)
 }
 
 // TODO: this should be used from CommonProof/Requests.i.dfy

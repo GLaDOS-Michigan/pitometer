@@ -235,11 +235,8 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
-
-  requires HeartbeatQDInv(s)
-  requires HeartbeatQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -257,8 +254,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   sr' := sr;
   var sus := j in sr;
   if sus {
-    // assert false; // TODO: use lemma
-    assert Suspector(s', j);
+    Suspector_ind_self(s, s', sr, j);
     return;
   }
 
@@ -292,8 +288,12 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires InView1(s, sr);
   ensures InView1Local(s', k, k in sr)
 {
-  // FIXME: involves maintaining Suspector(j)
-  assert false;
+  assert ReplicasDistinct(s.constants.config.replica_ids, k, 1);
+  if k in sr {
+    Suspector_ind_leader(s, s', sr, k);
+  } else {
+    assert InView1Local(s', k, k in sr);
+  }
 }
 
 lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)

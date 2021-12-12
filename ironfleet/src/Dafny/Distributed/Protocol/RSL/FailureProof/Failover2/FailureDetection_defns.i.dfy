@@ -86,12 +86,27 @@ predicate EpochLengthAssumption(s:TimestampedRslState)
 
 }
 
+predicate HBPeriodAssumption(s:TimestampedRslState)
+{
+  s.constants.params.heartbeat_period == HBPeriod
+}
+
+predicate NoExecutions(s:TimestampedRslState)
+{
+  forall j ::
+    0 <= j < |s.t_replicas| ==>
+    s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpUnknown?
+}
+
 predicate FOAssumption(s:TimestampedRslState)
 {
   && CommonAssumptions(s)
   && NoStateTransfer(s)
   && OneAndOnlyOneRequest(s)
   && NonLeadersView1(s)
+  // && NoExecutions(s)
+  && EpochLengthAssumption(s)
+  && HBPeriodAssumption(s)
 }
 
 predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
@@ -101,7 +116,6 @@ predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
   // XXX: shouldn't need to assume this, pretty trivial
   && s.constants.config.replica_ids == s'.constants.config.replica_ids
   && ClockAssumption(s, s')
-  && EpochLengthAssumption(s)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +151,6 @@ predicate InView1Packets(s:TimestampedRslState)
   )
 }
 
-// TODO: probably want a InV2Local without the else case
 predicate InView1Local(s:TimestampedRslState, j:int, sus:bool)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
@@ -190,12 +203,14 @@ predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
     forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
   )
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
+  // FIXME: maintain some time bounds
 }
 
 predicate FinalState(s:TimestampedRslState)
 {
   // could reach here by recv'ing a suspecting HB or by becoming a suspector
-  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
+  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
+  && TimeLe(s.t_replicas[1].ts, FailoverTime())
 }
 
 predicate HBUnsent(s:TimestampedRslState, j:int)
