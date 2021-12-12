@@ -48,10 +48,7 @@ predicate FailoverFinal(s:TimestampedRslState)
   && s.t_replicas[1].v.nextActionIndex == 9 // just checked for quorum of views, and got one
   && TimeLe(s.t_replicas[1].ts, FailoverTime())
 
-  && (forall pkt | pkt in s.t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], 
-  
-  
-  pkt))
+  && (forall pkt | pkt in s.t_environment.sentPackets :: !IsNewReplyPacket(s, pkt))
 }
 
 lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
@@ -92,6 +89,7 @@ lemma FailoverTopLevel_Prototype(tglb:seq<TimestampedRslState>) returns (startPh
     && InView1Packets(s); // All packets have Ballot(1,0)
   ensures startPhase1Idx >= 0
   ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
+  ensures startPhase1Idx < |tglb| ==> InPhase1(tglb[startPhase1Idx])
   ensures forall i | 0 <= i < |tglb| :: 
     forall pkt | pkt in tglb[i].t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], pkt)
 {

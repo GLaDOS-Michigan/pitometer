@@ -9,7 +9,7 @@
         * for each replica performing a receive action, we have `s.t_replicas[idx].ts <= io.r.msg.ts + MaxQueueTime`
 * `Phase2Invariant`
     * `GenericPhase2Invariant`
-        * `AlwaysInvariant`
+        * `AlwaysInvariantP2`
             * ServersAreNotClients
             * All undelivered 2a and 2b packets is sent by a client
             * Every unexecuted learned value is sent by a client

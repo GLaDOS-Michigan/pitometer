@@ -1,7 +1,9 @@
 include "Phase1Proof.i.dfy"
+include "../Phase2_PostFail/Phase2Proof_toplevel.i.dfy"
 
 module RslPhase1Proof_Top {
 import opened RslPhase1Proof_i
+import opened RslPhase2Proof_PostFail_Top
 
 
 // This is actually the first state of Phase2
@@ -11,7 +13,7 @@ predicate Phase2Begin(ts:TimestampedRslState, opn:OperationNumber)
 {
     var l := ts.t_replicas[1];
     var r := l.v.replica;
-    && AlwaysInvariant(ts, opn)
+    && AlwaysInvariantP1(ts, opn)
     && ExistingPacketsBallot(ts)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
@@ -77,7 +79,7 @@ predicate Phase1Invariant(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
-    && AlwaysInvariant(ts, opn)
+    && AlwaysInvariantP1(ts, opn)
     && forall pkt | pkt in ts.t_environment.sentPackets :: !IsNewReplyPacket(ts, pkt)
     && true // add more stuff
 }
@@ -92,6 +94,21 @@ lemma Phase1TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber) returns
     ensures forall j | 0 <= j < |tglb| && j < startPhase2Idx :: Phase1Invariant(tglb[j], opn)
     ensures startPhase2Idx >= 0
     ensures startPhase2Idx < |tglb| ==> Phase2Begin(tglb[startPhase2Idx], opn)
+{
+    // TODO:
+    assume false;
+}
+
+lemma Phase1TopLevel_Prototype(tglb:seq<TimestampedRslState>, opn:OperationNumber) returns (startPhase2Idx:int)
+    requires InPhase1(tglb[0])
+    requires forall i | 0 <= i < |tglb| :: InPhase1(tglb[i]) ==> P1Assumption(tglb[i])
+    requires forall i | 0 < i < |tglb| :: TimestampedRslNext(tglb[i - 1], tglb[i])
+    // Phase1 lasts up till right before startPhase2Idx
+    // startPhase2Idx is the initial state of phase 2
+    ensures forall j | 0 <= j < |tglb| && j < startPhase2Idx :: Phase1Invariant(tglb[j], opn)
+    ensures startPhase2Idx >= 0
+    ensures startPhase2Idx < |tglb| ==> Phase2Invariant(tglb[startPhase2Idx], opn);
+    ensures startPhase2Idx < |tglb| ==> InPhase2(tglb[startPhase2Idx])
 {
     // TODO:
     assume false;

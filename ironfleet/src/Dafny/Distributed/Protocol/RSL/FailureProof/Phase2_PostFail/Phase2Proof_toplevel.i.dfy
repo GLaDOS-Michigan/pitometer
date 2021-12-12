@@ -19,7 +19,7 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn
     ensures Phase2Invariant(s', opn)
 {   
     PacketsBallotInvariant_Maintained(s, s', opn);
-    AlwaysInvariant_Maintained(s, s', opn);
+    AlwaysInvariantP2_Maintained(s, s', opn);
     
     if  && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
         && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn)) 
@@ -117,7 +117,7 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
 lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && RslConsistency(ts)
     requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires AlwaysInvariant(ts', opn)
+    requires AlwaysInvariantP2(ts', opn)
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -144,7 +144,7 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
     requires P2Assumption(ts, opn) && RslConsistency(ts)
     requires P2Assumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-    requires AlwaysInvariant(ts', opn)
+    requires AlwaysInvariantP2(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
@@ -183,7 +183,7 @@ lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:Op
     requires P2Assumption(ts, opn) && RslConsistency(ts)
     requires P2Assumption(ts', opn) && RslConsistency(ts')
     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-    requires AlwaysInvariant(ts', opn)
+    requires AlwaysInvariantP2(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
     requires After_2b_Sent_Invariant(ts, opn)

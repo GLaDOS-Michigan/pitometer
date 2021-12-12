@@ -6,43 +6,43 @@ import opened RslPhase2Proof_PostFail_i
 import opened RslPhase2Proof_PostFail_Generic
 
 
-lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma AlwaysInvariantP2_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
-    ensures AlwaysInvariant(ts', opn)
+    ensures AlwaysInvariantP2(ts', opn)
 {   
     assert ts'.t_replicas[1].v.replica.proposer.request_queue == [];
     assert forall pkt | pkt in ts'.t_replicas[1].v.replica.proposer.received_1b_packets && pkt.msg.RslMessage_1b? :: forall op | op in pkt.msg.votes :: RequestBatchSrcInClientIds(ts', pkt.msg.votes[op].max_val);
     
-    AlwaysInvariant_Maintained_BatchSize2a(ts, ts', opn);
+    AlwaysInvariantP2_Maintained_BatchSize2a(ts, ts', opn);
     forall pkt | IsUndelivered_2aPkt(ts', pkt)
     ensures |pkt.msg.v.val_2a| > 0 
     {}
     
-    AlwaysInvariant_Maintained_BatchSize2b(ts, ts', opn);
+    AlwaysInvariantP2_Maintained_BatchSize2b(ts, ts', opn);
     forall pkt | IsUndelivered_2bPkt(ts', pkt) 
     ensures |pkt.msg.v.val_2b| > 0
     {}
 
-    AlwaysInvariant_Maintained_ClientSrc2a(ts, ts', opn);
+    AlwaysInvariantP2_Maintained_ClientSrc2a(ts, ts', opn);
     forall pkt | IsUndelivered_2aPkt(ts', pkt) 
     ensures RequestBatchSrcInClientIds(ts', pkt.msg.v.val_2a)
     {}
 
-    AlwaysInvariant_Maintained_ClientSrc2b(ts, ts', opn);
+    AlwaysInvariantP2_Maintained_ClientSrc2b(ts, ts', opn);
     forall pkt | IsUndelivered_2bPkt(ts', pkt) 
     ensures RequestBatchSrcInClientIds(ts', pkt.msg.v.val_2b)
     {}
 
-    AlwaysInvariant_Maintained_ClientSrc_BatchSize1b(ts, ts', opn);
+    AlwaysInvariantP2_Maintained_ClientSrc_BatchSize1b(ts, ts', opn);
     forall pkt, opn' | IsUndelivered_1bPkt(ts', pkt)  && opn' in pkt.msg.v.votes
     ensures  && |pkt.msg.v.votes[opn'].max_val| > 0
              && RequestBatchSrcInClientIds(ts', pkt.msg.v.votes[opn'].max_val)
     {}
 
-    AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts, ts', opn);
+    AlwaysInvariantP2_Maintained_ClientSrc_BatchSizeAcceptor(ts, ts', opn);
     forall idx, opn'| 0 <= idx < |ts'.t_replicas| && opn' in ts'.t_replicas[idx].v.replica.acceptor.votes
     ensures && |ts'.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val| > 0   
             &&  RequestBatchSrcInClientIds(ts', ts'.t_replicas[idx].v.replica.acceptor.votes[opn'].max_val)
@@ -58,7 +58,7 @@ lemma AlwaysInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState
 }
 
 
-lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma AlwaysInvariantP2_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
@@ -74,7 +74,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslSt
         if !TimestampedRslNextEnvironment(ts, ts') {
             var x, tios :| TimestampedRslNextOneReplica(ts, ts', x, tios);
             if x == idx {
-                AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor_OneReplica(ts, ts', opn, opn', idx, tios);
+                AlwaysInvariantP2_Maintained_ClientSrc_BatchSizeAcceptor_OneReplica(ts, ts', opn, opn', idx, tios);
             } else {
                 assert ts'.t_replicas[idx] ==  ts.t_replicas[idx];
             }
@@ -85,7 +85,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor(ts:TimestampedRslSt
     }
 }
 
-lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor_OneReplica(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, opn':OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+lemma AlwaysInvariantP2_Maintained_ClientSrc_BatchSizeAcceptor_OneReplica(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, opn':OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
@@ -115,7 +115,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSizeAcceptor_OneReplica(ts:Times
 }
 
 
-lemma AlwaysInvariant_Maintained_ClientSrc_BatchSize1b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma AlwaysInvariantP2_Maintained_ClientSrc_BatchSize1b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
@@ -153,7 +153,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc_BatchSize1b(ts:TimestampedRslState, t
 
 
 
-lemma {:timeLimitMultiplier 2} AlwaysInvariant_Maintained_BatchSize2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma {:timeLimitMultiplier 2} AlwaysInvariantP2_Maintained_BatchSize2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn)
     requires P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
@@ -201,7 +201,7 @@ lemma {:timeLimitMultiplier 2} AlwaysInvariant_Maintained_BatchSize2a(ts:Timesta
 }
 
 
-lemma AlwaysInvariant_Maintained_ClientSrc2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma AlwaysInvariantP2_Maintained_ClientSrc2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
@@ -233,7 +233,7 @@ lemma AlwaysInvariant_Maintained_ClientSrc2b(ts:TimestampedRslState, ts':Timesta
     }
 }
 
-lemma AlwaysInvariant_Maintained_BatchSize2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma AlwaysInvariantP2_Maintained_BatchSize2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')
@@ -260,7 +260,7 @@ lemma AlwaysInvariant_Maintained_BatchSize2b(ts:TimestampedRslState, ts':Timesta
     }
 }
 
-lemma {:timeLimitMultiplier 2} AlwaysInvariant_Maintained_ClientSrc2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+lemma {:timeLimitMultiplier 2} AlwaysInvariantP2_Maintained_ClientSrc2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
     requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
     requires RslConsistency(ts) && RslConsistency(ts')
     requires TimestampedRslNext(ts, ts')

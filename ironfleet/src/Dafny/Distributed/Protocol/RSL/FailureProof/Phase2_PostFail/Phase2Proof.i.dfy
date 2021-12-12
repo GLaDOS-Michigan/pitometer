@@ -123,7 +123,7 @@ predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
-    && AlwaysInvariant(ts, opn)
+    && AlwaysInvariantP2(ts, opn)
     && PerformanceGuarantee(ts, opn)
     && PacketsBallotInvariant(ts)
     && (|| Before_2a_Sent_Invariant(ts, opn)
@@ -133,19 +133,19 @@ predicate Phase2Invariant(ts:TimestampedRslState, opn:OperationNumber)
 }
 
 
-predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
+predicate AlwaysInvariantP2(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
     && ServersAreNotClients(ts)
     && LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
-    && AlwaysInvariant_RequestSrcAndBatchSize(ts, opn)
+    && AlwaysInvariantP2_RequestSrcAndBatchSize(ts, opn)
     && ts.t_replicas[1].v.replica.proposer.request_queue == []
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
 }
 
 
-predicate AlwaysInvariant_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:OperationNumber)
+predicate AlwaysInvariantP2_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
 {

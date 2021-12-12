@@ -44,7 +44,6 @@ lemma {:timeLimitMultiplier 2} lemma_NoNew2bBefore2aSent(ts:TimestampedRslState,
 //     requires TimestampedRslNext(ts, ts')
 //     requires !TimestampedRslNextEnvironment(ts, ts')
 //     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
-//     requires AlwaysInvariant(ts, op)
 //     ensures forall pkt | pkt in ts'.undeliveredPackets :: !pkt.msg.v.RslMessage_1b?
 // {
 //     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];

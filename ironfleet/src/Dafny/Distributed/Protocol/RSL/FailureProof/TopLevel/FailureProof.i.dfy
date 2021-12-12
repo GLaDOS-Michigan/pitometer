@@ -43,7 +43,7 @@ predicate PerformanceGuarantee_Final(ts:TimestampedRslState)
 predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber)
 {
     && CommonAssumptions(ts)
-    && (FO_def.FOAssumption(ts))
+    && (InFailover(ts) ==> FO_def.FOAssumption(ts))
     && (InPhase1(ts) ==> P1_def.P1Assumption(ts))
     && (InPhase2(ts) ==> P2_def.P2Assumption(ts, opn))
     
@@ -68,26 +68,43 @@ lemma RSLTopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
     requires forall i | 0 <= i < |tglb| :: RslAssumption(tglb[i], opn)
     ensures forall j | 0 <= j < |tglb| :: PerformanceGuarantee_Final(tglb[j])
 {
-    var P1_idx := FO_top.FailoverTopLevel(tglb);
-
+    assert InFailover(tglb[0]);
+    var P1_idx := FO_top.FailoverTopLevel_Prototype(tglb);
     if P1_idx >= |tglb| {
         assert forall i | 0 <= i < |tglb| :: |tglb[i].t_replicas| > 2;
         assert forall i | 0 <= i < |tglb| :: PerformanceGuarantee_Final(tglb[i]);  
+        return;         // We are done
     } else {
         assert forall i | 0 <= i < P1_idx :: |tglb[i].t_replicas| > 2;
         assert forall i | 0 <= i < P1_idx :: PerformanceGuarantee_Final(tglb[i]);
-        
-        assume false;
-        var P2_idx := P1_top.Phase1TopLevel(tglb[P1_idx..], opn);
+
+        assert InPhase1(tglb[P1_idx]);
+        forall i | 0 < i < |tglb[P1_idx..]| 
+        ensures TimestampedRslNext(tglb[P1_idx..][i - 1], tglb[P1_idx..][i]){
+            assert tglb[P1_idx..][i - 1] == tglb[P1_idx + i - 1];
+            assert tglb[P1_idx..][i] == tglb[P1_idx + i];
+        }
+        var P2_idx := P1_top.Phase1TopLevel_Prototype(tglb[P1_idx..], opn);
+        P2_idx := P2_idx + P1_idx;
+
         if P2_idx >= |tglb| {
             assert forall i | 0 <= i < |tglb| :: |tglb[i].t_replicas| > 2;
             assert forall i | 0 <= i < |tglb| :: PerformanceGuarantee_Final(tglb[i]);  
+            return;     // We are done
         } else {
             assert forall i | 0 <= i < P2_idx :: |tglb[i].t_replicas| > 2;
             assert forall i | 0 <= i < P2_idx :: PerformanceGuarantee_Final(tglb[i]);  
 
-            P2_top.Phase2TopLevel(tglb[P2_idx..], opn);
+            forall i | 0 < i < |tglb[P2_idx..]| 
+            ensures TimestampedRslNext(tglb[P2_idx..][i - 1], tglb[P2_idx..][i]){
+                assert tglb[P2_idx..][i - 1] == tglb[P2_idx + i - 1];
+                assert tglb[P2_idx..][i] == tglb[P2_idx + i];
+            }
+            assert InPhase2(tglb[P2_idx]);
+            assert P2_def.Phase2Invariant(tglb[P2_idx], opn);
+            P2_top.Phase2TopLevel_Prototype(tglb[P2_idx..], opn);
             assert forall i | 0 <= i < |tglb| :: PerformanceGuarantee_Final(tglb[i]);
+            // We are done
         }
     }
 }

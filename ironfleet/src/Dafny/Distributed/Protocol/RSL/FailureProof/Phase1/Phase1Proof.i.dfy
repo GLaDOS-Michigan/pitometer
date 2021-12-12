@@ -40,12 +40,12 @@ predicate LeaderAlwaysOne(s:TimestampedRslState)
 
 
 
-predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
+predicate AlwaysInvariantP1(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
 {
     && ServersAreNotClients(ts)
     && LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
-    && AlwaysInvariant_RequestSrcAndBatchSize(ts, opn)
+    && AlwaysInvariantP1_RequestSrcAndBatchSize(ts, opn)
     && ts.t_replicas[1].v.replica.proposer.request_queue == []
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
     && ts.t_replicas[1].v.replica.learner.unexecuted_learner_state == map[]
@@ -53,7 +53,7 @@ predicate AlwaysInvariant(ts:TimestampedRslState, opn:OperationNumber)
 }
 
 
-predicate AlwaysInvariant_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:OperationNumber)
+predicate AlwaysInvariantP1_RequestSrcAndBatchSize(ts:TimestampedRslState, opn:OperationNumber)
     requires |ts.t_replicas| > 2
     requires LSetOfMessage1b(ts.t_replicas[1].v.replica.proposer.received_1b_packets)
 {
