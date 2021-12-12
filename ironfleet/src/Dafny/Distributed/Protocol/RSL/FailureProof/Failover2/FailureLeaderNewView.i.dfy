@@ -44,13 +44,6 @@ predicate LeaderNotInNewView(s:TimestampedRslState)
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
 }
 
-predicate HBInvariant(s:TimestampedRslState)
-{
-  forall pkt ::
-    pkt in s.t_environment.sentPackets ==>
-    pkt.
-}
-
 predicate LeaderInNewViewNonFinal(s:TimestampedRslState)
   requires CommonAssumptions(s)
 {

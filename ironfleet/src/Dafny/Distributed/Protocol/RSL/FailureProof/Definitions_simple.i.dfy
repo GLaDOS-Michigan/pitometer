@@ -31,6 +31,8 @@ ghost const MbeSendHeartbeat:Timestamp
 ghost const MaxQueueTime:Timestamp
 ghost const HBPeriod:Timestamp
 
+ghost const EpochLength:Timestamp
+
  //ghost const Gs := StepTime(RslStep);
  //ghost const As := StepTime(AcceptStep);
  //ghost const G:Timestamp
