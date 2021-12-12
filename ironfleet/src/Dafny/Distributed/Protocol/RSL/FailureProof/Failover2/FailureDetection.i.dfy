@@ -198,7 +198,7 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
   if clock.t < es.epoch_end_time {
     assert NonSuspector1(s', j);
   } else {
-    EpochQDHelper(s.t_replicas[j].ts, s'.t_replicas[j].ts, es.epoch_end_time);
+    EpochQDHelper(s.t_replicas[j].ts, s'.t_replicas[j].ts);
     // var t' := s'.t_replicas[j].v.replica.proposer.election_state.epoch_end_time;
     // assert t' <= clock.t + EpochLength;
     assert NonSuspector2(s', j);
@@ -237,6 +237,10 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
+
+  requires HeartbeatQDInv(s)
+  requires HeartbeatQDInv(s')
+
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -267,7 +271,6 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
     // if j == 1, it has a change of becoming a known suspector in this case
     sr' := NonSuspector2_ind(s, s', sr, j);
   } else {
-    assert InternalSuspector3(s, j);
     // j has a change of becoming a known suspector in this case
     sr' := InternalSuspector3_ind(s, s', sr, j);
   }
@@ -277,6 +280,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
+
   requires 0 <= k < |s.constants.config.replica_ids|;
   requires k != 1
 
@@ -296,6 +300,10 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
+
+  requires HeartbeatQDInv(s)
+  requires HeartbeatQDInv(s')
+
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -370,6 +378,9 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
 
+  requires HeartbeatQDInv(s)
+  requires HeartbeatQDInv(s')
+
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
@@ -394,6 +405,10 @@ lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) re
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
+
+  requires HeartbeatQDInv(s)
+  requires HeartbeatQDInv(s')
+
   requires TimestampedRslNext(s, s');
 
   requires InView1(s, sr);

@@ -234,8 +234,14 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 
 lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
+
+  // TODO: bundle these together?
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
+
+  requires HeartbeatQDInv(s)
+  requires HeartbeatQDInv(s')
+
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -249,7 +255,7 @@ lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
   // might become a suspector here
   ensures
-    (sr' == sr && InternalSuspector3(s', j))
+    (sr' == sr && NotKnownSuspector(s', j) && InternalSuspector3(s', j))
     || (sr' == sr + {j} && Suspector(s', j))
     ;
   ensures SuspectingReplicaInv(s', sr');
@@ -280,7 +286,9 @@ lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:s
         && pkt.dst == s.constants.config.replica_ids[1]
         && pkt.msg.v.suspicious == true;
 
-      assert forall t' :: TimeLe(t', s'.t_replicas[j].ts + D) ==> TimeLe(t', TBFirstSuspectingHB());
+      // assert forall t' :: TimeLe(t', s'.t_replicas[j].ts + D) ==> TimeLe(t', TBFirstSuspectingHB());
+      HeartbeatQDHelper(s.t_replicas[j].ts, s'.t_replicas[j].ts);
+      // s.t_replicas[j].v.replica.nextHeartbeatTime);
 
       sr' := sr + {j};
       assert Suspector(s', j);

@@ -77,7 +77,7 @@ predicate HeartbeatQDInv(s:TimestampedRslState)
 
   && (forall idx :: && 0 <= idx < |s.t_replicas| ==>
     s.t_replicas[idx].v.replica.nextHeartbeatTime >= 0 // so it's a valid Timestamp
-    && TimeLe(s.t_replicas[idx].v.replica.nextHeartbeatTime, s.t_replicas[idx].ts + HBPeriod)
+    && TimeLe(s.t_replicas[idx].ts, s.t_replicas[idx].v.replica.nextHeartbeatTime + HeartbeatQD(s.t_replicas[idx].v.nextActionIndex))
     )
 }
 

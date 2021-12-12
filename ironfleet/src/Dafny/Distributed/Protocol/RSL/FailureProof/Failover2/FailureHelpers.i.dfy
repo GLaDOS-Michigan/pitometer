@@ -20,7 +20,7 @@ function {:opaque} TBEpoch1() : Timestamp
 
 function {:opaque} TBEpoch2() : Timestamp
 {
-  0
+  TBEpoch1() + EpochQD(7) + StepToTimeDelta(RslStep(7)) + EpochLength
 }
 
 // TODO: move these to a different file
@@ -29,24 +29,19 @@ function {:opaque} EpochQD(nextActionIndex:int) : Timestamp
   0
 }
 
-function {:opaque} FirstEpochEnd() : Timestamp
+function {:opaque} HeartbeatQD(nextActionIndex:int) : Timestamp
 {
   0
 }
 
-function {:opaque} SecondEpochEnd() : Timestamp
-{
-  FirstEpochEnd() // + EpochLength() + TimeActionRange(0)
-}
-
 function {:opaque} HBPeriodEnd() : Timestamp
 {
-  SecondEpochEnd() // + HBPeriod()
+  TBEpoch2() // + HBPeriod()
 }
 
 function {:opaque} TBFirstSuspectingHB() : Timestamp
 {
-  SecondEpochEnd() // + HBPeriod() + TimeActionRange(0) + D
+  HBPeriodEnd() + HeartbeatQD(9) + StepToTimeDelta(RslStep(9)) + D
 }
 
 function {:opaque} TBBecomeSuspector() : Timestamp
@@ -69,11 +64,20 @@ function {:opaque} FailoverTime() : Timestamp
   0
 }
 
-lemma EpochQDHelper(t:Timestamp, t':Timestamp, epoch_end:Timestamp)
-  requires TimeLe(t, epoch_end + EpochQD(7));
+lemma EpochQDHelper(t:Timestamp, t':Timestamp)
+  requires TimeLe(t, TBEpoch1() + EpochQD(7));
   requires TimeLe(t', t + StepToTimeDelta(RslStep(7)))
   ensures TimeLe(t' + EpochLength, TBEpoch2());
 {
+  reveal_TBEpoch2();
+}
+
+lemma HeartbeatQDHelper(t:Timestamp, t':Timestamp)
+  requires TimeLe(t, HBPeriodEnd() + HeartbeatQD(9));
+  requires TimeLe(t', t + StepToTimeDelta(RslStep(9)))
+  ensures TimeLe(t' + D, TBFirstSuspectingHB());
+{
+  reveal_TBFirstSuspectingHB();
 }
 
 }
