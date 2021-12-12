@@ -49,6 +49,26 @@ function {:opaque} TBFirstSuspectingHB() : Timestamp
   SecondEpochEnd() // + HBPeriod() + TimeActionRange(0) + D
 }
 
+function {:opaque} TBBecomeSuspector() : Timestamp
+{
+  0 // TODO
+}
+
+function {:opaque} TBJustBeforeNewView() : Timestamp
+{
+  0 // TODO
+}
+
+function {:opaque} TBFirstNewViewHB() : Timestamp
+{
+  0 // TODO
+}
+
+function {:opaque} FailoverTime() : Timestamp
+{
+  0
+}
+
 lemma EpochQDHelper()
 {
 }

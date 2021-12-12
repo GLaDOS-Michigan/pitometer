@@ -101,3 +101,106 @@ Start with InView1Basic()
 
 NonSuspector(j) is affected by node 1 taking a step and by node j taking a step.
 Otherwise, it should be "trivial" (because the relevant state is unchanged).
+
+=
+Can prove first:
+forall pkt :: pkt in s.t_env.sentPackets ==>
+  pkt is Heartbeat ==>
+  pkt.suspector == true ==>
+  (exists firstPkt ::
+    && firstPkt in sentPackets
+    && firstPkt.src == pkt.src &&
+    && firstPkt.dst == pkt.dst
+    && firstPkt.timestamp <= blah
+    ||
+    pkt.src in replicas[pkt.dst].current_suspectors
+  )
+
+Basically, show that if a suspecting HB is sent by anyone, it is sent with delivery time X.
+Also, if a node takes a step in which it becomes a suspector, it does so at time Y.
+
+What then?
+How can nodes[1] do a view-change?
+a.) receives a suspecting HB, then enters new view right after
+b.) becomes a suspector, then enters new view right after
+c.) receives a HB from a node with a higher view number
+
+The first two cases are OK.
+What about the last?
+Option 1: assume it doesn't happen. Not ideal.
+
+Possibilities:
+* HB is sent *after* a majority have sent suspecting HBs.
+  This is the "easy" case, and in this case, we can show that if the view-2 HB
+  is received first, it happens in time less than the delivery time of the
+  suspecting HBs.
+
+* HB is sent before a majority have sent suspecting HBs.
+  This can happen if a node becomes a suspector but doesn't tell anyone, and
+  receives (majority-1) suspecting packets from others. The thing that puts it
+  into a majority is either a local step in which it becomes a suspector, or a
+  recv step in which it finds out someone else is a suspector. This can let us
+  prove a bound on the timestamp of the heartbeat packet.
+
+  But that bound on the HB packet is probably pessimistic. Because it'll allow
+  for an execution in which the leader enters a new view only because a
+  different node received a quorum of HB messages. It'll have an extra HB timer
+  and an extra message delay in it.
+
+  The real argument is that the leader will receive the quorum of heartbeats
+  early enough, or if one of the other nodes enters the new view, then the
+  leader will also enter the new view even earlier.
+
+The first proof:
+  * A node becomes a suspector at time T;
+    a.) lk
+    b.)
+  * At time T+HBdelay after this, a heatbeat will be sent out
+
+Invariant for second level proof:
+
+= New proof plan
+Maintain upper bound on time of nodes that have not become suspectors and have
+not sent suspecting HBs.
+Prove upper bound on delivery time of the first HB that says that a node is a
+suspector.
+
+This proof can be done in the context where no Ballot(1,1) heartbeats are sent.
+
+Then, as soon as one node enters Ballot(1,1), can maintain upper bound on its
+local time up until it sends its first (1,1)-heartbeat. Then, when the first
+node broadcasts a (1,1)-heartbeat, we're (basically) done.
+
+Want to prove bound on Ballot(1,1) heartbeat under the assumption that none have
+been sent so far.
+
+= More detailed:
+(Logical) states of a node:
+* NonSuspector0, no request
+* NonSuspector1, epoch 1
+* NonSuspector2, epoch 2
+ - Suspector, have sent requests; OR
+ - Suspector, have a quorum; will enter new view in one step.
+
+Proof about timestamp of first suspecting HB:
+* NS0, no req
+* NS1, epoch 1
+* NS2, epoch 2
+Can transition to NS0 from NS1 if execute a req. But, then stay in NS0 forever.
+At any point in time, if Ballot(1,1)-freedom becomes untrue, this lemma is irrelevant.
+This maintains Ballot(1,1)-freedom.
+* NS2 -> (SuspectorMinority() || SuspectorMajority() || InNewView()).
+  If suspectorMinority, then will send suspecting HB.
+  If suspectorMajority, then will enter new view. Want to prove a bound for when
+  it enters the new view.
+  InNewView(), the heartbeat has yet to be sent, but we have an upper bound on
+  when it will be.
+
+== Self contained pf about suspecting HBs
+Prove that any suspecting HB is sent by time X.
+
+From this, we can maintain bounds about time on nodes as they
+
+Maintain that replicas[1].view == (1,0) the whole time.
+If replicas[1].view == (1,1) at any point in time, then we are done, and should
+terminate the proof.

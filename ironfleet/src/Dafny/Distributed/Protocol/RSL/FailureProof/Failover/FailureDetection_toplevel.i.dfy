@@ -15,11 +15,6 @@ import opened FailureDetection_helper0_i
 import opened FailureDetection_helper1_i
 import opened Common_Assumptions
 
-function {:opaque} FailoverTime() : Timestamp
-{
-  0
-}
-
 predicate FailoverFinal(s:TimestampedRslState)
 {
   && (forall pkt ::
@@ -67,7 +62,6 @@ lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:in
   // failover happen, and never reaches failover final
   ensures startPhase1Idx >= 0
   ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
-
 
   // TODO: Implement these post conditions
   ensures forall i | 0 <= i < |tglb| :: 

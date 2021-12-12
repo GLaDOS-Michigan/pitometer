@@ -23,7 +23,6 @@ import opened Common_Assumptions
 
 ghost const req:Request
 
-
 predicate ClockAssumption(s:TimestampedRslState, s':TimestampedRslState)
   requires RslConsistency(s)
   requires RslConsistency(s')
@@ -91,6 +90,7 @@ predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
 
+/*
 // "suspecting_replicas"
 predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<int>)
 {
@@ -269,5 +269,6 @@ predicate Suspector(s:TimestampedRslState, j:int)
   )
   || (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
 }
+*/
 
 }
