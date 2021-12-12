@@ -50,6 +50,7 @@ predicate AlwaysInvariantP1(ts:TimestampedRslState, opn:OperationNumber)
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
     && ts.t_replicas[1].v.replica.learner.unexecuted_learner_state == map[]
     && ts.t_replicas[1].v.replica.executor.next_op_to_execute == OutstandingOpUnknown()
+    && ts.t_replicas[1].v.replica.proposer.current_view_suspectors := {}
 }
 
 

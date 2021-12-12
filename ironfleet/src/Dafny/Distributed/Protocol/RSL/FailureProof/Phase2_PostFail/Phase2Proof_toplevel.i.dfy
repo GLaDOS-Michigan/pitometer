@@ -12,11 +12,14 @@ import opened Rs2Phase2Proof_PostFail_Helper2
 
 /**** MAIN INVARIANT THEOREM ****/
 lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn:OperationNumber)
-    requires P2Assumption(s, opn) && P2Assumption(s', opn)
-    requires RslConsistency(s) && RslConsistency(s')
+    requires CommonAssumptions(s) && CommonAssumptions(s')
+    requires InPhase2(s)
+    requires InPhase2(s) ==> P2Assumption(s, opn)
+    requires InPhase2(s') ==> P2Assumption(s', opn)
     requires TimestampedRslNext(s, s')
     requires Phase2Invariant(s, opn)
     ensures Phase2Invariant(s', opn)
+    ensures InPhase2(s')
 {   
     PacketsBallotInvariant_Maintained(s, s', opn);
     AlwaysInvariantP2_Maintained(s, s', opn);
@@ -30,8 +33,9 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn
     {
         Before2b_to_MaybeAfter2b(s, s', opn);
     } else {
-        assert After_2b_Sent_Invariant(s, opn);
-        After2b_to_After2b(s, s', opn);
+        assume false;
+        // assert After_2b_Sent_Invariant(s, opn);
+        // After2b_to_After2b(s, s', opn);
     }
     assert Phase2Invariant(s', opn);
 }
@@ -39,10 +43,11 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn
 
 lemma Phase2TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
     requires |tglb| > 0
+    requires forall i | 0 <= i < |tglb| :: CommonAssumptions(tglb[i])
     requires forall i | 0 < i < |tglb| :: TimestampedRslNext(tglb[i - 1], tglb[i])
-    requires forall i | 0 <= i < |tglb| :: P2Assumption(tglb[i], opn)
-    requires  Phase2Invariant(tglb[0], opn)
-
+    requires InPhase2(tglb[0])
+    requires Phase2Invariant(tglb[0], opn)
+    requires forall i | 0 <= i < |tglb| :: InPhase2(tglb[i]) ==> P2Assumption(tglb[i], opn)
     ensures forall j | 0 <= j < |tglb| :: Phase2Invariant(tglb[j], opn)
 {
     assert Phase2Invariant(tglb[0], opn);
@@ -51,37 +56,16 @@ lemma Phase2TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
         decreases |tglb| - i
         invariant 1 <= i <= |tglb| 
         invariant forall k | 0 <= k < i :: Phase2Invariant(tglb[k], opn)
+        invariant forall k | 0 <= k < i :: InPhase2(tglb[k])
     {
         PerfInvariantMaintained(tglb[i-1], tglb[i], opn);
+        assert InPhase2(tglb[i]);
+        assert Phase2Invariant(tglb[i], opn);
         i := i + 1;
         var k := i - 1;
-        forall j | 0 <= j <= k 
-        ensures Phase2Invariant(tglb[j], opn);
+        forall j | 0 <= j <= k ensures Phase2Invariant(tglb[j], opn);
+        forall j | 0 <= j <= k ensures InPhase2(tglb[j]);
     }
-}
-
-lemma Phase2TopLevel_Prototype(tglb:seq<TimestampedRslState>, opn:OperationNumber)
-    requires |tglb| > 0
-    requires forall i | 0 < i < |tglb| :: TimestampedRslNext(tglb[i - 1], tglb[i])
-    requires InPhase2(tglb[0])
-    requires forall i | 0 <= i < |tglb| :: InPhase2(tglb[i]) ==> P2Assumption(tglb[i], opn)
-    requires  Phase2Invariant(tglb[0], opn)
-    ensures forall j | 0 <= j < |tglb| :: Phase2Invariant(tglb[j], opn)
-{
-    assume false;
-    // assert Phase2Invariant(tglb[0], opn);
-    // var i := 1;
-    // while i < |tglb| 
-    //     decreases |tglb| - i
-    //     invariant 1 <= i <= |tglb| 
-    //     invariant forall k | 0 <= k < i :: Phase2Invariant(tglb[k], opn)
-    // {
-    //     PerfInvariantMaintained(tglb[i-1], tglb[i], opn);
-    //     i := i + 1;
-    //     var k := i - 1;
-    //     forall j | 0 <= j <= k 
-    //     ensures Phase2Invariant(tglb[j], opn);
-    // }
 }
 
 
@@ -92,8 +76,10 @@ lemma Phase2TopLevel_Prototype(tglb:seq<TimestampedRslState>, opn:OperationNumbe
 
 /* Proof that PacketsBallotInvariant is maintained */
 lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires P2Assumption(ts, opn) && P2Assumption(ts', opn)
-    requires RslConsistency(ts') && RslConsistency(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase2(ts)
+    requires InPhase2(ts) ==> P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
     ensures PacketsBallotInvariant(ts')
@@ -115,10 +101,10 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
 /* Proof that a Before_2a_Sent state transitions to a Before_2a_Sent state or 
 * Before_2b_Sent state */
 lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires AlwaysInvariantP2(ts', opn)
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase2(ts)
+    requires InPhase2(ts) ==> P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
     requires Before_2a_Sent_Invariant(ts, opn)
@@ -141,10 +127,10 @@ lemma Before2a_to_MaybeBefore2b(ts:TimestampedRslState, ts':TimestampedRslState,
 /* Proof that a Before_2b_Sent state transitions to a Before_2b_Sent state or 
 * After_2b_Sent state */
 lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-    requires AlwaysInvariantP2(ts', opn)
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase2(ts)
+    requires InPhase2(ts) ==> P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires Phase2Invariant(ts, opn)
     requires Before_2b_Sent_Invariant(ts, opn)
@@ -174,30 +160,31 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
         return;
     }
     // From this point on, replica idx is processing a 2a packet
-    Before2b_to_MaybeAfter2b_Process2a(ts, ts', opn, idx, tios);
+    assume false;
+    // Before2b_to_MaybeAfter2b_Process2a(ts, ts', opn, idx, tios);
 }
 
 
-/* Proof that a After_2b_Sent state transitions to a After_2b_Sent state */
-lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-    requires AlwaysInvariantP2(ts', opn)
-    requires TimestampedRslNext(ts, ts')
-    requires Phase2Invariant(ts, opn)
-    requires After_2b_Sent_Invariant(ts, opn)
-    ensures After_2b_Sent_Invariant(ts', opn)
-{
-    if TimestampedRslNextEnvironment(ts, ts') {
-        assert After_2b_Sent_Invariant(ts', opn);
-        return;
-    }
-    var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    if idx == 1 {
-        After2b_to_After2b_LeaderAction(ts, ts', opn, idx, tios);
-    } else {
-        After2b_to_After2b_NonLeaderAction(ts, ts', opn, idx, tios);
-    }
-}
+// /* Proof that a After_2b_Sent state transitions to a After_2b_Sent state */
+// lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+//     requires P2Assumption(ts, opn) && RslConsistency(ts)
+//     requires P2Assumption(ts', opn) && RslConsistency(ts')
+//     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+//     requires AlwaysInvariantP2(ts', opn)
+//     requires TimestampedRslNext(ts, ts')
+//     requires Phase2Invariant(ts, opn)
+//     requires After_2b_Sent_Invariant(ts, opn)
+//     ensures After_2b_Sent_Invariant(ts', opn)
+// {
+//     if TimestampedRslNextEnvironment(ts, ts') {
+//         assert After_2b_Sent_Invariant(ts', opn);
+//         return;
+//     }
+//     var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
+//     if idx == 1 {
+//         After2b_to_After2b_LeaderAction(ts, ts', opn, idx, tios);
+//     } else {
+//         After2b_to_After2b_NonLeaderAction(ts, ts', opn, idx, tios);
+//     }
+// }
 }

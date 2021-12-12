@@ -46,7 +46,6 @@ predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber)
     && (InFailover(ts) ==> FO_def.FOAssumption(ts))
     && (InPhase1(ts) ==> P1_def.P1Assumption(ts))
     && (InPhase2(ts) ==> P2_def.P2Assumption(ts, opn))
-    
 }
 
 predicate RslAssumption2(ts:TimestampedRslState, ts':TimestampedRslState)
@@ -102,7 +101,7 @@ lemma RSLTopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
             }
             assert InPhase2(tglb[P2_idx]);
             assert P2_def.Phase2Invariant(tglb[P2_idx], opn);
-            P2_top.Phase2TopLevel_Prototype(tglb[P2_idx..], opn);
+            P2_top.Phase2TopLevel(tglb[P2_idx..], opn);
             assert forall i | 0 <= i < |tglb| :: PerformanceGuarantee_Final(tglb[i]);
             // We are done
         }

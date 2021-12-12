@@ -72,13 +72,13 @@ function TimeBoundReplyFinal() : Timestamp {
 *****************************************************************************************/
 
 /* Conjunction of all assumptions */
-predicate P2Assumption(ts:TimestampedRslState, opn:OperationNumber){
-    && CommonAssumptions(ts)
+predicate P2Assumption(ts:TimestampedRslState, opn:OperationNumber) {
     && (var nextStep := ts.t_environment.nextStep; 
         && nextStep.LEnvStepHostIos? ==>
             && (forall io | io in nextStep.ios :: !io.LIoOpTimeoutReceive?)
             && (forall io | io in nextStep.ios && io.LIoOpReceive? :: !io.r.msg.v.RslMessage_Heartbeat? && !io.r.msg.v.RslMessage_Request? && !io.r.msg.v.RslMessage_AppStateSupply?)
     )
+    && |ts.t_replicas| > 2 
     && NewLeaderDoesNotReceiveOld2a2b(ts)
     && NewLeaderDoesNotProposeFurtherOps(ts, opn)
     && LeaderAlwaysOne(ts)
@@ -142,6 +142,7 @@ predicate AlwaysInvariantP2(ts:TimestampedRslState, opn:OperationNumber)
     && AlwaysInvariantP2_RequestSrcAndBatchSize(ts, opn)
     && ts.t_replicas[1].v.replica.proposer.request_queue == []
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
+    && ts.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors == {}
 }
 
 
@@ -261,6 +262,8 @@ predicate Before_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && PerformanceGuarantee_Response(ts)
     && 0 <= ts.t_replicas[1].v.nextActionIndex <= 9
     && r.proposer.current_state == 2
+    && r.proposer.election_state.current_view == Ballot(1, 1)
+    && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
     && r.proposer.next_operation_number_to_propose > opn
 
     // Learner and Executor states
@@ -285,6 +288,8 @@ predicate After_2b_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && PerformanceGuarantee_Response(ts)
     && 0 <= ts.t_replicas[1].v.nextActionIndex <= 9
     && r.proposer.current_state == 2
+    && r.proposer.election_state.current_view == Ballot(1, 1)
+    && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
     && r.proposer.next_operation_number_to_propose > opn
 
     // Learner and Executor states
