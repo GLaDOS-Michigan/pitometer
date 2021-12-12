@@ -158,15 +158,15 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_clie
     print("Plotting distribution for f = %d" %(f))
     client_cdf, client_bins = raw_data_to_cdf(actual_client_latencies)
     client_cdf, client_bins = smooth(client_cdf, client_bins)
-    client_train_cdf, client_train_bins = raw_data_to_cdf(actual_client_train_latencies)
-    client_train_cdf, client_train_bins = smooth(client_train_cdf, client_train_bins)
+    # client_train_cdf, client_train_bins = raw_data_to_cdf(actual_client_train_latencies)
+    # client_train_cdf, client_train_bins = smooth(client_train_cdf, client_train_bins)
     sanity_check(actual_client_latencies, total_network_data, actual_method_latencies)
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
     plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
     plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
-    plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted')
+    # plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted')
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')

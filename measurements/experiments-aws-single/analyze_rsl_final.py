@@ -161,7 +161,7 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_clie
 
     plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
     plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
-    plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted')
+    # plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted')
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
