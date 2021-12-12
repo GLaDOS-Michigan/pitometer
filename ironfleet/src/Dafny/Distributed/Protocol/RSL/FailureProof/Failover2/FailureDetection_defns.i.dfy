@@ -194,6 +194,7 @@ predicate InView2Local(s:TimestampedRslState, j:int, sus:bool)
     true
 }
 
+// TODO: rename this to be "majority exists" or some such
 predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
 {
@@ -203,12 +204,19 @@ predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
     forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
   )
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
-  // FIXME: maintain some time bounds
+  && LeaderQuorumBound(s)
+}
+
+predicate LeaderQuorumBound(s:TimestampedRslState)
+{
+  && (
+    |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s.constants.config) ==>
+    TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
+  )
 }
 
 predicate FinalState(s:TimestampedRslState)
 {
-  // could reach here by recv'ing a suspecting HB or by becoming a suspector
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
   && TimeLe(s.t_replicas[1].ts, FailoverTime())
 }

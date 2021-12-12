@@ -145,9 +145,6 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
     var es' := s'.t_replicas[j].v.replica.proposer.election_state;
     var batch := s.t_replicas[j].v.replica.executor.next_op_to_execute.v;
     if ElectionStateReflectExecutedRequestBatch(es, es', batch) {
-      // FIXME: things can only get removed; this should be easy to prove
-      // This works if we that reqs' <= reqs, which is true because the
-      // sequence has at most one elt in it
       lemma_RemoveExecutedRequestBatchProducesSubsequence(
       es'.requests_received_this_epoch,
       es.requests_received_this_epoch,
@@ -233,6 +230,53 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   }
 }
 
+lemma InView1Local_leader_quorum(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+  requires FOAssumption2(s, s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+  requires InView1(s, sr);
+
+  ensures LeaderQuorumBound(s')
+{
+  SubsetCardinality(s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors, sr);
+  if j == 1 {
+    if s.t_environment.nextStep.nodeStep == RslStep(7) {
+      if |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
+        // Leader takes a local step that gives it a quorum.
+        // This can only happen if the epoch2 timer is expired.
+        // epoch_end <= Epoch2
+        // t <= epoch_end + EpochQD(7)
+        // --> t' <= Epoch2 + EpochQD(7) + RslStep(7)
+        reveal_TBJustBeforeNewView();
+        reveal_ActionsUpTo();
+        reveal_TBFirstSuspectingHB();
+        reveal_HBPeriodEnd();
+      }
+    } else if s.t_environment.nextStep.nodeStep == RslStep(0) {
+      // FIXME: why is this case passing without any time reasoning?
+      var ios := s.t_environment.nextStep.ios;
+      if ios[0].LIoOpReceive?  {
+        if ios[0].r.msg.v.RslMessage_Heartbeat? {
+          if ios[0].r.msg.v.suspicious {
+            // assert |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| ==
+            // |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors|;
+            if |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| == LMinQuorumSize(s'.constants.config) {
+              assert false;
+            }
+          }
+        }
+      }
+      assert |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) ==> false;
+    }
+  } else {
+    // trivial
+  }
+}
+
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
@@ -298,11 +342,8 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
 
 lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
-
-  requires HeartbeatQDInv(s)
-  requires HeartbeatQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -315,8 +356,12 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set
 
   ensures  SuspectingReplicaInv(s', sr')
   ensures  forall k :: 0 <= k < |s'.t_replicas| ==> InView1Local(s', k, k in sr');
+
+  // this needs to only be proven in the case that a leader takes a step
+  ensures LeaderQuorumBound(s');
 {
   sr' := InView1Local_self_ind(s, s', sr, j);
+  InView1Local_leader_quorum(s, s', sr, j);
   // Also use InV1L_leader_ind
   if j == 1 {
     forall k | 0 <= k < |s'.t_replicas|
@@ -375,11 +420,8 @@ lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 
 lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
-
-  requires HeartbeatQDInv(s)
-  requires HeartbeatQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -403,11 +445,8 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
 
 lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
-
-  requires HeartbeatQDInv(s)
-  requires HeartbeatQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
 
   requires TimestampedRslNext(s, s');
 

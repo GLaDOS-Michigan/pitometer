@@ -23,7 +23,6 @@ function {:opaque} TBEpoch2() : Timestamp
   TBEpoch1() + EpochQD(7) + StepToTimeDelta(RslStep(7)) + EpochLength
 }
 
-// TODO: move these to a different file
 function {:opaque} EpochQD(nextActionIndex:int) : Timestamp
 {
   if nextActionIndex == 8 then
@@ -89,9 +88,48 @@ function {:opaque} TBBecomeSuspector() : Timestamp
   0 // TODO
 }
 
-function {:opaque} TBJustBeforeNewView() : Timestamp
+// function {:opaque} TBJustBeforeNewView() : Timestamp
+// {
+  // TBEpoch2() + EpochQD(7) + StepToTimeDelta(RslStep(7))
+// }
+
+function {:opaque} ActionsUpTo(nextActionIndex:int) : Timestamp
 {
-  0 // TODO
+  if nextActionIndex == 1 then
+    StepToTimeDelta(RslStep(0)) + Timeout()
+  else if nextActionIndex == 2 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1))
+  else if nextActionIndex == 3 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2))
+  else if nextActionIndex == 4 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3))
+  else if nextActionIndex == 5 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4))
+  else if nextActionIndex == 6 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5))
+  else if nextActionIndex == 7 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6))
+  else if nextActionIndex == 8 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6)) +
+    StepToTimeDelta(RslStep(7))
+  else
+    0 // don't care about these cases
+}
+
+function {:opaque} TBJustBeforeNewView(nextActionIndex:int) : Timestamp
+{
+  TBFirstSuspectingHB() + MaxQueueTime + ActionsUpTo(nextActionIndex)
 }
 
 function {:opaque} FailoverTime() : Timestamp
