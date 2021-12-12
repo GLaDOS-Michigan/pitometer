@@ -33,9 +33,8 @@ lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn
     {
         Before2b_to_MaybeAfter2b(s, s', opn);
     } else {
-        assume false;
-        // assert After_2b_Sent_Invariant(s, opn);
-        // After2b_to_After2b(s, s', opn);
+        assert After_2b_Sent_Invariant(s, opn);
+        After2b_to_After2b(s, s', opn);
     }
     assert Phase2Invariant(s', opn);
 }
@@ -164,26 +163,26 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
 }
 
 
-// /* Proof that a After_2b_Sent state transitions to a After_2b_Sent state */
-// lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-//     requires P2Assumption(ts, opn) && RslConsistency(ts)
-//     requires P2Assumption(ts', opn) && RslConsistency(ts')
-//     requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
-//     requires AlwaysInvariantP2(ts', opn)
-//     requires TimestampedRslNext(ts, ts')
-//     requires Phase2Invariant(ts, opn)
-//     requires After_2b_Sent_Invariant(ts, opn)
-//     ensures After_2b_Sent_Invariant(ts', opn)
-// {
-//     if TimestampedRslNextEnvironment(ts, ts') {
-//         assert After_2b_Sent_Invariant(ts', opn);
-//         return;
-//     }
-//     var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
-//     if idx == 1 {
-//         After2b_to_After2b_LeaderAction(ts, ts', opn, idx, tios);
-//     } else {
-//         After2b_to_After2b_NonLeaderAction(ts, ts', opn, idx, tios);
-//     }
-// }
+/* Proof that a After_2b_Sent state transitions to a After_2b_Sent state */
+lemma After2b_to_After2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase2(ts)
+    requires InPhase2(ts) ==> P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
+    requires TimestampedRslNext(ts, ts')
+    requires Phase2Invariant(ts, opn)
+    requires After_2b_Sent_Invariant(ts, opn)
+    ensures After_2b_Sent_Invariant(ts', opn)
+{
+    if TimestampedRslNextEnvironment(ts, ts') {
+        assert After_2b_Sent_Invariant(ts', opn);
+        return;
+    }
+    var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    if idx == 1 {
+        After2b_to_After2b_LeaderAction(ts, ts', opn, idx, tios);
+    } else {
+        After2b_to_After2b_NonLeaderAction(ts, ts', opn, idx, tios);
+    }
+}
 }

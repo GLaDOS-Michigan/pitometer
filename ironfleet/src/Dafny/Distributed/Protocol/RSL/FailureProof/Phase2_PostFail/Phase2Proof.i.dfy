@@ -142,7 +142,10 @@ predicate AlwaysInvariantP2(ts:TimestampedRslState, opn:OperationNumber)
     && AlwaysInvariantP2_RequestSrcAndBatchSize(ts, opn)
     && ts.t_replicas[1].v.replica.proposer.request_queue == []
     && (forall pkt | pkt in ts.undeliveredPackets :: pkt in ts.t_environment.sentPackets)
-    && ts.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors == {}
+    && ( var es := ts.t_replicas[1].v.replica.proposer.election_state;
+         || es.current_view_suspectors == {}
+         || es.current_view_suspectors == {es.constants.my_index}
+    )
 }
 
 

@@ -159,7 +159,10 @@ lemma Before2b_to_Before2b_NonReceive(ts:TimestampedRslState, ts':TimestampedRsl
             assert !BalLt(ls.v.replica.proposer.max_ballot_i_sent_1a, ls.v.replica.proposer.election_state.current_view);
         } else if nextActionIndex == 8 {
             // LProposerCheckForQuorumOfViewSuspicions
-            assert |ls.v.replica.proposer.election_state.current_view_suspectors| == 0;
+            var es, es' := ls.v.replica.proposer.election_state, ls'.v.replica.proposer.election_state;
+            assert es'.constants.my_index == es.constants.my_index;
+            assert  || es'.current_view_suspectors == {} 
+                    || es'.current_view_suspectors == {es'.constants.my_index};
         } else {}
         assert ls'.v.replica.proposer.current_state == 2;
         assert Before_2b_Sent_Invariant(ts', opn);
