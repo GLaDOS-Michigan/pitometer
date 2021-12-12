@@ -14,6 +14,7 @@ lemma {:timeLimitMultiplier 2} PacketsBallotInvariant_ReceiveStep(ts:Timestamped
     requires Phase2Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
     requires ts.t_replicas[idx].v.nextActionIndex == 0 
+    ensures PacketsBallotInvariant(ts')
 {
     forall pkt | pkt in ts'.undeliveredPackets 
     ensures ExistingPacketsBallot(pkt)
