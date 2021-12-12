@@ -160,8 +160,7 @@ lemma Before2b_to_MaybeAfter2b(ts:TimestampedRslState, ts':TimestampedRslState, 
         return;
     }
     // From this point on, replica idx is processing a 2a packet
-    assume false;
-    // Before2b_to_MaybeAfter2b_Process2a(ts, ts', opn, idx, tios);
+    Before2b_to_MaybeAfter2b_Process2a(ts, ts', opn, idx, tios);
 }
 
 

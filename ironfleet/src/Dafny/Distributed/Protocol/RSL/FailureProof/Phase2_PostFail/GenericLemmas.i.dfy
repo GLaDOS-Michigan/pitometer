@@ -274,41 +274,41 @@ lemma lemma_No2bSentInNonReceiveStep_Undelivered(ts:TimestampedRslState, ts':Tim
 }
 
 
-// /* There can be no 2b messages sent in a receive step unless receiving 2a  */
-// lemma lemma_No2bSentInReceiveStep_NotReceive2a(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-//     requires P2Assumption(ts, op) && RslConsistency(ts)
-//     requires P2Assumption(ts', op) && RslConsistency(ts')
-//     requires TimestampedRslNext(ts, ts')
-//     requires !TimestampedRslNextEnvironment(ts, ts')
-//     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
-//     requires Phase2Invariant(ts, op)
-//     requires ts.t_replicas[idx].v.nextActionIndex == 0
-//     requires !tios[0].r.msg.v.RslMessage_2a? 
-//     ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.t_environment.sentPackets
-//     ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.undeliveredPackets
-// {
-//     var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
-//     forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2b? 
-//     ensures p in ts.t_environment.sentPackets
-//     {
-//         if p !in ts.t_environment.sentPackets {
-//             var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
-//             forall p | p in sent_packets 
-//             ensures !p.msg.RslMessage_2b? {}
-//             assert false;
-//         }
-//     }
-//     forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2b?
-//     ensures p in ts.undeliveredPackets
-//     {
-//         if p !in ts.t_environment.sentPackets {
-//             var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
-//             forall p | p in sent_packets 
-//             ensures !p.msg.RslMessage_2b? {}
-//             assert false;
-//         }
-//     }
-// }
+/* There can be no 2b messages sent in a receive step unless receiving 2a  */
+lemma lemma_No2bSentInReceiveStep_NotReceive2a(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, op)
+    requires TimestampedRslNext(ts, ts')
+    requires !TimestampedRslNextEnvironment(ts, ts')
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
+    requires Phase2Invariant(ts, op)
+    requires ts.t_replicas[idx].v.nextActionIndex == 0
+    requires !tios[0].r.msg.v.RslMessage_2a? 
+    ensures forall pkt | pkt in ts'.t_environment.sentPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.t_environment.sentPackets
+    ensures forall pkt | pkt in ts'.undeliveredPackets && pkt.msg.v.RslMessage_2b? :: pkt in ts.undeliveredPackets
+{
+    var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
+    forall p | p in ts'.t_environment.sentPackets && p.msg.v.RslMessage_2b? 
+    ensures p in ts.t_environment.sentPackets
+    {
+        if p !in ts.t_environment.sentPackets {
+            var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
+            forall p | p in sent_packets 
+            ensures !p.msg.RslMessage_2b? {}
+            assert false;
+        }
+    }
+    forall p | p in ts'.undeliveredPackets && p.msg.v.RslMessage_2b?
+    ensures p in ts.undeliveredPackets
+    {
+        if p !in ts.t_environment.sentPackets {
+            var sent_packets := ExtractSentPacketsFromIos(UntagLIoOpSeq(tios));
+            forall p | p in sent_packets 
+            ensures !p.msg.RslMessage_2b? {}
+            assert false;
+        }
+    }
+}
 
 
 // lemma lemma_No1bSentInReceiveStep_NotReceive1a(ts:TimestampedRslState, ts':TimestampedRslState, op:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 

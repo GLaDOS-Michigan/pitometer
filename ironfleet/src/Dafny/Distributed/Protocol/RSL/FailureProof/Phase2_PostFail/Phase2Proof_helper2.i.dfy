@@ -10,9 +10,9 @@ import opened RslPhase2Proof_PostFail_Generic
 /* Proof that a Before_2b_Sent state transitions to a Before_2b_Sent state or 
 * After_2b_Sent state */
 lemma Before2b_to_MaybeAfter2b_Process2a(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
@@ -57,9 +57,9 @@ lemma {:timeLimitMultiplier 2} Before2b_to_After2b(ts:TimestampedRslState, ts':T
     requires rs == UntimestampRslState(ts)
     requires rs' == UntimestampRslState(ts')
     requires iops == UntagLIoOpSeq(tios);
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires Phase2Invariant(ts, opn)
@@ -100,9 +100,9 @@ lemma {:timeLimitMultiplier 2} Before2b_to_After2b(ts:TimestampedRslState, ts':T
 
 
 lemma After2b_to_After2b_NonLeaderAction(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
@@ -119,9 +119,9 @@ lemma After2b_to_After2b_NonLeaderAction(ts:TimestampedRslState, ts':Timestamped
 
 
 lemma After2b_to_After2b_2bBalOpn(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
@@ -162,9 +162,9 @@ lemma After2b_to_After2b_2bBalOpn(ts:TimestampedRslState, ts':TimestampedRslStat
 
 
 lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios)
@@ -210,9 +210,9 @@ lemma After2b_to_After2b_LeaderAction(ts:TimestampedRslState, ts':TimestampedRsl
 
 
 lemma After2b_to_After2b_LeaderAction_TimeBoundReply(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
@@ -225,13 +225,28 @@ lemma After2b_to_After2b_LeaderAction_TimeBoundReply(ts:TimestampedRslState, ts'
     requires PerformanceGuarantee_Response(ts)
     ensures forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p) 
             :: TimeLe(p.msg.ts, TimeBoundReplyFinal())
-{}
+{
+    forall p | p in ts'.undeliveredPackets && IsNewReplyPacket(ts', p) 
+    ensures TimeLe(p.msg.ts, TimeBoundReplyFinal())
+    {
+        if p !in ts.undeliveredPackets {
+            var ls, ls' := ts.t_replicas[1], ts'.t_replicas[1];
+            var nextActionIndex := ls.v.nextActionIndex;
+            if nextActionIndex == 6 {
+                assert TimeLe(p.msg.ts, TimeBoundReplyFinal());
+            } else {
+                lemma_NoRepliesSentInNonExecutionStep(ts, ts', opn, 1, tios);
+                assert false;
+            }
+        }
+    }
+}
 
 
 lemma After2b_to_After2b_LeaderAction_TimeBound2b(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
@@ -268,9 +283,9 @@ lemma After2b_to_After2b_LeaderAction_TimeBound2b(ts:TimestampedRslState, ts':Ti
 
 
 lemma After2b_to_After2b_LeaderAction_LearnedBatchNotEmpty(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
@@ -317,9 +332,9 @@ lemma After2b_to_After2b_LeaderAction_LearnedBatchNotEmpty(ts:TimestampedRslStat
 
 
 lemma After2b_to_After2b_LeaderAction_PostExecution(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
@@ -352,9 +367,9 @@ lemma After2b_to_After2b_LeaderAction_PostExecution(ts:TimestampedRslState, ts':
 
 
 lemma After2b_to_After2b_LeaderAction_PreExecution(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
-    requires P2Assumption(ts, opn) && RslConsistency(ts)
-    requires P2Assumption(ts', opn) && RslConsistency(ts')
-    requires PacketsBallotInvariant(ts) && PacketsBallotInvariant(ts')
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P2Assumption(ts, opn)
+    requires InPhase2(ts') ==> P2Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires !TimestampedRslNextEnvironment(ts, ts')
     requires TimestampedRslNextOneReplica(ts, ts', 1, tios)
