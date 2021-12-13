@@ -42,7 +42,7 @@ function TimeBound1aDeliveryPost() : Timestamp {
 }
 
 function TimeBound1bDeliveryPost() : Timestamp {
-    TimeBound1aDelivery() + ProcessPacket + MaxQueueTime + D
+    TimeBound1aDeliveryPost() + ProcessPacket + MaxQueueTime + D
 }
 
 function TimeBoundPhase1LeaderPost(nextActionIndex:int) : Timestamp
@@ -113,14 +113,14 @@ predicate LeaderSet1bContainsRequest(ts:TimestampedRslState)
 
 
 predicate IsNew1aPacket(pkt:TimestampedRslPacket) {
-    && pkt.msg.v.RslMessage_2a?
-    && pkt.msg.v.bal_2a == Ballot(1, 1)
+    && pkt.msg.v.RslMessage_1a?
+    && pkt.msg.v.bal_1a == Ballot(1, 1)
 }
 
 
 predicate IsNew1bPacket(pkt:TimestampedRslPacket) {
-    && pkt.msg.v.RslMessage_1a?
-    && pkt.msg.v.bal_1a == Ballot(1, 1)
+    && pkt.msg.v.RslMessage_1b?
+    && pkt.msg.v.bal_1b == Ballot(1, 1)
 }
 
 predicate IsNew2aPacket(pkt:TimestampedRslPacket, opn:OperationNumber) {

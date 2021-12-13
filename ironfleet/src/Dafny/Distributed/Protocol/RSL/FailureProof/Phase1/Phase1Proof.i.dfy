@@ -23,12 +23,21 @@ predicate P1Assumption(ts:TimestampedRslState, opn:OperationNumber) {
     && (var nextStep := ts.t_environment.nextStep; 
         nextStep.LEnvStepHostIos? ==>
             && (forall io | io in nextStep.ios :: !io.LIoOpTimeoutReceive?)
-            && (forall io | io in nextStep.ios && io.LIoOpReceive? :: !io.r.msg.v.RslMessage_Heartbeat? && !io.r.msg.v.RslMessage_Request? && !io.r.msg.v.RslMessage_AppStateSupply?)
+            && (forall io | io in nextStep.ios && io.LIoOpReceive? :: 
+                && !io.r.msg.v.RslMessage_Heartbeat? 
+                && !io.r.msg.v.RslMessage_Invalid? 
+                && !io.r.msg.v.RslMessage_Request? 
+                && !io.r.msg.v.RslMessage_Reply? 
+                && !io.r.msg.v.RslMessage_AppStateRequest?
+                && !io.r.msg.v.RslMessage_AppStateSupply?
+                && !io.r.msg.v.RslMessage_StartingPhase2?
+            )
     )
     && |ts.t_replicas| > 2 
     && NewLeaderDoesNotReceiveOld2a2b(ts)
     && NewLeaderDoesNotProposeFurtherOps(ts, opn)
     && LeaderAlwaysOne(ts)
+    && NonLeaderViews(ts)
     && QuorumOf2bPacketsImpliesValue(ts, opn)
     && minD < SelfDelivery < D < 2*minD
     && ProcessPacket > 0
@@ -41,6 +50,14 @@ predicate LeaderAlwaysOne(ts:TimestampedRslState)
     && ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
     && (forall idx | 2 <= idx < |ts.t_replicas| 
         :: ts.t_replicas[idx].v.replica.proposer.current_state == 0)
+}
+
+predicate NonLeaderViews(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2
+{
+    forall idx | 2 <= idx < |ts.t_replicas|
+    :: || ts.t_replicas[idx].v.replica.proposer.election_state.current_view == Ballot(1, 0)
+       || ts.t_replicas[idx].v.replica.proposer.election_state.current_view == Ballot(1, 1)
 }
 
 predicate NodeZeroCrashed(ts:TimestampedRslState)
@@ -72,7 +89,7 @@ predicate Phase1Invariant(ts:TimestampedRslState, opn:OperationNumber)
 {
     && AlwaysInvariantP1(ts, opn)
     && PacketsBallotInvariant(ts)
-    && Invariant(ts, opn)
+    && PerfInvariant(ts, opn)
 }
 
 
@@ -96,8 +113,6 @@ predicate AlwaysInvariantP1(ts:TimestampedRslState, opn:OperationNumber)
     // Proposer stuff
     && r.proposer.request_queue == []
     && r.proposer.election_state.current_view_suspectors == {}
-    && r.proposer.current_state == 1
-    && r.proposer.election_state.current_view == Ballot(1, 1)
     && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
     && r.proposer.next_operation_number_to_propose == opn
 
@@ -162,7 +177,7 @@ predicate ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
 
 
 // Things that are true before 1a packets are sent out by the leader
-predicate Invariant(ts:TimestampedRslState, opn:OperationNumber) 
+predicate PerfInvariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
     requires RslConsistency(ts)
 {
@@ -180,8 +195,7 @@ predicate Invariant(ts:TimestampedRslState, opn:OperationNumber)
         :: TimeLe(pkt.msg.ts, TimeBound1bDeliveryPost()))
 
     // Proposer
-
-
+    && r.proposer.current_state == 1
 }
 
 

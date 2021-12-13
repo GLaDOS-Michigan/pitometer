@@ -13,36 +13,65 @@ import opened RslPhase1Proof_Helper1
 
 
 /**** MAIN INVARIANT THEOREM ****/
-lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn:OperationNumber)
-    requires CommonAssumptions(s) && CommonAssumptions(s')
-    requires InPhase1(s)
-    requires InPhase1(s) ==> P1Assumption(s, opn)
-    requires InPhase1(s') ==> P1Assumption(s', opn)
-    requires TimestampedRslNext(s, s')
-    requires Phase1Invariant(s, opn)
-    ensures InPhase1(s') || InPhase2(s')
-    ensures InPhase1(s') ==> Phase1Invariant(s', opn)
-    ensures InPhase2(s') ==> P2.Phase2Invariant(s', opn)
+lemma PerfInvariantMaintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber)
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase1(ts)
+    requires InPhase1(ts) ==> P1Assumption(ts, opn)
+    requires InPhase1(ts') ==> P1Assumption(ts', opn)
+    requires TimestampedRslNext(ts, ts')
+    requires Phase1Invariant(ts, opn)
+    ensures InPhase1(ts') || InPhase2(ts')
+    ensures InPhase1(ts') ==> Phase1Invariant(ts', opn)
+    ensures InPhase2(ts') ==> P2.Phase2Invariant(ts', opn)
 {   
-    PacketsBallotInvariant_Maintained(s, s', opn);
+    AlwaysInvariantP1_Maintained(ts, ts', opn);
+    PacketsBallotInvariant_Maintained(ts, ts', opn);
+    if TimestampedRslNextEnvironment(ts, ts') {
+        assert PacketsBallotInvariant(ts');
+        return;
+    }
 
-    assume false;
-    // AlwaysInvariantP2_Maintained(s, s', opn);
-    
-    // if  && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
-    //     && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn)) 
-    // {
-    //     Before2a_to_MaybeBefore2b(s, s', opn);
-    // } else if (exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
-    //     && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn))  
-    // {
-    //     Before2b_to_MaybeAfter2b(s, s', opn);
-    // } else {
-    //     assert After_2b_Sent_Invariant(s, opn);
-    //     After2b_to_After2b(s, s', opn);
-    // }
-    // assert Phase2Invariant(s', opn);
+    var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
+    if nextActionIndex == 2 {
+        assume false;
+        //LProposerCanNominateUsingOperationNumber is the condition to go to phase 2
+        // Phase1_to_MaybePhase2(ts, ts', opn, idx, tios);
+    } else {
+        Phase1_to_Phase1(ts, ts', opn, idx, tios);
+    }
 }
+
+/*****************************************************************************************
+*                                         Lemmas                                         *
+*****************************************************************************************/
+
+
+/* Proof that PacketsBallotInvariant is maintained */
+lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase1(ts)
+    requires InPhase1(ts) ==> P1Assumption(ts, opn)
+    requires InPhase1(ts') ==> P1Assumption(ts', opn)
+    requires TimestampedRslNext(ts, ts')
+    requires Phase1Invariant(ts, opn)
+    ensures PacketsBallotInvariant(ts')
+{
+    if TimestampedRslNextEnvironment(ts, ts') {
+        assert PacketsBallotInvariant(ts');
+        return;
+    }
+    var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
+    if nextActionIndex == 0 {
+        PacketsBallotInvariant_ReceiveStep(ts, ts', opn, idx, tios);
+    } else {
+        PacketsBallotInvariant_NoReceiveStep(ts, ts', opn, idx, tios);
+    }
+}
+
+}
+
 
 
 /*
@@ -74,36 +103,3 @@ lemma Phase1TopLevel_Prototype(tglb:seq<TimestampedRslState>, opn:OperationNumbe
     assume false;
 }
 */
-
-
-/*****************************************************************************************
-*                                         Lemmas                                         *
-*****************************************************************************************/
-
-
-/* Proof that PacketsBallotInvariant is maintained */
-lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
-    requires CommonAssumptions(ts) && CommonAssumptions(ts')
-    requires InPhase1(ts)
-    requires InPhase1(ts) ==> P1Assumption(ts, opn)
-    requires InPhase1(ts') ==> P1Assumption(ts', opn)
-    requires TimestampedRslNext(ts, ts')
-    requires Phase1Invariant(ts, opn)
-    ensures PacketsBallotInvariant(ts')
-{
-    if TimestampedRslNextEnvironment(ts, ts') {
-        assert PacketsBallotInvariant(ts');
-        return;
-    }
-    var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
-    if nextActionIndex == 0 {
-        PacketsBallotInvariant_ReceiveStep(ts, ts', opn, idx, tios);
-    } else {
-        PacketsBallotInvariant_NoReceiveStep(ts, ts', opn, idx, tios);
-    }
-}
-
-
-
-}
