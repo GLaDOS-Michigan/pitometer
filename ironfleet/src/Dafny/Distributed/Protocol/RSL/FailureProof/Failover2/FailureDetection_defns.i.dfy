@@ -91,20 +91,12 @@ predicate HBPeriodAssumption(s:TimestampedRslState)
   s.constants.params.heartbeat_period == HBPeriod
 }
 
-predicate NoExecutions(s:TimestampedRslState)
-{
-  forall j ::
-    0 <= j < |s.t_replicas| ==>
-    s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpUnknown?
-}
-
 predicate FOAssumption(s:TimestampedRslState)
 {
   && CommonAssumptions(s)
   && NoStateTransfer(s)
   && OneAndOnlyOneRequest(s)
   && NonLeadersView1(s)
-  // && NoExecutions(s)
   && EpochLengthAssumption(s)
   && HBPeriodAssumption(s)
 }
@@ -121,6 +113,11 @@ predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
 ////////////////////////////////////////////////////////////////////////////////
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
+
+predicate LeaderView0(s:TimestampedRslState)
+{
+  s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
+}
 
 // "suspecting_replicas"
 predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<int>)
@@ -176,42 +173,14 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
-  && |suspecting_replicas| < LMinQuorumSize(s.constants.config)
+
+  && LeaderQuorumBound(s)
+  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
 
   && InView1Packets(s)
   && CurrView(s)
   && (
     forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
-  )
-}
-
-predicate InView2Local(s:TimestampedRslState, j:int, sus:bool)
-  requires RslConsistency(s)
-{
-  if sus then
-    Suspector(s, j)
-  else
-    true
-}
-
-// TODO: rename this to be "majority exists" or some such
-predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
-  requires RslConsistency(s)
-{
-  SuspectingReplicaInv(s, suspecting_replicas)
-  && |suspecting_replicas| >= LMinQuorumSize(s.constants.config)
-  && (
-    forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
-  )
-  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
-  && LeaderQuorumBound(s)
-}
-
-predicate LeaderQuorumBound(s:TimestampedRslState)
-{
-  && (
-    |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s.constants.config) ==>
-    TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
   )
 }
 
@@ -264,7 +233,6 @@ predicate NonSuspector1(s:TimestampedRslState, j:int)
   requires 0 <= j < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|
 {
-
   var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
   && s.t_replicas[j].v.replica.constants.my_index !in suspectors
   && s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [req]
@@ -310,6 +278,23 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
   )
   || (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
+}
+
+predicate InView2Local(s:TimestampedRslState, j:int, sus:bool)
+  requires RslConsistency(s)
+{
+  if sus then
+    Suspector(s, j)
+  else
+    true
+}
+
+predicate LeaderQuorumBound(s:TimestampedRslState)
+{
+  && (
+    |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s.constants.config) ==>
+    TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
+  )
 }
 
 }
