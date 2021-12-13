@@ -57,9 +57,6 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
       if s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [req] {
         reveal_TBEpoch1();
         assert NonSuspector1(s', j);
-        // Could assume that this doesn't happen? I.e. that the request has
-        // been received by everyone in the initial state with time 0.
-        // FIXME: prove TimeLe using EpochQD
         return;
       }
     }
@@ -187,6 +184,7 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   requires InView1(s, sr);
   requires j !in sr;
   requires NonSuspector2(s, j);
+  requires LeaderView0(s')
 
   // If j is added to sr, then j must be the leader.
   ensures
@@ -246,7 +244,6 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
 
-  // TODO: bundle these together?
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
 
