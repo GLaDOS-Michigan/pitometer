@@ -361,6 +361,29 @@ lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set
     if (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors) {
       assert Suspector(s', j);
     } else {
+      var pkt :|
+        && pkt in s.undeliveredPackets
+        && pkt.msg.v.RslMessage_Heartbeat?
+        && pkt.src == s.constants.config.replica_ids[j]
+        && pkt.dst == s.constants.config.replica_ids[1]
+        && pkt.msg.v.suspicious == true
+        && TimeLe(pkt.msg.ts, TBFirstSuspectingHB());
+
+      var t_ios := s.t_environment.nextStep.ios;
+      var ios := UntagLIoOpSeq(t_ios);
+
+      assert forall k :: 0 < k < |ios| ==> !ios[k].LIoOpReceive?;
+
+      if t_ios[0].LIoOpReceive? && t_ios[0].r == pkt {
+        lemma_GetReplicaIndexIsUnique(s.constants.config, j);
+        assert s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors ==
+          s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors + {j};
+        assert s'.t_replicas[j].v.replica.constants.my_index == j;
+        assert (s'.t_replicas[j].v.replica.constants.my_index in s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors);
+        return;
+      }
+      assert pkt !in (set io | io in t_ios && io.LIoOpReceive? :: io.r);
+      assert pkt in s'.undeliveredPackets;
       // might receive packet and remove it from undeliveredPackets
       assert Suspector(s', j);
     }

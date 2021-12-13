@@ -384,6 +384,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires TimestampedRslNextOneReplica(s, s', 1, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
+  requires LeaderView0(s');
   ensures InView1Local(s', k, k in sr)
 {
   assert ReplicasDistinct(s.constants.config.replica_ids, k, 1);
