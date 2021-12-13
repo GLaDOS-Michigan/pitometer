@@ -25,8 +25,8 @@ import opened FailureDetection_helper0_i
 
 lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires EpochDelayInv(s)
+  requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -55,6 +55,7 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
       assert RequestsMatch(req, newReq);
 
       if s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [req] {
+        reveal_TBEpoch1();
         assert NonSuspector1(s', j);
         // Could assume that this doesn't happen? I.e. that the request has
         // been received by everyone in the initial state with time 0.
@@ -70,8 +71,8 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
 lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires EpochDelayInv(s)
+  requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -327,11 +328,13 @@ lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<i
   requires InView1(s, sr);
   requires j in sr;
   requires Suspector(s, j);
+  requires LeaderView0(s');
 
   ensures Suspector(s', j);
 {
-  // FIXME: can reach final state from here
-  // assert s'.t_replicas[1] == s.t_replicas[1];
+  if j != 1 {
+    assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
+  }
   SubsetCardinality(s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors, sr);
 }
 
@@ -352,12 +355,16 @@ lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set
   requires j in sr;
   requires Suspector(s, j);
 
+  requires LeaderView0(s');
+
   ensures Suspector(s', j) || FinalStage(s);
 {
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
     if (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors) {
       assert Suspector(s', j);
     } else {
+      // might receive packet and remove it from undeliveredPackets
       assert Suspector(s', j);
     }
   } else if s.t_environment.nextStep.nodeStep == RslStep(8) {

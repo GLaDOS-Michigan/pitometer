@@ -91,6 +91,20 @@ predicate HBPeriodAssumption(s:TimestampedRslState)
   s.constants.params.heartbeat_period == HBPeriod
 }
 
+predicate ViewNoOverflow(s:TimestampedRslState)
+{
+  forall j :: 0 <= j < |s.t_replicas| ==>
+  var es := s.t_replicas[j].v.replica.proposer.election_state;
+  LtUpperBound(es.current_view.seqno, es.constants.all.params.max_integer_val)
+}
+
+predicate RequestTimeAssumption(s:TimestampedRslState)
+{
+  && (forall pkt :: pkt in s.t_environment.sentPackets ==>
+    pkt.msg.v.RslMessage_Request? ==>
+    TimeLe(pkt.msg.ts, RequestTime))
+}
+
 predicate FOAssumption(s:TimestampedRslState)
 {
   && CommonAssumptions(s)
@@ -99,6 +113,8 @@ predicate FOAssumption(s:TimestampedRslState)
   && NonLeadersView1(s)
   && EpochLengthAssumption(s)
   && HBPeriodAssumption(s)
+  && ViewNoOverflow(s)
+  && RequestTimeAssumption(s)
 }
 
 predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
@@ -272,9 +288,12 @@ predicate Suspector(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
 {
+  // If the leader is a suspector, it already knows about itself
+  && (j == 1 ==> s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
+  && (
   // Either there's a suspecting HB from that node, or the new leader already knows about it
   (exists pkt ::
-  && pkt in s.t_environment.sentPackets
+  && pkt in s.undeliveredPackets
   && pkt.msg.v.RslMessage_Heartbeat?
   && pkt.src == s.constants.config.replica_ids[j]
   && pkt.dst == s.constants.config.replica_ids[1]
@@ -282,13 +301,15 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
   )
   || (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
+  )
 }
 
 predicate LeaderQuorumBound(s:TimestampedRslState)
 {
   && (
     |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s.constants.config) ==>
-    TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
+    && 1 <= s.t_replicas[1].v.nextActionIndex <= 8
+    && TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
   )
 }
 
