@@ -5,9 +5,9 @@ include "Phase2Proof_helper2.i.dfy"
 
 module RslPhase2Proof_PostFail_Top {
 import opened RslPhase2Proof_PostFail_i
-import opened Rs2Phase2Proof_PostFail_Helper0
-import opened Rs2Phase2Proof_PostFail_Helper1
-import opened Rs2Phase2Proof_PostFail_Helper2
+import opened RslPhase2Proof_PostFail_Helper0
+import opened RslPhase2Proof_PostFail_Helper1
+import opened RslPhase2Proof_PostFail_Helper2
 
 
 /**** MAIN INVARIANT THEOREM ****/

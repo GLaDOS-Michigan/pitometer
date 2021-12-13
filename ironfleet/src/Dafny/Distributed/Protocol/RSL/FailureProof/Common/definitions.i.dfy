@@ -37,7 +37,7 @@ predicate InPhase2(ts:TimestampedRslState)
 *****************************************************************************************/
 
 
-function TimeBound1aDelivery() : Timestamp {
+function TimeBound1aDeliveryPost() : Timestamp {
     NewLeaderP1_InitTS + D
 }
 
@@ -45,7 +45,7 @@ function TimeBound1bDeliveryPost() : Timestamp {
     TimeBound1aDelivery() + ProcessPacket + MaxQueueTime + D
 }
 
-function TimeBoundPhase1Leader(nextActionIndex:int) : Timestamp
+function TimeBoundPhase1LeaderPost(nextActionIndex:int) : Timestamp
     requires 0 <= nextActionIndex < 10
 {
     TimeBound1bDeliveryPost() + MaxQueueTime + TimeActionRange(nextActionIndex)

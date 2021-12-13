@@ -19,6 +19,7 @@ import P2 = RslPhase2Proof_PostFail_i
 
 predicate P1Assumption(ts:TimestampedRslState, opn:OperationNumber) {
     && CommonAssumptions(ts)
+    && NodeZeroCrashed(ts)
     && (var nextStep := ts.t_environment.nextStep; 
         nextStep.LEnvStepHostIos? ==>
             && (forall io | io in nextStep.ios :: !io.LIoOpTimeoutReceive?)
@@ -42,10 +43,12 @@ predicate LeaderAlwaysOne(ts:TimestampedRslState)
         :: ts.t_replicas[idx].v.replica.proposer.current_state == 0)
 }
 
-predicate OldLeaderCrashed(ts:TimestampedRslState, ts':TimestampedRslState)
+predicate NodeZeroCrashed(ts:TimestampedRslState)
     requires |ts.t_replicas| > 2 
+    requires RslConsistency(ts)
 {
-    forall idx, tios | TimestampedRslNextOneReplica(ts, ts', idx, tios) :: idx != 0
+    ts.t_environment.nextStep.LEnvStepHostIos?
+    ==> ts.t_environment.nextStep.actor != ts.constants.config.replica_ids[0]
 }
 
 
@@ -93,7 +96,7 @@ predicate AlwaysInvariantP1(ts:TimestampedRslState, opn:OperationNumber)
     // Proposer stuff
     && r.proposer.request_queue == []
     && r.proposer.election_state.current_view_suspectors == {}
-    && r.proposer.current_state == 2
+    && r.proposer.current_state == 1
     && r.proposer.election_state.current_view == Ballot(1, 1)
     && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
     && r.proposer.next_operation_number_to_propose == opn
@@ -107,11 +110,27 @@ predicate AlwaysInvariantP1(ts:TimestampedRslState, opn:OperationNumber)
 
 
 predicate PacketsBallotInvariant(ts:TimestampedRslState) {
-    forall pkt | pkt in ts.undeliveredPackets :: 
-    if pkt.msg.v.RslMessage_1a? then 
-        pkt.msg.v.bal_1a == Ballot(1, 1)
-    else if pkt.msg.v.RslMessage_1b? then
-        pkt.msg.v.bal_1b == Ballot(1, 1)
+    forall pkt | pkt in ts.undeliveredPackets :: ExistingPacketsBallot(pkt)
+}
+
+predicate ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
+    match pkt.msg.v {
+        // All 1a and 1b packets have Ballot (1, 1)
+        case RslMessage_1a(bal_1a)              => bal_1a == Ballot(1, 1) 
+        case RslMessage_1b(bal_1b,_,_)          => bal_1b == Ballot(1, 1) 
+        // All 2a and 2b messages have Ballot(1, 0) or (1, 1)
+        case RslMessage_2a(bal_2a,_,_)          => bal_2a == Ballot(1, 0)
+        case RslMessage_2b(bal_2b,_,_)          => bal_2b == Ballot(1, 0)
+
+        // Cases where I don't care
+        case RslMessage_Heartbeat(_,_,_)        => true
+        case RslMessage_Invalid                 => true
+        case RslMessage_Request(_,_)            => true
+        case RslMessage_Reply(_,_)              => true
+        case RslMessage_AppStateRequest(_,_)    => true
+        case RslMessage_AppStateSupply(_,_,_,_) => true
+        case RslMessage_StartingPhase2(_,_)     => true
+    }
 }
 
 
@@ -149,12 +168,13 @@ predicate Invariant(ts:TimestampedRslState, opn:OperationNumber)
 {
     var l := ts.t_replicas[1];
     var r := l.v.replica;
+    && 0 <= ts.t_replicas[1].v.nextActionIndex <= 9
 
     // Timestamps
-    && TimeLe(l.ts, TimeBoundPhase1Leader(l.v.nextActionIndex)) 
+    && TimeLe(l.ts, TimeBoundPhase1LeaderPost(l.v.nextActionIndex)) 
 
     && (forall pkt | pkt in ts.undeliveredPackets && IsNew1aPacket(pkt)
-        :: TimeLe(pkt.msg.ts, TimeBound1aDelivery()))
+        :: TimeLe(pkt.msg.ts, TimeBound1aDeliveryPost()))
 
     && (forall pkt | pkt in ts.undeliveredPackets && IsNew1bPacket(pkt)
         :: TimeLe(pkt.msg.ts, TimeBound1bDeliveryPost()))

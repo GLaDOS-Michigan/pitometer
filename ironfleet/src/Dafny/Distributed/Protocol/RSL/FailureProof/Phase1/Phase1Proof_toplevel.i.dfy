@@ -1,93 +1,51 @@
 include "Phase1Proof.i.dfy"
-include "../Phase2_PostFail/Phase2Proof_toplevel.i.dfy"
+include "../Phase2_PostFail/Phase2Proof.i.dfy"
+include "Phase1Proof_helper0.i.dfy"
 
 module RslPhase1Proof_Top {
 import opened RslPhase1Proof_i
-import opened RslPhase2Proof_PostFail_Top
+import P2 = RslPhase2Proof_PostFail_i
+
+import opened RslPhase1Proof_Helper0
 
 
-// This is actually the first state of Phase2
-predicate Phase2Begin(ts:TimestampedRslState, opn:OperationNumber)
-    requires |ts.t_replicas| > 2
-    requires RslConsistency(ts)
-{
-    var l := ts.t_replicas[1];
-    var r := l.v.replica;
-    && AlwaysInvariantP1(ts, opn)
-    && ExistingPacketsBallot(ts)
-    && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
-    && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
-    && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
-    && TimeLe(l.ts, NewLeaderP2_InitTS)     // leader timestamp
-    && l.v.nextActionIndex == 3          // leader action index is 3
-    && LeaderSet1bContainsRequest(ts)
-    && r.proposer.current_state == 2
-    && r.proposer.election_state.current_view == Ballot(1, 1)
-    && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
-    && opn == r.proposer.next_operation_number_to_propose
 
-    // Learner and Executor states
-    && opn == r.executor.ops_complete
-    && BalLt(r.learner.max_ballot_seen, Ballot(1, 1))
+/**** MAIN INVARIANT THEOREM ****/
+lemma PerfInvariantMaintained(s:TimestampedRslState, s':TimestampedRslState, opn:OperationNumber)
+    requires CommonAssumptions(s) && CommonAssumptions(s')
+    requires InPhase1(s)
+    requires InPhase1(s) ==> P1Assumption(s, opn)
+    requires InPhase1(s') ==> P1Assumption(s', opn)
+    requires TimestampedRslNext(s, s')
+    requires Phase1Invariant(s, opn)
+    ensures InPhase1(s') || InPhase2(s')
+    ensures InPhase1(s') ==> Phase1Invariant(s', opn)
+    ensures InPhase2(s') ==> P2.Phase2Invariant(s', opn)
+{   
+    PacketsBallotInvariant_Maintained(s, s', opn);
+
+    assume false;
+    // AlwaysInvariantP2_Maintained(s, s', opn);
+    
+    // if  && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
+    //     && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn)) 
+    // {
+    //     Before2a_to_MaybeBefore2b(s, s', opn);
+    // } else if (exists pkt :: pkt in s.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
+    //     && (!exists pkt :: pkt in s.t_environment.sentPackets && IsNew2bPacket(pkt, opn))  
+    // {
+    //     Before2b_to_MaybeAfter2b(s, s', opn);
+    // } else {
+    //     assert After_2b_Sent_Invariant(s, opn);
+    //     After2b_to_After2b(s, s', opn);
+    // }
+    // assert Phase2Invariant(s', opn);
 }
 
 
-
-predicate ExistingPacketsBallot(ts:TimestampedRslState) {
-    forall pkt | pkt in ts.undeliveredPackets ::
-    match pkt.msg.v {
-        // All 1a and 1b packets have Ballot (1, 1)
-        case RslMessage_1a(bal_1a)              => bal_1a == Ballot(1, 1) 
-        case RslMessage_1b(bal_1b,_,_)          => bal_1b == Ballot(1, 1) 
-        // All 2a and 2b messages have Ballot(1, 0) or (1, 1)
-        case RslMessage_2a(bal_2a,_,_)          => bal_2a == Ballot(1, 0)
-        case RslMessage_2b(bal_2b,_,_)          => bal_2b == Ballot(1, 0)
-
-        // Cases where I don't care
-        case RslMessage_Heartbeat(_,_,_)        => true
-        case RslMessage_Invalid                 => true
-        case RslMessage_Request(_,_)            => true
-        case RslMessage_Reply(_,_)              => true
-        case RslMessage_AppStateRequest(_,_)    => true
-        case RslMessage_AppStateSupply(_,_,_,_) => true
-        case RslMessage_StartingPhase2(_,_)     => true
-    }
-}
-
-predicate ExistingPacketsBallotOpn(ts:TimestampedRslState, opn:OperationNumber) {
-    forall pkt | pkt in ts.undeliveredPackets ::
-    match pkt.msg.v {
-        // All 1a and 1b packets have Ballot (1, 1)
-        case RslMessage_1a(bal_1a)              => true
-        case RslMessage_1b(bal_1b,_,_)          => true // votes specified in Always Invariant
-        case RslMessage_2a(bal_2a,_,_)          => pkt.msg.v.opn_2a == opn
-        case RslMessage_2b(bal_2b,_,_)          => pkt.msg.v.opn_2b == opn
-
-        // Cases where I don't care
-        case RslMessage_Heartbeat(_,_,_)        => true
-        case RslMessage_Invalid                 => true
-        case RslMessage_Request(_,_)            => true
-        case RslMessage_Reply(_,_)              => true
-        case RslMessage_AppStateRequest(_,_)    => true
-        case RslMessage_AppStateSupply(_,_,_,_) => true
-        case RslMessage_StartingPhase2(_,_)     => true
-    }
-}
-
-// Main invariant 
-predicate Phase1Invariant(ts:TimestampedRslState, opn:OperationNumber) 
-    requires |ts.t_replicas| > 2
-    requires RslConsistency(ts)
-{
-    && AlwaysInvariantP1(ts, opn)
-    && forall pkt | pkt in ts.t_environment.sentPackets :: !IsNewReplyPacket(ts, pkt)
-    && true // add more stuff
-}
-
-
-
+/*
 lemma Phase1TopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber) returns (startPhase2Idx:int)
-    requires forall i | 0 <= i < |tglb| :: P1Assumption(tglb[i])
+    requires forall i | 0 <= i < |tglb| :: P1Assumption(tglb[i], opn)
     requires forall i | 0 < i < |tglb| :: TimestampedRslNext(tglb[i - 1], tglb[i])
     // Phase1 lasts up till right before startPhase2Idx
     // startPhase2Idx is the initial state of phase 2
@@ -112,6 +70,31 @@ lemma Phase1TopLevel_Prototype(tglb:seq<TimestampedRslState>, opn:OperationNumbe
 {
     // TODO:
     assume false;
+}
+*/
+
+
+/*****************************************************************************************
+*                                         Lemmas                                         *
+*****************************************************************************************/
+
+
+/* Proof that PacketsBallotInvariant is maintained */
+lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber) 
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires InPhase1(ts)
+    requires InPhase1(ts) ==> P1Assumption(ts, opn)
+    requires InPhase1(ts') ==> P1Assumption(ts', opn)
+    requires TimestampedRslNext(ts, ts')
+    requires Phase1Invariant(ts, opn)
+    ensures PacketsBallotInvariant(ts')
+{
+    if TimestampedRslNextEnvironment(ts, ts') {
+        assert PacketsBallotInvariant(ts');
+        return;
+    }
+
+    // TODO
 }
 
 

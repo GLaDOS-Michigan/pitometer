@@ -1,7 +1,7 @@
 include "Phase2Proof.i.dfy"
 include "GenericLemmas.i.dfy"
 
-module Rs2Phase2Proof_PostFail_Helper0 {
+module RslPhase2Proof_PostFail_Helper0 {
 import opened RslPhase2Proof_PostFail_i
 import opened RslPhase2Proof_PostFail_Generic
 
