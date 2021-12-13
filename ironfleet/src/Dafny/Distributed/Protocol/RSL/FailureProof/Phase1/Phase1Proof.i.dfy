@@ -73,9 +73,17 @@ predicate QuorumOf2bPacketsImpliesValue(ts:TimestampedRslState, opn:OperationNum
     requires |ts.t_replicas| > 2 
 {
     var r := ts.t_replicas[1].v.replica;
-    LProposerCanNominateUsingOperationNumber(r.proposer, r.acceptor.log_truncation_point, r.proposer.next_operation_number_to_propose)
+    var s := r.proposer;
+    && |r.proposer.received_1b_packets| >= LMinQuorumSize(r.proposer.constants.all.config)
+    && LSetOfMessage1bAboutBallot(r.proposer.received_1b_packets, r.proposer.max_ballot_i_sent_1a)
     ==>
+    && r.acceptor.log_truncation_point == opn 
     && P2.AlwaysInvariantP2_RequestSrcAndBatchSize(ts, opn)
+    && LIsAfterLogTruncationPoint(opn, s.received_1b_packets)
+    && opn < UpperBoundedAddition(r.acceptor.log_truncation_point, s.constants.all.params.max_log_length, s.constants.all.params.max_integer_val)
+    && opn >= 0
+    && LtUpperBound(opn, s.constants.all.params.max_integer_val)
+    && !LAllAcceptorsHadNoProposal(r.proposer.received_1b_packets, r.proposer.next_operation_number_to_propose)
 }
 
 

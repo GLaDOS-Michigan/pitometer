@@ -2,6 +2,7 @@ include "Phase1Proof.i.dfy"
 include "../Phase2_PostFail/Phase2Proof.i.dfy"
 include "Phase1Proof_helper0.i.dfy"
 include "Phase1Proof_helper1.i.dfy"
+include "Phase1Proof_helper2.i.dfy"
 
 module RslPhase1Proof_Top {
 import opened RslPhase1Proof_i
@@ -9,6 +10,7 @@ import P2 = RslPhase2Proof_PostFail_i
 
 import opened RslPhase1Proof_Helper0
 import opened RslPhase1Proof_Helper1
+import opened RslPhase1Proof_Helper2
 
 
 
@@ -34,9 +36,7 @@ lemma PerfInvariantMaintained(ts:TimestampedRslState, ts':TimestampedRslState, o
     var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
     var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
     if nextActionIndex == 2 {
-        assume false;
-        //LProposerCanNominateUsingOperationNumber is the condition to go to phase 2
-        // Phase1_to_MaybePhase2(ts, ts', opn, idx, tios);
+        Phase1_to_MaybePhase2(ts, ts', opn, idx, tios);
     } else {
         Phase1_to_Phase1(ts, ts', opn, idx, tios);
     }

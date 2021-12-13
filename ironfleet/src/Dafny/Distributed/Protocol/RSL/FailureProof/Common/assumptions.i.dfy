@@ -16,6 +16,7 @@ import opened Common_Definitions
 
 predicate CommonAssumptions(ts:TimestampedRslState) {
     && RslConsistency(ts)
+    && TimestampStitching(ts)
     && NoPacketDuplication(ts)
     && NoExternalPackets(ts)
     && NoExternalSteps(ts)
@@ -25,6 +26,12 @@ predicate CommonAssumptions(ts:TimestampedRslState) {
     && ts.t_replicas[1].v.replica.proposer.constants.all.params.max_batch_size > 0
     && ts.constants.params.max_batch_size == 1
 }
+
+
+predicate TimestampStitching(ts:TimestampedRslState) {
+    TimeBoundPhase1LeaderPost(3) == NewLeaderP2_InitTS
+}
+
 
 predicate NoExternalPackets(ts:TimestampedRslState) {
     forall pkt | pkt in ts.undeliveredPackets ::
