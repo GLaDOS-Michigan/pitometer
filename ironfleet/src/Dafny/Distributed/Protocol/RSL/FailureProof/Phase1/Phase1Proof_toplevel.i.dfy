@@ -1,12 +1,14 @@
 include "Phase1Proof.i.dfy"
 include "../Phase2_PostFail/Phase2Proof.i.dfy"
 include "Phase1Proof_helper0.i.dfy"
+include "Phase1Proof_helper1.i.dfy"
 
 module RslPhase1Proof_Top {
 import opened RslPhase1Proof_i
 import P2 = RslPhase2Proof_PostFail_i
 
 import opened RslPhase1Proof_Helper0
+import opened RslPhase1Proof_Helper1
 
 
 
@@ -93,8 +95,13 @@ lemma PacketsBallotInvariant_Maintained(ts:TimestampedRslState, ts':TimestampedR
         assert PacketsBallotInvariant(ts');
         return;
     }
-
-    // TODO
+    var idx, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>> :| TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    var nextActionIndex := ts.t_replicas[idx].v.nextActionIndex;
+    if nextActionIndex == 0 {
+        PacketsBallotInvariant_ReceiveStep(ts, ts', opn, idx, tios);
+    } else {
+        PacketsBallotInvariant_NoReceiveStep(ts, ts', opn, idx, tios);
+    }
 }
 
 
