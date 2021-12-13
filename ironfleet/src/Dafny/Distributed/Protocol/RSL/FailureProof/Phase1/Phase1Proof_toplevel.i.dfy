@@ -18,7 +18,7 @@ predicate Phase2Begin(ts:TimestampedRslState, opn:OperationNumber)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2aPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
-    && TimeLe(l.ts, NewLeaderInitTS)     // leader timestamp
+    && TimeLe(l.ts, NewLeaderP2_InitTS)     // leader timestamp
     && l.v.nextActionIndex == 3          // leader action index is 3
     && LeaderSet1bContainsRequest(ts)
     && r.proposer.current_state == 2

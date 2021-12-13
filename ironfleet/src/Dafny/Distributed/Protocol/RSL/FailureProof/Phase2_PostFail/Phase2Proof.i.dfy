@@ -49,24 +49,6 @@ predicate PerformanceGuarantee_2a(ts:TimestampedRslState, opn:OperationNumber) {
     :: TimeLe(pkt.msg.ts, TimeBound2aDeliveryPost())
 }
 
-function TimeBound2aDeliveryPost() : Timestamp {
-    NewLeaderInitTS + MbeP2a + D
-}
-
-function TimeBound2bDeliveryPost() : Timestamp {
-    TimeBound2aDeliveryPost() + ProcessPacket + MaxQueueTime + D
-}
-
-function TimeBoundPhase2LeaderPost(nextActionIndex:int) : Timestamp
-    requires 0 <= nextActionIndex < 10
-{
-  TimeBound2bDeliveryPost() + MaxQueueTime + TimeActionRange(nextActionIndex)
-}
-
-function TimeBoundReplyFinal() : Timestamp {
-    TimeBoundPhase2LeaderPost(7) + D
-}
-
 /*****************************************************************************************
 *                                     Assumptions                                        *
 *****************************************************************************************/
@@ -87,21 +69,7 @@ predicate P2Assumption(ts:TimestampedRslState, opn:OperationNumber) {
     && SelfDelivery + TimeActionRange(0) < D
 }
 
-predicate NewLeaderDoesNotProposeFurtherOps(ts:TimestampedRslState, opn:OperationNumber) 
-    requires |ts.t_replicas| > 2 
-{
-    ts.t_replicas[1].v.replica.proposer.constants.all.params.max_integer_val == UpperBoundFinite(opn + 1)
-}
 
-/* Assume that the leader does not receive leftover 2b packets from before leader election */
-predicate NewLeaderDoesNotReceiveOld2a2b(ts:TimestampedRslState) 
-    requires |ts.t_replicas| > 2 
-{
-    var nextStep := ts.t_environment.nextStep;
-    nextStep.LEnvStepHostIos? ==>
-    && (forall io | io in nextStep.ios && io.LIoOpReceive? && io.r.msg.v.RslMessage_2b? :: io.r.msg.v.bal_2b != Ballot(1, 0))
-    && (forall io | io in nextStep.ios && io.LIoOpReceive? && io.r.msg.v.RslMessage_2a? :: io.r.msg.v.bal_2a != Ballot(1, 0))
-}
 
 predicate LeaderAlwaysOne(ts:TimestampedRslState) 
     requires |ts.t_replicas| > 2
@@ -209,18 +177,6 @@ predicate ExistingPacketsBallot(pkt:TimestampedLPacket<EndPoint, RslMessage>) {
 }
 
 
-predicate All2aPackets_BalLeq_Opn(ts:TimestampedRslState, ballot:Ballot, opn:OperationNumber) {
-    forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2a?
-    ::  && BalLeq(pkt.msg.v.bal_2a, ballot)
-        && pkt.msg.v.opn_2a == opn
-}
-
-predicate All2bPackets_BalLeq_Opn(ts:TimestampedRslState, ballot:Ballot, opn:OperationNumber) {
-    forall pkt | pkt in ts.t_environment.sentPackets && pkt.msg.v.RslMessage_2b?
-    ::  && BalLeq(pkt.msg.v.bal_2b, ballot)
-        && pkt.msg.v.opn_2b == opn
-}
-
 // Things that are true before 2a packets are sent out by the leader
 predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber) 
     requires |ts.t_replicas| > 2
@@ -234,7 +190,7 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
     // && PerformanceGuarantee_Response(ts)
-    && TimeLe(l.ts, NewLeaderInitTS)     // leader timestamp
+    && TimeLe(l.ts, NewLeaderP2_InitTS)     // leader timestamp
     && l.v.nextActionIndex == 3          // leader action index is 3
     && LeaderSet1bContainsRequest(ts)
     && r.proposer.current_state == 2

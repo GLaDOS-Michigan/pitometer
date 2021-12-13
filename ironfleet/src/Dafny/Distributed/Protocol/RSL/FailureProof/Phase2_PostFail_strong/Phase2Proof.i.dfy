@@ -50,7 +50,7 @@ predicate PerformanceGuarantee_2a(ts:TimestampedRslState, opn:OperationNumber) {
 }
 
 function TimeBound2aDeliveryPost() : Timestamp {
-    NewLeaderInitTS + MbeP2a + D
+    NewLeaderP2_InitTS + MbeP2a + D
 }
 
 function TimeBound2bDeliveryPost() : Timestamp {
@@ -230,7 +230,7 @@ predicate Before_2a_Sent_Invariant(ts:TimestampedRslState, opn:OperationNumber)
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNew2bPacket(pkt, opn))
     && (!exists pkt :: pkt in ts.t_environment.sentPackets && IsNewReplyPacket(ts, pkt))
     // && PerformanceGuarantee_Response(ts)
-    && TimeLe(l.ts, NewLeaderInitTS)     // leader timestamp
+    && TimeLe(l.ts, NewLeaderP2_InitTS)     // leader timestamp
     && l.v.nextActionIndex == 3          // leader action index is 3
     && LeaderSet1bContainsRequest(ts)
     && r.proposer.current_state == 2

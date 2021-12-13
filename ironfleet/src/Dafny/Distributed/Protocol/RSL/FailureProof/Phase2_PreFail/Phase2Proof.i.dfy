@@ -90,7 +90,7 @@ predicate LeaderAlwaysZero(ts:TimestampedRslState)
 /* Timestamp of initial client request */
 ghost const req_time:Timestamp
 /* Initial timestamp of replica 1 */
-ghost const NewLeaderInitTS:Timestamp
+ghost const NewLeaderP2_InitTS:Timestamp
 
 predicate LeaderRequestQueueContainsRequest(ts:TimestampedRslState) 
     requires |ts.t_replicas| > 2

@@ -52,4 +52,20 @@ predicate BoundedQueueingAssumption(ts:TimestampedRslState)
     )
 }
 
+/* Assume that the leader does not receive leftover 2b packets from before leader election */
+predicate NewLeaderDoesNotReceiveOld2a2b(ts:TimestampedRslState) 
+    requires |ts.t_replicas| > 2 
+{
+    var nextStep := ts.t_environment.nextStep;
+    nextStep.LEnvStepHostIos? ==>
+    && (forall io | io in nextStep.ios && io.LIoOpReceive? && io.r.msg.v.RslMessage_2b? :: io.r.msg.v.bal_2b != Ballot(1, 0))
+    && (forall io | io in nextStep.ios && io.LIoOpReceive? && io.r.msg.v.RslMessage_2a? :: io.r.msg.v.bal_2a != Ballot(1, 0))
+}
+
+predicate NewLeaderDoesNotProposeFurtherOps(ts:TimestampedRslState, opn:OperationNumber) 
+    requires |ts.t_replicas| > 2 
+{
+    ts.t_replicas[1].v.replica.proposer.constants.all.params.max_integer_val == UpperBoundFinite(opn + 1)
+}
+
 }
