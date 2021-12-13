@@ -25,8 +25,8 @@ import opened FailureDetection_helper0_i
 
 lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires EpochDelayInv(s)
+  requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -55,10 +55,8 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
       assert RequestsMatch(req, newReq);
 
       if s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [req] {
+        reveal_TBEpoch1();
         assert NonSuspector1(s', j);
-        // Could assume that this doesn't happen? I.e. that the request has
-        // been received by everyone in the initial state with time 0.
-        // FIXME: prove TimeLe using EpochQD
         return;
       }
     }
@@ -70,8 +68,8 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
 lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires EpochDelayInv(s)
+  requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -186,6 +184,7 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   requires InView1(s, sr);
   requires j !in sr;
   requires NonSuspector2(s, j);
+  requires LeaderView0(s')
 
   // If j is added to sr, then j must be the leader.
   ensures
@@ -245,7 +244,6 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
 
-  // TODO: bundle these together?
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
 
@@ -327,11 +325,13 @@ lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<i
   requires InView1(s, sr);
   requires j in sr;
   requires Suspector(s, j);
+  requires LeaderView0(s');
 
   ensures Suspector(s', j);
 {
-  // FIXME: can reach final state from here
-  // assert s'.t_replicas[1] == s.t_replicas[1];
+  if j != 1 {
+    assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
+  }
   SubsetCardinality(s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors, sr);
 }
 
@@ -352,12 +352,39 @@ lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set
   requires j in sr;
   requires Suspector(s, j);
 
+  requires LeaderView0(s');
+
   ensures Suspector(s', j) || FinalStage(s);
 {
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
     if (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors) {
       assert Suspector(s', j);
     } else {
+      var pkt :|
+        && pkt in s.undeliveredPackets
+        && pkt.msg.v.RslMessage_Heartbeat?
+        && pkt.src == s.constants.config.replica_ids[j]
+        && pkt.dst == s.constants.config.replica_ids[1]
+        && pkt.msg.v.suspicious == true
+        && TimeLe(pkt.msg.ts, TBFirstSuspectingHB());
+
+      var t_ios := s.t_environment.nextStep.ios;
+      var ios := UntagLIoOpSeq(t_ios);
+
+      assert forall k :: 0 < k < |ios| ==> !ios[k].LIoOpReceive?;
+
+      if t_ios[0].LIoOpReceive? && t_ios[0].r == pkt {
+        lemma_GetReplicaIndexIsUnique(s.constants.config, j);
+        assert s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors ==
+          s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors + {j};
+        assert s'.t_replicas[j].v.replica.constants.my_index == j;
+        assert (s'.t_replicas[j].v.replica.constants.my_index in s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors);
+        return;
+      }
+      assert pkt !in (set io | io in t_ios && io.LIoOpReceive? :: io.r);
+      assert pkt in s'.undeliveredPackets;
+      // might receive packet and remove it from undeliveredPackets
       assert Suspector(s', j);
     }
   } else if s.t_environment.nextStep.nodeStep == RslStep(8) {

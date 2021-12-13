@@ -94,6 +94,15 @@ lemma EpochTimeoutQDInductive(s:TimestampedRslState, s':TimestampedRslState, j:i
   }
 }
 
+predicate EpochDelayInv(s:TimestampedRslState)
+{
+  && (forall idx :: && 0 <= idx < |s.t_replicas| ==>
+    s.t_replicas[idx].v.replica.proposer.election_state.epoch_end_time >= 0 // so it's a valid Timestamp
+    && TimeLe(s.t_replicas[idx].v.replica.proposer.election_state.epoch_end_time,
+     s.t_replicas[idx].ts + EpochLength)
+    )
+}
+
 // Hearbeat delay invariant; self-contained
 predicate HeartbeatDelayInv(s:TimestampedRslState)
 {
@@ -119,8 +128,9 @@ predicate HeartbeatQDInv(s:TimestampedRslState)
 
 predicate DelayInvs(s:TimestampedRslState)
 {
-  && HeartbeatDelayInv(s)
   && EpochTimeoutQDInv(s)
+  && EpochDelayInv(s)
+  && HeartbeatDelayInv(s)
   && HeartbeatQDInv(s)
 }
 

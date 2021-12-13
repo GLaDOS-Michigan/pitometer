@@ -252,38 +252,82 @@ lemma InView1Local_leader_quorum(s:TimestampedRslState, s':TimestampedRslState, 
 
   ensures LeaderQuorumBound(s')
 {
+  reveal_TBJustBeforeNewView();
+  reveal_ActionsUpTo();
+  reveal_TBFirstSuspectingHB();
+  reveal_HBPeriodEnd();
   SubsetCardinality(s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors, sr);
-  if j == 1 {
-    if s.t_environment.nextStep.nodeStep == RslStep(7) && |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
-      // Leader takes a local step that gives it a quorum.
-      // This can only happen if the epoch2 timer is expired.
-      // epoch_end <= Epoch2
-      // t <= epoch_end + EpochQD(7)
-      // --> t' <= Epoch2 + EpochQD(7) + RslStep(7)
-      reveal_TBJustBeforeNewView();
-      reveal_ActionsUpTo();
-      reveal_TBFirstSuspectingHB();
-      reveal_HBPeriodEnd();
-      assert LeaderQuorumBound(s');
+  if j != 1 {
+    assert LeaderQuorumBound(s');
+    return;
+  }
+
+  // If already have quorum, then just maintain bound
+  if |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
+    // already have quorum, just maintain timestamp
+    assert LeaderQuorumBound(s');
+    return;
+  }
+
+  if s.t_environment.nextStep.nodeStep == RslStep(7) && |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
+    // Leader takes a local step that gives it a quorum.
+    // This can only happen if the epoch2 timer is expired.
+    // epoch_end <= Epoch2
+    // t <= epoch_end + EpochQD(7)
+    // --> t' <= Epoch2 + EpochQD(7) + RslStep(7)
+    assert s.t_replicas[1].v.replica.constants.my_index !in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
+    assert s'.t_replicas[1].v.replica.constants.my_index in s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
+    if s.t_replicas[1].v.replica.constants.my_index in sr {
+      assert s.t_replicas[1].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
+      assert false;
+    }
+    assert s.t_replicas[1].v.replica.constants.my_index !in sr;
+    if NonSuspector1(s, 1) || NonSuspector0(s, 1) {
+      assert s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors == s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
+      assert false;
       return;
-    } else if s.t_environment.nextStep.nodeStep == RslStep(0) {
-      // Leader receives a packet that gives it a quorum.
-      var ios := s.t_environment.nextStep.ios;
-      if ios[0].LIoOpReceive?  {
-        if ios[0].r.msg.v.RslMessage_Heartbeat? {
-          if ios[0].r.msg.v.suspicious {
-            // FIXME: have to make argument here that the packet is brand new.
-            reveal_TBJustBeforeNewView();
-            assert LeaderQuorumBound(s');
+    }
+    assert NonSuspector2(s, 1);
+    assert LeaderQuorumBound(s');
+    return;
+  } else if s.t_environment.nextStep.nodeStep == RslStep(0) {
+    // Leader receives a packet that gives it a quorum.
+    var ios := s.t_environment.nextStep.ios;
+    if ios[0].LIoOpReceive?  {
+      if ios[0].r.msg.v.RslMessage_Heartbeat? {
+        if ios[0].r.msg.v.suspicious {
+          assert ios[0].r.src in s.constants.config.replica_ids;
+          var k := GetReplicaIndex(ios[0].r.src, s.constants.config);
+          if k in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors {
             return;
           }
+
+          if k !in sr {
+            assert NotKnownSuspector(s, k);
+            assert false;
+            return;
+          }
+          assert Suspector(s, k);
+          var pkt :|
+            && pkt in s.undeliveredPackets
+            && pkt.msg.v.RslMessage_Heartbeat?
+            && pkt.src == s.constants.config.replica_ids[k]
+            && pkt.dst == s.constants.config.replica_ids[1]
+            && pkt.msg.v.suspicious == true
+            && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
+            ;
+
+          reveal_PacketDeliveredInOrder();
+          assert TimeLe(ios[0].r.msg.ts, TBFirstSuspectingHB());
+          reveal_TBJustBeforeNewView();
+          assert LeaderQuorumBound(s');
+          return;
         }
       }
     }
   }
-  assert s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors ==
-    s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
   assert LeaderQuorumBound(s');
+  return;
 }
 
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
@@ -340,6 +384,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires TimestampedRslNextOneReplica(s, s', 1, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
+  requires LeaderView0(s');
   ensures InView1Local(s', k, k in sr)
 {
   assert ReplicasDistinct(s.constants.config.replica_ids, k, 1);
@@ -386,6 +431,7 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set
     return;
   }
 
+  assert ReplicasDistinct(s.constants.config.replica_ids, j, 1);
   forall k | 0 <= k < |s'.t_replicas|
     ensures InView1Local(s', k, k in sr')
   {

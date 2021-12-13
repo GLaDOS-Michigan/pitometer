@@ -13,9 +13,11 @@ module FailureHelpers_i {
 import opened TimestampedRslSystem_i
 import opened CommonProof__Constants_i
 
+ghost const RequestTime:Timestamp
+
 function {:opaque} TBEpoch1() : Timestamp
 {
-  0
+  RequestTime + MaxQueueTime + EpochLength
 }
 
 function {:opaque} TBEpoch2() : Timestamp
