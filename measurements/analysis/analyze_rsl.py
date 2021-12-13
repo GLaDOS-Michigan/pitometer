@@ -446,7 +446,7 @@ def plot_client_figures(name, root, data, start_end_data):
                 durations_milli = data[t]
                 
                 # Filter out anomalous points
-                durations_milli = [x for x in durations_milli if x < 50]
+                durations_milli = [x for x in durations_milli if x < 100]
                 
                 if len(trial_page) == 1:
                     this_ax = axes
