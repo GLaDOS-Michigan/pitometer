@@ -20,33 +20,67 @@ function {:opaque} TBEpoch1() : Timestamp
 
 function {:opaque} TBEpoch2() : Timestamp
 {
-  0
+  TBEpoch1() + EpochQD(7) + StepToTimeDelta(RslStep(7)) + EpochLength
 }
 
-// TODO: move these to a different file
 function {:opaque} EpochQD(nextActionIndex:int) : Timestamp
 {
-  0
+  if nextActionIndex == 8 then
+    StepToTimeDelta(RslStep(7))
+  else if nextActionIndex == 9 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8))
+  else if nextActionIndex == 0 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9))
+  else if nextActionIndex == 1 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0))
+  else if nextActionIndex == 2 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0)) + StepToTimeDelta(RslStep(1))
+  else if nextActionIndex == 3 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0)) + StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2))
+  else if nextActionIndex == 4 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0)) + StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) +
+    StepToTimeDelta(RslStep(3))
+  else if nextActionIndex == 5 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0)) + StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) +
+    StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4))
+  else if nextActionIndex == 6 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0)) + StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) +
+    StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5))
+  else if nextActionIndex == 7 then
+    StepToTimeDelta(RslStep(7)) + StepToTimeDelta(RslStep(8)) + StepToTimeDelta(RslStep(9)) +
+    Timeout() +
+    StepToTimeDelta(RslStep(0)) + StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) +
+    StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5)) +
+    StepToTimeDelta(RslStep(6))
+  else
+    0
 }
 
-function {:opaque} FirstEpochEnd() : Timestamp
+function {:opaque} HeartbeatQD(nextActionIndex:int) : Timestamp
 {
   0
-}
-
-function {:opaque} SecondEpochEnd() : Timestamp
-{
-  FirstEpochEnd() // + EpochLength() + TimeActionRange(0)
 }
 
 function {:opaque} HBPeriodEnd() : Timestamp
 {
-  SecondEpochEnd() // + HBPeriod()
+  TBEpoch2() + EpochQD(7) + StepToTimeDelta(RslStep(7)) + HBPeriod
 }
 
 function {:opaque} TBFirstSuspectingHB() : Timestamp
 {
-  SecondEpochEnd() // + HBPeriod() + TimeActionRange(0) + D
+  HBPeriodEnd() + HeartbeatQD(9) + StepToTimeDelta(RslStep(9)) + D
 }
 
 function {:opaque} TBBecomeSuspector() : Timestamp
@@ -54,26 +88,69 @@ function {:opaque} TBBecomeSuspector() : Timestamp
   0 // TODO
 }
 
-function {:opaque} TBJustBeforeNewView() : Timestamp
+// function {:opaque} TBJustBeforeNewView() : Timestamp
+// {
+  // TBEpoch2() + EpochQD(7) + StepToTimeDelta(RslStep(7))
+// }
+
+function {:opaque} ActionsUpTo(nextActionIndex:int) : Timestamp
 {
-  0 // TODO
+  if nextActionIndex == 1 then
+    StepToTimeDelta(RslStep(0)) + Timeout()
+  else if nextActionIndex == 2 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1))
+  else if nextActionIndex == 3 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2))
+  else if nextActionIndex == 4 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3))
+  else if nextActionIndex == 5 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4))
+  else if nextActionIndex == 6 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5))
+  else if nextActionIndex == 7 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6))
+  else if nextActionIndex == 8 then
+    StepToTimeDelta(RslStep(0)) + Timeout() +
+    StepToTimeDelta(RslStep(1)) + StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) +
+    StepToTimeDelta(RslStep(4)) + StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6)) +
+    StepToTimeDelta(RslStep(7))
+  else
+    0 // don't care about these cases
 }
 
-function {:opaque} TBFirstNewViewHB() : Timestamp
+function {:opaque} TBJustBeforeNewView(nextActionIndex:int) : Timestamp
 {
-  0 // TODO
+  TBFirstSuspectingHB() + MaxQueueTime + ActionsUpTo(nextActionIndex)
 }
 
-function {:opaque} FailoverTime() : Timestamp
+function {:opaque} TBNewView() : Timestamp
 {
-  0
+  TBJustBeforeNewView(8) + StepToTimeDelta(RslStep(8))
 }
 
-lemma EpochQDHelper(t:Timestamp, t':Timestamp, epoch_end:Timestamp)
-  requires TimeLe(t, epoch_end + EpochQD(7));
+lemma EpochQDHelper(t:Timestamp, t':Timestamp)
+  requires TimeLe(t, TBEpoch1() + EpochQD(7));
   requires TimeLe(t', t + StepToTimeDelta(RslStep(7)))
   ensures TimeLe(t' + EpochLength, TBEpoch2());
 {
+  reveal_TBEpoch2();
+}
+
+lemma HeartbeatQDHelper(t:Timestamp, t':Timestamp)
+  requires TimeLe(t, HBPeriodEnd() + HeartbeatQD(9));
+  requires TimeLe(t', t + StepToTimeDelta(RslStep(9)))
+  ensures TimeLe(t' + D, TBFirstSuspectingHB());
+{
+  reveal_TBFirstSuspectingHB();
 }
 
 }

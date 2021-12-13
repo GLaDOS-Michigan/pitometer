@@ -86,12 +86,19 @@ predicate EpochLengthAssumption(s:TimestampedRslState)
 
 }
 
+predicate HBPeriodAssumption(s:TimestampedRslState)
+{
+  s.constants.params.heartbeat_period == HBPeriod
+}
+
 predicate FOAssumption(s:TimestampedRslState)
 {
   && CommonAssumptions(s)
   && NoStateTransfer(s)
   && OneAndOnlyOneRequest(s)
   && NonLeadersView1(s)
+  && EpochLengthAssumption(s)
+  && HBPeriodAssumption(s)
 }
 
 predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
@@ -101,12 +108,16 @@ predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
   // XXX: shouldn't need to assume this, pretty trivial
   && s.constants.config.replica_ids == s'.constants.config.replica_ids
   && ClockAssumption(s, s')
-  && EpochLengthAssumption(s)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main invariants
 ////////////////////////////////////////////////////////////////////////////////
+
+predicate LeaderView0(s:TimestampedRslState)
+{
+  s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
+}
 
 // "suspecting_replicas"
 predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<int>)
@@ -137,7 +148,6 @@ predicate InView1Packets(s:TimestampedRslState)
   )
 }
 
-// TODO: probably want a InV2Local without the else case
 predicate InView1Local(s:TimestampedRslState, j:int, sus:bool)
   requires RslConsistency(s)
   requires 0 <= j < |s.t_replicas|
@@ -163,7 +173,9 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
-  && |suspecting_replicas| < LMinQuorumSize(s.constants.config)
+
+  && LeaderQuorumBound(s)
+  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
 
   && InView1Packets(s)
   && CurrView(s)
@@ -172,30 +184,14 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   )
 }
 
-predicate InView2Local(s:TimestampedRslState, j:int, sus:bool)
-  requires RslConsistency(s)
+predicate FinalStage(s:TimestampedRslState)
 {
-  if sus then
-    Suspector(s, j)
-  else
-    true
-}
-
-predicate InView2(s:TimestampedRslState, suspecting_replicas:set<int>)
-  requires RslConsistency(s)
-{
-  SuspectingReplicaInv(s, suspecting_replicas)
-  && |suspecting_replicas| >= LMinQuorumSize(s.constants.config)
-  && (
-    forall j :: 0 <= j < |s.t_replicas| ==> InView1Local(s, j, j in suspecting_replicas)
-  )
-  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
-}
-
-predicate FinalState(s:TimestampedRslState)
-{
-  // could reach here by recv'ing a suspecting HB or by becoming a suspector
-  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 0)
+  && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
+  && TimeLe(s.t_replicas[1].ts, TBNewView())
+  // FIXME: this should maintain that leader.current_state != 2, up until it is.
+  // That should help prove a bound on the 1a packets that are sent out
+  // Also should add requirement that no reply packet is sent to the client.
+  // Probably gonna have to assume no executions for that.
 }
 
 predicate HBUnsent(s:TimestampedRslState, j:int)
@@ -241,7 +237,6 @@ predicate NonSuspector1(s:TimestampedRslState, j:int)
   requires 0 <= j < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|
 {
-
   var suspectors := s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors;
   && s.t_replicas[j].v.replica.constants.my_index !in suspectors
   && s.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [req]
@@ -287,6 +282,14 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
   )
   || (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
+}
+
+predicate LeaderQuorumBound(s:TimestampedRslState)
+{
+  && (
+    |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s.constants.config) ==>
+    TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
+  )
 }
 
 }

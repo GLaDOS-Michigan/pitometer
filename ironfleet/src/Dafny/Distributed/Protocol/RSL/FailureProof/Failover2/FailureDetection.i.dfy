@@ -42,10 +42,11 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
+  requires LeaderView0(s'); // assume that the leader doesn't enter the new view on this step
 
   requires j !in sr;
   requires NonSuspector1(s, j);
-  ensures  NonSuspector1(s', j);
+  ensures NonSuspector1(s', j);
   ensures NotKnownSuspector(s', j);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
@@ -113,6 +114,12 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
     var r := s.t_replicas[j].v.replica;
     // assert r.proposer.election_state.current_view_suspectors <= sr;
     SubsetCardinality(r.proposer.election_state.current_view_suspectors, sr);
+    // if s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch != [req] {
+      // assert s'.t_replicas[j].v.replica.proposer.election_state.requests_received_this_epoch == [];
+      // assert NonSuspector0(s', j);
+    // } else {
+      // assert NonSuspector1(s', j);
+    // }
     // assert |r.proposer.election_state.current_view_suspectors| <= |sr|;
     // assert |sr| < LMinQuorumSize(s.constants.config);
     // assert |r.proposer.election_state.current_view_suspectors| < LMinQuorumSize(s.constants.config);
@@ -145,9 +152,6 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
     var es' := s'.t_replicas[j].v.replica.proposer.election_state;
     var batch := s.t_replicas[j].v.replica.executor.next_op_to_execute.v;
     if ElectionStateReflectExecutedRequestBatch(es, es', batch) {
-      // FIXME: things can only get removed; this should be easy to prove
-      // This works if we that reqs' <= reqs, which is true because the
-      // sequence has at most one elt in it
       lemma_RemoveExecutedRequestBatchProducesSubsequence(
       es'.requests_received_this_epoch,
       es.requests_received_this_epoch,
@@ -198,7 +202,7 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
   if clock.t < es.epoch_end_time {
     assert NonSuspector1(s', j);
   } else {
-    EpochQDHelper(s.t_replicas[j].ts, s'.t_replicas[j].ts, es.epoch_end_time);
+    EpochQDHelper(s.t_replicas[j].ts, s'.t_replicas[j].ts);
     // var t' := s'.t_replicas[j].v.replica.proposer.election_state.epoch_end_time;
     // assert t' <= clock.t + EpochLength;
     assert NonSuspector2(s', j);
@@ -220,7 +224,9 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   requires j !in sr;
   requires NonSuspector1(s, j);
 
-  ensures  NonSuspector1(s', j) || NonSuspector0(s', j) || NonSuspector2(s', j);
+  requires LeaderView0(s'); // assume that the leader doesn't enter the new view on this step
+
+  ensures NonSuspector1(s', j) || NonSuspector0(s', j) || NonSuspector2(s', j);
   ensures NotKnownSuspector(s', j);
 {
   var step := s.t_environment.nextStep.nodeStep;
@@ -233,10 +239,58 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
   }
 }
 
+lemma InView1Local_leader_quorum(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
+  requires FOAssumption2(s, s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+  requires InView1(s, sr);
+  requires LeaderView0(s');
+
+  ensures LeaderQuorumBound(s')
+{
+  SubsetCardinality(s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors, sr);
+  if j == 1 {
+    if s.t_environment.nextStep.nodeStep == RslStep(7) && |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
+      // Leader takes a local step that gives it a quorum.
+      // This can only happen if the epoch2 timer is expired.
+      // epoch_end <= Epoch2
+      // t <= epoch_end + EpochQD(7)
+      // --> t' <= Epoch2 + EpochQD(7) + RslStep(7)
+      reveal_TBJustBeforeNewView();
+      reveal_ActionsUpTo();
+      reveal_TBFirstSuspectingHB();
+      reveal_HBPeriodEnd();
+      assert LeaderQuorumBound(s');
+      return;
+    } else if s.t_environment.nextStep.nodeStep == RslStep(0) {
+      // Leader receives a packet that gives it a quorum.
+      var ios := s.t_environment.nextStep.ios;
+      if ios[0].LIoOpReceive?  {
+        if ios[0].r.msg.v.RslMessage_Heartbeat? {
+          if ios[0].r.msg.v.suspicious {
+            // FIXME: have to make argument here that the packet is brand new.
+            reveal_TBJustBeforeNewView();
+            assert LeaderQuorumBound(s');
+            return;
+          }
+        }
+      }
+    }
+  }
+  assert s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors ==
+    s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
+  assert LeaderQuorumBound(s');
+}
+
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
+
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -245,6 +299,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
+  requires LeaderView0(s');
 
   ensures SuspectingReplicaInv(s', sr');
   ensures InView1Local(s', j, j in sr');
@@ -253,8 +308,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
   sr' := sr;
   var sus := j in sr;
   if sus {
-    // assert false; // TODO: use lemma
-    assert Suspector(s', j);
+    Suspector_ind_self(s, s', sr, j);
     return;
   }
 
@@ -267,7 +321,6 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
     // if j == 1, it has a change of becoming a known suspector in this case
     sr' := NonSuspector2_ind(s, s', sr, j);
   } else {
-    assert InternalSuspector3(s, j);
     // j has a change of becoming a known suspector in this case
     sr' := InternalSuspector3_ind(s, s', sr, j);
   }
@@ -277,6 +330,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
   requires EpochTimeoutQDInv(s')
+
   requires 0 <= k < |s.constants.config.replica_ids|;
   requires k != 1
 
@@ -288,14 +342,19 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
   requires InView1(s, sr);
   ensures InView1Local(s', k, k in sr)
 {
-  // FIXME: involves maintaining Suspector(j)
-  assert false;
+  assert ReplicasDistinct(s.constants.config.replica_ids, k, 1);
+  if k in sr {
+    Suspector_ind_leader(s, s', sr, k);
+  } else {
+    assert InView1Local(s', k, k in sr);
+  }
 }
 
 lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
+
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -304,11 +363,16 @@ lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
+  requires LeaderView0(s');
 
   ensures  SuspectingReplicaInv(s', sr')
   ensures  forall k :: 0 <= k < |s'.t_replicas| ==> InView1Local(s', k, k in sr');
+
+  // this needs to only be proven in the case that a leader takes a step
+  ensures LeaderQuorumBound(s');
 {
   sr' := InView1Local_self_ind(s, s', sr, j);
+  InView1Local_leader_quorum(s, s', sr, j);
   // Also use InV1L_leader_ind
   if j == 1 {
     forall k | 0 <= k < |s'.t_replicas|
@@ -355,20 +419,21 @@ lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
+  requires LeaderView0(s');
   requires InView1(s, sr);
   ensures  CurrView(s')
 {
-  if s.t_environment.nextStep.nodeStep == RslStep(8) {
+  SubsetCardinality(s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors, sr);
+  // if s.t_environment.nextStep.nodeStep == RslStep(8) {
     // have to use subset cardinality argument
-    SubsetCardinality(s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors, sr);
-    assert CurrView(s');
-  }
+    // assert CurrView(s');
+  // }
 }
 
-lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
+lemma LeaderEntersNewView(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -376,28 +441,45 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
-  ensures  InView1(s', sr') || InView2(s', sr');
+  requires !LeaderView0(s')
+  ensures FinalStage(s')
 {
-  sr' := InView1Local_all_ind(s, s', sr, j);
+  reveal_TBNewView();
+}
 
-  if |sr'| < LMinQuorumSize(s.constants.config) {
+lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
+  requires FOAssumption2(s, s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
+
+  requires 0 <= j < |s.constants.config.replica_ids|;
+  requires s.t_environment.nextStep.LEnvStepHostIos?;
+  requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
+  requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
+
+  requires InView1(s, sr);
+  ensures  InView1(s', sr') || FinalStage(s');
+{
+  if LeaderView0(s') {
+    sr' := InView1Local_all_ind(s, s', sr, j);
     InView1_to_Packets(s, s', j, sr);
     InView1_to_CurrView(s, s', j, sr);
+    SubsetCardinality(s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors, sr);
     assert InView1(s', sr');
   } else {
-    SubsetCardinality(s.t_replicas[j].v.replica.proposer.election_state.current_view_suspectors, sr);
-    assert InView2(s', sr');
+    LeaderEntersNewView(s, s', j, sr);
   }
 }
 
 lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) returns (sr':set<int>)
   requires FOAssumption2(s, s')
-  requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  requires DelayInvs(s)
+  requires DelayInvs(s')
+
   requires TimestampedRslNext(s, s');
 
   requires InView1(s, sr);
-  ensures  InView1(s', sr') || InView2(s', sr');
+  ensures  InView1(s', sr') || FinalStage(s');
 {
   sr' := sr;
   // three cases:
