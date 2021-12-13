@@ -28,8 +28,6 @@ import opened FailureDetection_helper1_i
 
 lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
-  // requires EpochTimeoutQDInv(s)
-  // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -132,8 +130,6 @@ lemma NonSuspector1_ind_most(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
 lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
   requires FOAssumption2(s, s')
-  // requires EpochTimeoutQDInv(s)
-  // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -180,7 +176,7 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
 lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -212,7 +208,7 @@ lemma NonSuspector1_ind_7(s:TimestampedRslState, s':TimestampedRslState, j:int)
 lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -242,7 +238,7 @@ lemma NonSuspector1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
 lemma InView1Local_leader_quorum(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
-  requires DelayInvs(s')
+  // requires DelayInvs(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
@@ -333,7 +329,7 @@ lemma InView1Local_leader_quorum(s:TimestampedRslState, s':TimestampedRslState, 
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
-  requires DelayInvs(s')
+  // requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -373,7 +369,7 @@ lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:se
 lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, k:int)
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
 
   requires 0 <= k < |s.constants.config.replica_ids|;
   requires k != 1
@@ -398,7 +394,7 @@ lemma InView1Local_leader_ind(s:TimestampedRslState, s':TimestampedRslState, sr:
 lemma InView1Local_all_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
-  requires DelayInvs(s')
+  // requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -479,7 +475,7 @@ lemma InView1_to_CurrView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 lemma LeaderEntersNewView(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
-  requires DelayInvs(s')
+  // requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -496,7 +492,7 @@ lemma LeaderEntersNewView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
-  requires DelayInvs(s')
+  // requires DelayInvs(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -520,7 +516,7 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
 lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) returns (sr':set<int>)
   requires FOAssumption2(s, s')
   requires DelayInvs(s)
-  requires DelayInvs(s')
+  // requires DelayInvs(s')
 
   requires TimestampedRslNext(s, s');
 

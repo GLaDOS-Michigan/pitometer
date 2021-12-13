@@ -72,7 +72,40 @@ function {:opaque} EpochQD(nextActionIndex:int) : Timestamp
 
 function {:opaque} HeartbeatQD(nextActionIndex:int) : Timestamp
 {
-  0
+  if nextActionIndex == 0 then
+    StepToTimeDelta(RslStep(9))
+  else if nextActionIndex == 1 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout()
+  else if nextActionIndex == 2 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1))
+  else if nextActionIndex == 3 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2))
+  else if nextActionIndex == 4 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3))
+  else if nextActionIndex == 5 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4))
+  else if nextActionIndex == 6 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4)) +
+    StepToTimeDelta(RslStep(5))
+  else if nextActionIndex == 7 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4)) +
+    StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6))
+  else if nextActionIndex == 8 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4)) +
+    StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6)) + StepToTimeDelta(RslStep(7))
+  else if nextActionIndex == 9 then
+    StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout() + StepToTimeDelta(RslStep(1)) +
+    StepToTimeDelta(RslStep(2)) + StepToTimeDelta(RslStep(3)) + StepToTimeDelta(RslStep(4)) +
+    StepToTimeDelta(RslStep(5)) + StepToTimeDelta(RslStep(6)) + StepToTimeDelta(RslStep(7)) +
+    StepToTimeDelta(RslStep(8))
+  else
+    0
 }
 
 function {:opaque} HBPeriodEnd() : Timestamp

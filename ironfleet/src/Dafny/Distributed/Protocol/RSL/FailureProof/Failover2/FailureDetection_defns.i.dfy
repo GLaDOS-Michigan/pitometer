@@ -28,6 +28,7 @@ predicate ClockAssumption(s:TimestampedRslState, s':TimestampedRslState)
   requires RslConsistency(s')
   requires s.constants.config.replica_ids == s'.constants.config.replica_ids
 {
+  // FIXME: rewrite without quantifiers?
   forall idx, ios :: (
     && 0 <= idx < |s.constants.config.replica_ids|
     && s.t_environment.nextStep == LEnvStepHostIos(s.constants.config.replica_ids[idx], ios, RslStep(s.t_replicas[idx].v.nextActionIndex))
@@ -98,11 +99,29 @@ predicate ViewNoOverflow(s:TimestampedRslState)
   LtUpperBound(es.current_view.seqno, es.constants.all.params.max_integer_val)
 }
 
+predicate EpochAndHeartbeatNoOverflow(s:TimestampedRslState)
+{
+  s.t_environment.nextStep.LEnvStepHostIos?
+  ==>
+  var ios := s.t_environment.nextStep.ios;
+  forall io :: io in s.t_environment.nextStep.ios && io.LIoOpReadClock? ==>
+    io.t >= 0
+    && UpperBoundedAddition(io.t, EpochLength, s.constants.params.max_integer_val) == io.t + EpochLength
+    && UpperBoundedAddition(io.t, HBPeriod, s.constants.params.max_integer_val) == io.t + HBPeriod
+}
+
 predicate RequestTimeAssumption(s:TimestampedRslState)
 {
   && (forall pkt :: pkt in s.t_environment.sentPackets ==>
     pkt.msg.v.RslMessage_Request? ==>
     TimeLe(pkt.msg.ts, RequestTime))
+}
+
+// XXX: this could be part of the model; don't want to introduce it there to
+// avoid breaking things for now
+predicate MonotoneTime(s:TimestampedRslState, s':TimestampedRslState)
+{
+  forall j :: 0 <= j < |s.t_replicas| ==> TimeLe(s.t_replicas[j].ts, s'.t_replicas[j].ts)
 }
 
 predicate FOAssumption(s:TimestampedRslState)
@@ -115,6 +134,7 @@ predicate FOAssumption(s:TimestampedRslState)
   && HBPeriodAssumption(s)
   && ViewNoOverflow(s)
   && RequestTimeAssumption(s)
+  && EpochAndHeartbeatNoOverflow(s)
 }
 
 predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
@@ -124,6 +144,7 @@ predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
   // XXX: shouldn't need to assume this, pretty trivial
   && s.constants.config.replica_ids == s'.constants.config.replica_ids
   && ClockAssumption(s, s')
+  && MonotoneTime(s, s')
 }
 
 ////////////////////////////////////////////////////////////////////////////////
