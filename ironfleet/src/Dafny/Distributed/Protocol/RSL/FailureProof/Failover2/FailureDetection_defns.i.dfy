@@ -131,12 +131,14 @@ predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
 ////////////////////////////////////////////////////////////////////////////////
 
 predicate LeaderView0(s:TimestampedRslState)
+  requires CommonAssumptions(s)
 {
   s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
 }
 
 // "suspecting_replicas"
 predicate SuspectingReplicaInv(s:TimestampedRslState, suspecting_replicas:set<int>)
+  requires CommonAssumptions(s)
 {
   && (forall j :: j in suspecting_replicas ==> 0 <= j < |s.t_replicas|)
   && s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors <= suspecting_replicas
@@ -166,6 +168,7 @@ predicate InView1Packets(s:TimestampedRslState)
 
 predicate InView1Local(s:TimestampedRslState, j:int, sus:bool)
   requires RslConsistency(s)
+  requires CommonAssumptions(s)
   requires 0 <= j < |s.t_replicas|
 {
   if sus then
@@ -187,6 +190,7 @@ predicate CurrView(s:TimestampedRslState)
 
 predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   requires RslConsistency(s)
+  requires CommonAssumptions(s)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
 
@@ -201,6 +205,7 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
 }
 
 predicate FinalStage(s:TimestampedRslState)
+  requires CommonAssumptions(s)
 {
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
   && TimeLe(s.t_replicas[1].ts, TBNewView())
@@ -224,6 +229,7 @@ predicate HBUnsent(s:TimestampedRslState, j:int)
 
 predicate NotKnownSuspector(s:TimestampedRslState, j:int)
   requires RslConsistency(s)
+  requires CommonAssumptions(s)
   requires 0 <= j < |s.t_replicas|
   requires 0 <= j < |s.constants.config.replica_ids|
 {
@@ -285,7 +291,8 @@ predicate InternalSuspector3(s:TimestampedRslState, j:int)
 
 
 predicate Suspector(s:TimestampedRslState, j:int)
-  requires RslConsistency(s)
+  requires CommonAssumptions(s);
+  requires RslConsistency(s);
   requires 0 <= j < |s.t_replicas|
 {
   // If the leader is a suspector, it already knows about itself
@@ -305,6 +312,7 @@ predicate Suspector(s:TimestampedRslState, j:int)
 }
 
 predicate LeaderQuorumBound(s:TimestampedRslState)
+  requires CommonAssumptions(s)
 {
   && (
     |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s.constants.config) ==>
