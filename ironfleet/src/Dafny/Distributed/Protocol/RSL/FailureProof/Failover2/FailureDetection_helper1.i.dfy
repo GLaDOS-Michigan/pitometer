@@ -26,7 +26,7 @@ import opened FailureDetection_helper0_i
 lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
   requires EpochDelayInv(s)
-  requires EpochDelayInv(s')
+  // requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -69,7 +69,7 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
 lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
   requires EpochDelayInv(s)
-  requires EpochDelayInv(s')
+  // requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -121,10 +121,10 @@ lemma NonSuspector2_ind_7(s:TimestampedRslState, s':TimestampedRslState, sr:set<
   requires FOAssumption2(s, s')
 
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
 
   requires HeartbeatDelayInv(s)
-  requires HeartbeatDelayInv(s')
+  // requires HeartbeatDelayInv(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -169,10 +169,10 @@ lemma NonSuspector2_ind_7(s:TimestampedRslState, s':TimestampedRslState, sr:set<
 lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
 
   requires HeartbeatDelayInv(s)
-  requires HeartbeatDelayInv(s')
+  // requires HeartbeatDelayInv(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -245,10 +245,10 @@ lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:s
   requires FOAssumption2(s, s')
 
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
 
   requires HeartbeatQDInv(s)
-  requires HeartbeatQDInv(s')
+  // requires HeartbeatQDInv(s')
 
   requires 0 <= j < |s.constants.config.replica_ids|;
 
@@ -314,7 +314,7 @@ lemma InternalSuspector3_ind(s:TimestampedRslState, s':TimestampedRslState, sr:s
 lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
 
   requires s.t_environment.nextStep.LEnvStepHostIos?;
@@ -339,7 +339,7 @@ lemma Suspector_ind_self(s:TimestampedRslState, s':TimestampedRslState, sr:set<i
 lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
   requires EpochTimeoutQDInv(s)
-  requires EpochTimeoutQDInv(s')
+  // requires EpochTimeoutQDInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
   requires j != 1;
 
