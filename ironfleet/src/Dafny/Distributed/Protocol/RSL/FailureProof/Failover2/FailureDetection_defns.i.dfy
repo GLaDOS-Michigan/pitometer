@@ -184,10 +184,14 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
   )
 }
 
-predicate FinalState(s:TimestampedRslState)
+predicate FinalStage(s:TimestampedRslState)
 {
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
-  && TimeLe(s.t_replicas[1].ts, FailoverTime())
+  && TimeLe(s.t_replicas[1].ts, TBNewView())
+  // FIXME: this should maintain that leader.current_state != 2, up until it is.
+  // That should help prove a bound on the 1a packets that are sent out
+  // Also should add requirement that no reply packet is sent to the client.
+  // Probably gonna have to assume no executions for that.
 }
 
 predicate HBUnsent(s:TimestampedRslState, j:int)
@@ -278,15 +282,6 @@ predicate Suspector(s:TimestampedRslState, j:int)
   && TimeLe(pkt.msg.ts, TBFirstSuspectingHB())
   )
   || (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors)
-}
-
-predicate InView2Local(s:TimestampedRslState, j:int, sus:bool)
-  requires RslConsistency(s)
-{
-  if sus then
-    Suspector(s, j)
-  else
-    true
 }
 
 predicate LeaderQuorumBound(s:TimestampedRslState)

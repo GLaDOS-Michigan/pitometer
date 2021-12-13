@@ -248,42 +248,42 @@ lemma InView1Local_leader_quorum(s:TimestampedRslState, s':TimestampedRslState, 
   requires s.t_environment.nextStep.actor == s.constants.config.replica_ids[j];
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
   requires InView1(s, sr);
+  requires LeaderView0(s');
 
   ensures LeaderQuorumBound(s')
 {
   SubsetCardinality(s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors, sr);
   if j == 1 {
-    if s.t_environment.nextStep.nodeStep == RslStep(7) {
-      if |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
-        // Leader takes a local step that gives it a quorum.
-        // This can only happen if the epoch2 timer is expired.
-        // epoch_end <= Epoch2
-        // t <= epoch_end + EpochQD(7)
-        // --> t' <= Epoch2 + EpochQD(7) + RslStep(7)
-        reveal_TBJustBeforeNewView();
-        reveal_ActionsUpTo();
-        reveal_TBFirstSuspectingHB();
-        reveal_HBPeriodEnd();
-      }
+    if s.t_environment.nextStep.nodeStep == RslStep(7) && |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) {
+      // Leader takes a local step that gives it a quorum.
+      // This can only happen if the epoch2 timer is expired.
+      // epoch_end <= Epoch2
+      // t <= epoch_end + EpochQD(7)
+      // --> t' <= Epoch2 + EpochQD(7) + RslStep(7)
+      reveal_TBJustBeforeNewView();
+      reveal_ActionsUpTo();
+      reveal_TBFirstSuspectingHB();
+      reveal_HBPeriodEnd();
+      assert LeaderQuorumBound(s');
+      return;
     } else if s.t_environment.nextStep.nodeStep == RslStep(0) {
-      // FIXME: why is this case passing without any time reasoning?
+      // Leader receives a packet that gives it a quorum.
       var ios := s.t_environment.nextStep.ios;
       if ios[0].LIoOpReceive?  {
         if ios[0].r.msg.v.RslMessage_Heartbeat? {
           if ios[0].r.msg.v.suspicious {
-            // assert |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| ==
-            // |s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors|;
-            if |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| == LMinQuorumSize(s'.constants.config) {
-              assert false;
-            }
+            // FIXME: have to make argument here that the packet is brand new.
+            reveal_TBJustBeforeNewView();
+            assert LeaderQuorumBound(s');
+            return;
           }
         }
       }
-      assert |s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors| >= LMinQuorumSize(s'.constants.config) ==> false;
     }
-  } else {
-    // trivial
   }
+  assert s'.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors ==
+    s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors;
+  assert LeaderQuorumBound(s');
 }
 
 lemma InView1Local_self_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int) returns (sr':set<int>)
@@ -442,9 +442,9 @@ lemma LeaderEntersNewView(s:TimestampedRslState, s':TimestampedRslState, j:int, 
 
   requires InView1(s, sr);
   requires !LeaderView0(s')
-  ensures FinalState(s')
+  ensures FinalStage(s')
 {
-  assert false; // FIXME: proof
+  reveal_TBNewView();
 }
 
 lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int, sr:set<int>) returns (sr':set<int>)
@@ -458,7 +458,7 @@ lemma InView1_ind_hostStep(s:TimestampedRslState, s':TimestampedRslState, j:int,
   requires TimestampedRslNextOneReplica(s, s', j, s.t_environment.nextStep.ios);
 
   requires InView1(s, sr);
-  ensures  InView1(s', sr') || FinalState(s');
+  ensures  InView1(s', sr') || FinalStage(s');
 {
   if LeaderView0(s') {
     sr' := InView1Local_all_ind(s, s', sr, j);
@@ -479,7 +479,7 @@ lemma InView1_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>) re
   requires TimestampedRslNext(s, s');
 
   requires InView1(s, sr);
-  ensures  InView1(s', sr') || FinalState(s');
+  ensures  InView1(s', sr') || FinalStage(s');
 {
   sr' := sr;
   // three cases:

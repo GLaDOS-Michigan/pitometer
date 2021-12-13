@@ -132,9 +132,9 @@ function {:opaque} TBJustBeforeNewView(nextActionIndex:int) : Timestamp
   TBFirstSuspectingHB() + MaxQueueTime + ActionsUpTo(nextActionIndex)
 }
 
-function {:opaque} FailoverTime() : Timestamp
+function {:opaque} TBNewView() : Timestamp
 {
-  0
+  TBJustBeforeNewView(8) + StepToTimeDelta(RslStep(8))
 }
 
 lemma EpochQDHelper(t:Timestamp, t':Timestamp)

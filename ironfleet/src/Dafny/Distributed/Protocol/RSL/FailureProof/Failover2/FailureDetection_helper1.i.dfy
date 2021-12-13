@@ -352,7 +352,7 @@ lemma Suspector_ind_leader(s:TimestampedRslState, s':TimestampedRslState, sr:set
   requires j in sr;
   requires Suspector(s, j);
 
-  ensures Suspector(s', j) || FinalState(s);
+  ensures Suspector(s', j) || FinalStage(s);
 {
   if s.t_environment.nextStep.nodeStep == RslStep(0) {
     if (s.t_replicas[j].v.replica.constants.my_index in s.t_replicas[1].v.replica.proposer.election_state.current_view_suspectors) {
