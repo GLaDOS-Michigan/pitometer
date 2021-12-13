@@ -11,11 +11,13 @@ include "FailureDetection_defns.i.dfy"
 
 include "../../CommonProof/Constants.i.dfy"
 // include "../CommonProof/Requests.i.dfy"
+include "CommonProof_Requests.i.dfy"
 
 module FailureDetection_helper0_i {
 import opened TimestampedRslSystem_i
 import opened FailureHelpers_i
 import opened FailureDetection_defns_i
+import opened CommonProof__Requests_i
 
 ////////////////////////////////////////////////////////////////////////////////
 // Queueing delay invariants + lemmas
@@ -233,15 +235,6 @@ predicate DelayInvs(s:TimestampedRslState)
   && EpochDelayInv(s)
   && HeartbeatDelayInv(s)
   && HeartbeatQDInv(s)
-}
-
-// TODO: this should be used from CommonProof/Requests.i.dfy
-lemma lemma_RemoveExecutedRequestBatchProducesSubsequence(s':seq<Request>, s:seq<Request>, batch:RequestBatch)
-  requires s' == RemoveExecutedRequestBatch(s, batch);
-  ensures  forall x :: x in s' ==> x in s;
-  ensures |s'| <= |s|;
-  decreases |batch|;
-{
 }
 
 }
