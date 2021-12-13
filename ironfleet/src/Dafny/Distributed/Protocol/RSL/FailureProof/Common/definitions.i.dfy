@@ -118,7 +118,7 @@ predicate IsNew1aPacket(pkt:TimestampedRslPacket) {
 }
 
 
-predicate IsNew1bPacket(pkt:TimestampedRslPacket, opn:OperationNumber) {
+predicate IsNew1bPacket(pkt:TimestampedRslPacket) {
     && pkt.msg.v.RslMessage_1a?
     && pkt.msg.v.bal_1a == Ballot(1, 1)
 }
