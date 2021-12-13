@@ -1,9 +1,11 @@
 include "Phase1Proof.i.dfy"
 include "GenericLemmas.i.dfy"
+include "Phase1Proof_helper1.i.dfy"
 
 module RslPhase1Proof_Helper2 {
 import opened RslPhase1Proof_i
 import opened RslPhase1Proof_Generic
+import opened H1 = RslPhase1Proof_Helper1
 
 
 /* Proof that a Phase1 state maybe transitions to a Phase2 state when nextAction == 2 */
@@ -27,8 +29,10 @@ lemma Phase1_to_MaybePhase2(ts:TimestampedRslState, ts':TimestampedRslState, opn
         if goToPhase2 {
             Phase1_to_Phase2(ts, ts', opn, tios);
         } else {
-            // TODO
-            assume false;
+            assert InPhase1(ts');
+            H1.Phase1_to_Phase1_LeaderTimeBound(ts, ts', opn, 1, tios);
+            H1.Phase1_to_Phase1_1aTimeboud(ts, ts', opn, 1, tios);
+            assert Phase1Invariant(ts', opn);
         }
     } else {
         assert InPhase1(ts');

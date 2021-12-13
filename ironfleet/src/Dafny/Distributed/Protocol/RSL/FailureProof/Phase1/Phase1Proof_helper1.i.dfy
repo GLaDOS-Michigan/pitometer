@@ -64,7 +64,7 @@ lemma Phase1_to_Phase1_1aTimeboud(ts:TimestampedRslState, ts':TimestampedRslStat
     requires TimestampedRslNext(ts, ts')
     requires Phase1Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    requires ts.t_replicas[idx].v.nextActionIndex != 2
+    // requires ts.t_replicas[idx].v.nextActionIndex != 2
     requires idx != 0
     ensures forall pkt | pkt in ts'.undeliveredPackets && IsNew1aPacket(pkt)
         :: TimeLe(pkt.msg.ts, TimeBound1aDeliveryPost())
@@ -93,7 +93,7 @@ lemma Phase1_to_Phase1_LeaderTimeBound(ts:TimestampedRslState, ts':TimestampedRs
     requires TimestampedRslNext(ts, ts')
     requires Phase1Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    requires ts.t_replicas[idx].v.nextActionIndex != 2
+    // requires ts.t_replicas[idx].v.nextActionIndex != 2
     requires idx != 0
     ensures TimeLe(ts'.t_replicas[1].ts, TimeBoundPhase1LeaderPost(ts'.t_replicas[1].v.nextActionIndex))
 {  
