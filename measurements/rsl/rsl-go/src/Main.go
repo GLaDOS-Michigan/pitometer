@@ -280,7 +280,7 @@ var _ _615_AbstractServiceRSL__s_Compile.Dummy__
 var _ _620_MarshallProof__i_Compile.Dummy__
 var _ _622_Main__i_Compile.Dummy__
 
-const INIT_SIZE = 20_000
+const INIT_SIZE = 100_000
 
 // This program takes the following positional arguments
 // <node_1 ip> <node_1 port> ... <node_n ip> <node_n port> <my ip> <my port> <clock_on> <inet> <duration> <batch_size>
