@@ -34,24 +34,3 @@ do :
 done
 
 python3 analyze_failure_final.py $ROOT_DIR
-
-# for lf in "${LOGFILES[@]}"
-# do :
-#     echo "        Converting file $lf"
-#     dir=$(dirname "${lf}")      # directory path
-#     name=$(basename -- "$lf")
-#     ext="${name##*.}"          
-#     name="${name%.*}"           # filename without extension
-
-#     # Convert to csv
-
-#     for m in ${METHODS[@]}
-#     do
-#         cat $lf | grep "$m," > $dir/"$name"_$m.csv
-#     done
-# done
-
-# python3 analyze_rsl.py $ROOT_DIR
-
-# # Delete intermediate csv files
-# find $ROOT_DIR -type f -name "*.csv" -delete
