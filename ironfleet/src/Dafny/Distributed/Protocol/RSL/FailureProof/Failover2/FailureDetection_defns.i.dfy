@@ -124,9 +124,16 @@ predicate MonotoneTime(s:TimestampedRslState, s':TimestampedRslState)
   forall j :: 0 <= j < |s.t_replicas| ==> TimeLe(s.t_replicas[j].ts, s'.t_replicas[j].ts)
 }
 
+predicate NoExecutions(s:TimestampedRslState)
+{
+  forall j :: 0 <= j < |s.t_replicas| ==> s.t_replicas[j].v.replica.executor.next_op_to_execute.OutstandingOpUnknown?
+    && s.t_replicas[j].v.replica.executor.reply_cache == map[]
+}
+
 predicate FOAssumption(s:TimestampedRslState)
 {
   && CommonAssumptions(s)
+  && NoExecutions(s)
   && NoStateTransfer(s)
   && OneAndOnlyOneRequest(s)
   && NonLeadersView1(s)

@@ -21,12 +21,16 @@ import opened Common_Assumptions
 import opened FailureDetection_final_i
 
 lemma InvariantsHoldInitially(s:TimestampedRslState)
-  requires FOAssumption(s)
+  requires FOAssumptionSealed(s)
+  requires CommonAssumptions(s)
   requires exists con :: TimestampedRslInit(con, s)
-  ensures InView1(s, {})
-  ensures DelayInvs(s)
+  ensures FailoverInv(s);
+  ensures PerfGuarantee(s);
+  ensures InFailover(s);
 {
-
+  reveal_FOAssumptionSealed();
+  // reveal_PerfGuarantee();
+  assert InView1(s, {}) && DelayInvs(s);
 }
 
 predicate FailoverInv(s:TimestampedRslState)
@@ -36,19 +40,34 @@ predicate FailoverInv(s:TimestampedRslState)
     (exists sr :: InView1(s, sr))) || FinalStage(s)
 }
 
+predicate {:opaque} FOAssumptionSealed(s:TimestampedRslState)
+{
+  FOAssumption(s)
+}
+
+predicate PerfGuarantee(s:TimestampedRslState)
+  requires CommonAssumptions(s)
+{
+  forall pkt :: pkt in s.t_environment.sentPackets ==> !IsNewReplyPacket(s, pkt)
+}
+
 lemma FailoverInvMaintained(s:TimestampedRslState, s':TimestampedRslState)
   requires CommonAssumptions(s) && CommonAssumptions(s');
   requires FOAssumption2State(s,s')
   requires InFailover(s);
-  requires InFailover(s) ==> FOAssumption(s);
-  requires InFailover(s') ==> FOAssumption(s');
+  requires InFailover(s) ==> FOAssumptionSealed(s);
+  requires InFailover(s') ==> FOAssumptionSealed(s');
   requires TimestampedRslNext(s, s');
   requires FailoverInv(s);
+  requires PerfGuarantee(s);
 
+  ensures PerfGuarantee(s');
   ensures InFailover(s') || InPhase1(s');
   ensures InFailover(s') ==> FailoverInv(s');
   ensures InPhase1(s') ==> FailoverFinal(s');
 {
+  // reveal_PerfGuarantee();
+  reveal_FOAssumptionSealed();
   if FinalStage(s) {
     FinalStageInd(s, s');
     if FailoverFinal(s') {
@@ -69,41 +88,53 @@ lemma FailoverInvMaintained(s:TimestampedRslState, s':TimestampedRslState)
     assert FailoverInv(s');
   }
 }
-/*
-lemma FailoverTopLevel_Prototype(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
-  requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
-  requires InFailover(tglb[0])
-  requires forall i :: 0 <= i < |tglb| ==> InFailover(tglb[i]) ==> FOAssumption(tglb[i])
-  requires forall i :: 0 <= i < |tglb| ==> |tglb[i].t_replicas| > 2
 
-  // ensures startPhase1Idx >= 0
-  // ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
-  // ensures startPhase1Idx < |tglb| ==> InPhase1(tglb[startPhase1Idx])
-  // ensures forall i | 0 <= i < |tglb| ::
-    // forall pkt | pkt in tglb[i].t_environment.sentPackets :: !IsNewReplyPacket(tglb[i], pkt)
+lemma FailoverTopLevel(tglb:seq<TimestampedRslState>) returns (startPhase1Idx:int)
+  requires |tglb| > 0;
+  requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
+  requires forall i | 0 <= i < |tglb| :: CommonAssumptions(tglb[i]);
+
+  requires forall i | 0 <= i < |tglb| :: InFailover(tglb[i]) ==> FOAssumptionSealed(tglb[i]);
+  requires forall i :: 0 < i < |tglb| ==> FOAssumption2State(tglb[i - 1], tglb[i])
+
+  ensures startPhase1Idx >= 0
+  ensures startPhase1Idx < |tglb| ==> FailoverFinal(tglb[startPhase1Idx])
+  ensures startPhase1Idx < |tglb| ==> InPhase1(tglb[startPhase1Idx])
+
+  ensures forall j :: 0 <= j < |tglb| ==> j < startPhase1Idx ==> PerfGuarantee(tglb[j]);
 {
-  startPhase1Idx := 0;
+  startPhase1Idx := |tglb|;
 
   var i := 1;
   InvariantsHoldInitially(tglb[0]);
 
   assert FailoverInv(tglb[0]);
   while i < |tglb|
-    invariant i > 0
-    invariant i <= |tglb|
-    invariant FailoverInv(tglb[i - 1])
+    decreases |tglb| - i
+    invariant 0 < i <= |tglb|
+    invariant FailoverInv(tglb[i - 1]) && PerfGuarantee(tglb[i - 1])
     invariant InFailover(tglb[i - 1])
+    invariant forall j :: 0 <= j < i ==> PerfGuarantee(tglb[j]);
   {
     var s := tglb[i-1];
     var s' := tglb[i];
-    var sr :| InView1(s, sr);
-    var sr' := InView1_ind(s, s', sr);
-    if FinalStage(s') {
-      return i;
-    } else {
-      i := i + 1;
+
+    FailoverInvMaintained(s, s');
+    forall j | 0 <= j < i+1
+      ensures PerfGuarantee(tglb[j])
+    {
+      if j == i {
+        assert PerfGuarantee(tglb[j]);
+      } else {
+        assert PerfGuarantee(tglb[j]);
+      }
     }
+
+    if FailoverFinal(s') {
+      return i;
+    }
+    i := i + 1;
   }
 }
-*/
+
 }
