@@ -1,0 +1,11 @@
+#!/bin/bash
+# Build RSL Client
+
+CLIENT_DIR='../../ironfleet/src/IronfleetClient/IronfleetClient_failure-exp'
+
+# echo "Starting client build"
+
+mcs $CLIENT_DIR/Program.cs $CLIENT_DIR/MultiPaxos.cs $CLIENT_DIR/ClientBase.cs -out:client.exe
+chmod -x client.exe
+
+# echo "Build complete"
