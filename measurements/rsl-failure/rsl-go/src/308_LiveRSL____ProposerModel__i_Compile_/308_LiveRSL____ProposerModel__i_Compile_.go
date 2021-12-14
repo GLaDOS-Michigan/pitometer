@@ -85,6 +85,7 @@ import (
 	_9_Native____Io__s_Compile "9_Native____Io__s_Compile_"
 	_System "System_"
 	_dafny "dafny"
+	"fmt"
 )
 
 var _ _dafny.Dummy__
@@ -792,6 +793,10 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterPhase2(proposer _254_
 		var _ = _out184
 		_out184 = _9_Native____Io__s_Compile.Companion_Time_.GetDebugTimeTicks()
 		_4873_end__time = _out184
+
+		var proposerState = proposer.Dtor_current__state()
+		fmt.Printf("Enter phase 2: proposer state %v\n", proposerState)
+
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerMaybeEnterPhase2_work"), _4862_start__time, _4873_end__time)
 		noop = false
 	} else {

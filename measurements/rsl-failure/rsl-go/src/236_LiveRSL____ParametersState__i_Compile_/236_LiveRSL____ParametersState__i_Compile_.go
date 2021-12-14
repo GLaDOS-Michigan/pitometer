@@ -324,11 +324,11 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 	// 	Max__batch__size:                uint64(BatchSize),
 	// 	Max__batch__delay:               uint64(10)}}
 
-	// Test
+	// Failure
 	return ParametersState{ParametersState_ParametersState{
 		Max__log__length:                uint64(5_00),
-		Baseline__view__timeout__period: uint64(5 * 60_000), // 5 minutes
-		Heartbeat__period:               uint64(5 * 60_000), // 5 minutes
+		Baseline__view__timeout__period: uint64(1000),
+		Heartbeat__period:               uint64(100),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(BatchSize),
 		Max__batch__delay:               uint64(10)}}

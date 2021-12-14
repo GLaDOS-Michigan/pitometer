@@ -444,10 +444,10 @@ TAIL_CALL_START:
 	// TONY: Start leader crash timer here
 	if replica.Dtor_constants().Dtor_my__index() == 0 {
 		f := func() {
-			fmt.Printf("Detonated: %vms\n", COUNTDOWN)
+			fmt.Printf("Detonated: %vus\n", COUNTDOWN)
 			os.Exit(1)
 		}
-		time.AfterFunc(time.Duration(COUNTDOWN)*time.Millisecond, f)
+		time.AfterFunc(time.Duration(COUNTDOWN)*time.Microsecond, f)
 	}
 
 	var replica_k _285_LiveRSL____ReplicaState__i_Compile.ReplicaState = _285_LiveRSL____ReplicaState__i_Compile.Type_ReplicaState_().Default().(_285_LiveRSL____ReplicaState__i_Compile.ReplicaState)
