@@ -293,12 +293,13 @@ func main() {
 		fmt.Printf("Error: Invalid failureCountdown %v\n", os.Args[len(os.Args)-1])
 		os.Exit(1)
 	}
+	fmt.Printf("Countdown timer is %v ms\n", failureCountdown)
 	_323_LiveRSL____ReplicaModel__Part1__i_Compile.COUNTDOWN = int(failureCountdown)
 
 	// Grab the last argument from os.Args -- that is the batch size
 	var batch, err1 = strconv.ParseInt(os.Args[len(os.Args)-2], 10, 64)
 	if int(batch) < 0 || err1 != nil {
-		fmt.Printf("Error: Invalid batch size %v\n", os.Args[len(os.Args)-1])
+		fmt.Printf("Error: Invalid batch size %v\n", os.Args[len(os.Args)-2])
 		os.Exit(1)
 	}
 
@@ -309,7 +310,7 @@ func main() {
 	// After this duration, the process exits.
 	var duration, err2 = strconv.ParseInt(os.Args[len(os.Args)-3], 10, 64)
 	if int(duration) < 0 || err2 != nil {
-		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-2])
+		fmt.Printf("Error: Invalid duration %v\n", os.Args[len(os.Args)-3])
 		os.Exit(1)
 	}
 
@@ -397,9 +398,6 @@ func main() {
 		time.Sleep(time.Duration(duration) * time.Second)
 		_622_Main__i_Compile.HALT = true
 		fmt.Printf("Node reached expiry. Exiting\n")
-		for _, sw := range logs {
-			sw.PrintLog()
-		}
 		os.Exit(0)
 	}()
 

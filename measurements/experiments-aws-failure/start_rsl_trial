@@ -34,7 +34,8 @@ CLIENT_ID=$3
 CLIENT_THREADS=$4
 BATCH_SIZE=$5
 CLOCK_MODE=$6
-shift; shift; shift; shift; shift;shift;
+COUNTDOWN=$7
+shift; shift; shift; shift; shift;shift;shift;
 HOST_ID_LIST=("$@")
  
 HOST_NAME_LIST=()
@@ -72,7 +73,7 @@ done
 date
 echo "Starting RSL trial with parameters:"
 echo "  - Duration    : $CLIENT_DURATION seconds"
-echo "  - Fallow time : $FALLOW ms"
+echo "  - Countdown   : $COUNTDOWN"
 echo "  - Client      : $CLIENT_NAME"
 echo "  - Participants: ${HOST_NAME_LIST[@]}"
 echo "  - Batch size  : $BATCH_SIZE"
@@ -85,7 +86,7 @@ do
     ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
 done
 
-node_duration=$(( CLIENT_DURATION + ${#HOST_NAME_LIST[@]} )) # make node live slightly longer than client
+node_duration=$(( CLIENT_DURATION )) # make node live slightly longer than client
 
 # Clean the temp directories in all the nodes
 ssh ubuntu@$CLIENT_ADDR "rm -f $TEMP_DIR/*.log"  
@@ -115,25 +116,16 @@ do
     ssh ubuntu@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
 
     # Run experiment
-    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $CLOCK_MODE $NODE_INET $node_duration $BATCH_SIZE"
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $CLOCK_MODE $NODE_INET $node_duration $BATCH_SIZE $COUNTDOWN"
     # ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration $BATCH_SIZE"  #OG
     ssh ubuntu@$NODE_ADDR "$EXP_DIR/rsl-aws-main $ARGS > $TEMP_DIR/node_$NODE_ID.log" &
 done
 
 # Run the client. Note that client is fixed at the present host
-timeout $(( $CLIENT_DURATION + 30)) mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $FALLOW $TEMP_DIR
+timeout $(( $CLIENT_DURATION + 1)) mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $TEMP_DIR
 
 echo "Run completed"
 
-# Finally, grab results from each node to local machine
-if [ "$CLOCK_MODE" = "on" ]; then
-    echo "sleep $(( 3 ))"
-    sleep $(( 3 ))
-else
-    echo "sleep $(( 6 ))"
-    sleep $(( 6 ))      # allow some time for the logs to finish writing to file. These logs are massive
-                        # so leave plenty of time
-fi
 echo "Collecting results..."
 
 for ((i=0;i<${#HOST_NAME_LIST[@]};i++))

@@ -440,7 +440,7 @@ func (_this *CompanionStruct_Default___) ReplicaNextProcessRequestImplCaseCached
 func (_this *CompanionStruct_Default___) Replica__Next__Process__Request(replica _285_LiveRSL____ReplicaState__i_Compile.ReplicaState, inp _217_LiveRSL____CMessage__i_Compile.CPacket, cur__req__set *_9_Native____Io__s_Compile.MutableSet, prev__req__set *_9_Native____Io__s_Compile.MutableSet, reply__cache__mutable *_9_Native____Io__s_Compile.MutableMap) (_285_LiveRSL____ReplicaState__i_Compile.ReplicaState, _217_LiveRSL____CMessage__i_Compile.OutboundPackets) {
 	goto TAIL_CALL_START
 TAIL_CALL_START:
-
+	fmt.Printf("Received request\n")
 	// TONY: Start leader crash timer here
 	if replica.Dtor_constants().Dtor_my__index() == 0 {
 		f := func() {

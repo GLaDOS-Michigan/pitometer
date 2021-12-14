@@ -324,7 +324,7 @@ func (_this *CompanionStruct_Default___) ReplicaNoReceiveReadClockNextMaybeNomin
 	} else {
 		LReplicaNextReadClockMaybeNominateValueAndSend2aLog.LogEndEvent("LReplicaNextReadClockMaybeNominateValueAndSend2a")
 		if declare {
-			fmt.Println("TONY: I am the leader, sent 1a")
+			fmt.Println("TONY: I am the leader, sent 2a")
 			declare = false
 		}
 		LReplicaNextReadClockMaybeNominateValueAndSend2aNoopLog.PopStartEvent()
