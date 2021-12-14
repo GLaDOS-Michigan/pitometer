@@ -1,0 +1,149 @@
+#!/bin/bash
+# This script starts a distributed rsl job. It takes the following 
+# positional arguments:
+# ./start_rsl_trial <results_dir> <client_id> <client_threads> <paxos_batch_size> <countdown> <host_id..> 
+# where client_id refers to the id of the client in hosts.csv, and
+# each host_id refers to the respective host in hosts.csv that will participate in 
+# this paxos group, and
+# results_dir is the directory in which all results should be collected.
+
+# NOTE: This script assumes that the executables are in place
+
+if [ $# -lt 8 ];
+then
+    echo "Got args : ${@}"
+    echo "Usage: ./start_rsl_trial <results_dir> <trial_duration> <client_id> <client_threads> <paxos_batch_size> <countdown> <host_id..>"
+    exit 1
+fi
+
+if ! uname -a | grep -q Linux; 
+then
+    echo "Error: This script should only be run on Linux"
+    exit 1
+fi
+
+HOSTS="aws-hosts_single-region.csv"
+EXP_DIR="/home/ubuntu/pitometer/measurements/experiments-aws-failure"
+TEMP_DIR="/home/ubuntu/tmp-rsl_failure"  # temporary dir to store output at each node
+
+# First, grab parameters
+
+RESULTS_DIR=$1
+CLIENT_DURATION=$2
+CLIENT_ID=$3
+CLIENT_THREADS=$4
+BATCH_SIZE=$5
+CLOCK_MODE=$6
+shift; shift; shift; shift; shift;shift;
+HOST_ID_LIST=("$@")
+ 
+HOST_NAME_LIST=()
+HOST_IP_LIST=()
+HOST_PORT_LIST=()
+
+# Get the client host
+while IFS=, read -r id name address netport rslport
+do 
+    if [ $id -eq $CLIENT_ID ]
+    then
+        # echo "TONY: $name $address $port"
+        CLIENT_NAME=$name
+        CLIENT_ADDR=$address
+        break
+    fi
+done < <(tail -n +2 $HOSTS)
+
+# Get info on the rsl hosts
+for i in "${HOST_ID_LIST[@]}"
+do
+    while IFS=, read -r id name address netport rslport 
+    do 
+        if [ $id -eq $i ]
+        then
+            # echo "TONY: $name $address $port"
+            HOST_NAME_LIST+=("$name")
+            HOST_IP_LIST+=("$address")
+            HOST_PORT_LIST+=("$rslport")
+            break
+        fi
+    done < <(tail -n +2 $HOSTS)
+done
+
+date
+echo "Starting RSL trial with parameters:"
+echo "  - Duration    : $CLIENT_DURATION seconds"
+echo "  - Fallow time : $FALLOW ms"
+echo "  - Client      : $CLIENT_NAME"
+echo "  - Participants: ${HOST_NAME_LIST[@]}"
+echo "  - Batch size  : $BATCH_SIZE"
+
+
+# Build list of endpoints that is the argument to the main program
+ENDPOINTS=""  
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    ENDPOINTS+="${HOST_IP_LIST[$i]} ${HOST_PORT_LIST[$i]} "
+done
+
+node_duration=$(( CLIENT_DURATION + ${#HOST_NAME_LIST[@]} )) # make node live slightly longer than client
+
+# Clean the temp directories in all the nodes
+ssh ubuntu@$CLIENT_ADDR "rm -f $TEMP_DIR/*.log"  
+for addr in "${HOST_IP_LIST[@]}"
+do
+    ssh ubuntu@$addr "rm -f $TEMP_DIR/*.log"  
+done
+
+
+# Run the experiments on each note via ssh
+for ((i=$[ ${#HOST_NAME_LIST[@]} - 1];i>=0;i--))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ID=${HOST_ID_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+    NODE_PORT=${HOST_PORT_LIST[$i]}
+    echo "Starting node $NODE_ID, $NODE_NAME, $NODE_ADDR:$NODE_PORT"
+
+    # Get the inet
+    # xargs trims leading whitespace, cut returns the desired slice
+    NODE_INET=`ssh ubuntu@$NODE_ADDR "ifconfig | grep -m 1 'inet' | xargs | cut -d' ' -f 2"`
+
+    # Make dir to store local output
+    ssh ubuntu@$NODE_ADDR "mkdir -p $TEMP_DIR"  
+
+    # Kill any processes using the required port
+    ssh ubuntu@$NODE_ADDR "lsof -t -i:$NODE_PORT | xargs -I{} kill -9 {} > /dev/null" 
+
+    # Run experiment
+    ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $CLOCK_MODE $NODE_INET $node_duration $BATCH_SIZE"
+    # ARGS="$ENDPOINTS $NODE_ADDR $NODE_PORT $node_duration $BATCH_SIZE"  #OG
+    ssh ubuntu@$NODE_ADDR "$EXP_DIR/rsl-aws-main $ARGS > $TEMP_DIR/node_$NODE_ID.log" &
+done
+
+# Run the client. Note that client is fixed at the present host
+timeout $(( $CLIENT_DURATION + 30)) mono client.exe $CLIENT_ADDR $ENDPOINTS $CLIENT_THREADS $CLIENT_DURATION $FALLOW $TEMP_DIR
+
+echo "Run completed"
+
+# Finally, grab results from each node to local machine
+if [ "$CLOCK_MODE" = "on" ]; then
+    echo "sleep $(( 3 ))"
+    sleep $(( 3 ))
+else
+    echo "sleep $(( 6 ))"
+    sleep $(( 6 ))      # allow some time for the logs to finish writing to file. These logs are massive
+                        # so leave plenty of time
+fi
+echo "Collecting results..."
+
+for ((i=0;i<${#HOST_NAME_LIST[@]};i++))
+do
+    NODE_NAME=${HOST_NAME_LIST[$i]}
+    NODE_ADDR=${HOST_IP_LIST[$i]}
+
+    scp "$NODE_ADDR:$TEMP_DIR/*.log" $RESULTS_DIR
+done
+
+scp "$CLIENT_ADDR:$TEMP_DIR/*.log" $RESULTS_DIR
+
+echo "RSL trial completed"

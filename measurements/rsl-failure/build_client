@@ -1,7 +1,7 @@
 #!/bin/bash
 # Build RSL Client
 
-CLIENT_DIR='../../ironfleet/src/IronfleetClient/IronfleetClient'
+CLIENT_DIR='../../ironfleet/src/IronfleetClient/IronfleetClient_failure-exp'
 
 # echo "Starting client build"
 
