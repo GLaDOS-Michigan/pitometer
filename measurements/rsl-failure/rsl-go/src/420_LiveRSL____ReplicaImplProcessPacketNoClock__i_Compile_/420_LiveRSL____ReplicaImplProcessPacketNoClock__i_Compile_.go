@@ -732,11 +732,15 @@ func (_this *CompanionStruct_Default___) Replica__Next__ProcessPacketWithoutRead
 		_out458 = Companion_Default___.ReplicaNextProcessPacketRequest(r, cpacket)
 		ok = _out458
 	} else if ((cpacket).Dtor_msg()).Is_CMessage__1a() {
+		var proposerState = r.Replica.Dtor_proposer().Dtor_current__state()
+		fmt.Printf("Process 1a: proposer state %v\n", proposerState)
 		var _out459 bool
 		var _ = _out459
 		_out459 = Companion_Default___.ReplicaNextProcessPacket1a(r, cpacket)
 		ok = _out459
 	} else if ((cpacket).Dtor_msg()).Is_CMessage__1b() {
+		var proposerState = r.Replica.Dtor_proposer().Dtor_current__state()
+		fmt.Printf("Process 1b: proposer state %v\n", proposerState)
 		var _out460 bool
 		var _ = _out460
 		_out460 = Companion_Default___.ReplicaNextProcessPacket1b(r, cpacket)

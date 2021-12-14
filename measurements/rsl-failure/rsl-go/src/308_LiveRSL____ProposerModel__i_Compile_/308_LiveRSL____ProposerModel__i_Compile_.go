@@ -441,6 +441,11 @@ func (_this *CompanionStruct_Default___) ProposerMaybeEnterNewViewAndSend1a(prop
 		_4842_end__time = _out170
 		_170_Common____Util__i_Compile.Companion_Default___.RecordTimingSeq(_dafny.SeqOfString("ProposerMaybeEnterNewViewAndSend1a_work"), _4832_start__time, _4842_end__time)
 		noop = false
+
+		// Enter Phase1 and send 1a
+		var proposerState = proposer.Dtor_current__state()
+		fmt.Printf("Enter phase1 and send 1a: proposer state %v\n", proposerState)
+
 	} else {
 		proposer_k = proposer
 		sent__packets = _217_LiveRSL____CMessage__i_Compile.CBroadcast{_217_LiveRSL____CMessage__i_Compile.CBroadcast_CBroadcastNop{}}

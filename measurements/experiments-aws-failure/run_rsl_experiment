@@ -56,6 +56,6 @@ done
 
 # Copy results to Skynode20
 trial_dir="$ROOT_DIR/$TIMESTAMP"
-# scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-single/data/rsl_ohio
+# scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-failure/data/rsl
 
 echo "RSL test experiment completed at time $(date)"
