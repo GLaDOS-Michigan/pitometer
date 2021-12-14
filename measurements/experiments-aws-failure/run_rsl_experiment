@@ -13,9 +13,10 @@ GIT_BRANCH="clean"
 CLIENT_ID=4                             # node to use as client
 CLIENT_THREADS=1                        # number of clients
 BASE_TRIAL_DURATION=$(( 5 ))            # minimum duration in seconds
-ITERATIONS=100                            # repeats of each trial
+ITERATIONS=20                           # repeats of each trial
 BATCH_SIZE=1                            # paxos batch size      
-COUNTDOWN=("0" "500" "1000" "1500" "2000" "2500" "3000")
+# COUNTDOWN=("0" "500" "1000" "1500" "2000" "2500" "3000")
+COUNTDOWN=("1500" "2000" "2500" "3000")
 TIMESTAMP=$(date +"%d-%b-%H%M")
 CLOCK_MODE="off"
 
@@ -56,6 +57,6 @@ done
 
 # Copy results to Skynode20
 trial_dir="$ROOT_DIR/$TIMESTAMP"
-# scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-failure/data/rsl
+scp -r $trial_dir nudzhang@skynode20.eecs.umich.edu:/home/nudzhang/Documents/pitometer/measurements/experiments-aws-failure/data/rsl
 
 echo "RSL test experiment completed at time $(date)"

@@ -326,8 +326,9 @@ func (_this *CompanionStruct_Default___) StaticParams() ParametersState {
 
 	// Failure
 	return ParametersState{ParametersState_ParametersState{
-		Max__log__length:                uint64(5_00),
-		Baseline__view__timeout__period: uint64(1000),
+		Max__log__length: uint64(5_00),
+		// Baseline__view__timeout__period: uint64(1000),
+		Baseline__view__timeout__period: uint64(300),
 		Heartbeat__period:               uint64(100),
 		Max__integer__val:               (uint64(9223372036854775808)) - (func() uint64 { return (uint64(1)) })(),
 		Max__batch__size:                uint64(BatchSize),
