@@ -131,7 +131,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     print("Plotting graphs for Paxos distributions")
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         for f in F_VALUES:
-            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i][20:-20]]  # simply combine data from all trials
+            actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i][THROW:-THROW]]  # simply combine data from all trials
             actual_client_train_latencies = [t for i in total_client_train_data[f] for t in total_client_train_data[f][i][THROW:-THROW]] 
             actual_method_latencies = compute_actual_node(total_node_data[f])   
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)

@@ -1,0 +1,57 @@
+#!/bin/bash
+# This script takes the following positional arguments
+# ./process_rsl_results <root_dir>
+# Converts each log file in <root_dir>, and its sub-directories into separate csv files 
+# for each rsl stopwatch. It places each resulting csv in the directory of its 
+# corresponding log file. Then, it calls analyze_rsl.py to generate graphs
+
+ROOT_DIR=$1
+
+COUNTDOWNS=("0"
+            "500"
+            "1000"
+            "1500"
+            "2000"
+            "2500"
+            "3000")
+
+
+
+
+for cd in "${COUNTDOWNS[@]}"
+do :
+    cd_dir=$ROOT_DIR/cd_$cd
+    echo "Processing results in $cd_dir"
+    rm -f $cd_dir/*.csv
+
+    LOGFILES=(`find $cd_dir -type f -name client*.log`)
+
+    for lf in "${LOGFILES[@]}"
+    do :
+        # echo "        Converting file $lf"
+        cat $lf | grep "#req0" >> $cd_dir/cd_log_$cd.csv
+    done
+done
+
+python3 analyze_failure_final.py $ROOT_DIR
+
+# for lf in "${LOGFILES[@]}"
+# do :
+#     echo "        Converting file $lf"
+#     dir=$(dirname "${lf}")      # directory path
+#     name=$(basename -- "$lf")
+#     ext="${name##*.}"          
+#     name="${name%.*}"           # filename without extension
+
+#     # Convert to csv
+
+#     for m in ${METHODS[@]}
+#     do
+#         cat $lf | grep "$m," > $dir/"$name"_$m.csv
+#     done
+# done
+
+# python3 analyze_rsl.py $ROOT_DIR
+
+# # Delete intermediate csv files
+# find $ROOT_DIR -type f -name "*.csv" -delete
