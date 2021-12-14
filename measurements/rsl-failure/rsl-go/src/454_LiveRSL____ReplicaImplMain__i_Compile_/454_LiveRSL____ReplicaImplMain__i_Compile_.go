@@ -306,6 +306,12 @@ func (_this *CompanionStruct_Default___) ReplicaNextMainReadClock(r *_383_LiveRS
 }
 
 func (_this *CompanionStruct_Default___) Replica__Next__main(r *_383_LiveRSL____ReplicaImplClass__i_Compile.ReplicaImpl, logs map[string]*clock.Stopwatch) bool {
+
+	// if r.Replica.Dtor_constants().Dtor_my__index() == 0 {
+	// 	fmt.Printf("Self destruct\n")
+	// 	os.Exit(1)
+	// }
+
 	var ok bool = false
 	if (r.NextActionIndex) == (uint64(0)) {
 		var _out516 = Companion_Default___.ReplicaNextMainProcessPacketX(r, logs["LReplicaNextProcessPacket"])

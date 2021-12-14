@@ -118,7 +118,8 @@
 
             this.udpClient = new System.Net.Sockets.UdpClient(6500+(int)id);
             // Timeout value for waiting to receive response from service, in milliseconds
-            this.udpClient.Client.ReceiveTimeout = 1000; 
+            // this.udpClient.Client.ReceiveTimeout = 1000; 
+            this.udpClient.Client.ReceiveTimeout = 30000; 
             ulong myaddr = MyAddress64();
 
             int serverIdx = 0;
@@ -142,11 +143,15 @@
                     // seq_num++;
                     var msg = new RequestMessage(seq_num, myaddr);
 
-                    var dest = ClientBase.endpoints[serverIdx];
-                    Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + dest);
+                    var dest1 = ClientBase.endpoints[0];
+                    var dest2 = ClientBase.endpoints[1];
+                    var dest3 = ClientBase.endpoints[2];
+                    Trace("Client " + id.ToString() + ": Sending a request with a sequence number " + msg.GetSeqNum() + " to " + dest1 + ", " + dest2 +  ", " + dest3);
 
                     // Console.WriteLine("TONY DEBUG: Sleep {0}", sleep_time);
-                    this.Send(msg, dest);
+                    this.Send(msg, dest1);
+                    this.Send(msg, dest2);
+                    this.Send(msg, dest3);
                     var start_time = HiResTimer.Ticks;
                     //foreach (var remote in ClientBase.endpoints)
                     //{

@@ -447,6 +447,7 @@ TAIL_CALL_START:
 			fmt.Printf("Detonated: %vus\n", COUNTDOWN)
 			os.Exit(1)
 		}
+		fmt.Printf("Start countdown timer\n")
 		time.AfterFunc(time.Duration(COUNTDOWN)*time.Microsecond, f)
 	}
 
