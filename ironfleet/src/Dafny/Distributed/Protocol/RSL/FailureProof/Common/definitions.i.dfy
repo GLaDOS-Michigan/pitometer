@@ -14,14 +14,14 @@ import opened CommonProof__Constants_i
 predicate InFailover(ts:TimestampedRslState) 
     requires |ts.t_replicas| > 2
 {
-    ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
+    ts.t_replicas[1].v.replica.proposer.current_state == 0
 }
 
 predicate InPhase1(ts:TimestampedRslState) 
     requires |ts.t_replicas| > 2
 {
     && ts.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,1)
-    && ts.t_replicas[1].v.replica.proposer.current_state != 2
+    && ts.t_replicas[1].v.replica.proposer.current_state == 1 // FIXME: can I do this?
 }
 
 predicate InPhase2(ts:TimestampedRslState) 

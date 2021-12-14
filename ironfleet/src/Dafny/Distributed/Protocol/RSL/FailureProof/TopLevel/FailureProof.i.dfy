@@ -1,7 +1,7 @@
 include "../TimestampedRslSystem.i.dfy"
 include "../../CommonProof/Constants.i.dfy"
 
-// include "../Failover/FailureDetection_toplevel.i.dfy"
+include "../Failover2/FailureDetection_toplevel.i.dfy"
 include "../Phase1/Phase1Proof_toplevel.i.dfy"
 include "../Phase2_PostFail/Phase2Proof_toplevel.i.dfy"
 include "../Common/assumptions.i.dfy"
@@ -13,11 +13,12 @@ import opened CommonProof__Constants_i
 import opened Common_Assumptions
 
 // import FO_top = FailureDetection_i
-// import FO_def = FailureDetection_defns_i
+import FO_def = FailureDetection_defns_i
 import P1_top = RslPhase1Proof_Top  
 import P1_def = RslPhase1Proof_i  
 import P2_top = RslPhase2Proof_PostFail_Top
 import P2_def = RslPhase2Proof_PostFail_i
+import FO_top = FailureDetection_toplevel_i
 
 /*****************************************************************************************
 *                                      Guarantees                                        *
@@ -43,7 +44,7 @@ predicate PerformanceGuarantee_Final(ts:TimestampedRslState)
 predicate RslAssumption(ts:TimestampedRslState, opn:OperationNumber)
 {
     && CommonAssumptions(ts)
-    // && (InFailover(ts) ==> FO_def.FOAssumption(ts))
+    && (InFailover(ts) ==> FO_top.FOAssumptionSealed(ts))
     && (InPhase1(ts) ==> P1_def.P1Assumption(ts, opn))
     && (InPhase2(ts) ==> P2_def.P2Assumption(ts, opn))
 }
@@ -135,7 +136,37 @@ lemma RSLTopLevel_PostFailover(tglb:seq<TimestampedRslState>, opn:OperationNumbe
     }
 }
 
+lemma RSLTopLevel(tglb:seq<TimestampedRslState>, opn:OperationNumber)
+    requires |tglb| > 0
+    requires exists con :: ValidTimestampedRSLBehavior(con, tglb)
+    requires forall i | 0 <= i < |tglb| :: RslAssumption(tglb[i], opn)
+    requires forall i | 0 <= i < |tglb| :: CommonAssumptions(tglb[i])
+    requires forall i :: 0 < i < |tglb| ==> FO_def.FOAssumption2State(tglb[i - 1], tglb[i])
+    // ensures forall j | 0 <= j < |tglb| :: PerformanceGuarantee_Final(tglb[j])
+{
+    var P1_idx := FO_top.FailoverTopLevel(tglb);
+    if P1_idx >= |tglb| {
+        return;
+    }
+    assert forall i :: 0 <= i < P1_idx ==> PerformanceGuarantee_Final(tglb[i]);
 
+    var tglb' := tglb[P1_idx..];
+
+    forall i | 0 < i < |tglb'|
+        ensures TimestampedRslNext(tglb'[i - 1], tglb'[i]){
+            assert tglb'[i - 1] == tglb[P1_idx + i - 1];
+            assert tglb'[i] == tglb[P1_idx + i];
+    }
+
+    assert InPhase1(tglb[P1_idx]);
+    assume P1_def.Phase1Invariant(tglb'[0], opn); // FIXME:
+    RSLTopLevel_PostFailover(tglb', opn);
+
+    forall j | 0 <= j < |tglb|
+        ensures PerformanceGuarantee_Final(tglb[j])
+    {
+    }
+}
 
 
 }

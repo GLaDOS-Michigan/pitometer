@@ -229,6 +229,29 @@ lemma HeartbeatQDInductive(s:TimestampedRslState, s':TimestampedRslState, j:int)
   }
 }
 
+lemma DelayInv_ind(s:TimestampedRslState, s':TimestampedRslState)
+  requires FOAssumption2(s, s')
+  requires DelayInvs(s)
+  requires TimestampedRslNext(s, s');
+
+  requires (exists sr :: InView1(s, sr));
+  ensures  DelayInvs(s')
+{
+  if TimestampedRslNextEnvironment(s, s') {
+    assert DelayInvs(s'); // trivial
+  } else if (exists j, ios :: TimestampedRslNextOneReplica(s, s', j, ios)) {
+    // XXX: this is where the heavy lifting happens
+    var j, ios :| TimestampedRslNextOneReplica(s, s', j, ios);
+    HeartbeatQDInductive(s, s', j);
+    HeartbeatDelayInductive(s, s', j);
+    EpochTimeoutQDInductive(s, s', j);
+    EpochDelayInductive(s, s', j);
+  } else {
+    var idx, ios :| TimestampedRslNextOneExternal(s, s', idx, ios);
+    assert false; // Because we assume no external steps
+  }
+}
+
 predicate DelayInvs(s:TimestampedRslState)
 {
   && EpochTimeoutQDInv(s)
