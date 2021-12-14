@@ -120,9 +120,12 @@ predicate AlwaysInvariantP1(ts:TimestampedRslState, opn:OperationNumber)
 
     // Proposer stuff
     && r.proposer.request_queue == []
-    && r.proposer.election_state.current_view_suspectors == {}
     && r.proposer.max_ballot_i_sent_1a == Ballot(1, 1)
     && r.proposer.next_operation_number_to_propose == opn
+    && (var es := r.proposer.election_state;
+         || es.current_view_suspectors == {}
+         || es.current_view_suspectors == {es.constants.my_index}
+    )
 
     // Learner and Executor states, maintain for phase 2
     && opn == r.executor.ops_complete

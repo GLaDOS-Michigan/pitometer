@@ -31,7 +31,7 @@ lemma Phase1_to_MaybePhase2(ts:TimestampedRslState, ts':TimestampedRslState, opn
         } else {
             assert InPhase1(ts');
             H1.Phase1_to_Phase1_LeaderTimeBound(ts, ts', opn, 1, tios);
-            H1.Phase1_to_Phase1_1aTimeboud(ts, ts', opn, 1, tios);
+            H1.Phase1_to_Phase1_1aTimebound(ts, ts', opn, 1, tios);
             assert Phase1Invariant(ts', opn);
         }
     } else {

@@ -22,7 +22,7 @@ lemma PacketsBallotInvariant_ReceiveStep(ts:TimestampedRslState, ts':Timestamped
     {}
 }
 
-lemma PacketsBallotInvariant_NoReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+lemma {:timeLimitMultiplier 2} PacketsBallotInvariant_NoReceiveStep(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires CommonAssumptions(ts) && CommonAssumptions(ts')
     requires P1Assumption(ts, opn)
     requires InPhase1(ts') ==> P1Assumption(ts', opn)
@@ -35,7 +35,10 @@ lemma PacketsBallotInvariant_NoReceiveStep(ts:TimestampedRslState, ts':Timestamp
 {
     forall pkt | pkt in ts'.undeliveredPackets 
     ensures ExistingPacketsBallot(pkt)
-    {}
+    {
+        lemma_No1bSentInNonReceiveStep(ts, ts', opn, idx, tios);
+        lemma_No2bSentInNonReceiveStep(ts, ts', opn, idx, tios);
+    }
 }
 
 
@@ -54,17 +57,17 @@ lemma Phase1_to_Phase1(ts:TimestampedRslState, ts':TimestampedRslState, opn:Oper
 {
     assert InPhase1(ts');
     Phase1_to_Phase1_LeaderTimeBound(ts, ts', opn, idx, tios);
-    Phase1_to_Phase1_1aTimeboud(ts, ts', opn, idx, tios);
+    Phase1_to_Phase1_1aTimebound(ts, ts', opn, idx, tios);
+    Phase1_to_Phase1_1bTimebound(ts, ts', opn, idx, tios);
 }
 
-lemma Phase1_to_Phase1_1aTimeboud(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+lemma Phase1_to_Phase1_1aTimebound(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires CommonAssumptions(ts) && CommonAssumptions(ts')
     requires P1Assumption(ts, opn)
     requires P1Assumption(ts', opn)
     requires TimestampedRslNext(ts, ts')
     requires Phase1Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    // requires ts.t_replicas[idx].v.nextActionIndex != 2
     requires idx != 0
     ensures forall pkt | pkt in ts'.undeliveredPackets && IsNew1aPacket(pkt)
         :: TimeLe(pkt.msg.ts, TimeBound1aDeliveryPost())
@@ -86,6 +89,40 @@ lemma Phase1_to_Phase1_1aTimeboud(ts:TimestampedRslState, ts':TimestampedRslStat
 }
 
 
+lemma Phase1_to_Phase1_1bTimebound(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
+    requires CommonAssumptions(ts) && CommonAssumptions(ts')
+    requires P1Assumption(ts, opn)
+    requires P1Assumption(ts', opn)
+    requires TimestampedRslNext(ts, ts')
+    requires Phase1Invariant(ts, opn)
+    requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
+    requires idx != 0
+    ensures forall pkt | pkt in ts'.undeliveredPackets && IsNew1bPacket(pkt)
+        :: TimeLe(pkt.msg.ts, TimeBound1bDeliveryPost())
+{   
+    var ls, ls' := ts.t_replicas[idx], ts'.t_replicas[idx];
+    var nextActionIndex := ls.v.nextActionIndex;
+    forall p | p in ts'.undeliveredPackets && IsNew1bPacket(p) 
+    ensures TimeLe(p.msg.ts, TimeBound1bDeliveryPost())
+    {
+        if p !in ts.undeliveredPackets {
+            if nextActionIndex == 0 {
+                var msg := tios[0].r.msg;
+                if msg.v.RslMessage_1a? {
+                     assert TimeLe(p.msg.ts, TimeBound1bDeliveryPost()); 
+                } else {
+                    lemma_No1bSentInReceiveStep_NotReceive1a(ts, ts', opn, idx, tios);
+                    assert false;
+                }            
+            } else {
+                lemma_No1bSentInNonReceiveStep(ts, ts', opn, idx, tios);
+                assert false;
+            }
+        }
+    }
+}
+
+
 lemma Phase1_to_Phase1_LeaderTimeBound(ts:TimestampedRslState, ts':TimestampedRslState, opn:OperationNumber, idx:int, tios:seq<TimestampedLIoOp<NodeIdentity, RslMessage>>) 
     requires CommonAssumptions(ts) && CommonAssumptions(ts')
     requires P1Assumption(ts, opn)
@@ -93,7 +130,6 @@ lemma Phase1_to_Phase1_LeaderTimeBound(ts:TimestampedRslState, ts':TimestampedRs
     requires TimestampedRslNext(ts, ts')
     requires Phase1Invariant(ts, opn)
     requires TimestampedRslNextOneReplica(ts, ts', idx, tios);
-    // requires ts.t_replicas[idx].v.nextActionIndex != 2
     requires idx != 0
     ensures TimeLe(ts'.t_replicas[1].ts, TimeBoundPhase1LeaderPost(ts'.t_replicas[1].v.nextActionIndex))
 {  

@@ -26,8 +26,8 @@ lemma PerfInvariantMaintained(ts:TimestampedRslState, ts':TimestampedRslState, o
     ensures InPhase1(ts') ==> Phase1Invariant(ts', opn)
     ensures InPhase2(ts') ==> P2.Phase2Invariant(ts', opn)
 {   
-    AlwaysInvariantP1_Maintained(ts, ts', opn);
     PacketsBallotInvariant_Maintained(ts, ts', opn);
+    AlwaysInvariantP1_Maintained(ts, ts', opn);
     if TimestampedRslNextEnvironment(ts, ts') {
         assert PacketsBallotInvariant(ts');
         return;
