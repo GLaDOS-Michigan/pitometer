@@ -157,6 +157,9 @@ lemma NonSuspector1_ind_6(s:TimestampedRslState, s':TimestampedRslState, j:int)
       es.requests_received_prev_epochs,
       batch);
 
+      // XXX: For proof stablity
+      assert es'.requests_received_prev_epochs != [] ==>
+        es'.requests_received_prev_epochs[0] in es'.requests_received_prev_epochs;
       assert es'.requests_received_prev_epochs == [];
       assert es'.requests_received_this_epoch <= es.requests_received_this_epoch;
 

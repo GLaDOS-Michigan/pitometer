@@ -68,6 +68,7 @@ lemma NonSuspector0_ind_recv(s:TimestampedRslState, s':TimestampedRslState, sr:s
 
 lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<int>, j:int)
   requires FOAssumption2(s, s')
+  requires FOAssumption2State(s, s')
   requires EpochDelayInv(s)
   // requires EpochDelayInv(s')
   requires 0 <= j < |s.constants.config.replica_ids|;
@@ -102,6 +103,10 @@ lemma NonSuspector0_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
           es.requests_received_prev_epochs,
           batch);
 
+        if es'.requests_received_prev_epochs != [] {
+          // XXX: for proof stability; used to work without this, now it fails
+          assert es'.requests_received_prev_epochs[0] in es'.requests_received_prev_epochs;
+        }
         assert es'.requests_received_prev_epochs == [];
         assert es'.requests_received_this_epoch == [];
         assert NonSuspector0(s', j);
@@ -215,6 +220,9 @@ lemma NonSuspector2_ind(s:TimestampedRslState, s':TimestampedRslState, sr:set<in
           batch);
 
         if es'.requests_received_prev_epochs == [] {
+
+          // XXX: For proof stablity
+          assert es'.requests_received_this_epoch != [] ==> es'.requests_received_this_epoch[0] in es'.requests_received_this_epoch;
           assert es'.requests_received_this_epoch == [];
           assert NonSuspector0(s', j);
           return;

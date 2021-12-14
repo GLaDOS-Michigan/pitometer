@@ -137,14 +137,20 @@ predicate FOAssumption(s:TimestampedRslState)
   && EpochAndHeartbeatNoOverflow(s)
 }
 
+// FIXME: put in Common
+predicate FOAssumption2State(s:TimestampedRslState, s':TimestampedRslState)
+{
+  && s.constants.config.replica_ids == s'.constants.config.replica_ids
+  && ClockAssumption(s, s')
+  && MonotoneTime(s, s')
+}
+
 predicate FOAssumption2(s:TimestampedRslState, s':TimestampedRslState)
 {
   && FOAssumption(s)
   && FOAssumption(s')
+  && FOAssumption2State(s, s')
   // XXX: shouldn't need to assume this, pretty trivial
-  && s.constants.config.replica_ids == s'.constants.config.replica_ids
-  && ClockAssumption(s, s')
-  && MonotoneTime(s, s')
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -155,6 +161,8 @@ predicate LeaderView0(s:TimestampedRslState)
   requires CommonAssumptions(s)
 {
   s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
+  && s.t_replicas[1].v.replica.proposer.current_state == 0
+  && s.t_replicas[1].v.replica.proposer.max_ballot_i_sent_1a == Ballot(0, 1)
 }
 
 // "suspecting_replicas"
@@ -215,6 +223,7 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
 {
   SuspectingReplicaInv(s, suspecting_replicas)
 
+  && LeaderView0(s)
   && LeaderQuorumBound(s)
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1,0)
 
@@ -228,8 +237,20 @@ predicate InView1(s:TimestampedRslState, suspecting_replicas:set<int>)
 predicate FinalStage(s:TimestampedRslState)
   requires CommonAssumptions(s)
 {
+  && ( forall pkt :: pkt in s.t_environment.sentPackets ==>
+    pkt.msg.v.RslMessage_Heartbeat? ==>
+    pkt.msg.v.bal_heartbeat == Ballot(1, 0) ||
+    pkt.msg.v.bal_heartbeat == Ballot(1, 1)
+    )
+
+  && s.t_replicas[1].v.replica.proposer.current_state == 0
+  && s.t_replicas[1].v.replica.proposer.max_ballot_i_sent_1a == Ballot(0, 1)
   && s.t_replicas[1].v.replica.proposer.election_state.current_view == Ballot(1, 1)
-  && TimeLe(s.t_replicas[1].ts, TBNewView())
+  && (
+    (s.t_replicas[1].v.nextActionIndex == 9 && TimeLe(s.t_replicas[1].ts, TBNewView() )) ||
+    (s.t_replicas[1].v.nextActionIndex == 0 && TimeLe(s.t_replicas[1].ts, TBNewView() + StepToTimeDelta(RslStep(9)) )) ||
+    (s.t_replicas[1].v.nextActionIndex == 1 && TimeLe(s.t_replicas[1].ts, TBNewView() + StepToTimeDelta(RslStep(9)) + StepToTimeDelta(RslStep(0)) + Timeout()))
+    )
   // FIXME: this should maintain that leader.current_state != 2, up until it is.
   // That should help prove a bound on the 1a packets that are sent out
   // Also should add requirement that no reply packet is sent to the client.
@@ -341,5 +362,7 @@ predicate LeaderQuorumBound(s:TimestampedRslState)
     && TimeLe(s.t_replicas[1].ts, TBJustBeforeNewView(s.t_replicas[1].v.nextActionIndex))
   )
 }
+
+
 
 }
