@@ -1,19 +1,20 @@
-// Must be verified with /arith:0
-
 include "../DistributedSystem.i.dfy"
 
 include "../../../Common/Collections/Maps2.i.dfy"
 include "../Node.i.dfy"
+include "../../../Services/Pb/PbTimestampedDistributedSystem.i.dfy"
 
 module Definitions_i {
 import opened PbTimestampedDistributedSystem_i
 
+const ZeroT:Timestamp := 0
 // Generic action step time
 // ghost const L:Timestamp
 ghost const D:Timestamp
 ghost const PrimaryReqT:Timestamp
 ghost const PrimaryAckT:Timestamp
 ghost const BackupProcessT:Timestamp
+ghost const MaxQ:Timestamp
 
  //ghost const Gs := StepTime(RslStep);
  //ghost const As := StepTime(AcceptStep);
@@ -25,7 +26,7 @@ function StepToTimeDelta(hstep:PbStep) : Timestamp
   if hstep == PrimaryReqStep then
     PrimaryReqT
   else if hstep == PrimaryRecvStep then
-    PrimaryReqT
+    PrimaryAckT
   else
     assert (hstep == BackupRecvStep);
     BackupProcessT

@@ -7,11 +7,6 @@ import opened Protocol_Node_i
 
 type HostStep = PbStep
 
-datatype Constants = Constants(
-  config:Config,
-  client: EndPoint
-  )
-
 datatype PbState = PbState(
     constants:Constants,
     environment:LEnvironment<EndPoint, PbMessage, PbStep>,
@@ -29,7 +24,7 @@ predicate PbInit(constants:Constants, ps:PbState)
     && LEnvironment_Init(ps.environment)
     && PbMapsComplete(ps)
     && |ps.nodes| == |constants.config|
-    && (forall i :: 0 <= i < |constants.config| ==> NodeInit(ps.nodes[i], i, constants.config, constants.client))
+    && (forall i :: 0 <= i < |constants.config| ==> NodeInit(ps.nodes[i], i, constants))
 }
 
 predicate PbNextCommon(ps:PbState, ps':PbState)

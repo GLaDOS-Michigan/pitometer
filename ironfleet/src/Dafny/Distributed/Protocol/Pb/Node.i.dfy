@@ -8,15 +8,19 @@ import opened Collections__Sets_i
 
 type Config = seq<EndPoint>
 
-datatype Node = Node(myIndex:int, nextStep:int, gotAck:set<EndPoint>, clientEndPoint:EndPoint, config:Config)
+datatype Constants = Constants(
+  config:Config,
+  client: EndPoint
+  )
 
-predicate NodeInit(s:Node, my_index:int, config:Config, clientEndPoint:EndPoint)
+datatype Node = Node(myIndex:int, nextStep:int, gotAck:set<EndPoint>, con:Constants)
+
+predicate NodeInit(s:Node, my_index:int, con:Constants)
 {
   s.myIndex == my_index
-    && 0 <= my_index < |config|
+    && 0 <= my_index < |con.config|
     && s.nextStep == 0
-    && s.config == config
-    && s.clientEndPoint == clientEndPoint
+    && s.con == con
 }
 
 predicate PrimarySendRequest(s:Node, s':Node, ios:seq<PbIo>)
@@ -26,11 +30,11 @@ predicate PrimarySendRequest(s:Node, s':Node, ios:seq<PbIo>)
     && s' == s.(nextStep := 1)
 
     // broadcast to backups
-    && forall hd, backups :: s.config == [hd] + backups ==>
-          (|ios| == |backups|
-            && forall idx :: 0 <= idx < |backups| ==>
-              ios[idx] == LIoOpSend(LPacket(backups[idx], s.config[s.myIndex], Request()))
-          )
+    && (|s.con.config| > 0 ==>
+       |ios| == |s.con.config[1..]|
+        && forall idx :: 0 <= idx < |s.con.config[1..]| ==>
+          ios[idx] == LIoOpSend(LPacket(s.con.config[1..][idx], s.con.config[s.myIndex], Request()))
+      )
 }
 
 predicate PrimaryReceiveAck(s:Node, s':Node, ios:seq<PbIo>)
@@ -42,14 +46,14 @@ predicate PrimaryReceiveAck(s:Node, s':Node, ios:seq<PbIo>)
       s == s' && |ios| == 1
     else
       ios[0].LIoOpReceive?
-      && ios[0].r.src in s.config
+      && ios[0].r.src in s.con.config
       && ios[0].r.msg.Ack?
       && s' == s.(gotAck := s.gotAck + { ios[0].r.src } )
-      && if s'.gotAck == MapSeqToSet(s.config, (i:EndPoint) => i) then
+      && if s'.gotAck == MapSeqToSet(s.con.config, (i:EndPoint) => i) then
           && |ios| == 2
           && ios[1].LIoOpSend?
           && ios[1].s.msg.ClientReply?
-          && ios[1].s.dst == s.clientEndPoint
+          && ios[1].s.dst == s.con.client
         else
             s == s' && |ios| == 1
 }
@@ -60,15 +64,15 @@ predicate BackupReceiveRequest(s:Node, s':Node, ios:seq<PbIo>)
     && s' == s
     && |ios| >= 1
     && if ios[0].LIoOpTimeoutReceive? then
-      s == s' && |ios| == 1
-    else
-      ios[0].LIoOpReceive?
-      && ios[0].r.src in s.config
-      && ios[0].r.msg.Request?
-      && |ios| == 2
-      && ios[1].LIoOpSend?
-      && ios[1].s.msg.Ack?
-      && ios[1].s.dst == ios[0].r.src
+        |ios| == 1
+      else
+        ios[0].LIoOpReceive?
+        && ios[0].r.src in s.con.config
+        && ios[0].r.msg.Request?
+        && |ios| == 2
+        && ios[1].LIoOpSend?
+        && ios[1].s.msg.Ack?
+        && ios[1].s.dst == ios[0].r.src
 }
 
 predicate NodeNext(s:Node, s':Node, ios:seq<PbIo>)
