@@ -92,7 +92,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_train_data, total_client_data)
-    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
@@ -121,20 +121,22 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
     """
     print("Plotting graphs for Paxos distributions (simple)")
     with PdfPages("%s/%s (simple).pdf" %(root, name)) as pp:
-        for f in F_VALUES:
+        # for f in F_VALUES:
+        for f in [1]:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_client_train_latencies = [t for i in total_client_train_data[f] for t in total_client_train_data[f][i]]
             actual_method_latencies = compute_actual_node(total_node_data[f]) 
             actual_network_latencies = compute_actual_network(total_network_data)
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
             # fig.subplots_adjust(left=0.12, right=0.95, top=0.88, bottom=0.21 )
-            fig.subplots_adjust(right=0.96, bottom=0.18 )
+            fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.17 )
             plot_distributions_ax_simple(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_client_train_latencies, actual_network_latencies, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
     print("Plotting graphs for Paxos distributions (advanced)")
     with PdfPages("%s/%s (advanced).pdf" %(root, name)) as pp:
-        for f in F_VALUES:
+        # for f in F_VALUES:
+        for f in [1]:
             actual_client_latencies = [t for i in total_client_data[f] for t in total_client_data[f][i]]  # simply combine data from all trials
             actual_method_latencies = compute_actual_node(total_node_data[f])  
             actual_network_latencies = compute_actual_network(total_network_data)
@@ -205,12 +207,12 @@ def plot_distributions_ax_simple(f, this_ax, name, actual_client_latencies, actu
 
     plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed',linewidth=1.5)
     plt.plot(client_cdf, client_bins, label='observed performance', color='navy',linewidth=1.5)
-    plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted', linewidth=1.0)
+    # plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted', linewidth=1.0)
 
     this_ax.set_xlabel('cumulative probability')
     this_ax.set_ylabel('request latency (ms)')
     # this_ax.set_title(name)
-    this_ax.set_title("IronRSL, local cluster")
+    # this_ax.set_title("IronRSL, local cluster")
     this_ax.set_ylim(0, 50)
     this_ax.set_xlim(0, 1)
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.2))
@@ -689,7 +691,7 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
     with PdfPages("%s/%s.pdf" %(root, name)) as pp:
         # Draw plot
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-        fig.subplots_adjust(left=0.15, right=0.95, top=0.92, bottom=0.16 )
+        fig.subplots_adjust(left=0.16, right=0.95, top=0.92, bottom=0.17 )
         # this_ax.set_title("Predictions of IronRSL performance")
         
         this_ax.plot(x_vals_f, y_vals_predict_max, label='Performal\'s max', marker='x', color='firebrick', linestyle='dashed',mfc='none',ms=4)
@@ -703,7 +705,7 @@ def plot_macro_1_bound_accuracy_simple(name, root, total_network_data, total_nod
         # this_ax.plot(x_vals_f, y_vals_actual_median, label='obs. median', marker='o', color='blue',ms=4)
         
         # this_ax.errorbar(x_vals_f, y_vals_actual_mean, yerr=y_vals_actual_errors, linestyle="None", marker="None", color="black")
-        this_ax.legend(loc='upper right', bbox_to_anchor=(0.99, 0.3), ncol=2, columnspacing=0.5, fontsize=6.5)
+        this_ax.legend(bbox_to_anchor=(0.99, 0.4), ncol=2, columnspacing=0.5, fontsize=6)
         this_ax.set_xlabel("f")
         this_ax.set_ylabel("request latency (ms)")
         this_ax.xaxis.set_ticks(x_vals_f)

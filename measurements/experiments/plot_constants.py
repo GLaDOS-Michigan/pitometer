@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 # Global plotting params
 # Fonts
-base_size = 7
+base_size = 6.5
 plt.rc('font', family='sans-serif') 
 plt.rc('font', size=base_size)              # controls default text sizes
 plt.rc('axes', titlesize=base_size)        # fontsize of the axes title
@@ -28,5 +28,5 @@ plt.rcParams['ytick.direction'] = 'in'
 
 
 # Figure size
-fig_width = 2.7
+fig_width = 2.8
 fig_height = 1.7
