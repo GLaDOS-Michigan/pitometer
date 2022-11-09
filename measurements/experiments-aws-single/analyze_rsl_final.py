@@ -96,7 +96,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions (simple, Ohio)", exp_dir, total_network_data, total_node_data, total_client_train_data, total_client_data)
-    plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    # plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
 
@@ -106,7 +106,7 @@ def plot_client_data(name, root, total_client_data):
         for f in [2]:
             actual_client_latencies_trials = total_client_data[f]
             for i in range(len(actual_client_latencies_trials)):
-                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width+3, fig_height), sharex=False)
+                fig, this_ax = plt.subplots(1, 1, figsize=(fig_width+2, fig_height), sharex=False)
                 fig.subplots_adjust(left=0.215, right=0.95, top=0.88, bottom=0.21 )
                 this_ax.plot(actual_client_latencies_trials[i])
                 this_ax.set_title("f=%d, trial %d" %(f, i))

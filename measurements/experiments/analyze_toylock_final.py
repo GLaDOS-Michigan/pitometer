@@ -52,9 +52,9 @@ def main(exp_dir):
     print("\nComputing graphs")
 
     # Plot Rounds
-    # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
-    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
+    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
@@ -88,8 +88,8 @@ def plot_convolution(name, root, total_grant_data, total_accept_data):
             ring_size = 2
         # for ring_size in x_vals_ring_size:
             actual_grant_latencies, actual_accept_latencies = compute_actual_grant_accept(total_grant_data, total_accept_data, delay, ring_size)
-            fig, this_ax = plt.subplots(1, 1, figsize=(5, 3), sharex=False)
-            fig.subplots_adjust(left=0.15, right=0.95, top=0.91, bottom=0.15 )
+            fig, this_ax = plt.subplots(1, 1, figsize=(4, 2.5), sharex=False)
+            fig.subplots_adjust(left=0.18, right=0.93, top=0.91, bottom=0.18 )
             # plot_convolution_ax(delay, ring_size, this_ax, "ring size %.d, workload %.1f ms" %(ring_size, delay/1000.0), actual_grant_latencies, actual_accept_latencies)
             plot_convolution_ax(delay, ring_size, this_ax, "Convolution of two CDFs", actual_grant_latencies, actual_accept_latencies)
             pp.savefig(fig)
@@ -122,7 +122,7 @@ def plot_convolution_ax(
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=10)
     # this_ax.set_title(name)
-    # this_ax.set_ylim(0, max(sum_cdf)/10)
+    this_ax.set_ylim(0, max(sum_cdf)/5)
     this_ax.set_xlim(0, 1)
     # this_ax.set_yscale("log")
     this_ax.xaxis.set_ticks(np.arange(0, 1.1, 0.1))

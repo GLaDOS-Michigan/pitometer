@@ -22,7 +22,7 @@ from conv import *
 from plot_constants import *
 
 HBPeriod=100
-EpochLength=1000
+EpochLength=300
 
 
 THROW=1  # Ignore the first THROW requests in computing method latencies
@@ -30,7 +30,7 @@ CTHROW=1  # Ignore the THROW requests in computing client latencies
 
 TRAIN_SET = "train"
 TEST_SET = "test"
-CD_VALUES = [0, 500, 1500, 2000, 2500, 3000]
+CD_VALUES = [0, 500, 1000, 1500, 2000, 2500, 3000]
 
 START = datetime.fromisoformat("2021-11-14 00:00:01")
 END = datetime.fromisoformat("2021-12-15 04:00:00")
@@ -106,6 +106,7 @@ def parse_csvs(exp_dir):
 
 def plot_graph(root, failure_data, node_data, network_data):   
     pred = compute_predicted(network_data, node_data)
+    x_vals = [x/1000 for x in CD_VALUES]
     y_vals_predicted = [pred for x in CD_VALUES]
     y_vals = [ np.mean(failure_data[cd]) for cd in CD_VALUES ]
     errors = [ statistics.stdev(failure_data[cd]) if len(failure_data[cd]) > 1 else 0 for cd in CD_VALUES ]
@@ -113,14 +114,15 @@ def plot_graph(root, failure_data, node_data, network_data):
     with PdfPages("%s/failure_graph.pdf" %root) as pp:
         fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
         fig.subplots_adjust(right=0.96, bottom=0.18, left=0.15)
-        plt.plot(CD_VALUES, y_vals, label='Observed behavior', color='navy', marker='o')
-        plt.plot(CD_VALUES, y_vals_predicted, label='Predicted behavior', color='firebrick', linestyle='dashed')
+        plt.plot(x_vals, y_vals_predicted, label='Performal\'s bound', color='firebrick', linestyle='dashed')
+        plt.plot(x_vals, y_vals, label='Observed behavior', color='navy', marker='o')
+        
         # this_ax.errorbar(CD_VALUES, y_vals, yerr=errors, linestyle="None", marker="None", color="black")
 
-        this_ax.set_xlabel('failure offset (μs)')
+        this_ax.set_xlabel('time at which leader crashes (ms)')
         this_ax.set_ylabel('request latency (ms)')
         this_ax.set_title('End-to-end behavior with 1 crash failure')
-        # this_ax.set_ylim(0, 20)
+        this_ax.set_ylim(0, 800)
         # this_ax.set_xlim(0, 1)
         # this_ax.grid()
         # this_ax.set_yscale("log")

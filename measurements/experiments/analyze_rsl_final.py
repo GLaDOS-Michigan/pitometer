@@ -92,7 +92,7 @@ def main(exp_dir):
     # Plot graphs
     print("\nPlotting graphs for experiment %s" %exp_dir)
     plot_distributions("Paxos Distributions", exp_dir, total_network_data, total_node_data, total_client_train_data, total_client_data)
-    # plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
+    plot_macro_1_bound_accuracy("Macro-benchmark1", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     plot_macro_1_bound_accuracy_simple("Macro-benchmark1_simple", exp_dir, total_network_data, total_node_data, total_client_data, total_client_start_end)
     print("Done")
 
@@ -605,7 +605,7 @@ def plot_macro_1_bound_accuracy(name, root, total_network_data, total_node_data,
     # Compute data points
     x_vals_f = sorted(list(total_client_data.keys()))
     y_vals_actual_max = [get_f_max(total_client_data[f]) for f in x_vals_f]
-    y_vals_actual_999 = [get_f_999(total_client_data[f]) for f in x_vals_f]
+    y_vals_actual_999 = [get_f_percentile(total_client_data[f], 99.9) for f in x_vals_f]
     y_vals_actual_mean = [get_f_mean(total_client_data[f]) for f in x_vals_f]
 
     # y_vals_actual_median = [statistics.median(total_client_data[f]) for f in x_vals_f]
