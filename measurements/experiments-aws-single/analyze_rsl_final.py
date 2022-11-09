@@ -130,7 +130,7 @@ def plot_distributions(name, root, total_network_data, total_node_data, total_cl
             actual_client_train_latencies = [t for i in total_client_train_data[f] for t in total_client_train_data[f][i][CTHROW:-CTHROW]] 
             actual_method_latencies = compute_actual_node(total_node_data[f])   
             fig, this_ax = plt.subplots(1, 1, figsize=(fig_width, fig_height), sharex=False)
-            fig.subplots_adjust(right=0.96, bottom=0.18 )
+            fig.subplots_adjust(left=0.15, right=0.96, bottom=0.18 )
             plot_distributions_ax(f, this_ax, "f = %d" %(f), actual_client_latencies, actual_client_train_latencies, total_network_data, actual_method_latencies)
             pp.savefig(fig)
             plt.close(fig)
@@ -159,8 +159,8 @@ def plot_distributions_ax(f, this_ax, name, actual_client_latencies, actual_clie
     predict_pdf, predict_bins = compute_predicted_rsl_pdf_simple(f, total_network_data, actual_method_latencies)
     predict_cdf = pdf_to_cdf(predict_pdf)
 
-    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed')
-    plt.plot(client_cdf, client_bins, label='observed performance', color='navy')
+    plt.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed', linewidth=1.5)
+    plt.plot(client_cdf, client_bins, label='observed performance', color='navy', linewidth=1.5)
     # plt.plot(client_train_cdf, client_train_bins, label='observed performance', color='blue',linestyle='dotted')
 
     this_ax.set_xlabel('cumulative probability')
