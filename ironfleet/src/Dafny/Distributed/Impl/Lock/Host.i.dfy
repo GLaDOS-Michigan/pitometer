@@ -33,7 +33,7 @@ module Host_i refines Host_s {
      && host_state.node_impl.node.config == config
      && host_state.node_impl.node.config[host_state.node_impl.node.my_index] == id
      && NodeInit(host_state.node, 
-                 int(host_state.node_impl.node.my_index),
+                 host_state.node_impl.node.my_index as int,
                  config)
     }
 

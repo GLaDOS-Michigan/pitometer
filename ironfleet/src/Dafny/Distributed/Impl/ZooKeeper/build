@@ -1,0 +1,4 @@
+#!/bin/bash
+
+dafnyc='/usr/lib/dafny/dafny /timeLimit:30'
+$dafnyc fileiotest.dfy ../../Common/Native/IoNative.cs | grep -iv "warning"

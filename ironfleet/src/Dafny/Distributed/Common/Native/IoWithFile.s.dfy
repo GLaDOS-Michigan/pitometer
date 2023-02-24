@@ -37,11 +37,11 @@ class HostConstants
 
     static method{:axiom} NumCommandLineArgs(ghost env:HostEnvironment) returns(n:uint32)
         requires env != null && env.Valid();
-        ensures  (n as int) == |env.constants.CommandLineArgs()|;
+        ensures  int(n) == |env.constants.CommandLineArgs()|;
 
     static method{:axiom} GetCommandLineArg(i:uint64, ghost env:HostEnvironment) returns(arg:array<uint16>)
         requires env != null && env.Valid();
-        requires 0 <= i as int < |env.constants.CommandLineArgs()|;
+        requires 0 <= int(i) < |env.constants.CommandLineArgs()|;
         ensures  arg != null;
         ensures  fresh(arg);
         ensures  arg[..] == env.constants.CommandLineArgs()[i];
@@ -80,9 +80,9 @@ class Time
         requires env != null && env.Valid();
         modifies env.now; // To avoid contradiction, GetTime must advance time, because successive calls to GetTime can return different values
         modifies env.udp;
-        ensures  t as int == env.now.now();
+        ensures  int(t) == env.now.now();
         ensures  AdvanceTime(old(env.now.now()), env.now.now(), 0);
-        ensures  env.udp.history() == old(env.udp.history()) + [LIoOpReadClock(t as int)];
+        ensures  env.udp.history() == old(env.udp.history()) + [LIoOpReadClock(int(t))];
 
     // Used for performance debugging
     static method{:axiom} GetDebugTimeTicks() returns(t:uint64)
@@ -166,14 +166,14 @@ class UdpClient
         requires env.ok.ok();
         requires IsOpen();
         requires timeLimit >= 0;
-        requires timeLimit as int * 1000 < 0x80000000; // only needed when the underlying implementation uses Socket.Poll instead of Task.Wait
+        requires int(timeLimit) * 1000 < 0x80000000; // only needed when the underlying implementation uses Socket.Poll instead of Task.Wait
         modifies this;
         modifies env.ok;
         modifies env.now;
         modifies env.udp;
         ensures  env == old(env);
         ensures  env.ok.ok() == ok;
-        ensures  AdvanceTime(old(env.now.now()), env.now.now(), timeLimit as int);
+        ensures  AdvanceTime(old(env.now.now()), env.now.now(), int(timeLimit));
         ensures  LocalEndPoint() == old(LocalEndPoint());
         ensures  ok ==> IsOpen();
         ensures  ok ==> timedOut  ==> env.udp.history() == old(env.udp.history()) + [LIoOpTimeoutReceive()];
@@ -204,10 +204,6 @@ class UdpClient
 
 }
 
-// jonh temporarily neutered this because the opaque type can't be compiled
-class FileSystemState
-{
-}
 
 class MutableSet<T(0,==,!new)>
 {
@@ -225,7 +221,7 @@ class MutableSet<T(0,==,!new)>
 
     method {:axiom} SizeModest() returns (size:uint64) 
         requires |SetOf(this)| < 0x1_0000_0000_0000_0000;
-        ensures size as int == |SetOf(this)|;
+        ensures int(size) == |SetOf(this)|;
 
     method {:axiom} Contains(x:T) returns (contains:bool)
         ensures contains == (x in SetOf(this));
@@ -274,7 +270,7 @@ class MutableMap<K(==),V>
 
     method {:axiom} SizeModest() returns (size:uint64) 
         requires |MapOf(this)| < 0x1_0000_0000_0000_0000;
-        ensures size as int == |MapOf(this)|;
+        ensures int(size) == |MapOf(this)|;
 
     method {:axiom} Contains(key:K) returns (contains:bool)
         ensures contains == (key in MapOf(this));
@@ -297,24 +293,24 @@ class Arrays
 {
     static method{:axiom} CopySeqIntoArray<A>(src:seq<A>, srcIndex:uint64, dst:array<A>, dstIndex:uint64, len:uint64)
         requires dst != null;
-        requires srcIndex as int + len as int <= |src|;
-        requires dstIndex as int + len as int <= dst.Length;
+        requires int(srcIndex) + int(len) <= |src|;
+        requires int(dstIndex) + int(len) <= dst.Length;
         modifies dst;
         ensures  forall i :: 0 <= i < dst.Length ==> dst[i] == (
-                    if dstIndex as int <= i < dstIndex as int + len as int
-                    then src[i - dstIndex as int + srcIndex as int]
+                    if int(dstIndex) <= i < int(dstIndex) + int(len)
+                    then src[i - int(dstIndex) + int(srcIndex)]
                     else old(dst[..])[i]);
-        ensures  forall i :: srcIndex as int <= i < srcIndex as int + len as int ==>
-                    src[i] == dst[i - srcIndex as int + dstIndex as int];
+        ensures  forall i :: int(srcIndex) <= i < int(srcIndex) + int(len) ==>
+                    src[i] == dst[i - int(srcIndex) + int(dstIndex)];
 }
 
 
-/*
+
 //////////////////////////////////////////////////////////////////////////////
 // File System
 //////////////////////////////////////////////////////////////////////////////
 
-type FileSystem
+class FileSystem {}
 
 datatype FileOp =
   FileRead(fileReadOffset:int, fileReadBytes:seq<byte>)
@@ -327,8 +323,8 @@ class FileSystemState
     function{:axiom} state():FileSystem reads this;
 }
 
-function{:axiom} FileOpRequires(fs:FileSystem, fileName:string, op:FileOp):bool
-function{:axiom} FileOpEnsures(fsOld:FileSystem, fsNew:FileSystem, fileName:string, op:FileOp):bool
+// function{:axiom} FileOpRequires(fs:FileSystem, fileName:string, op:FileOp):bool
+// function{:axiom} FileOpEnsures(fsOld:FileSystem, fsNew:FileSystem, fileName:string, op:FileOp):bool
 
 class FileStream
 {
@@ -337,7 +333,7 @@ class FileStream
     function{:axiom} IsOpen():bool reads this;
     constructor{:axiom} () requires false;
 
-    static method{:axiom} Open(name:array<char>, ghost env:HostEnvironment)
+    static method{:axiom}  Open(name:array<char>, ghost env:HostEnvironment)
         returns(ok:bool, f:FileStream)
         requires env != null && env.Valid();
         requires env.ok.ok();
@@ -361,7 +357,7 @@ class FileStream
         requires IsOpen();
         requires buffer != null;
         requires 0 <= int(start) <= int(end) <= buffer.Length;
-        requires FileOpRequires(env.files.state(), Name(), FileRead(int(fileOffset), buffer[start..end]));
+        // requires FileOpRequires(env.files.state(), Name(), FileRead(int(fileOffset), buffer[start..end]));
         modifies this;
         modifies env.ok;
         modifies env.files;
@@ -371,29 +367,41 @@ class FileStream
         ensures  Name() == old(Name());
         ensures  forall i:int :: 0 <= i < buffer.Length && !(int(start) <= i < int(end)) ==> buffer[i] == old(buffer[i]);
         ensures  ok ==> IsOpen();
-        ensures  ok ==> FileOpEnsures(old(env.files.state()), env.files.state(), Name(), FileRead(int(fileOffset), buffer[start..end]));
+        // ensures  ok ==> FileOpEnsures(old(env.files.state()), env.files.state(), Name(), FileRead(int(fileOffset), buffer[start..end]));
 
-    method{:axiom} Write(fileOffset:nat32, buffer:array<byte>, start:int32, end:int32) returns(ok:bool)
+    method {:axiom} Write(fileOffset:nat32, buffer:array<byte>, start:int32, end:int32) returns(ok:bool)
+        // requires env != null && env.Valid();
+        // requires env.ok.ok();
+        // requires IsOpen();
+        // requires buffer != null;
+        // requires 0 <= int(start) <= int(end) <= buffer.Length;
+        // // requires FileOpRequires(env.files.state(), Name(), FileWrite(int(fileOffset), buffer[start..end]));
+        // // modifies this;
+        // modifies env.ok;
+        // modifies env.files;
+        // ensures  env == old(env);
+        // ensures  env.ok.ok() == ok;
+        // // ensures  Name() == old(Name());
+        // ensures  ok ==> IsOpen();
+        // // ensures  ok ==> FileOpEnsures(old(env.files.state()), env.files.state(), Name(), FileWrite(int(fileOffset), buffer[start..end]));
         requires env != null && env.Valid();
-        requires env.ok.ok();
-        requires IsOpen();
+        requires env.ok.ok()
+        requires IsOpen()
         requires buffer != null;
-        requires 0 <= int(start) <= int(end) <= buffer.Length;
-        requires FileOpRequires(env.files.state(), Name(), FileWrite(int(fileOffset), buffer[start..end]));
-        modifies this;
-        modifies env.ok;
-        modifies env.files;
-        ensures  env == old(env);
-        ensures  env.ok.ok() == ok;
-        ensures  Name() == old(Name());
-        ensures  ok ==> IsOpen();
-        ensures  ok ==> FileOpEnsures(old(env.files.state()), env.files.state(), Name(), FileWrite(int(fileOffset), buffer[start..end]));
+        requires 0 <= start as int <= end as int <= buffer.Length
+        modifies this
+        modifies env.ok
+        // modifies env.files;
+        ensures  env == old(env)
+        ensures  env.ok.ok() == ok
+        ensures  Name() == old(Name())
+        ensures  ok ==> IsOpen()
 
     method{:axiom} Flush() returns(ok:bool)
         requires env != null && env.Valid();
         requires env.ok.ok();
         requires IsOpen();
-        requires FileOpRequires(env.files.state(), Name(), FileFlush);
+        // requires FileOpRequires(env.files.state(), Name(), FileFlush);
         modifies this;
         modifies env.ok;
         modifies env.files;
@@ -401,9 +409,6 @@ class FileStream
         ensures  env.ok.ok() == ok;
         ensures  Name() == old(Name());
         ensures  ok ==> IsOpen();
-        ensures  ok ==> FileOpEnsures(old(env.files.state()), env.files.state(), Name(), FileFlush);
+        // ensures  ok ==> FileOpEnsures(old(env.files.state()), env.files.state(), Name(), FileFlush);
 }
-
-*/
-
 } 
