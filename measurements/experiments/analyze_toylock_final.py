@@ -52,9 +52,9 @@ def main(exp_dir):
     print("\nComputing graphs")
 
     # Plot Rounds
-    plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
-    plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
-    plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_convolution("Convolutions", exp_dir, total_grant_data, total_accept_data)
+    # plot_micro_1_distr_fidelity("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
+    # plot_micro_2_size_fidelity("Micro-benchmark2", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     plot_micro_1_distr_fidelity_FINAL("Micro-benchmark1", exp_dir, total_round_data, total_grant_data, total_accept_data, total_network_data)
     print("Done")
 
@@ -165,8 +165,8 @@ def plot_micro_1_distr_fidelity_FINAL(name, root, total_round_data, total_grant_
     print("Plotting graphs for Micro-benchmark 1 FINAL")
     ring_size = FINAL_RING_SIZE
     with PdfPages("%s/%s_size%d.pdf" %(root, name, ring_size)) as pp:
-        fig, axes = plt.subplots(1, len(DELAYS), figsize=(8, 1.5), sharex=False)
-        fig.subplots_adjust(left=0.05, right=0.98, top=0.88, bottom=0.21 )
+        fig, axes = plt.subplots(1, len(DELAYS), figsize=(5.8, 1.4), sharex=False)
+        fig.subplots_adjust(left=0.06, right=0.98, top=0.87, bottom=0.22 )
         col = 0
         for delay in DELAYS:
             participants = sorted(list(total_round_data[ring_size][delay].keys()))
@@ -256,8 +256,8 @@ def plot_micro_1_distr_fidelity_ax(
     print("Pred max %.3f" %get_percentile(predict_cdf, predict_bins, 100))
     print("Real max %.3f" %max(actual_round_latencies))
     print()
-    this_ax.plot(predict_cdf, predict_bins, label='Performal\'s estimate', color='firebrick', linestyle='dashed',linewidth=1)
-    this_ax.plot(round_cdf, round_bins, label='observed performance', color='navy',linewidth=1.2)
+    this_ax.plot(predict_cdf, predict_bins, label='Performal\'s\nestimate', color='firebrick', linestyle='dashed',linewidth=0.9)
+    this_ax.plot(round_cdf, round_bins, label='observed\nperformance', color='navy',linewidth=1.1)
     # plt.plot(network_cdf, network_bins[:-1], label='network', linestyle='dashed')
     # plt.plot(grant_cdf, grant_bins[:-1], label='grant', linestyle='dashdot')
     # plt.plot(accept_cdf, accept_bins[:-1], label='accept', linestyle='dotted')
